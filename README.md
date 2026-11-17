@@ -64,8 +64,7 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
   chi ci arriva colpisce di testa: in porta se è a tiro, via dall'area se difende, di sponda negli
   altri casi; i tiri forti passano. Sul calcio d'angolo cinque attaccanti entrano in area, ognuno con
   un marcatore, e chi batte crossa. Il portiere esce sui traversoni che scendono vicino alla porta e
-  alcune sue respinte finiscono in angolo. Manca l'animazione del colpo di testa: il gioco la userà
-  da sola quando `testa` sarà in `public/anim.js` e in `FX`.
+  alcune sue respinte finiscono in angolo. Il colpo di testa usa l'animazione `testa`.
 - **Carriera** (`src/carriera.js`, schermate in `drawHub` e nei pannelli `pan…`): al primo avvio si
   scelgono nome e squadra. La dashboard mostra la prossima partita di campionato, la classifica, la
   Coppa Titano, l'amichevole, la rosa, i numeri del club e il tabellone di coppa.
