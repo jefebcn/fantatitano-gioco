@@ -2,6 +2,9 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Fantatitano — La Partita (prototipo)</title>
 <style>
@@ -10,8 +13,12 @@
 @font-face{font-family:Lato;font-weight:900;src:url(font/lato-900-latin.woff2) format("woff2")}
 :root{--viola:#4B06FC;--viola7:#3A0AC4;--lime:#D9F51F;--ink:#0A0A0C;--navy:#0D1733}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--ink);color:#fff;font:700 14px Lato,system-ui,sans-serif;
+html,body{margin:0;overflow:hidden;background:var(--ink);color:#fff;font:700 14px Lato,system-ui,sans-serif;
   touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+html{height:100%;--vw:1vw;--vh:1vh}
+/* Il gioco è solo in orizzontale: resize() dà al corpo la misura del gioco e, se lo schermo è in verticale, lo ruota di lato */
+body{position:fixed;left:0;top:0;width:100%;height:100%;transform-origin:0 0}
+html.rot .scr{touch-action:pan-x pan-y}
 canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .h{font-family:Anton,Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.02em;line-height:1}
 .nas{display:none!important}
@@ -27,25 +34,25 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 .btn[disabled]{opacity:.35;pointer-events:none}
 
 #home{justify-content:center;gap:10px;text-align:center}
-#home .corona{height:min(30vh,200px);width:auto;max-width:70vw;margin-bottom:6px}
-#home h1{margin:0;font-size:clamp(46px,13vw,104px);color:#fff}
+#home .corona{height:min(calc(var(--vh)*30),200px);width:auto;max-width:calc(var(--vw)*70);margin-bottom:6px}
+#home h1{margin:0;font-size:clamp(46px,calc(var(--vw)*13),104px);color:#fff}
 #home h1 b{color:var(--lime);font-weight:400}
-#home .sub{font-size:clamp(18px,4.6vw,30px);color:var(--lime);margin-bottom:12px}
+#home .sub{font-size:clamp(18px,calc(var(--vw)*4.6),30px);color:var(--lime);margin-bottom:12px}
 #home .sub span{background:var(--viola);color:#fff;font:900 11px Lato;padding:3px 8px;border-radius:99px;vertical-align:middle;letter-spacing:.08em;margin-left:6px}
 #home .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(440px,100%);margin-top:16px}
 #home .tile{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 6px 9px;color:rgba(255,255,255,.75)}
 #home .tile .h{font-size:16px;display:block}
 #home .tile i{font:900 9px Lato;font-style:normal;letter-spacing:.1em;color:var(--lime);opacity:.9}
-#home .tito{position:absolute;right:max(8px,4vw);bottom:0;height:min(34vh,250px);pointer-events:none;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
+#home .tito{position:absolute;right:max(8px,calc(var(--vw)*4));bottom:0;height:min(calc(var(--vh)*34),250px);pointer-events:none;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
 #home .nota{font-size:11px;font-weight:700;color:rgba(255,255,255,.5);margin-top:14px;max-width:300px}
-@media (max-aspect-ratio:1/1){#home{justify-content:flex-start;padding-top:9vh}#home .tito{right:50%;transform:translateX(50%)}}
 
-#scelta h2{margin:4px 0 2px;font-size:clamp(24px,6.4vw,38px)}
+
+#scelta h2{margin:4px 0 2px;font-size:clamp(24px,calc(var(--vw)*6.4),38px)}
 #scelta .passo{color:var(--lime);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
-#griglia{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(560px,100%)}
-@media (min-aspect-ratio:13/10){#griglia{grid-template-columns:repeat(8,1fr);width:min(900px,100%)}}
+#griglia,#grigliaN{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(560px,100%)}
+.largo #griglia,.largo #grigliaN{grid-template-columns:repeat(8,1fr);width:min(900px,100%)}
 .sq{background:rgba(255,255,255,.06);border:2px solid transparent;border-radius:12px;padding:8px 2px 6px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
-.sq img{height:clamp(46px,12vw,66px);width:auto;pointer-events:none}
+.sq img{height:clamp(46px,calc(var(--vw)*12),66px);width:auto;pointer-events:none}
 .sq span{font-size:10px;font-weight:900;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .sq.mia{border-color:var(--lime);background:rgba(217,245,31,.14)}
 .sq.loro{border-color:var(--viola);background:rgba(75,6,252,.3)}
@@ -53,21 +60,70 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 #diff{display:flex;gap:6px}
 #diff button{background:rgba(255,255,255,.08);border-radius:99px;padding:7px 14px;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
 #diff button.on{background:var(--viola);box-shadow:0 0 0 2px var(--lime) inset}
-#scelta .indietro{position:absolute;left:12px;top:12px;background:none;font-size:13px;opacity:.7;padding:6px}
+.indietro{position:absolute;left:12px;top:12px;background:none;font-size:13px;opacity:.7;padding:6px}
+/* ---------- ingresso e dashboard della carriera ---------- */
+#nuovo{justify-content:flex-start;gap:8px;padding-top:12px}#nuovo>*{flex-shrink:0}#nuovo h2{margin:0;font-size:26px}#nuovo .passo{color:var(--lime);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+#nome{font:900 17px Lato;padding:9px 14px;border-radius:10px;border:2px solid var(--lime);background:rgba(255,255,255,.96);color:#111;text-align:center;width:min(300px,80%);user-select:text;-webkit-user-select:text;touch-action:auto}
+#hub{justify-content:flex-start;gap:8px;padding:8px 14px 12px}#hub>*{flex-shrink:0}
+.top{display:flex;align-items:center;gap:10px;width:min(900px,100%)}.top>img{height:30px;width:auto}.top .tit{font-family:Anton;font-size:18px;text-transform:uppercase;color:var(--lime)}
+.top .ic{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.1);font-size:18px}
+.prof{margin-left:auto;display:flex;align-items:center;gap:9px;text-align:right}.prof b{display:block;font-family:Anton;font-weight:400;font-size:16px;text-transform:uppercase;line-height:1.1}.prof span{font-size:11px;color:rgba(255,255,255,.75)}.prof img{height:36px;width:auto}
+.st{color:var(--lime);font-size:11px;letter-spacing:1px}.st s{text-decoration:none;opacity:.25}
+.carte{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:min(900px,100%)}
+.carta{position:relative;text-align:left;color:#fff;background:linear-gradient(160deg,rgba(13,23,51,.94),rgba(10,10,12,.9));border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:9px 12px 10px;min-height:106px;overflow:hidden}
+.carta h3{margin:0 0 5px;font-family:Anton;font-weight:400;font-size:20px;text-transform:uppercase;letter-spacing:.02em}
+.carta .et{position:absolute;right:0;top:0;font:900 10px Lato;letter-spacing:.1em;text-transform:uppercase;background:rgba(255,255,255,.12);padding:5px 10px;border-radius:0 0 0 10px}
+.carta.gioca{background:linear-gradient(135deg,var(--viola),#22087d 75%);border-color:var(--lime)}.carta.gioca .et{background:var(--lime);color:var(--ink)}
+.carta:active,.tess:active{filter:brightness(1.25)}
+#cClass .et{right:auto;left:0;border-radius:0 0 10px 0}#cClass table{margin-top:3px}
+.avv{display:flex;align-items:center;gap:11px}.avv img{height:52px;width:auto}.avv b{display:block;font-family:Anton;font-weight:400;font-size:18px;text-transform:uppercase;line-height:1.1}.avv i{display:block;font:700 11px Lato;color:rgba(255,255,255,.78);margin-top:2px}.avv i.vai{color:var(--lime)}
+table.mini{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:1px}table.mini th{font:900 9px Lato;color:rgba(255,255,255,.5);text-align:center;padding:0 4px 1px}table.mini td{padding:1.5px 4px;text-align:center}table.mini td:nth-child(2){text-align:left;white-space:nowrap}table.mini img{height:14px;width:auto;vertical-align:-3px;margin-right:5px}table.mini tr.io td{background:rgba(217,245,31,.16);color:var(--lime)}
+.tessere{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(900px,100%)}
+.tess{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px 6px;color:#fff;text-align:center}.tess b{display:block;font-family:Anton;font-weight:400;font-size:15px;text-transform:uppercase}.tess i{font:900 9px Lato;letter-spacing:.08em;color:var(--lime);text-transform:uppercase}.tess.off{opacity:.45}
+#pan{justify-content:flex-start;gap:8px;padding-top:12px}#pan>*{flex-shrink:0}#pan h2{margin:0;font-size:24px;color:var(--lime)}#panC{width:min(760px,100%)}
+table.tab{width:100%;border-collapse:collapse;font-size:12.5px}table.tab th{font:900 10px Lato;color:rgba(255,255,255,.55);padding:3px 5px}table.tab td{padding:4px 5px;text-align:center;border-top:1px solid rgba(255,255,255,.08)}table.tab td:nth-child(2){text-align:left}table.tab img{height:16px;width:auto;vertical-align:-3px;margin-right:6px}table.tab tr.io td{background:rgba(217,245,31,.16);color:var(--lime)}
+.sez{font:900 10px Lato;letter-spacing:.12em;text-transform:uppercase;color:var(--lime);margin:12px 0 5px}.vuoto{margin:0;font-size:13px;color:rgba(255,255,255,.8)}
+.ris2{display:grid;grid-template-columns:1fr 1fr;gap:2px 20px;font-size:12px}.ris2 div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(255,255,255,.07);padding:3px 0}.ris2 .io{color:var(--lime)}.ris2 b{white-space:nowrap}
+.dati{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.dati div{background:rgba(255,255,255,.07);border-radius:10px;padding:9px 6px;text-align:center}.dati b{display:block;font-family:Anton;font-weight:400;font-size:22px}.dati span{font:900 9px Lato;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.mon{font:900 13px Lato;background:rgba(217,245,31,.14);color:var(--lime);padding:7px 12px;border-radius:99px;white-space:nowrap}
+.borsa{font:900 11px Lato;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:6px}.borsa b{font-family:Anton;font-weight:400;font-size:22px;color:var(--lime);margin-left:7px;vertical-align:-3px;letter-spacing:0}
+.lista{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px}.lista .gioc{margin-top:0}
+.gioc{display:flex;align-items:center;gap:8px;width:100%;text-align:left;color:#fff;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:7px 10px;margin-top:5px;min-width:0}
+.gioc img{height:20px;width:auto}.gioc b{font:900 13px Lato;white-space:nowrap}.gioc span{flex:1;min-width:0;font:700 10.5px Lato;color:rgba(255,255,255,.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gioc em{font:900 12px Lato;color:var(--lime);white-space:nowrap}
+.gioc[disabled]{opacity:.4}.gioc.sel{opacity:1;border-color:var(--lime);background:rgba(217,245,31,.1)}.avviso{margin:4px 0 6px;color:var(--lime);font-weight:900;font-size:13px}
+#pan .seg{justify-content:flex-start}#esitoC{font:900 12px Lato;letter-spacing:.1em;text-transform:uppercase;color:var(--lime)}#esitoC:empty{display:none}
+.basso #home .btn.sec{margin-top:2px}
+/* ---------- prima della partita: le due formazioni ---------- */
+#pre{justify-content:flex-start;gap:8px;padding-top:14px}#pre>*{flex-shrink:0}#pre .passo{color:var(--lime);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.campi{display:flex;gap:12px;width:min(900px,100%);justify-content:center}.campo{flex:1;min-width:0;max-width:440px}
+.testa{display:flex;align-items:center;gap:8px;margin-bottom:5px;text-align:left}.testa img{height:32px;width:auto}.testa b{display:block;font-family:Anton;font-weight:400;font-size:16px;line-height:1.05;text-transform:uppercase}
+.testa .st{color:var(--lime);font-size:11px;letter-spacing:1px}.testa .st s{text-decoration:none;opacity:.25}.testa em{margin-left:auto;font:900 12px Lato;background:rgba(255,255,255,.1);padding:4px 9px;border-radius:99px}
+.erba{position:relative;height:clamp(200px,calc(var(--vh)*52),400px);border-radius:10px;overflow:hidden;background:repeating-linear-gradient(0deg,#2f8f3f 0 12.5%,#35a046 12.5% 25%);box-shadow:inset 0 0 0 2px rgba(255,255,255,.6)}
+.erba::before{content:'';position:absolute;left:24%;right:24%;bottom:0;height:17%;border:2px solid rgba(255,255,255,.6);border-bottom:0}
+.erba::after{content:'';position:absolute;left:38%;right:38%;top:-14%;height:28%;border:2px solid rgba(255,255,255,.6);border-radius:50%}
+.pl{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;width:70px;z-index:1}
+.pl b{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-family:Anton;font-weight:400;font-size:13px;box-shadow:0 0 0 2px rgba(255,255,255,.9),0 3px 6px rgba(0,0,0,.5)}
+.pl span{font:900 9.5px Lato;margin-top:3px;max-width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000,0 0 2px #000}
+.pl i{font:900 8px Lato;color:var(--lime);letter-spacing:.04em;text-shadow:0 1px 3px #000}
+.tatt{display:flex;flex-direction:column;gap:6px;align-items:center}.seg{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+.seg button{background:rgba(255,255,255,.08);border-radius:99px;padding:7px 13px;font-size:12px;font-weight:900;letter-spacing:.05em;text-transform:uppercase}.seg button.on{background:var(--viola);box-shadow:0 0 0 2px var(--lime) inset}
 
-#vs{justify-content:center;gap:4vw;flex-direction:row;background:radial-gradient(circle at 50% 50%,rgba(75,6,252,.85),rgba(10,10,12,.96) 70%)}
-#vs .lato{display:flex;flex-direction:column;align-items:center;gap:10px;width:38vw}
-#vs img{height:min(34vh,34vw,220px);filter:drop-shadow(0 10px 24px rgba(0,0,0,.6));animation:entra .5s cubic-bezier(.2,1.4,.4,1) both}
+.basso #pre{gap:5px;padding:8px 16px}.basso #pre .campi{margin-top:12px}.basso .erba{height:calc(var(--vh)*55);min-height:170px}.basso .pl b{width:20px;height:20px;font-size:10px}.basso .pl span{margin-top:1px;font-size:9px}.basso .pl i{font-size:7.5px}.basso .tatt{flex-direction:row;gap:14px}.basso #pre .btn{min-width:0;padding:7px 46px;font-size:18px}.basso .testa{margin-bottom:3px}.basso .testa img{height:24px}.basso .testa b{font-size:14px}
+#ment{position:absolute;left:50%;bottom:98px;transform:translateX(-50%);pointer-events:auto;font:900 10px Lato;letter-spacing:.08em;text-transform:uppercase;color:var(--lime);background:rgba(10,10,12,.72);padding:5px 12px;border-radius:99px;z-index:6}
+
+#vs{justify-content:center;gap:calc(var(--vw)*4);flex-direction:row;background:radial-gradient(circle at 50% 50%,rgba(75,6,252,.85),rgba(10,10,12,.96) 70%)}
+#vs .lato{display:flex;flex-direction:column;align-items:center;gap:10px;width:calc(var(--vw)*38)}
+#vs img{height:min(calc(var(--vh)*34),calc(var(--vw)*34),220px);filter:drop-shadow(0 10px 24px rgba(0,0,0,.6));animation:entra .5s cubic-bezier(.2,1.4,.4,1) both}
 #vs .lato:last-child img{animation-delay:.12s}
-#vs .lato b{font-family:Anton;font-weight:400;font-size:clamp(18px,5vw,34px);text-transform:uppercase;text-align:center}
-#vs .x{font-family:Anton;font-size:clamp(34px,9vw,70px);color:var(--lime)}
+#vs .lato b{font-family:Anton;font-weight:400;font-size:clamp(18px,calc(var(--vw)*5),34px);text-transform:uppercase;text-align:center}
+#vs .x{font-family:Anton;font-size:clamp(34px,calc(var(--vw)*9),70px);color:var(--lime)}
 @keyframes via{to{opacity:0;visibility:hidden}}
 @keyframes entra{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
 
 #fine{justify-content:flex-start;gap:8px;text-align:center}#fine>*{flex-shrink:0}#fine>:first-child{margin-top:auto}#fine>:last-child{margin-bottom:auto}
-#fine .esito{font-size:clamp(44px,12vw,92px);color:var(--lime)}
-#fine .ris{display:flex;align-items:center;gap:14px;font-family:Anton;font-size:clamp(44px,11vw,80px)}
-#fine .ris img{height:clamp(58px,15vw,100px)}
+#fine .esito{font-size:clamp(44px,calc(var(--vw)*12),92px);color:var(--lime)}
+#fine .ris{display:flex;align-items:center;gap:14px;font-family:Anton;font-size:clamp(44px,calc(var(--vw)*11),80px)}
+#fine .ris img{height:clamp(58px,calc(var(--vw)*15),100px)}
 #fine .marc{font-size:12px;color:rgba(255,255,255,.8);min-height:16px;max-width:420px;line-height:1.5}
 #fine table{border-collapse:collapse;margin:6px 0 10px;font-size:13px}
 #fine td{padding:3px 12px}
@@ -77,7 +133,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 #pagL{display:flex;gap:18px;justify-content:center;text-align:left;padding:4px 0 8px}#pagL h4{margin:0 0 4px;font-family:Anton;font-weight:400;letter-spacing:.08em;color:var(--lime)}#pagL p{margin:2px 0;white-space:nowrap}#pagL b{display:inline-block;width:28px}#pagL u{text-decoration:none;color:var(--lime);font-size:10px;text-transform:uppercase;margin-left:3px}
 #pagL i{display:inline-block;width:7px;height:10px;border-radius:2px;margin-left:5px;vertical-align:-1px}#pagL i.g{background:#FFD21F}#pagL i.r{background:#E5262B}
 #fine .az{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-#fine .tito{height:min(22vh,170px);pointer-events:none}
+#fine .tito{height:min(calc(var(--vh)*22),170px);pointer-events:none}
 
 /* ---------- HUD ---------- */
 #hud{position:fixed;inset:0;pointer-events:none}
@@ -97,8 +153,8 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 #pausa{right:10px}#audio{right:54px}
 #banner{position:absolute;left:0;right:0;top:27%;text-align:center;pointer-events:none;opacity:0;transition:opacity .25s}
 #banner.su{opacity:1}
-#banner .t{font-family:Anton;font-size:clamp(46px,13vw,120px);color:var(--lime);text-shadow:0 5px 0 var(--viola),0 10px 30px rgba(0,0,0,.6);text-transform:uppercase;letter-spacing:.03em}
-#banner .s{font-family:Anton;font-size:clamp(17px,4.4vw,30px);text-transform:uppercase;background:var(--ink);display:inline-block;padding:4px 14px;border-radius:8px;margin-top:6px}
+#banner .t{font-family:Anton;font-size:clamp(46px,calc(var(--vw)*13),120px);color:var(--lime);text-shadow:0 5px 0 var(--viola),0 10px 30px rgba(0,0,0,.6);text-transform:uppercase;letter-spacing:.03em}
+#banner .s{font-family:Anton;font-size:clamp(17px,calc(var(--vw)*4.4),30px);text-transform:uppercase;background:var(--ink);display:inline-block;padding:4px 14px;border-radius:8px;margin-top:6px}
 #banner .s:empty{display:none}
 #banner[data-c=g] .s{background:#FFD21F;color:#111}
 #banner[data-c=r] .s{background:#E5262B;color:#fff}
@@ -114,15 +170,12 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 #bB{width:86px;height:86px;right:0;bottom:36px;background:var(--lime);color:var(--ink);font-size:15px!important}
 #bA{width:72px;height:72px;right:92px;bottom:0;background:var(--viola)}
 #bC{width:64px;height:64px;right:98px;bottom:86px;background:rgba(10,10,12,.7)}
+#bD{width:62px;height:62px;right:12px;bottom:134px;background:#fff;color:var(--ink)}
 #pow{position:absolute;right:6px;bottom:130px;width:74px;height:9px;border-radius:9px;background:rgba(10,10,12,.7);overflow:hidden;opacity:0}
 #pow i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--lime) 70%,#ff4d4d)}
-#ruota{animation:via 1s 6s forwards;position:absolute;left:50%;top:92px;transform:translateX(-50%);font-size:11px;background:rgba(10,10,12,.6);padding:4px 10px;border-radius:99px;white-space:nowrap;color:rgba(255,255,255,.85)}
-@media (min-aspect-ratio:1/1){#ruota{display:none}}
-@media (max-aspect-ratio:1/1){#radar{left:10px;top:60px;bottom:auto;transform:none;width:104px;height:68px}#pausa,#audio{top:60px}#chi{top:62px}#en{top:86px}#ruota{top:96px}}
-@media (max-height:480px){#fine{gap:3px;padding:8px 16px}#fine .esito{font-size:34px}#fine .ris{font-size:42px}#fine .ris img{height:54px}#fine table{margin:2px 0 6px}
-  #fine .tito{position:absolute;right:5vw;bottom:0;height:46vh}#stop{gap:7px}#stop .h{font-size:30px}#scelta{padding-top:8px}#scelta h2{font-size:24px;margin:0}#scelta .passo{margin-bottom:6px}
-  .sq{padding:5px 2px 4px}.sq img{height:44px}#barra{flex-direction:row;justify-content:center;margin-top:8px}}
-@media (max-height:430px){#home{gap:5px;padding:8px 16px}#home .tiles{margin-top:8px}#home .nota{display:none}#home .tile{padding:6px}.btn{padding:10px 24px}#home .sub{margin-bottom:4px}}
+
+.basso #fine{gap:3px;padding:8px 16px}.basso #fine .esito{font-size:34px}.basso #fine .ris{font-size:42px}.basso #fine .ris img{height:54px}.basso #fine table{margin:2px 0 6px}.basso #fine .tito{position:absolute;right:calc(var(--vw)*5);bottom:0;height:calc(var(--vh)*46)}.basso #stop{gap:7px}.basso #stop .h{font-size:30px}.basso #scelta{padding-top:8px}.basso #scelta h2{font-size:24px;margin:0}.basso #scelta .passo{margin-bottom:6px}.basso .sq{padding:5px 2px 4px}.basso .sq img{height:44px}.basso #barra{flex-direction:row;justify-content:center;margin-top:8px}
+.bassissimo #home{gap:5px;padding:8px 16px}.bassissimo #home .tiles{margin-top:8px}.bassissimo #home .nota{display:none}.bassissimo #home .tile{padding:6px}.bassissimo .btn{padding:10px 24px}.bassissimo #home .sub{margin-bottom:4px}
 #stop{background:rgba(10,10,12,.82);justify-content:center;gap:12px}
 #stop .h{font-size:44px;color:var(--lime)}
 #stop p{margin:0 0 6px;font-size:12px;color:rgba(255,255,255,.7);text-align:center;line-height:1.7;max-width:330px}
@@ -134,29 +187,53 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 
 <div id="hud" class="nas">
   <div id="sb"><img id="sbH" alt=""><b id="sbHn"></b><span id="sbS">0 - 0</span><b id="sbAn"></b><img id="sbA" alt=""><i id="sbT">00:00</i></div>
+  <button id="ment">Equilibrata</button>
   <div id="chi"></div>
   <div id="en"><i></i></div>
-  <div id="ruota">Ruota il telefono per la visuale TV</div>
   <button id="audio" aria-label="Audio">♪</button>
   <button id="pausa" aria-label="Pausa">II</button>
   <div id="banner"><div class="t"></div><div class="s"></div></div>
   <canvas id="radar" width="256" height="168"></canvas>
   <div id="stickZona"><div id="stick"><i></i></div></div>
   <div id="pow"><i></i></div>
-  <div id="tasti"><button id="bC">Scatto</button><button id="bA">Passa</button><button id="bB">Tira</button></div>
+  <div id="tasti"><button id="bC">Scatto</button><button id="bD" class="nas">Cross</button><button id="bA">Passa</button><button id="bB">Tira</button></div>
 </div>
 
 <div id="home" class="scr nas">
   <img class="corona" src="img/corona-lime.png" alt="Fantatitano">
   <div class="h sub">La Partita <span>PROTOTIPO</span></div>
-  <button class="btn" id="vai">Amichevole</button>
-  <div class="tiles">
-    <div class="tile"><span class="h">Carriera</span><i>IN ARRIVO</i></div>
-    <div class="tile"><span class="h">Coppa Titano</span><i>IN ARRIVO</i></div>
-    <div class="tile"><span class="h">La mia rosa</span><i>IN ARRIVO</i></div>
-  </div>
-  <div class="nota">16 squadre, stemmi e rose dal progetto Fantatitano</div>
+  <button class="btn" id="carr">Inizia la carriera</button>
+  <button class="btn sec" id="vai">Amichevole</button>
+  <div class="nota">Campionato a 16 squadre e Coppa Titano, con stemmi e rose dal progetto Fantatitano</div>
   <img class="tito" src="img/saluta.webp" alt="Tito">
+</div>
+
+<div id="nuovo" class="scr nas">
+  <button class="indietro" id="nuovoInd">‹ Indietro</button>
+  <h2 class="h">Benvenuto, Mister</h2>
+  <input id="nome" maxlength="18" placeholder="Il tuo nome" autocomplete="off" autocapitalize="words" enterkeyhint="done">
+  <div class="passo">Scegli la tua squadra</div>
+  <div id="grigliaN"></div>
+  <button class="btn" id="inizia" disabled>Inizia la carriera</button>
+</div>
+
+<div id="hub" class="scr nas">
+  <div class="top"><img src="img/corona-lime.png" alt="Fantatitano"><span class="tit">La Partita</span><button class="ic" id="hImp" aria-label="Impostazioni">⚙</button><span class="mon" id="hMon"></span>
+    <div class="prof"><div><b id="hNome"></b><span id="hClub"></span></div><img id="hStemma" alt=""></div></div>
+  <div class="carte">
+    <button class="carta gioca" id="cCamp"></button><button class="carta" id="cClass"></button>
+    <button class="carta" id="cCoppa"></button><button class="carta" id="cAmic"><span class="et">Partita libera</span><h3>Amichevole</h3><div class="avv"><div><i>Due squadre a scelta, senza effetti sulla carriera</i></div></div></button>
+  </div>
+  <div class="tessere">
+    <button class="tess" id="tRosa"><b>La mia rosa</b><i>Formazione e tattica</i></button><button class="tess" id="tClub"><b>Il mio club</b><i>Numeri e trofei</i></button>
+    <button class="tess" id="hCoppa"><b>Tabellone</b><i>Coppa Titano</i></button><button class="tess" id="tMerc"><b>Trasferimenti</b><i>Mercato</i></button>
+  </div>
+</div>
+
+<div id="pan" class="scr nas">
+  <button class="indietro" id="panInd">‹ Indietro</button>
+  <h2 class="h" id="panT"></h2>
+  <div id="panC"></div>
 </div>
 
 <div id="scelta" class="scr nas">
@@ -166,8 +243,16 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
   <div id="griglia"></div>
   <div id="barra">
     <div id="diff"><button data-d="facile">Facile</button><button data-d="normale" class="on">Normale</button><button data-d="difficile">Difficile</button></div>
-    <button class="btn" id="inizio" disabled>Calcio d'inizio</button>
+    <button class="btn" id="inizio" disabled>Avanti</button>
   </div>
+</div>
+
+<div id="pre" class="scr nas">
+  <button class="indietro" id="preInd">‹ Squadre</button>
+  <div class="passo" id="preT">Amichevole</div>
+  <div class="campi"><div class="campo" id="campoH"></div><div class="campo" id="campoA"></div></div>
+  <div class="tatt"><div class="seg" id="segForm"></div><div class="seg" id="segMent"></div></div>
+  <button class="btn" id="gioca">Gioca</button>
 </div>
 
 <div id="vs" class="scr nas">
@@ -177,13 +262,15 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 <div id="stop" class="scr nas">
   <div class="h">Pausa</div>
   <p>Levetta: muovi il giocatore<br><b>Passa</b> · <b>Tira</b> (tieni premuto per la potenza) · <b>Scatto</b><br>
-  Senza palla: <b>Cambia</b> giocatore · <b>Scivolata</b> (da dietro è fallo)<br>Tastiera: frecce, X passa, Spazio tira, Shift scatto</p>
+  <b>Cross</b>: traversone in area, o lancio lungo se in area non c'è nessuno<br>Senza palla: <b>Cambia</b> giocatore · <b>Scivolata</b> (da dietro è fallo)<br>Tastiera: frecce, X passa, C cross, Spazio tira, Shift scatto<br>In campo: tocca la mentalità sopra la mappa per cambiarla</p>
+  <div class="tatt"><div class="seg" id="segFormP"></div><div class="seg" id="segMentP"></div></div>
   <button class="btn" id="riprendi">Riprendi</button>
   <button class="btn sec" id="esci">Esci dalla partita</button>
 </div>
 
 <div id="fine" class="scr nas">
   <div class="h esito" id="esito"></div>
+  <div id="esitoC"></div>
   <div class="ris"><img id="fH" alt=""><span id="fS"></span><img id="fA" alt=""></div>
   <div class="marc" id="marc"></div>
   <div id="cart"></div>
@@ -191,7 +278,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
   <div id="mvp"></div>
   <details id="pag"><summary>Pagelle</summary><div id="pagL"></div></details>
   <img class="tito" id="fTito" alt="Tito">
-  <div class="az"><button class="btn" id="rivincita">Rivincita</button><button class="btn sec" id="cambia">Cambia squadre</button></div>
+  <div class="az"><button class="btn nas" id="continua">Continua</button><button class="btn" id="rivincita">Rivincita</button><button class="btn sec" id="cambia">Cambia squadre</button></div>
 </div>
 
 <div id="carica">CARICAMENTO…</div>

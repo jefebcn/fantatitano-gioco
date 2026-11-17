@@ -34,13 +34,19 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 | `scripts/calciatore.mjs` | Alleggerisce il modello tenendo conto di UV e normali |
 | `scripts/maschera-divisa.py` | Dice, per ogni punto della texture del corpo, se è pelle, maglia, pantaloncini, calzettoni, scarpe |
 | `scripts/animazioni.mjs` | Porta le clip Mixamo sullo scheletro del calciatore; in cima c'è l'elenco `CLIP` |
-| `scripts/simula.cjs` | Gioca partite simulate e stampa gol, tiri, possesso, inserimenti e scivolate: serve per tarare l'IA (richiede Playwright). Stampa anche falli, fuorigioco, rigori e cartellini |
+| `src/carriera.js` | La logica della carriera, senza schermate: calendario, risultati simulati, classifica, coppa, salvataggio |
+| `scripts/prova-carriera.mjs` | Prove della logica della carriera: `npm run prova` |
+| `scripts/simula.cjs` | Gioca partite simulate e stampa gol, tiri, possesso, inserimenti e scivolate: serve per tarare l'IA (richiede Playwright). Stampa anche falli, fuorigioco, rigori, cartellini, angoli, cross e colpi di testa |
 | `scripts/analizza.mjs` | Misura le clip di un pacchetto Mixamo, per scegliere quali usare e dove ritagliarle |
 
 ## Cosa c'è
 
-- Partita 11 contro 11 di 4 minuti, tre difficoltà, visuale TV in orizzontale e da dietro in verticale.
-- Comandi touch (levetta, Passa/Cambia, Tira/Scivolata, Scatto) e tastiera (frecce, X, Spazio, Shift).
+- Partita 11 contro 11 di 4 minuti, tre difficoltà, visuale TV.
+- **Solo orizzontale** (`resize`): se lo schermo è in verticale, anche col blocco della rotazione, il gioco si
+  disegna ruotato di lato e i tocchi vengono riportati nel verso giusto. In CSS si usano `--vw` e `--vh`
+  (misure del gioco) al posto di `vw` e `vh`, e le classi `largo`, `basso`, `bassissimo` al posto delle
+  regole `@media`. `manifest.webmanifest` chiede l'orizzontale quando il gioco è installato.
+- Comandi touch (levetta, Passa/Cambia, Cross, Tira/Scivolata, Scatto) e tastiera (frecce, X, C, Spazio, Shift).
 - Gol, rimesse, angoli, rimesse dal fondo, pali e traverse.
 - **Falli e cartellini** (`foul`, `card`, numeri in `FOUL`): fallo sul contrasto in piedi o in
   scivolata (molto più probabile da dietro) e per contatto prolungato. Giallo, secondo giallo e
@@ -52,6 +58,35 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 - **Fuorigioco** (`offsideLine`, `offside`): si guarda la posizione al momento del passaggio, non
   vale su rimessa, angolo e rimessa dal fondo. I compagni restano in linea coi difensori e scattano
   col passaggio. Tra due squadre guidate dall'IA capita di rado, perché le difese stanno basse.
+- **Gioco aereo** (`cross`, `header`, `corner`, numeri in `AIR`): il tasto **Cross** (C sulla
+  tastiera) fa un traversone verso il compagno in area o, se in area non c'è nessuno, un lancio lungo nella
+  direzione della levetta; l'IA crossa da sola dalla fascia. Sul pallone alto
+  chi ci arriva colpisce di testa: in porta se è a tiro, via dall'area se difende, di sponda negli
+  altri casi; i tiri forti passano. Sul calcio d'angolo cinque attaccanti entrano in area, ognuno con
+  un marcatore, e chi batte crossa. Il portiere esce sui traversoni che scendono vicino alla porta e
+  alcune sue respinte finiscono in angolo. Il colpo di testa usa l'animazione `testa`.
+- **Carriera** (`src/carriera.js`, schermate in `drawHub` e nei pannelli `pan…`): al primo avvio si
+  scelgono nome e squadra. La dashboard mostra la prossima partita di campionato, la classifica, la
+  Coppa Titano, l'amichevole, la rosa, i numeri del club e il tabellone di coppa.
+  - **Campionato**: 16 squadre, 15 giornate a girone unico; le altre sette partite di ogni giornata
+    sono simulate secondo la forza delle squadre. A fine stagione se ne comincia un'altra.
+  - **Coppa Titano**: eliminazione diretta dagli ottavi, partita secca; in parità decidono i rigori,
+    per ora simulati e non giocati.
+  - **Monete e mercato** (`PREMI`, `prezzo`, `scambio`, pannello `panMercato`): le monete arrivano da
+    risultati, gol, turni di coppa e trofei. Si prende un titolare di un'altra squadra cedendo in cambio
+    un proprio giocatore dello stesso ruolo e pagando la differenza (chi si cede vale il 70% del suo
+    prezzo). Le rose cambiate stanno in `rose` dentro la carriera e valgono anche nelle amichevoli. La
+    forza delle squadre nei risultati simulati non cambia con gli scambi.
+  - Tutto è salvato sul dispositivo (`localStorage`, chiave `fantatitano-carriera`): non c'è ancora il
+    collegamento all'account dell'app. Uscire a metà partita non registra il risultato.
+  - Nel gioco la squadra dell'utente attacca sempre da sinistra a destra, anche in trasferta.
+- **Prima della partita** (`showPre`, `drawSide`): dopo la scelta delle squadre si vedono le due formazioni
+  sul campo, con numero, nome, compito e valore di ogni giocatore (da 55 a 88, confrontato con quelli
+  del suo ruolo), stelle della squadra e modulo.
+- **Tattica** (`FORMS`, `MENT`, `setTactics`): quattro moduli (4-3-3, 4-4-2, 3-5-2, 4-2-3-1) e tre
+  mentalità. Si scelgono prima della partita e dalla pausa; in campo un tocco sulla scritta sopra la
+  mappa cambia mentalità. Ogni avversaria ha il suo modulo e nel finale attacca se è sotto e si copre
+  se è sopra. Le scelte restano salvate sul dispositivo (`localStorage`).
 - **Qualità e fatica**: chi vale di più (`q`) sbaglia meno tiri e passaggi (`qf`); lo scatto consuma
   energia (`TIRE`, barretta sotto il nome) e chi è stanco scatta meno forte.
 - **Pagelle** a fine partita (`vote`, pesi in `VOTE`): voto da 3 a 10 da gol, assist, passaggi,
@@ -94,7 +129,8 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
    nella versione a pagamento.
 3. **Collegamento all'app.** Rewrite `/gioco` nel `vercel.json` di `fantasyfootballrsm` verso
    questo deploy, poi login condiviso e tabelle Supabase per carriera e rosa.
-4. **Carriera, Coppa Titano, La mia rosa**: nel menu sono solo segnaposto.
+4. **Sfide e riserve**: mancano gli obiettivi, le riserve (ogni squadra ha solo gli undici titolari, quindi
+   il mercato è a scambio) e i rigori di coppa giocati davvero. Le altre squadre non fanno mercato tra loro.
 
 ## Cose da sapere
 
@@ -103,8 +139,8 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
   rapporto in `npm run modello` (oggi 0.36 del corpo originale) e rigenerare.
 - **Livello degli avversari** tarato solo con partite simulate (`DIFF` in cima a `src/game.js`):
   `node scripts/simula.cjs 64` dopo `npm run build`. Con la squadra di casa che gioca da sola, oggi
-  finisce in media 2,7-0,7 a facile, 1,4-1,0 a normale, 0,6-1,3 a difficile, con uno o due falli a
-  partita e un rigore ogni cinque partite circa.
+  finisce in media 2,4-0,5 a facile, 1,0-0,8 a normale, 0,6-1,2 a difficile, con uno o due falli,
+  due cross e meno di un angolo a partita, e un rigore ogni cinque partite circa.
 - **Colori delle maglie** da `src/data.js` dell'app; il secondo colore è scelto a occhio dagli
   stemmi (`scripts/genera-dati.py`). Qualche divisa non combacia col suo stemma.
 - **Nomi dei calciatori**: sono quelli del listone dell'app. Verificare che l'accordo con
