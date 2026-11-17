@@ -349,9 +349,11 @@ function clearMatch() {
   if (MODEL) { for (const m of MODEL.divise.values()) { m.map.dispose(); m.dispose(); } MODEL.divise.clear(); }
   G.teams = [];
 }
+// In trasferta la prima maglia è dell'avversaria: le divise si scelgono a parti invertite
+const kitsFor = (mia, loro, fuori) => { if (!fuori) return pickKits(mia, loro); const [a, b, c, d] = pickKits(loro, mia); return [b, a, d, c]; };
 function newMatch(home, away) {
   clearMatch();
-  const [kh, ka, g1, g2] = pickKits(home, away);
+  const fuori = !!(G.comp && G.comp.fuori), [kh, ka, g1, g2] = kitsFor(home, away, fuori);
   const mk = (club, side, human, kit, gkit) => {
     const t = { club, side, human, score: 0, players: [], off: [], idx: side > 0 ? 0 : 1, chaser: null, cover: null, ment: 0 };
     club.xi.forEach(([name, role, num, q], i) => {
@@ -364,6 +366,7 @@ function newMatch(home, away) {
   };
   G.teams = [mk(home, 1, true, kh, g1), mk(away, -1, false, ka, g2)];
   G.teams[0].opp = G.teams[1]; G.teams[1].opp = G.teams[0];
+  if (fuori) { G.teams[0].side = -1; G.teams[1].side = 1; } // in trasferta si comincia attaccando verso sinistra
   G.ball = { x: 0, y: BR, z: 0, vx: 0, vy: 0, vz: 0, owner: null };
   ballMesh.visible = ballShadow.visible = true;
   G.clock = 0; G.half = 1; G.goals = []; G.cards = []; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penId = -1; G.penWait = 0; G.lastPass = G.shooter = null; G.stats = { shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0], fouls: [0, 0], offs: [0, 0], pens: [0, 0], yel: [0, 0], red: [0, 0], crosses: [0, 0], heads: [0, 0], headGoals: [0, 0], corners: [0, 0] }; G.ctrl = null; G.charge = -1;
@@ -766,7 +769,7 @@ function step(dt) {
       }
       G.fk = null;
     }
-  } else if (G.state === 'half') { if (G.stateT > 2.6) { G.half = 2; G.clock = 0; for (const p of all()) p.en = Math.min(1, p.en + TIRE.half); kickoff(G.teams[1]); } }
+  } else if (G.state === 'half') { if (G.stateT > 2.6) { G.half = 2; G.clock = 0; for (const p of all()) p.en = Math.min(1, p.en + TIRE.half); for (const t of G.teams) t.side = -t.side; kickoff(G.teams[1]); } } // cambio di campo
   else if (G.state === 'full') { if (G.stateT > 2 && !G.shown) { G.shown = true; showEnd(); } }
 
   if (G.penWait > 0) { // rigore dell'utente: tutti fermi finché non tira; se aspetta troppo parte da solo
@@ -1179,7 +1182,7 @@ function drawSide(el, c, formName, kit, gk) {
     + c.xi.map(([name, role, num, q], i) => { const [x, z] = f.pos[i], k = i ? kit : gk; return `<div class="pl" style="left:${(50 + z / 23 * 37).toFixed(1)}%;top:${(i ? 67 - (x + 35) / 46 * 54 : 88).toFixed(1)}%"><b style="background:${k.shirt};color:${k.ink}">${num}</b><span>${esc(name)}</span><i>${RUOLO[f.roles[i]]} ${ovr(role, q)}</i></div>`; }).join('') + '</div>';
 }
 function showPre() {
-  const c = G.comp, rosa = !!c && c.tipo === 'rosa', H = club(sel.mia), A = club(sel.loro), [kh, ka, g1, g2] = pickKits(H, A);
+  const c = G.comp, rosa = !!c && c.tipo === 'rosa', H = club(sel.mia), A = club(sel.loro), [kh, ka, g1, g2] = kitsFor(H, A, !!(c && c.fuori));
   drawSide($('#campoH'), H, sel.form, kh, g1);
   if (rosa) $('#campoA').innerHTML = `<table class="tab"><tr><th>N</th><th>Giocatore</th><th>Ruolo</th><th>Valore</th></tr>${H.xi.map(([name, role, num, q]) => `<tr><td>${num}</td><td>${esc(name)}</td><td>${RUOLO[role]}</td><td>${ovr(role, q)}</td></tr>`).join('')}</table>`;
   else drawSide($('#campoA'), A, aiForm(A), ka, g2);
@@ -1279,8 +1282,8 @@ function buildMenu() {
   $('#nuovoInd').onclick = () => show('#home');
   $('#inizia').onclick = () => { K = CAR.nuova(CLUBS, $('#nome').value.trim() || 'Mister', mia); CAR.applica(K, CLUBS); CAR.salva(K); casa(); };
   // dashboard
-  const gioca = (tipo, avv, titolo) => { sel.mia = K.club; sel.loro = avv; G.comp = { tipo, titolo }; showPre(); };
-  $('#cCamp').onclick = () => { const p = CAR.prossima(K); if (p) gioca('camp', p.avv, `Campionato · giornata ${p.giornata} di ${p.totale} · ${p.inCasa ? 'in casa' : 'in trasferta'}`); else { CAR.nuovaStagione(K, CLUBS); CAR.salva(K); drawHub(); } };
+  const gioca = (tipo, avv, titolo, fuori) => { sel.mia = K.club; sel.loro = avv; G.comp = { tipo, titolo, fuori: !!fuori }; showPre(); };
+  $('#cCamp').onclick = () => { const p = CAR.prossima(K); if (p) gioca('camp', p.avv, `Campionato · giornata ${p.giornata} di ${p.totale} · ${p.inCasa ? 'in casa' : 'in trasferta'}`, !p.inCasa); else { CAR.nuovaStagione(K, CLUBS); CAR.salva(K); drawHub(); } };
   $('#cCoppa').onclick = () => { const p = CAR.coppaProssima(K); if (p) gioca('coppa', p.avv, `Coppa Titano · ${p.nome.toLowerCase()}`); else panCoppa(); };
   $('#cClass').onclick = panClassifica; $('#tClub').onclick = panClub; $('#tMerc').onclick = () => { mPreso = null; panMercato(); }; $('#hImp').onclick = () => { armato = false; panImp(); }; $('#hCoppa').onclick = panCoppa;
   $('#tRosa').onclick = () => { sel.mia = K.club; sel.loro = CLUBS.find((c) => c.id !== K.club).id; G.comp = { tipo: 'rosa' }; showPre(); };
