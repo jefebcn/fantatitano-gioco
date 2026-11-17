@@ -420,7 +420,7 @@ function cross(p, m) {
   const tx = clamp((m.x + m.vx * .5) * s + 1, -HL, HL - 2.5) * s + rnd(-1, 1) * e, tz = m.z + m.vz * .5 + rnd(-1, 1) * e;
   const dx = tx - p.x, dz = tz - p.z, d = hyp(dx, dz) || 1, T = clamp(d / 18, .75, 1.35), v = d * .22 / (1 - Math.exp(-.22 * T));
   kick(p, dx / d * v, (1.95 - BR + .5 * GRAV * T * T) / T, dz / d * v, 'tiro');
-  G.intended = m; m.run = null; p.s.pa++; G.lastPass = p; G.stats.crosses[p.team.idx]++; if (p.team.human) setCtrl(m);
+  G.intended = m; m.run = null; p.s.pa++; G.lastPass = p; if (m.x * s > HL - 19) G.stats.crosses[p.team.idx]++; if (p.team.human) setCtrl(m);
 }
 // Colpo di testa: in porta se si è a tiro, via dall'area se si difende, altrimenti di sponda a un compagno
 function header(p) {
@@ -495,9 +495,19 @@ function pressA() {
   if (G.state !== 'play' || G.auto || G.penWait > 0) return; const c = G.ctrl, b = G.ball; if (!c) return;
   if (b.owner === c) {
     const [ix, iz] = inputWorld(), l = hyp(ix, iz);
-    if (canCross(c) && (l < .3 || iz * c.z < 0 || ix * c.team.side > .3)) { const t = crossTarget(c); if (t) return cross(c, t); } // dalla fascia, verso l'area: traversone
     const m = l > .3 ? bestPass(c, ix / l, iz / l) || bestPass(c, Math.sin(c.dir), Math.cos(c.dir)) : bestPass(c, Math.sin(c.dir), Math.cos(c.dir)) || bestPass(c); if (m) pass(c, m);
   } else switchCtrl();
+}
+// Tasto Cross: traversone se c'è un compagno in area, altrimenti lancio lungo nella direzione della levetta
+function pressD() {
+  if (G.state !== 'play' || G.auto || G.penWait > 0) return; const c = G.ctrl, b = G.ball; if (!c || b.owner !== c) return;
+  const s = c.team.side, [jx, jz] = inputWorld(), l = hyp(jx, jz), ix = l > .3 ? jx / l : Math.sin(c.dir), iz = l > .3 ? jz / l : Math.cos(c.dir);
+  let m = c.x * s > HL - 34 ? crossTarget(c) : null, bs = -1e9;
+  if (!m) for (const o of c.team.players) {
+    if (o === c || o.i === 0) continue; const dx = o.x - c.x, dz = o.z - c.z, d = hyp(dx, dz), dot = (dx * ix + dz * iz) / (d || 1); if (d < 13 || d > 52 || dot < .5) continue;
+    const sc = dot * 30 + Math.min(openness(o), 6) - Math.abs(d - 28) * .2; if (sc > bs) { bs = sc; m = o; }
+  }
+  if (m) cross(c, m);
 }
 function pressB(down) {
   if (G.state !== 'play' || G.auto) { G.charge = -1; return; } const c = G.ctrl, b = G.ball; if (!c) return;
@@ -1042,7 +1052,7 @@ function hud() {
   if (txt !== lastClock) { $('#sbT').textContent = txt; lastClock = txt; }
   if (G.ctrl !== lastChi) { lastChi = G.ctrl; $('#chi').innerHTML = G.ctrl ? `<i>${G.ctrl.num}</i>${G.ctrl.name.replace(/[<>&]/g, '')}` : ''; }
   const att = !!(G.ball && G.ctrl && G.ball.owner === G.ctrl);
-  if (att !== lastAtt) { lastAtt = att; $('#bA').textContent = att ? 'Passa' : 'Cambia'; $('#bB').textContent = att ? 'Tira' : 'Scivolata'; $('#bB').style.fontSize = att ? '' : '12px'; }
+  if (att !== lastAtt) { lastAtt = att; $('#bA').textContent = att ? 'Passa' : 'Cambia'; $('#bB').textContent = att ? 'Tira' : 'Scivolata'; $('#bB').style.fontSize = att ? '' : '12px'; $('#bD').classList.toggle('nas', !att); }
   if (G.ctrl) $('#en').firstElementChild.style.width = `${G.ctrl.en * 100}%`;
   const pw = $('#pow'); pw.style.opacity = G.charge >= 0 ? 1 : 0; if (G.charge >= 0) pw.firstElementChild.style.width = `${clamp(G.charge / .8, 0, 1) * 100}%`;
 }
@@ -1100,14 +1110,14 @@ function bindInput() {
     el.addEventListener('pointerdown', (e) => { e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('giu'); down(); });
     const u = () => { el.classList.remove('giu'); up && up(); }; el.addEventListener('pointerup', u); el.addEventListener('pointercancel', u);
   };
-  btn('#bA', pressA); btn('#bB', () => pressB(true), () => pressB(false)); btn('#bC', () => { G.in.sprint = true; }, () => { G.in.sprint = false; });
+  btn('#bA', pressA); btn('#bD', pressD); btn('#bB', () => pressB(true), () => pressB(false)); btn('#bC', () => { G.in.sprint = true; }, () => { G.in.sprint = false; });
   const keys = new Set();
   const axis = () => { G.in.jx = (keys.has('ArrowRight') || keys.has('d') ? 1 : 0) - (keys.has('ArrowLeft') || keys.has('a') ? 1 : 0); G.in.jy = (keys.has('ArrowDown') || keys.has('s') ? 1 : 0) - (keys.has('ArrowUp') || keys.has('w') ? 1 : 0); };
   window.addEventListener('keydown', (e) => {
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; if (e.repeat) return;
     if (k.startsWith('Arrow') || k === ' ') e.preventDefault();
     keys.add(k); axis();
-    if (k === 'x' || k === 'k') pressA(); else if (k === ' ' || k === 'j') pressB(true); else if (k === 'Shift' || k === 'l') G.in.sprint = true; else if (k === 'p' || k === 'Escape') pause(!G.paused);
+    if (k === 'x' || k === 'k') pressA(); else if (k === 'c' || k === 'i') pressD(); else if (k === ' ' || k === 'j') pressB(true); else if (k === 'Shift' || k === 'l') G.in.sprint = true; else if (k === 'p' || k === 'Escape') pause(!G.paused);
   });
   window.addEventListener('keyup', (e) => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; keys.delete(k); axis(); if (k === ' ' || k === 'j') pressB(false); else if (k === 'Shift' || k === 'l') G.in.sprint = false; });
   window.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -1199,6 +1209,6 @@ async function boot() {
   Promise.all(CLUBS.map((c) => loadImg(img(c.id + '-mini')).then((i) => { CREST[c.id] = i; }))).then(() => { if (G.teams.length) paintBoards(G.teams[0].club, G.teams[1].club, CREST); });
   $('#carica').remove(); show('#home'); requestAnimationFrame(loop);
 }
-window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, model: () => MODEL };
+window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, model: () => MODEL };
 boot();
 })();

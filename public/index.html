@@ -114,6 +114,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 #bB{width:86px;height:86px;right:0;bottom:36px;background:var(--lime);color:var(--ink);font-size:15px!important}
 #bA{width:72px;height:72px;right:92px;bottom:0;background:var(--viola)}
 #bC{width:64px;height:64px;right:98px;bottom:86px;background:rgba(10,10,12,.7)}
+#bD{width:62px;height:62px;right:12px;bottom:134px;background:#fff;color:var(--ink)}
 #pow{position:absolute;right:6px;bottom:130px;width:74px;height:9px;border-radius:9px;background:rgba(10,10,12,.7);overflow:hidden;opacity:0}
 #pow i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--lime) 70%,#ff4d4d)}
 #ruota{animation:via 1s 6s forwards;position:absolute;left:50%;top:92px;transform:translateX(-50%);font-size:11px;background:rgba(10,10,12,.6);padding:4px 10px;border-radius:99px;white-space:nowrap;color:rgba(255,255,255,.85)}
@@ -143,7 +144,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
   <canvas id="radar" width="256" height="168"></canvas>
   <div id="stickZona"><div id="stick"><i></i></div></div>
   <div id="pow"><i></i></div>
-  <div id="tasti"><button id="bC">Scatto</button><button id="bA">Passa</button><button id="bB">Tira</button></div>
+  <div id="tasti"><button id="bC">Scatto</button><button id="bD" class="nas">Cross</button><button id="bA">Passa</button><button id="bB">Tira</button></div>
 </div>
 
 <div id="home" class="scr nas">
@@ -177,7 +178,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 <div id="stop" class="scr nas">
   <div class="h">Pausa</div>
   <p>Levetta: muovi il giocatore<br><b>Passa</b> · <b>Tira</b> (tieni premuto per la potenza) · <b>Scatto</b><br>
-  Dalla fascia vicino al fondo <b>Passa</b> è un cross<br>Senza palla: <b>Cambia</b> giocatore · <b>Scivolata</b> (da dietro è fallo)<br>Tastiera: frecce, X passa, Spazio tira, Shift scatto</p>
+  <b>Cross</b>: traversone in area, o lancio lungo se in area non c'è nessuno<br>Senza palla: <b>Cambia</b> giocatore · <b>Scivolata</b> (da dietro è fallo)<br>Tastiera: frecce, X passa, C cross, Spazio tira, Shift scatto</p>
   <button class="btn" id="riprendi">Riprendi</button>
   <button class="btn sec" id="esci">Esci dalla partita</button>
 </div>

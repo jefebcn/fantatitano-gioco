@@ -40,7 +40,7 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 ## Cosa c'è
 
 - Partita 11 contro 11 di 4 minuti, tre difficoltà, visuale TV in orizzontale e da dietro in verticale.
-- Comandi touch (levetta, Passa/Cambia, Tira/Scivolata, Scatto) e tastiera (frecce, X, Spazio, Shift).
+- Comandi touch (levetta, Passa/Cambia, Cross, Tira/Scivolata, Scatto) e tastiera (frecce, X, C, Spazio, Shift).
 - Gol, rimesse, angoli, rimesse dal fondo, pali e traverse.
 - **Falli e cartellini** (`foul`, `card`, numeri in `FOUL`): fallo sul contrasto in piedi o in
   scivolata (molto più probabile da dietro) e per contatto prolungato. Giallo, secondo giallo e
@@ -52,8 +52,9 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 - **Fuorigioco** (`offsideLine`, `offside`): si guarda la posizione al momento del passaggio, non
   vale su rimessa, angolo e rimessa dal fondo. I compagni restano in linea coi difensori e scattano
   col passaggio. Tra due squadre guidate dall'IA capita di rado, perché le difese stanno basse.
-- **Gioco aereo** (`cross`, `header`, `corner`, numeri in `AIR`): dalla fascia, vicino al fondo,
-  **Passa** diventa un traversone verso il compagno in area, e l'IA crossa da sola. Sul pallone alto
+- **Gioco aereo** (`cross`, `header`, `corner`, numeri in `AIR`): il tasto **Cross** (C sulla
+  tastiera) fa un traversone verso il compagno in area o, se in area non c'è nessuno, un lancio lungo nella
+  direzione della levetta; l'IA crossa da sola dalla fascia. Sul pallone alto
   chi ci arriva colpisce di testa: in porta se è a tiro, via dall'area se difende, di sponda negli
   altri casi; i tiri forti passano. Sul calcio d'angolo cinque attaccanti entrano in area, ognuno con
   un marcatore, e chi batte crossa. Il portiere esce sui traversoni che scendono vicino alla porta e
