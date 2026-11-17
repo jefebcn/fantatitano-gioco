@@ -262,8 +262,8 @@ export function creaRegia(X) {
       } else if (t >= S.c0) {
         // parte stretta sul marcatore e si allarga mentre arrivano i compagni
         const sc = G.scorer, u = t - S.c0, w = Math.min(u, 2.2), a = S.a0 + u * .18, R = 6.2 + w * .7;
-        cam.position.set(sc.x + Math.sin(a) * R, 1.8 + w * .35, sc.z + Math.cos(a) * R); cam.fov = stretto ? 52 : 34;
-        cam.lookAt(sc.x, 1.45, sc.z); cam.updateProjectionMatrix();
+        cam.position.set(sc.x + Math.sin(a) * R, 2 + w * .35, sc.z + Math.cos(a) * R); cam.fov = stretto ? 52 : 34;
+        cam.lookAt(sc.x, 1.75, sc.z); // si guarda un po' sopra la testa: così il marcatore resta sotto il tabellino e sopra la scheda cam.updateProjectionMatrix();
       }
     },
   };
