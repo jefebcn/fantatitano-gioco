@@ -169,8 +169,10 @@ const GEO = {
 };
 const shadowMat = new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .28, depthWrite: false });
 const SKIN = [0xf1c9a5, 0xe0ac7e, 0xc68b5e, 0x9a6441, 0x6e452c], HAIR = [0x1c1410, 0x2e2018, 0x5a3a20, 0x8a6a3a, 0x111111, 0xc9a25a];
-function numMat(n, ink) {
-  const [c, x] = cv(64, 64); x.font = '50px Anton'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = ink; x.fillText(String(n), 32, 36);
+function numMat(n, ink, nome) {
+  const [c, x] = cv(128, 128); x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = ink;
+  if (nome) { const t = String(nome).toUpperCase(); x.font = '24px Anton'; const w = x.measureText(t).width; if (w > 120) x.font = `${Math.floor(24 * 120 / w)}px Anton`; x.fillText(t, 64, 20); }
+  x.font = `${nome ? 88 : 100}px Anton`; x.fillText(String(n), 64, nome ? 82 : 70);
   return new T.MeshBasicMaterial({ map: ctex(c), transparent: true, depthWrite: false });
 }
 function makeFigure(kit, seed, num) {
@@ -200,7 +202,9 @@ let MODEL = null;
 /** Quanto si resta a terra dopo una scivolata, un tuffo o un contrasto subito: si allunga se ci sono le clip registrate. */
 const DOWN = { pl: .38, gk: .5, fall: .7 };
 /** Le azioni registrate: velocità, da che secondo cominciano a sfumare (se manca: alla fine), cosa viene dopo. */
-const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.3 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 } };
+const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.3 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 }, rinvio: { sp: 1.15 } };
+/** Il portiere tiene la palla in mano per HOLD secondi; il rinvio con le mani parte prima, così la palla esce quando il braccio arriva in alto. */
+const HOLD = 1, LANCIO = HOLD - .73 / 1.15;
 const hasFx = (n) => !!(MODEL && MODEL.fx && MODEL.fx[n]);
 function azione(p, name) { if (hasFx(name) && p.fig.skinned) { p.fx = name; p.fxT = 0; p.fxNew = true; } }
 const b64 = (t) => Uint8Array.from(atob(t), (c) => c.charCodeAt(0)).buffer;
@@ -232,7 +236,7 @@ async function loadModel() {
     };
     const alto = box.max.y - box.min.y;
     MODEL = { scene, k, hair, clips: {}, fx: {}, maschera: pixel(im), pelle: pixel(ip), divise: new Map(),
-      numM: appoggio(0, box.min.y + alto * .75, false, .19 / .3), stemmaM: appoggio(.075, box.min.y + alto * .775, true, .085),
+      numM: appoggio(0, box.min.y + alto * .745, false, .27 / .3), stemmaM: appoggio(.075, box.min.y + alto * .775, true, .085),
       occhi: io ? new T.MeshLambertMaterial({ map: Object.assign(new T.Texture(io), { flipY: false, colorSpace: T.SRGBColorSpace, needsUpdate: true }) }) : mat(0xffffff) };
     const A = window.ANIMS; if (!A) throw new Error('mancano le animazioni');
     for (const [nome, c] of Object.entries(A.clip)) {
@@ -261,7 +265,7 @@ function stemmaMat(id) {
   m = new T.MeshBasicMaterial({ map: tx, transparent: true, alphaTest: .4 }); m.userData.ratio = CREST[id].width / CREST[id].height; stemmi3d.set(id, m); return m;
 }
 const GEO1 = new T.PlaneGeometry(1, 1);
-function makeSkinned(kit, seed, num, clubId) {
+function makeSkinned(kit, seed, num, clubId, nome) {
   const root = new T.Group(), body = new T.Group(); root.add(body);
   const obj = SkeletonUtils.clone(MODEL.scene); obj.scale.multiplyScalar(MODEL.k); body.add(obj);
   const tono = seed % TONI.length, pelo = mat(HAIR[(seed >>> 4) % HAIR.length]), bones = {};
@@ -272,26 +276,29 @@ function makeSkinned(kit, seed, num, clubId) {
   const stile = ACCONCIATURE[(seed >>> 8) % ACCONCIATURE.length];
   if (stile && MODEL.hair[stile]) bones.Head.add(new T.Mesh(MODEL.hair[stile], pelo));
   if ((seed >>> 12) % 4 === 0 && MODEL.hair.Hair_Beard) bones.Head.add(new T.Mesh(MODEL.hair.Hair_Beard, pelo));
-  if (MODEL.numM) { const n = new T.Mesh(GEO.num, numMat(num, kit.ink)); n.applyMatrix4(MODEL.numM); bones.spine_03.add(n); }
+  if (MODEL.numM) { const n = new T.Mesh(GEO.num, numMat(num, kit.ink, nome)); n.applyMatrix4(MODEL.numM); bones.spine_03.add(n); }
   const sm = clubId && MODEL.stemmaM ? stemmaMat(clubId) : null;
   if (sm) { const c = new T.Mesh(GEO1, sm); c.scale.set(sm.userData.ratio, 1, 1); c.applyMatrix4(MODEL.stemmaM); bones.spine_03.add(c); }
   const sh = new T.Mesh(GEO.shadow, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; sh.scale.setScalar(1.5); root.add(sh);
   const mixer = new T.AnimationMixer(obj), A = {}, w = {};
-  const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null };
+  const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null, passoS: kit.gloves ? MODEL.fx.passoS : null, passoD: kit.gloves ? MODEL.fx.passoD : null };
   for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = rnd(base[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; w[n] = n === 'idle' ? 1 : 0; }
   return { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true };
 }
 const lum = (h) => { const c = new T.Color(h); return .299 * c.r + .587 * c.g + .114 * c.b; };
 const cdist = (a, b) => { const x = new T.Color(a), y = new T.Color(b); return hyp(x.r - y.r, x.g - y.g, x.b - y.b); };
 function pickKits(h, a) {
+  const BIANCO = '#F3F3F3', NERO = '#16161a';
   const kit = (c, away) => {
-    const shirt = away ? '#F3F3F3' : c.c1, shorts = away ? c.c1 : (cdist(c.c1, c.c2) < .25 ? '#FFFFFF' : c.c2);
-    const c2 = away ? c.c1 : (cdist(c.c1, c.c2) < .25 ? '#FFFFFF' : c.c2);
-    return { shirt, shorts, socks: shirt, sleeve: shirt, boots: '#16161a', ink: lum(shirt) > .55 ? '#111' : '#fff', c2, stile: away ? null : c.st || null };
+    const due = cdist(c.c1, c.c2) < .25 ? '#FFFFFF' : c.c2; // il secondo colore, se si distingue dal primo
+    // la seconda maglia: il secondo colore della squadra se non somiglia alla maglia di casa, se no bianca o nera
+    const shirt = away ? [due, BIANCO, NERO].find((x) => cdist(x, h.c1) >= .45 && cdist(x, c.c1) >= .2) || BIANCO : c.c1;
+    const shorts = away ? c.c1 : due, c2 = away ? c.c1 : due;
+    return { shirt, shorts, socks: shirt, sleeve: shirt, boots: NERO, ink: lum(shirt) > .55 ? '#111' : '#fff', c2, stile: away ? null : c.st || null };
   };
   const kh = kit(h, false), ka = kit(a, cdist(h.c1, a.c1) < .45);
   // i pantaloncini dell'una non devono sembrare la maglia dell'altra
-  if (cdist(ka.shorts, kh.shirt) < .4) ka.shorts = ka.shirt === '#F3F3F3' ? '#16161a' : ka.shirt;
+  if (cdist(ka.shorts, kh.shirt) < .4) ka.shorts = ka.shirt === BIANCO ? NERO : ka.shirt;
   if (cdist(kh.shorts, ka.shirt) < .4) kh.shorts = kh.shirt;
   const gk = (other) => {
     const opts = ['#FF7A1A', '#19D3B1', '#E91E8C', '#111111'];
@@ -326,7 +333,7 @@ function newMatch(home, away) {
   const mk = (club, side, human, kit, gkit) => {
     const t = { club, side, human, score: 0, players: [], off: [], idx: side > 0 ? 0 : 1, chaser: null, cover: null };
     club.xi.forEach(([name, role, num, q], i) => {
-      const fig = (MODEL ? makeSkinned : makeFigure)(i === 0 ? gkit : kit, hash(club.id + name), num, i === 0 ? null : club.id); scene.add(fig.root);
+      const fig = (MODEL ? makeSkinned : makeFigure)(i === 0 ? gkit : kit, hash(club.id + name), num, i === 0 ? null : club.id, name); scene.add(fig.root);
       const base = 7.3 + clamp((q - 20) / 40, -.5, .6) + (club.str - 3) * .07;
       t.players.push({ team: t, i, role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? 6.6 : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1, run: null, mark: null, jock: false, slideCd: 0, yel: 0, red: false, fkShot: false, en: 1, by: null, s: { g: 0, a: 0, kp: 0, sh: 0, sot: 0, pa: 0, pc: 0, tk: 0, int: 0, sv: 0, fl: 0, og: 0 } });
     });
@@ -384,7 +391,9 @@ function gain(p) {
 }
 function kick(p, vx, vy, vz, anim = 'passaggio') {
   const b = G.ball; b.owner = null; b.x = p.x + Math.sin(p.dir) * .8; b.z = p.z + Math.cos(p.dir) * .8; b.y = BR;
-  b.vx = vx; b.vy = vy; b.vz = vz; p.cool = .45; p.st = 'kick'; p.stT = 0; G.lastTouch = G.lastKicker = p; AU.kick(hyp(vx, vz)); azione(p, anim);
+  b.vx = vx; b.vy = vy; b.vz = vz; p.cool = .45; p.st = 'kick'; p.stT = 0; G.lastTouch = G.lastKicker = p; AU.kick(hyp(vx, vz));
+  if (p.i === 0 && p.fx === 'rinvio') { b.y = 2.3; b.vy = Math.max(b.vy, 1.2); } // rinvio con le mani: la palla parte dall'alto
+  else azione(p, anim);
   const a = Math.atan2(vx, vz); p.dir = a;
   // chi è oltre la linea in questo momento è in fuorigioco se poi tocca il pallone; non vale su rimessa, angolo e rimessa dal fondo
   if (G.noOff) { G.noOff = false; G.offs = null; }
@@ -605,8 +614,9 @@ function ownerThink(p, dt) {
 function gkThink(p, dt) {
   const b = G.ball, t = p.team, s = t.side, gx = -s * HL, own = b.owner;
   if (own === p) {
+    if (p.hold <= LANCIO && p.hold + dt > LANCIO && p.st === 'run') azione(p, 'rinvio');
     p.hold += dt; p.tx = gx + s * 5; p.tz = clamp(p.z, -6, 6);
-    if (p.hold > 1) { const m = bestPass(p) || t.players[1]; pass(p, m); p.hold = 0; }
+    if (p.hold > HOLD) { const m = bestPass(p) || t.players[1]; pass(p, m); p.hold = 0; }
     return;
   }
   const toward = b.vx * -s;
@@ -717,8 +727,9 @@ function movePlayer(p, dt) {
 function moveBall(dt) {
   const b = G.ball, o = b.owner;
   if (o) {
-    const tx = o.x + Math.sin(o.dir) * .8, tz = o.z + Math.cos(o.dir) * .8, a = Math.min(1, dt * 20);
-    b.x += (tx - b.x) * a; b.z += (tz - b.z) * a; b.y = BR; b.vx = o.vx; b.vz = o.vz; b.vy = 0; return;
+    const mani = o.i === 0 && o.fig.skinned && G.state === 'play', k = mani ? .42 : .8; // il portiere la tiene in mano
+    const tx = o.x + Math.sin(o.dir) * k, tz = o.z + Math.cos(o.dir) * k, a = Math.min(1, dt * 20);
+    b.x += (tx - b.x) * a; b.z += (tz - b.z) * a; b.y = mani ? b.y + (1.55 - b.y) * Math.min(1, dt * 12) : BR; b.vx = o.vx; b.vz = o.vz; b.vy = 0; return;
   }
   if (G.state === 'kickoff' || G.state === 'restart') return;
   b.vy -= GRAV * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt;
@@ -888,12 +899,16 @@ function poseSkinned(p, dt) {
   if (f.act) { f.act.setEffectiveWeight(f.fxW); if (!p.fx && f.fxW < .02) { f.act.stop(); f.act = null; f.fxW = 0; } }
   if (f.old) { f.old.setEffectiveWeight(f.oldW); if (f.oldW < .02) { f.old.stop(); f.old = null; f.oldW = 0; } }
   // attesa, camminata, corsetta e corsa secondo la velocità; esultanza dopo un gol
-  const tg = { idle: 0, walk: 0, run: 0, jog: 0, gkIdle: 0, esulta: 0 }; let by = 0;
+  const tg = { idle: 0, walk: 0, run: 0, jog: 0, gkIdle: 0, esulta: 0, passoS: 0, passoD: 0 }; let by = 0;
   const festa = G.state === 'goal' && G.scorer && p.team === G.scorer.team && p.i !== 0 && v < 5 && f.fxW < .25;
   if (festa && f.A.esulta) { tg.esulta = 1; by = Math.abs(Math.sin(G.t * 7 + p.i)) * .3; }
   else if (f.A.jog) { const m = clamp(v / 1.2, 0, 1), r = clamp((v - 6.4) / 1.8, 0, 1), j = clamp((v - 2) / 1.8, 0, 1) * (1 - r); tg.run = m * r; tg.jog = m * j; tg.walk = m * (1 - r - j); tg.idle = 1 - m; }
   else { tg.run = clamp((v - 2.6) / 2.6, 0, 1); tg.walk = clamp(v / 2.2, 0, 1) * (1 - tg.run); tg.idle = 1 - tg.run - tg.walk; }
   if (f.A.gkIdle && G.state === 'play') { tg.gkIdle = tg.idle; tg.idle = 0; }
+  if (f.A.passoS && G.state === 'play' && G.ball.owner !== p) { // il portiere guarda la palla: se si sposta di lato fa i passi laterali, non la corsa
+    const lat = p.vx * Math.cos(p.dir) - p.vz * Math.sin(p.dir), av = Math.abs(p.vx * Math.sin(p.dir) + p.vz * Math.cos(p.dir));
+    if (Math.abs(lat) > av && Math.abs(lat) > .8) { const m = tg.walk + tg.jog + tg.run; tg.walk = tg.jog = tg.run = 0; tg[lat > 0 ? 'passoS' : 'passoD'] = m; f.A.passoS.timeScale = f.A.passoD.timeScale = clamp(Math.abs(lat) / 3.6, .7, 1.7); }
+  }
   const a = Math.min(1, dt * 10), rest = Math.max(0, 1 - f.fxW - f.oldW);
   for (const k in f.A) { f.w[k] += (tg[k] - f.w[k]) * a; f.A[k].setEffectiveWeight(f.w[k] * rest); }
   f.A.run.timeScale = clamp(v / 6.6, .8, 1.5); f.A.walk.timeScale = clamp(v / 1.9, .7, 1.7); if (f.A.jog) f.A.jog.timeScale = clamp(v / 4.1, .8, 1.5);

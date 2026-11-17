@@ -5,7 +5,7 @@ Per ogni punto della texture del corpo dice che cos'è: pelle, maglia, pantalonc
 avambraccio, mano. Lo decide dalla posizione 3D di quel punto nella posa a T (non triangolo per triangolo),
 così gli orli vengono dritti. Il gioco poi colora le zone coi colori della squadra (src/divisa.js).
 
-Uscite: public/img/divisa-maschera.png  (R = zona x 32, G = posizione sinistra-destra, B = altezza: servono per righe e fasce)
+Uscite: public/img/divisa-maschera.png  (R = zona x 28, G = posizione sinistra-destra su 1 m, B = altezza su 1,9 m: servono per righe e fasce)
         public/img/pelle.webp, public/img/occhi.webp
 Uso: python3 scripts/maschera-divisa.py [lato in pixel, 512]
 """
@@ -58,24 +58,27 @@ for _ in range(8):  # allarga i bordi: evita le righe di colore sbagliato lungo 
     for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
         sh = np.roll(xyz, (dy, dx), (0, 1)); take = miss & ~np.isnan(sh[..., 0]); xyz[take] = sh[take]; miss = np.isnan(xyz[..., 0])
 x, y, z = np.abs(xyz[..., 0]), xyz[..., 1], xyz[..., 2]
-SKIN, SHIRT, SHORTS, SOCKS, BOOTS, ARM, HAND = range(7)
+SKIN, SHIRT, SHORTS, SOCKS, BOOTS, ARM, HAND, COLLAR, CUFF = range(9)
 zona = np.full((N, N), SKIN, np.uint8)
 braccio = (x > shX * .9) & (y > pelvis)
 # il colletto è un cerchio attorno al collo, non un taglio orizzontale: se no le spalle restano scoperte
 nx, nz = P['neck_01'][0], P['neck_01'][2]; collo = (y > neck + .05) | ((y > neck - .04) & (np.hypot(xyz[..., 0] - nx, z - nz) < .078))
 torso = ~braccio & ~collo & (y > hip - .05)
 zona[torso] = SHIRT
-zona[braccio & ~collo & (x < shX + (elX - shX) * .62)] = SHIRT
-zona[braccio & (x >= shX + (elX - shX) * .62) & (x < wrX * .985)] = ARM
+manica = shX + (elX - shX) * .62
+zona[braccio & ~collo & (x < manica)] = SHIRT
+zona[braccio & ~collo & (x < manica) & (x >= manica - .035)] = CUFF  # il bordo della manica
+dist = np.hypot(xyz[..., 0] - nx, z - nz); zona[~collo & (y > neck - .075) & (dist < .112) & (zona == SHIRT)] = COLLAR  # il bordo del colletto
+zona[braccio & (x >= manica) & (x < wrX * .985)] = ARM
 zona[braccio & (x >= wrX * .985)] = HAND
 gamba = ~braccio & (y <= hip - .05)
 zona[gamba & (y > knee + (hip - knee) * .34)] = SHORTS
 zona[gamba & (y <= knee - (knee - ank) * .16) & (y > ank + .035)] = SOCKS
 zona[gamba & (y <= ank + .035)] = BOOTS
 zona[np.isnan(x)] = SKIN
-out = np.zeros((N, N, 3), np.uint8); out[..., 0] = zona * 32
-out[..., 1] = np.clip((np.nan_to_num(xyz[..., 0]) / .6 + .5) * 255, 0, 255); out[..., 2] = np.clip(np.nan_to_num(y) / 1.9 * 255, 0, 255)
+out = np.zeros((N, N, 3), np.uint8); out[..., 0] = zona * 28
+out[..., 1] = np.clip((np.nan_to_num(xyz[..., 0]) + .5) * 255, 0, 255); out[..., 2] = np.clip(np.nan_to_num(y) / 1.9 * 255, 0, 255)
 Image.fromarray(out).save('public/img/divisa-maschera.png', optimize=True)
 Image.open(f'{SRC}/T_Superhero_Male_Ligh.png').convert('RGB').resize((N, N), Image.LANCZOS).save('public/img/pelle.webp', quality=88)
 Image.open(f'{SRC}/T_Eye_Brown.png').convert('RGB').resize((128, 128), Image.LANCZOS).save('public/img/occhi.webp', quality=90)
-print('zone (% della texture):', {n: round(float((zona == k).mean() * 100), 1) for k, n in enumerate(['pelle', 'maglia', 'pantaloncini', 'calzettoni', 'scarpe', 'avambraccio', 'mano'])})
+print('zone (% della texture):', {n: round(float((zona == k).mean() * 100), 1) for k, n in enumerate(['pelle', 'maglia', 'pantaloncini', 'calzettoni', 'scarpe', 'avambraccio', 'mano', 'colletto', 'bordo manica'])})

@@ -58,12 +58,16 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
   contrasti, palloni intercettati, parate, falli, cartellini e risultato; migliore in campo.
 - Calciatori: un solo corpo con scheletro per tutti e 22 (Quaternius, CC0), con volto, tre acconciature, barba,
   cinque toni di pelle. La divisa è una texture generata dai colori della squadra (`src/divisa.js`): maglia,
-  pantaloncini, calzettoni col risvolto, scarpe; righe verticali dove la squadra le ha (campo `st` in `data.js`);
-  maniche lunghe e guanti per il portiere. Numero sulla schiena e stemma sul petto sono due piccoli piani
-  appesi all'osso del torace.
+  pantaloncini, calzettoni col risvolto, scarpe, colletto e bordo delle maniche nel secondo colore; disegno della
+  maglia dal campo `st` in `data.js` (`righe` verticali, `fasce` orizzontali, `meta` metà e metà, `banda`
+  diagonale; l'elenco è `DISEGNI` in `src/divisa.js`); maniche lunghe e guanti per il portiere. Cognome e numero
+  sulla schiena e stemma sul petto sono due piccoli piani appesi all'osso del torace. Chi gioca fuori casa
+  usa il proprio secondo colore se si distingue da quello di casa, altrimenti bianco o nero (`pickKits`).
 - Animazioni registrate (Mixamo, «Soccer Game Pack»): tiro, passaggio, scivolata, caduta di chi
-  subisce la scivolata, tuffo del portiere a destra e a sinistra, presa, attesa del portiere, corsetta. L'esultanza è costruita
-  (braccia alzate sopra la posa d'attesa).
+  subisce la scivolata, tuffo del portiere a destra e a sinistra, presa, attesa del portiere, passi laterali
+  del portiere, rinvio con le mani, corsetta. L'esultanza è costruita (braccia alzate sopra la posa d'attesa).
+  Il portiere che ha il pallone lo tiene in mano all'altezza del petto e lo rilancia dopo un secondo
+  (`HOLD`, `LANCIO`): il pallone parte nel momento in cui il braccio lo lascia.
   Le fa partire `azione(p, nome)`; velocità e sfumature stanno nella tabella `FX`.
 - IA di squadra:
   - **Inserimenti senza palla** (`runs`, `runScore`): chi attacca valuta tre corse (dritto, taglio
@@ -80,12 +84,12 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 
 ## Cosa manca, in ordine
 
-1. **Animazioni che mancano.** Esultanza vera, colpo di testa, stop, rimessa laterale, rinvio del portiere,
-   passi laterali del portiere. Molte sono già nel pacchetto scaricato (54 clip): basta aggiungerle a `CLIP` in
+1. **Animazioni che mancano.** Esultanza vera, colpo di testa, stop, rimessa laterale, rinvio di piede
+   del portiere. Molte sono già nel pacchetto scaricato (54 clip): basta aggiungerle a `CLIP` in
    `scripts/animazioni.mjs` e a `FX` nel gioco. Gli FBX non stanno nel repository (i file grezzi di Mixamo non
    si ridistribuiscono): vanno riscaricati da mixamo.com (Soccer Game Pack, FBX, 30 fps) con un Adobe ID.
-2. **Divisa.** È dipinta sul corpo, quindi aderente: niente maglia larga con le pieghe. Mancano fasce
-   orizzontali, bordi di maniche e colletto, nome sulla schiena, seconda maglia vera (oggi è bianca).
+2. **Divisa.** È dipinta sul corpo, quindi aderente: niente maglia larga con le pieghe. Il disegno è
+   assegnato a mano a tre squadre (`STILE` in `scripts/genera-dati.py`); le altre sono a tinta unita.
    Il corpo è quello «Superhero» della versione gratuita del pacchetto: le proporzioni più normali sono
    nella versione a pagamento.
 3. **Collegamento all'app.** Rewrite `/gioco` nel `vercel.json` di `fantasyfootballrsm` verso
@@ -94,8 +98,8 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 
 ## Cose da sapere
 
-- **Mai provato su un telefono vero.** Le prove sono state fatte in un browser senza scheda
-  grafica: fluidità e comodità dei comandi sono da verificare. Se scatta, abbassare ancora il
+- **Prove.** Quelle automatiche sono fatte in un browser senza scheda grafica; Alex l'ha provato sul
+  suo telefono e funziona. Su altri telefoni la fluidità è da verificare: se scatta, abbassare ancora il
   rapporto in `npm run modello` (oggi 0.36 del corpo originale) e rigenerare.
 - **Livello degli avversari** tarato solo con partite simulate (`DIFF` in cima a `src/game.js`):
   `node scripts/simula.cjs 64` dopo `npm run build`. Con la squadra di casa che gioca da sola, oggi

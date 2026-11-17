@@ -26,6 +26,9 @@ const CLIP = {
   tuffoS: ['goalkeeper diving save', 0.8, 0],
   tuffoD: ['goalkeeper diving save', 0.8, 0, 'specchio'], // lo stesso tuffo, ribaltato: quello a destra del pacchetto è un altro gesto
   presa: ['goalkeeper catch (2)', 0, 0],
+  rinvio: ['goalkeeper overhand throw', 0.75, 2.3], // la palla lascia la mano a 0,73 s dall'inizio del ritaglio
+  passoS: ['goalkeeper sidestep', 0, 0],     // passo laterale verso la sua sinistra
+  passoD: ['goalkeeper sidestep (2)', 0, 0], // verso la sua destra
   esulta: ['base:idle', 0, 1, 'braccia'], // non c'è nel pacchetto: braccia alzate sopra la posa d'attesa
 };
 // osso Mixamo -> osso del calciatore
