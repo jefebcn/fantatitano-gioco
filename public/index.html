@@ -64,7 +64,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 @keyframes via{to{opacity:0;visibility:hidden}}
 @keyframes entra{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
 
-#fine{justify-content:center;gap:8px;text-align:center}
+#fine{justify-content:flex-start;gap:8px;text-align:center}#fine>*{flex-shrink:0}#fine>:first-child{margin-top:auto}#fine>:last-child{margin-bottom:auto}
 #fine .esito{font-size:clamp(44px,12vw,92px);color:var(--lime)}
 #fine .ris{display:flex;align-items:center;gap:14px;font-family:Anton;font-size:clamp(44px,11vw,80px)}
 #fine .ris img{height:clamp(58px,15vw,100px)}
@@ -72,6 +72,10 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 #fine table{border-collapse:collapse;margin:6px 0 10px;font-size:13px}
 #fine td{padding:3px 12px}
 #fine td:nth-child(2){color:rgba(255,255,255,.55);font-size:11px;text-transform:uppercase;letter-spacing:.1em}
+#mvp{font-size:13px}#mvp b{color:var(--lime)}
+#pag{font-size:12px;max-width:460px;width:92%}#pag summary{cursor:pointer;font-family:Anton;letter-spacing:.08em;text-transform:uppercase;padding:6px;list-style:none;color:rgba(255,255,255,.75)}#pag summary::after{content:' ▾'}
+#pagL{display:flex;gap:18px;justify-content:center;text-align:left;padding:4px 0 8px}#pagL h4{margin:0 0 4px;font-family:Anton;font-weight:400;letter-spacing:.08em;color:var(--lime)}#pagL p{margin:2px 0;white-space:nowrap}#pagL b{display:inline-block;width:28px}#pagL u{text-decoration:none;color:var(--lime);font-size:10px;text-transform:uppercase;margin-left:3px}
+#pagL i{display:inline-block;width:7px;height:10px;border-radius:2px;margin-left:5px;vertical-align:-1px}#pagL i.g{background:#FFD21F}#pagL i.r{background:#E5262B}
 #fine .az{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 #fine .tito{height:min(22vh,170px);pointer-events:none}
 
@@ -86,6 +90,8 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 #chi{position:absolute;top:56px;left:50%;transform:translateX(-50%);font-family:Anton;font-size:14px;letter-spacing:.06em;
   background:rgba(10,10,12,.6);padding:3px 10px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
 #chi i{color:var(--lime);font-style:normal;margin-right:5px}
+#en{position:absolute;top:80px;left:50%;transform:translateX(-50%);width:62px;height:4px;border-radius:4px;background:rgba(10,10,12,.6);overflow:hidden;pointer-events:none}
+#en i{display:block;height:100%;width:100%;background:var(--lime)}
 #radar{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:128px;height:84px;border-radius:8px;opacity:.85}
 #pausa,#audio{position:absolute;top:10px;width:38px;height:38px;border-radius:10px;background:rgba(10,10,12,.6);pointer-events:auto;font-size:16px}
 #pausa{right:10px}#audio{right:54px}
@@ -94,6 +100,9 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 #banner .t{font-family:Anton;font-size:clamp(46px,13vw,120px);color:var(--lime);text-shadow:0 5px 0 var(--viola),0 10px 30px rgba(0,0,0,.6);text-transform:uppercase;letter-spacing:.03em}
 #banner .s{font-family:Anton;font-size:clamp(17px,4.4vw,30px);text-transform:uppercase;background:var(--ink);display:inline-block;padding:4px 14px;border-radius:8px;margin-top:6px}
 #banner .s:empty{display:none}
+#banner[data-c=g] .s{background:#FFD21F;color:#111}
+#banner[data-c=r] .s{background:#E5262B;color:#fff}
+#cart{font-size:13px;opacity:.9;margin:2px 0 6px}#cart span{display:inline-block;margin:0 7px}#cart i{display:inline-block;width:9px;height:13px;border-radius:2px;margin-right:5px;vertical-align:-2px}#cart i.g{background:#FFD21F}#cart i.r{background:#E5262B}#cart:empty{display:none}
 #stickZona{position:absolute;left:0;bottom:0;width:50%;top:90px;pointer-events:auto}
 #stick{position:absolute;width:112px;height:112px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(10,10,12,.28);
   left:26px;bottom:34px;transform:none}
@@ -109,7 +118,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 #pow i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--lime) 70%,#ff4d4d)}
 #ruota{animation:via 1s 6s forwards;position:absolute;left:50%;top:92px;transform:translateX(-50%);font-size:11px;background:rgba(10,10,12,.6);padding:4px 10px;border-radius:99px;white-space:nowrap;color:rgba(255,255,255,.85)}
 @media (min-aspect-ratio:1/1){#ruota{display:none}}
-@media (max-aspect-ratio:1/1){#radar{left:10px;top:60px;bottom:auto;transform:none;width:104px;height:68px}#pausa,#audio{top:60px}#chi{top:62px}#ruota{top:96px}}
+@media (max-aspect-ratio:1/1){#radar{left:10px;top:60px;bottom:auto;transform:none;width:104px;height:68px}#pausa,#audio{top:60px}#chi{top:62px}#en{top:86px}#ruota{top:96px}}
 @media (max-height:480px){#fine{gap:3px;padding:8px 16px}#fine .esito{font-size:34px}#fine .ris{font-size:42px}#fine .ris img{height:54px}#fine table{margin:2px 0 6px}
   #fine .tito{position:absolute;right:5vw;bottom:0;height:46vh}#stop{gap:7px}#stop .h{font-size:30px}#scelta{padding-top:8px}#scelta h2{font-size:24px;margin:0}#scelta .passo{margin-bottom:6px}
   .sq{padding:5px 2px 4px}.sq img{height:44px}#barra{flex-direction:row;justify-content:center;margin-top:8px}}
@@ -126,6 +135,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 <div id="hud" class="nas">
   <div id="sb"><img id="sbH" alt=""><b id="sbHn"></b><span id="sbS">0 - 0</span><b id="sbAn"></b><img id="sbA" alt=""><i id="sbT">00:00</i></div>
   <div id="chi"></div>
+  <div id="en"><i></i></div>
   <div id="ruota">Ruota il telefono per la visuale TV</div>
   <button id="audio" aria-label="Audio">♪</button>
   <button id="pausa" aria-label="Pausa">II</button>
@@ -167,7 +177,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 <div id="stop" class="scr nas">
   <div class="h">Pausa</div>
   <p>Levetta: muovi il giocatore<br><b>Passa</b> · <b>Tira</b> (tieni premuto per la potenza) · <b>Scatto</b><br>
-  Senza palla: <b>Cambia</b> giocatore · <b>Scivolata</b><br>Tastiera: frecce, X passa, Spazio tira, Shift scatto</p>
+  Senza palla: <b>Cambia</b> giocatore · <b>Scivolata</b> (da dietro è fallo)<br>Tastiera: frecce, X passa, Spazio tira, Shift scatto</p>
   <button class="btn" id="riprendi">Riprendi</button>
   <button class="btn sec" id="esci">Esci dalla partita</button>
 </div>
@@ -176,7 +186,10 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
   <div class="h esito" id="esito"></div>
   <div class="ris"><img id="fH" alt=""><span id="fS"></span><img id="fA" alt=""></div>
   <div class="marc" id="marc"></div>
-  <table><tr><td id="tH"></td><td>Tiri</td><td id="tA"></td></tr><tr><td id="pH"></td><td>Possesso</td><td id="pA"></td></tr></table>
+  <div id="cart"></div>
+  <table><tr><td id="tH"></td><td>Tiri</td><td id="tA"></td></tr><tr><td id="pH"></td><td>Possesso</td><td id="pA"></td></tr><tr><td id="flH"></td><td>Falli</td><td id="flA"></td></tr><tr><td id="fgH"></td><td>Fuorigioco</td><td id="fgA"></td></tr></table>
+  <div id="mvp"></div>
+  <details id="pag"><summary>Pagelle</summary><div id="pagL"></div></details>
   <img class="tito" id="fTito" alt="Tito">
   <div class="az"><button class="btn" id="rivincita">Rivincita</button><button class="btn sec" id="cambia">Cambia squadre</button></div>
 </div>
