@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Fantatitano — La Partita (prototipo)</title>
+<style>
+@font-face{font-family:Anton;src:url(font/anton-400-latin.woff2) format("woff2");font-display:block}
+@font-face{font-family:Lato;font-weight:700;src:url(font/lato-700-latin.woff2) format("woff2")}
+@font-face{font-family:Lato;font-weight:900;src:url(font/lato-900-latin.woff2) format("woff2")}
+:root{--viola:#4B06FC;--viola7:#3A0AC4;--lime:#D9F51F;--ink:#0A0A0C;--navy:#0D1733}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--ink);color:#fff;font:700 14px Lato,system-ui,sans-serif;
+  touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.h{font-family:Anton,Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.02em;line-height:1}
+.nas{display:none!important}
+button{font:inherit;color:inherit;border:0;cursor:pointer}
+
+/* ---------- schermate ---------- */
+.scr{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;overflow:hidden auto;touch-action:pan-y;
+  background:linear-gradient(180deg,rgba(10,10,12,.72),rgba(13,23,51,.9) 55%,rgba(10,10,12,.97));padding:18px 16px 22px}
+.btn{font-family:Anton,Impact,sans-serif;text-transform:uppercase;letter-spacing:.04em;font-size:22px;padding:14px 26px;border-radius:14px;
+  background:var(--lime);color:var(--ink);box-shadow:0 6px 0 #8fa30a;min-width:230px}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #8fa30a}
+.btn.sec{background:rgba(255,255,255,.1);color:#fff;box-shadow:0 6px 0 rgba(0,0,0,.5);font-size:17px;padding:11px 20px;min-width:0}
+.btn[disabled]{opacity:.35;pointer-events:none}
+
+#home{justify-content:center;gap:10px;text-align:center}
+#home .corona{height:min(30vh,200px);width:auto;max-width:70vw;margin-bottom:6px}
+#home h1{margin:0;font-size:clamp(46px,13vw,104px);color:#fff}
+#home h1 b{color:var(--lime);font-weight:400}
+#home .sub{font-size:clamp(18px,4.6vw,30px);color:var(--lime);margin-bottom:12px}
+#home .sub span{background:var(--viola);color:#fff;font:900 11px Lato;padding:3px 8px;border-radius:99px;vertical-align:middle;letter-spacing:.08em;margin-left:6px}
+#home .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(440px,100%);margin-top:16px}
+#home .tile{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 6px 9px;color:rgba(255,255,255,.75)}
+#home .tile .h{font-size:16px;display:block}
+#home .tile i{font:900 9px Lato;font-style:normal;letter-spacing:.1em;color:var(--lime);opacity:.9}
+#home .tito{position:absolute;right:max(8px,4vw);bottom:0;height:min(34vh,250px);pointer-events:none;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
+#home .nota{font-size:11px;font-weight:700;color:rgba(255,255,255,.5);margin-top:14px;max-width:300px}
+@media (max-aspect-ratio:1/1){#home{justify-content:flex-start;padding-top:9vh}#home .tito{right:50%;transform:translateX(50%)}}
+
+#scelta h2{margin:4px 0 2px;font-size:clamp(24px,6.4vw,38px)}
+#scelta .passo{color:var(--lime);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+#griglia{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(560px,100%)}
+@media (min-aspect-ratio:13/10){#griglia{grid-template-columns:repeat(8,1fr);width:min(900px,100%)}}
+.sq{background:rgba(255,255,255,.06);border:2px solid transparent;border-radius:12px;padding:8px 2px 6px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
+.sq img{height:clamp(46px,12vw,66px);width:auto;pointer-events:none}
+.sq span{font-size:10px;font-weight:900;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sq.mia{border-color:var(--lime);background:rgba(217,245,31,.14)}
+.sq.loro{border-color:var(--viola);background:rgba(75,6,252,.3)}
+#barra{margin-top:12px;display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+#diff{display:flex;gap:6px}
+#diff button{background:rgba(255,255,255,.08);border-radius:99px;padding:7px 14px;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+#diff button.on{background:var(--viola);box-shadow:0 0 0 2px var(--lime) inset}
+#scelta .indietro{position:absolute;left:12px;top:12px;background:none;font-size:13px;opacity:.7;padding:6px}
+
+#vs{justify-content:center;gap:4vw;flex-direction:row;background:radial-gradient(circle at 50% 50%,rgba(75,6,252,.85),rgba(10,10,12,.96) 70%)}
+#vs .lato{display:flex;flex-direction:column;align-items:center;gap:10px;width:38vw}
+#vs img{height:min(34vh,34vw,220px);filter:drop-shadow(0 10px 24px rgba(0,0,0,.6));animation:entra .5s cubic-bezier(.2,1.4,.4,1) both}
+#vs .lato:last-child img{animation-delay:.12s}
+#vs .lato b{font-family:Anton;font-weight:400;font-size:clamp(18px,5vw,34px);text-transform:uppercase;text-align:center}
+#vs .x{font-family:Anton;font-size:clamp(34px,9vw,70px);color:var(--lime)}
+@keyframes via{to{opacity:0;visibility:hidden}}
+@keyframes entra{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
+
+#fine{justify-content:center;gap:8px;text-align:center}
+#fine .esito{font-size:clamp(44px,12vw,92px);color:var(--lime)}
+#fine .ris{display:flex;align-items:center;gap:14px;font-family:Anton;font-size:clamp(44px,11vw,80px)}
+#fine .ris img{height:clamp(58px,15vw,100px)}
+#fine .marc{font-size:12px;color:rgba(255,255,255,.8);min-height:16px;max-width:420px;line-height:1.5}
+#fine table{border-collapse:collapse;margin:6px 0 10px;font-size:13px}
+#fine td{padding:3px 12px}
+#fine td:nth-child(2){color:rgba(255,255,255,.55);font-size:11px;text-transform:uppercase;letter-spacing:.1em}
+#fine .az{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+#fine .tito{height:min(22vh,170px);pointer-events:none}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;pointer-events:none}
+#sb{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:7px;background:var(--ink);
+  border-radius:12px;padding:5px 10px;box-shadow:0 0 0 2px var(--viola),0 6px 18px rgba(0,0,0,.45);white-space:nowrap}
+#sb img{height:30px;width:auto}
+#sb b{font-family:Anton;font-weight:400;font-size:19px;letter-spacing:.04em}
+#sb #sbS{font-family:Anton;font-size:23px;background:var(--lime);color:var(--ink);border-radius:7px;padding:1px 9px;min-width:62px;text-align:center}
+#sb #sbT{font-family:Anton;font-style:normal;font-size:16px;color:var(--lime);margin-left:4px;min-width:44px;text-align:right}
+#chi{position:absolute;top:56px;left:50%;transform:translateX(-50%);font-family:Anton;font-size:14px;letter-spacing:.06em;
+  background:rgba(10,10,12,.6);padding:3px 10px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
+#chi i{color:var(--lime);font-style:normal;margin-right:5px}
+#radar{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:128px;height:84px;border-radius:8px;opacity:.85}
+#pausa,#audio{position:absolute;top:10px;width:38px;height:38px;border-radius:10px;background:rgba(10,10,12,.6);pointer-events:auto;font-size:16px}
+#pausa{right:10px}#audio{right:54px}
+#banner{position:absolute;left:0;right:0;top:27%;text-align:center;pointer-events:none;opacity:0;transition:opacity .25s}
+#banner.su{opacity:1}
+#banner .t{font-family:Anton;font-size:clamp(46px,13vw,120px);color:var(--lime);text-shadow:0 5px 0 var(--viola),0 10px 30px rgba(0,0,0,.6);text-transform:uppercase;letter-spacing:.03em}
+#banner .s{font-family:Anton;font-size:clamp(17px,4.4vw,30px);text-transform:uppercase;background:var(--ink);display:inline-block;padding:4px 14px;border-radius:8px;margin-top:6px}
+#banner .s:empty{display:none}
+#stickZona{position:absolute;left:0;bottom:0;width:50%;top:90px;pointer-events:auto}
+#stick{position:absolute;width:112px;height:112px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(10,10,12,.28);
+  left:26px;bottom:34px;transform:none}
+#stick i{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px;border-radius:50%;background:var(--lime);opacity:.9;box-shadow:0 3px 10px rgba(0,0,0,.5)}
+#tasti{position:absolute;right:14px;bottom:22px;width:176px;height:168px;pointer-events:none}
+#tasti button{position:absolute;pointer-events:auto;border-radius:50%;font-family:Anton;text-transform:uppercase;font-size:13px;letter-spacing:.04em;
+  box-shadow:0 4px 12px rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.5)}
+#tasti button.giu{transform:scale(.92);filter:brightness(1.25)}
+#bB{width:86px;height:86px;right:0;bottom:36px;background:var(--lime);color:var(--ink);font-size:15px!important}
+#bA{width:72px;height:72px;right:92px;bottom:0;background:var(--viola)}
+#bC{width:64px;height:64px;right:98px;bottom:86px;background:rgba(10,10,12,.7)}
+#pow{position:absolute;right:6px;bottom:130px;width:74px;height:9px;border-radius:9px;background:rgba(10,10,12,.7);overflow:hidden;opacity:0}
+#pow i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--lime) 70%,#ff4d4d)}
+#ruota{animation:via 1s 6s forwards;position:absolute;left:50%;top:92px;transform:translateX(-50%);font-size:11px;background:rgba(10,10,12,.6);padding:4px 10px;border-radius:99px;white-space:nowrap;color:rgba(255,255,255,.85)}
+@media (min-aspect-ratio:1/1){#ruota{display:none}}
+@media (max-aspect-ratio:1/1){#radar{left:10px;top:60px;bottom:auto;transform:none;width:104px;height:68px}#pausa,#audio{top:60px}#chi{top:62px}#ruota{top:96px}}
+@media (max-height:480px){#fine{gap:3px;padding:8px 16px}#fine .esito{font-size:34px}#fine .ris{font-size:42px}#fine .ris img{height:54px}#fine table{margin:2px 0 6px}
+  #fine .tito{position:absolute;right:5vw;bottom:0;height:46vh}#stop{gap:7px}#stop .h{font-size:30px}#scelta{padding-top:8px}#scelta h2{font-size:24px;margin:0}#scelta .passo{margin-bottom:6px}
+  .sq{padding:5px 2px 4px}.sq img{height:44px}#barra{flex-direction:row;justify-content:center;margin-top:8px}}
+@media (max-height:430px){#home{gap:5px;padding:8px 16px}#home .tiles{margin-top:8px}#home .nota{display:none}#home .tile{padding:6px}.btn{padding:10px 24px}#home .sub{margin-bottom:4px}}
+#stop{background:rgba(10,10,12,.82);justify-content:center;gap:12px}
+#stop .h{font-size:44px;color:var(--lime)}
+#stop p{margin:0 0 6px;font-size:12px;color:rgba(255,255,255,.7);text-align:center;line-height:1.7;max-width:330px}
+#carica{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--ink);font-family:Anton;font-size:22px;color:var(--lime);letter-spacing:.08em}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud" class="nas">
+  <div id="sb"><img id="sbH" alt=""><b id="sbHn"></b><span id="sbS">0 - 0</span><b id="sbAn"></b><img id="sbA" alt=""><i id="sbT">00:00</i></div>
+  <div id="chi"></div>
+  <div id="ruota">Ruota il telefono per la visuale TV</div>
+  <button id="audio" aria-label="Audio">♪</button>
+  <button id="pausa" aria-label="Pausa">II</button>
+  <div id="banner"><div class="t"></div><div class="s"></div></div>
+  <canvas id="radar" width="256" height="168"></canvas>
+  <div id="stickZona"><div id="stick"><i></i></div></div>
+  <div id="pow"><i></i></div>
+  <div id="tasti"><button id="bC">Scatto</button><button id="bA">Passa</button><button id="bB">Tira</button></div>
+</div>
+
+<div id="home" class="scr nas">
+  <img class="corona" src="img/corona-lime.png" alt="Fantatitano">
+  <div class="h sub">La Partita <span>PROTOTIPO</span></div>
+  <button class="btn" id="vai">Amichevole</button>
+  <div class="tiles">
+    <div class="tile"><span class="h">Carriera</span><i>IN ARRIVO</i></div>
+    <div class="tile"><span class="h">Coppa Titano</span><i>IN ARRIVO</i></div>
+    <div class="tile"><span class="h">La mia rosa</span><i>IN ARRIVO</i></div>
+  </div>
+  <div class="nota">16 squadre, stemmi e rose dal progetto Fantatitano</div>
+  <img class="tito" src="img/saluta.webp" alt="Tito">
+</div>
+
+<div id="scelta" class="scr nas">
+  <button class="indietro" id="indietro">‹ Indietro</button>
+  <h2 class="h" id="sceltaT">Scegli la tua squadra</h2>
+  <div class="passo" id="sceltaP">Passo 1 di 2</div>
+  <div id="griglia"></div>
+  <div id="barra">
+    <div id="diff"><button data-d="facile">Facile</button><button data-d="normale" class="on">Normale</button><button data-d="difficile">Difficile</button></div>
+    <button class="btn" id="inizio" disabled>Calcio d'inizio</button>
+  </div>
+</div>
+
+<div id="vs" class="scr nas">
+  <div class="lato"><img id="vsH" alt=""><b id="vsHn"></b></div><div class="x">VS</div><div class="lato"><img id="vsA" alt=""><b id="vsAn"></b></div>
+</div>
+
+<div id="stop" class="scr nas">
+  <div class="h">Pausa</div>
+  <p>Levetta: muovi il giocatore<br><b>Passa</b> · <b>Tira</b> (tieni premuto per la potenza) · <b>Scatto</b><br>
+  Senza palla: <b>Cambia</b> giocatore · <b>Scivolata</b><br>Tastiera: frecce, X passa, Spazio tira, Shift scatto</p>
+  <button class="btn" id="riprendi">Riprendi</button>
+  <button class="btn sec" id="esci">Esci dalla partita</button>
+</div>
+
+<div id="fine" class="scr nas">
+  <div class="h esito" id="esito"></div>
+  <div class="ris"><img id="fH" alt=""><span id="fS"></span><img id="fA" alt=""></div>
+  <div class="marc" id="marc"></div>
+  <table><tr><td id="tH"></td><td>Tiri</td><td id="tA"></td></tr><tr><td id="pH"></td><td>Possesso</td><td id="pA"></td></tr></table>
+  <img class="tito" id="fTito" alt="Tito">
+  <div class="az"><button class="btn" id="rivincita">Rivincita</button><button class="btn sec" id="cambia">Cambia squadre</button></div>
+</div>
+
+<div id="carica">CARICAMENTO…</div>
+
+<script src="data.js"></script>
+<script src="modello.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
