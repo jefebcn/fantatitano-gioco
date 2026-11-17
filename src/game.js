@@ -370,7 +370,7 @@ function newMatch(home, away) {
   if (fuori) { G.teams[0].side = -1; G.teams[1].side = 1; } // in trasferta si comincia attaccando verso sinistra
   G.ball = { x: 0, y: BR, z: 0, vx: 0, vy: 0, vz: 0, owner: null };
   ballMesh.visible = ballShadow.visible = true;
-  G.clock = 0; G.half = 1; G.goals = []; G.cards = []; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penId = -1; G.penWait = 0; G.lastPass = G.shooter = null; G.stats = { shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0], fouls: [0, 0], offs: [0, 0], pens: [0, 0], yel: [0, 0], red: [0, 0], crosses: [0, 0], heads: [0, 0], headGoals: [0, 0], corners: [0, 0], adv: [0, 0], inj: [0, 0] }; G.ctrl = null; G.charge = -1;
+  G.clock = 0; G.half = 1; G.goals = []; G.cards = []; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penId = -1; G.penWait = 0; G.lastPass = G.shooter = null; G.so = G.soRes = null; $('#hud').classList.remove('rigori'); G.stats = { shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0], fouls: [0, 0], offs: [0, 0], pens: [0, 0], yel: [0, 0], red: [0, 0], crosses: [0, 0], heads: [0, 0], headGoals: [0, 0], corners: [0, 0], adv: [0, 0], inj: [0, 0] }; G.ctrl = null; G.charge = -1;
   paintBoards(home, away, CREST);
   $('#sbH').src = img(home.id + '-mini'); $('#sbA').src = img(away.id + '-mini'); $('#sbHn').textContent = home.short; $('#sbAn').textContent = away.short;
   hud(); kickoff(G.teams[0]);
@@ -515,7 +515,7 @@ function shoot(p, tz, pow, err) {
   const dx = gx - p.x, dz = tz - p.z, d = hyp(dx, dz) || 1, sp = 19 + 15 * pow, t = d / sp / .94;
   const h = .35 + pow * 1.85 + (pow > .86 ? (pow - .86) * 11 : 0) + rnd(-.25, .25) * err;
   kick(p, dx / d * sp, clamp((h - BR + .5 * GRAV * t * t) / t, 0, 15), dz / d * sp, 'tiro');
-  G.shotId++; G.intended = null; G.stats.shots[p.team.idx]++; p.s.sh++; if (p.by) p.by.s.kp++; G.lastPass = null; G.shooter = p;
+  G.shotId++; G.intended = null; G.lastPass = null; G.shooter = p; if (!G.so) { G.stats.shots[p.team.idx]++; p.s.sh++; if (p.by) p.by.s.kp++; } // i rigori dopo la partita non contano nelle statistiche
   if (G.pen) { G.pen = false; G.penId = G.shotId; }
 }
 function slide(p) { if (p.st !== 'run' || p.stun > 0) return; p.st = 'slide'; p.stT = 0; p.hit = false; azione(p, 'scivolata'); }
@@ -743,11 +743,15 @@ function gkThink(p, dt) {
 function step(dt) {
   G.t += dt; G.stateT += dt; const b = G.ball; if (!b) return;
   if (G.state === 'play') {
-    G.clock += dt; if (G.poss) G.stats.poss[G.poss.idx] += dt;
     if (G.charge >= 0) { G.charge += dt; if (G.charge > .95) pressB(false); }
-    if (G.clock >= HALF_SECS) {
-      if (G.half === 1) { setState('half'); banner('Intervallo', `${G.teams[0].club.short} ${G.teams[0].score} - ${G.teams[1].score} ${G.teams[1].club.short}`, 2300); AU.whistle(2); }
-      else { setState('full'); banner('Fine partita', '', 1800); AU.whistle(3); }
+    if (G.so) soStep(dt);
+    else {
+      G.clock += dt; if (G.poss) G.stats.poss[G.poss.idx] += dt;
+      if (G.clock >= HALF_SECS) {
+        if (G.half === 1) { setState('half'); banner('Intervallo', `${G.teams[0].club.short} ${G.teams[0].score} - ${G.teams[1].score} ${G.teams[1].club.short}`, 2300); AU.whistle(2); }
+        else if (G.comp && G.comp.rigori && G.teams[0].score === G.teams[1].score) startShootout();
+        else { setState('full'); banner('Fine partita', '', 1800); AU.whistle(3); }
+      }
     }
   } else if (G.state === 'kickoff') { if (G.stateT > 1.2) { gain(G.taker); G.taker.thinkT = .2; setState('play'); } }
   else if (G.state === 'goal') { if (G.stateT > (G.goalEnd || 4.2)) kickoff(G.next); } // G.goalEnd lo allunga la regia quando c'è la sequenza del gol
@@ -782,7 +786,7 @@ function step(dt) {
   const ps = all();
   for (const p of ps) {
     p.cool -= dt; p.stun -= dt; p.shield -= dt; p.slideCd -= dt; p.jock = false;
-    if (G.penWait > 0) { p.tx = p.x; p.tz = p.z; p.sprint = false; }
+    if (G.penWait > 0 || (G.so && G.state === 'play' && !(p === G.so.gk && G.so.fase === 'tiro'))) { p.tx = p.x; p.tz = p.z; p.sprint = false; } // ai rigori si muove solo il portiere
     else if (!userDrives(p) || G.state !== 'play') think(p, dt); else userThink(p);
   }
   for (const p of ps) movePlayer(p, dt);
@@ -846,12 +850,12 @@ function contacts(dt) {
   if (!own) {
     const sp = hyp(b.vx, b.vz); let best = null, bd = 9;
     for (const p of all()) {
-      if (p.cool > 0 || p.stun > 0 || p.st === 'down') continue;
+      if (p.cool > 0 || p.stun > 0 || p.st === 'down' || (G.so && p !== G.so.gk)) continue; // ai rigori il pallone lo può toccare solo il portiere
       const d = hyp(p.x - b.x, p.z - b.z), gk = p.i === 0, inBox = Math.abs(p.x) > HL - 17 && Math.abs(p.z) < 20.5;
       const reach = gk && inBox ? (p.st === 'dive' ? 2.0 : 1.3) : (p.st === 'slide' ? 1.3 : 1.05), top = gk && inBox ? 2.7 : 1.55;
       if (d < reach && b.y < top && d < bd) { bd = d; best = p; }
     }
-    if (!(best && best.i === 0) && b.y < AIR.top && sp < AIR.fast && (b.y >= AIR.low || (b.vy < -5 && b.y > 1))) { // pallone alto o che scende forte: chi ci arriva colpisce di testa
+    if (!G.so && !(best && best.i === 0) && b.y < AIR.top && sp < AIR.fast && (b.y >= AIR.low || (b.vy < -5 && b.y > 1))) { // pallone alto o che scende forte: chi ci arriva colpisce di testa
       let h = null, hd = 9;
       for (const p of all()) { if (p.i === 0 || p.cool > 0 || p.stun > 0 || p.st !== 'run') continue; const d = hyp(p.x - b.x, p.z - b.z) + rnd(.3); if (d < AIR.reach + .3 && d < hd) { hd = d; h = p; } }
       if (h) header(h);
@@ -909,10 +913,12 @@ function bounds() {
       b.x = e * (HL - .15); b.vx *= -.55; b.vz += sgn(b.z) * 2; b.vy *= .6; AU.post(); return;
     }
     if (az < GH && b.y < GT) return goal(G.teams.find((t) => t.side === e));
+    if (G.so) return soEsito(false);
     const def = G.teams.find((t) => t.side === -e);
     if (G.lastTouch && G.lastTouch.team === def) corner(def.opp, e * (HL - .6), sgn(b.z) * (HW - .6));
     else restart(def, e * (HL - 6), 0, 'Rimessa dal fondo', def.players[0]);
   } else if (Math.abs(b.z) > HW) {
+    if (G.so) return soEsito(false);
     const t = G.lastTouch ? G.lastTouch.team.opp : G.teams[0];
     restart(t, clamp(b.x, -HL + 1.5, HL - 1.5), sgn(b.z) * (HW - .5), 'Rimessa laterale');
   }
@@ -989,7 +995,39 @@ function foul(d, own, sliding, behind) {
   // dopo un'espulsione barriera e battitore vanno riscelti senza di lui
   if (c === 'r' && !inBox) { freeKick(t, x, z, '', sliding ? own : null); G.wait += .8; banner('Espulso!', `Cartellino rosso · ${d.name}`, 2300, 'r'); }
 }
+/* ------------------------------------------------------------------ calci di rigore dopo una partita di coppa finita in parità */
+// Cinque a testa, poi a oltranza. Ognuno tira nella porta verso cui attaccava. Tira chi vale di più, a turno.
+function startShootout() {
+  G.so = { g: [0, 0], n: [0, 0], seq: [[], []], turn: 0, fase: 'pausa', t: 1.9, fine: false, k: null, gk: null, calciato: false };
+  G.charge = -1; G.offs = null; G.penWait = 0; for (const p of all()) { p.run = p.mark = null; p.fkShot = p.cornerKick = false; }
+  $('#hud').classList.add('rigori'); soHud(); banner('Calci di rigore', '', 1700); AU.whistle(2);
+}
+function soHud() { const so = G.so, d = (i) => so.seq[i].slice(-5).map((v) => (v ? '●' : '○')).join(''); $('#rig').textContent = `${d(0)}  Rigori ${so.g[0]} - ${so.g[1]}  ${d(1)}`; }
+function soKick() {
+  const so = G.so, t = G.teams[so.turn], ord = t.players.filter((p) => p.i).sort((a, c) => c.q - a.q), k = ord[so.n[so.turn] % ord.length];
+  restart(t, t.side * (HL - 11), 0, '', k); G.noOff = false; G.wait = 1.4; G.fk = { pen: true };
+  so.fase = 'tiro'; so.k = k; so.gk = t.opp.players[0]; so.calciato = false; so.t = 0;
+}
+function soEsito(gol) {
+  const so = G.so, i = so.turn; if (so.fase !== 'tiro') return;
+  so.n[i]++; so.seq[i].push(gol); if (gol) so.g[i]++; so.fase = 'pausa'; so.t = 1.5; so.turn = 1 - i; G.charge = -1; G.penWait = 0;
+  const [a, c] = so.g, ra = Math.max(0, 5 - so.n[0]), rc = Math.max(0, 5 - so.n[1]);
+  so.fine = so.n[0] >= 5 && so.n[1] >= 5 ? so.n[0] === so.n[1] && a !== c : a > c + rc || c > a + ra; // nei primi cinque finisce quando uno non può più essere raggiunto
+  banner(gol ? 'Gol!' : G.lastTouch === so.gk ? 'Parato!' : 'Fuori!', `${so.k.name} · rigori ${a} - ${c}`, 1400); if (gol) AU.roar(); soHud();
+}
+function soStep(dt) {
+  const so = G.so, b = G.ball;
+  if (so.fase === 'pausa') {
+    so.t -= dt; if (so.t > 0) return;
+    if (!so.fine) return soKick();
+    G.soRes = so.g.slice(); G.so = null; $('#hud').classList.remove('rigori'); setState('full'); banner('Fine partita', `Rigori ${G.soRes[0]} - ${G.soRes[1]}`, 1800); AU.whistle(3); return;
+  }
+  if (!so.calciato) { if (b.owner !== so.k) so.calciato = true; return; }
+  so.t += dt;
+  if (b.owner === so.gk || so.t > 3.2 || (so.t > .7 && hyp(b.vx, b.vz) < 1.2 && b.y < .6)) soEsito(false); // preso dal portiere, fermo, o tempo scaduto
+}
 function goal(team) {
+  if (G.so) return soEsito(true);
   team.score++; const lt = G.lastTouch; let k = G.lastKicker; if (!k || k.team !== team) k = lt && lt.team === team ? lt : null;
   const own = !k; G.scorer = own ? nearestTo(team, G.ball.x, G.ball.z) : k;
   const min = minute();
@@ -1292,7 +1330,7 @@ function buildMenu() {
   $('#nuovoInd').onclick = () => show('#home');
   $('#inizia').onclick = () => { K = CAR.nuova(CLUBS, $('#nome').value.trim() || 'Mister', mia); CAR.applica(K, CLUBS); CAR.salva(K); casa(); };
   // dashboard
-  const gioca = (tipo, avv, titolo, fuori) => { sel.mia = K.club; sel.loro = avv; G.comp = { tipo, titolo, fuori: !!fuori }; showPre(); };
+  const gioca = (tipo, avv, titolo, fuori) => { sel.mia = K.club; sel.loro = avv; G.comp = { tipo, titolo, fuori: !!fuori, rigori: tipo === 'coppa' }; showPre(); };
   $('#cCamp').onclick = () => { const p = CAR.prossima(K); if (p) gioca('camp', p.avv, `Campionato · giornata ${p.giornata} di ${p.totale} · ${p.inCasa ? 'in casa' : 'in trasferta'}`, !p.inCasa); else { CAR.nuovaStagione(K, CLUBS); CAR.salva(K); drawHub(); } };
   $('#cCoppa').onclick = () => { const p = CAR.coppaProssima(K); if (p) gioca('coppa', p.avv, `Coppa Titano · ${p.nome.toLowerCase()}`); else panCoppa(); };
   $('#cClass').onclick = panClassifica; $('#tClub').onclick = panClub; $('#tMerc').onclick = () => { mPreso = null; panMercato(); }; $('#hImp').onclick = () => { armato = false; panImp(); }; $('#hCoppa').onclick = panCoppa;
@@ -1346,7 +1384,7 @@ function showEnd() {
   if (carr) { // carriera: si registra il risultato e si simulano le altre partite
     const marc = G.goals.filter((g) => g.t === 0 && !g.name.startsWith('Autogol')).map((g) => g.name);
     if (c.tipo === 'camp') { const r = CAR.giocaCampionato(K, CLUBS, h.score, a.score, marc); G.premio = r ? r.monete : 0; if (r) nota = r.finita ? (r.campione === K.club ? 'Campioni!' : `Stagione finita · ${r.posizione}º posto`) : `Campionato · ora sei ${r.posizione}º`; }
-    else { const r = CAR.giocaCoppa(K, CLUBS, h.score, a.score, marc); G.premio = r ? r.monete : 0; if (r) { if (r.rigori) { $('#esito').textContent = r.passa ? 'Avanti ai rigori!' : 'Fuori ai rigori'; $('#fS').textContent = `${h.score} - ${a.score} (${r.rigori[0]}-${r.rigori[1]} rig.)`; } nota = r.vinta ? 'La Coppa Titano è tua!' : r.passa ? `Coppa Titano · ${r.turno.toLowerCase()} superato` : `Coppa Titano · eliminato: ${r.turno.toLowerCase()}`; } }
+    else { const r = CAR.giocaCoppa(K, CLUBS, h.score, a.score, marc, Math.random, G.soRes); G.premio = r ? r.monete : 0; if (r) { if (r.rigori) { $('#esito').textContent = r.passa ? 'Avanti ai rigori!' : 'Fuori ai rigori'; $('#fS').textContent = `${h.score} - ${a.score} (${r.rigori[0]}-${r.rigori[1]} rig.)`; } nota = r.vinta ? 'La Coppa Titano è tua!' : r.passa ? `Coppa Titano · ${r.turno.toLowerCase()} superato` : `Coppa Titano · eliminato: ${r.turno.toLowerCase()}`; } }
     CAR.salva(K); G.comp = null;
   }
   if (carr && G.premio) nota += ` · +${mon(G.premio)} monete`;

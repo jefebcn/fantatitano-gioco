@@ -45,6 +45,11 @@ assert.ok(ai === 1, 'il pareggio dei quarti va ai rigori');
 if (C.coppa.vinta) { assert.equal(turni, 4); assert.equal(C.coppa.campione, 'academy'); assert.ok(C.trofei.some((t) => t.tipo === 'Coppa Titano')); }
 else { assert.equal(C.coppa.fuori, 1); assert.ok(C.coppa.campione && C.coppa.campione !== 'academy'); assert.equal(C.coppa.storia.length, 4); }
 
+// coppa: i rigori giocati dall'utente contano al posto di quelli simulati
+C.coppa = K.nuova(clubs, 'x', 'academy', rnd).coppa;
+{ const e = K.giocaCoppa(C, clubs, 1, 1, [], rnd, [4, 3]); assert.deepEqual(e.rigori, [4, 3]); assert.equal(e.passa, true); assert.equal(C.coppa.turno, 1); const m = C.coppa.storia[0].find((x) => x.a === 'academy' || x.b === 'academy'); assert.deepEqual(m.a === 'academy' ? m.rg : [m.rg[1], m.rg[0]], [4, 3]); }
+C.coppa = K.nuova(clubs, 'x', 'academy', rnd).coppa;
+{ const e = K.giocaCoppa(C, clubs, 0, 0, [], rnd, [2, 4]); assert.equal(e.passa, false); assert.equal(C.coppa.fuori, 0); }
 // coppa: fuori al primo turno, la coppa finisce da sola e ha un vincitore
 C.coppa = K.nuova(clubs, 'x', 'academy', rnd).coppa;
 const e2 = K.giocaCoppa(C, clubs, 0, 4, [], rnd);

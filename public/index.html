@@ -147,6 +147,8 @@ table.tab{width:100%;border-collapse:collapse;font-size:12.5px}table.tab th{font
   background:rgba(10,10,12,.6);padding:3px 10px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
 #chi i{color:var(--lime);font-style:normal;margin-right:5px}
 #en{position:absolute;top:80px;left:50%;transform:translateX(-50%);width:62px;height:4px;border-radius:4px;background:rgba(10,10,12,.6);overflow:hidden;pointer-events:none}
+#rig{display:none;position:absolute;top:58px;left:50%;transform:translateX(-50%);font:900 14px Lato;letter-spacing:.06em;color:var(--lime);background:rgba(10,10,12,.78);padding:6px 14px;border-radius:99px;white-space:pre}
+#hud.rigori #rig{display:block}#hud.rigori #chi,#hud.rigori #en,#hud.rigori #ment,#hud.rigori #radar,#hud.rigori #bA,#hud.rigori #bC,#hud.rigori #bD{display:none!important}
 #en i{display:block;height:100%;width:100%;background:var(--lime)}
 #radar{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:128px;height:84px;border-radius:8px;opacity:.85}
 #pausa,#audio{position:absolute;top:10px;width:38px;height:38px;border-radius:10px;background:rgba(10,10,12,.6);pointer-events:auto;font-size:16px}
@@ -188,6 +190,7 @@ table.tab{width:100%;border-collapse:collapse;font-size:12.5px}table.tab th{font
 <div id="hud" class="nas">
   <div id="sb"><img id="sbH" alt=""><b id="sbHn"></b><span id="sbS">0 - 0</span><b id="sbAn"></b><img id="sbA" alt=""><i id="sbT">00:00</i></div>
   <button id="ment">Equilibrata</button>
+  <div id="rig"></div>
   <div id="chi"></div>
   <div id="en"><i></i></div>
   <button id="audio" aria-label="Audio">♪</button>
