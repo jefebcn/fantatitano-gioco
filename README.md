@@ -34,6 +34,7 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 | `scripts/calciatore.mjs` | Alleggerisce il modello tenendo conto di UV e normali |
 | `scripts/maschera-divisa.py` | Dice, per ogni punto della texture del corpo, se è pelle, maglia, pantaloncini, calzettoni, scarpe |
 | `scripts/animazioni.mjs` | Porta le clip Mixamo sullo scheletro del calciatore; in cima c'è l'elenco `CLIP` |
+| `scripts/simula.cjs` | Gioca partite simulate e stampa gol, tiri, possesso, inserimenti e scivolate: serve per tarare l'IA (richiede Playwright) |
 | `scripts/analizza.mjs` | Misura le clip di un pacchetto Mixamo, per scegliere quali usare e dove ritagliarle |
 
 ## Cosa c'è
@@ -50,6 +51,17 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
   subisce la scivolata, tuffo del portiere a destra e a sinistra, presa, attesa del portiere, corsetta. L'esultanza è costruita
   (braccia alzate sopra la posa d'attesa).
   Le fa partire `azione(p, nome)`; velocità e sfumature stanno nella tabella `FX`.
+- IA di squadra:
+  - **Inserimenti senza palla** (`runs`, `runScore`): chi attacca valuta tre corse (dritto, taglio
+    dentro, taglio fuori) con un punteggio fatto di distanza dalla porta, spazio libero, distanza dai
+    compagni e dal pallone, linea dei difensori; parte solo sopra una soglia. Dopo un passaggio in
+    avanti può scattare il dai e vai. Chi ha palla cerca chi si inserisce e gli passa sulla corsa.
+  - **Difesa a tre distanze** (`chase`): il più vicino al portatore si avvicina, poi temporeggia
+    tenendosi tra lui e la porta, poi va sul pallone; aspetta di meno se la porta è vicina o se è
+    arrivato il raddoppio. In scivolata va solo se è stato saltato o vicino all'area.
+  - **Marcature** (`roles`): un avversario per difensore, senza doppioni; chi si inserisce viene
+    seguito anche dai centrocampisti.
+  I numeri stanno in `RUN`, `DEF` e nei campi `wait` e `slide` di `DIFF`, in cima a `src/game.js`.
 - Se il modello non si carica, il gioco ripiega da solo sui pupazzi a blocchi (`makeFigure`).
 
 ## Cosa manca, in ordine
@@ -71,7 +83,10 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 - **Mai provato su un telefono vero.** Le prove sono state fatte in un browser senza scheda
   grafica: fluidità e comodità dei comandi sono da verificare. Se scatta, abbassare ancora il
   rapporto in `npm run modello` (oggi 0.36 del corpo originale) e rigenerare.
-- **Livello degli avversari** tarato solo con partite simulate (`DIFF` in cima a `src/game.js`).
+- **Livello degli avversari** tarato solo con partite simulate (`DIFF` in cima a `src/game.js`):
+  `node scripts/simula.cjs 64` dopo `npm run build`. Con la squadra di casa che gioca da sola, oggi
+  finisce in media 2,9-0,4 a facile, 1,2-0,7 a normale, 0,5-1,3 a difficile. Con gli inserimenti si
+  tira e si segna più di prima (a normale erano 0,9-0,5).
 - **Colori delle maglie** da `src/data.js` dell'app; il secondo colore è scelto a occhio dagli
   stemmi (`scripts/genera-dati.py`). Qualche divisa non combacia col suo stemma.
 - **Nomi dei calciatori**: sono quelli del listone dell'app. Verificare che l'accordo con
