@@ -202,7 +202,7 @@ let MODEL = null;
 /** Quanto si resta a terra dopo una scivolata, un tuffo o un contrasto subito: si allunga se ci sono le clip registrate. */
 const DOWN = { pl: .38, gk: .5, fall: .7 };
 /** Le azioni registrate: velocità, da che secondo cominciano a sfumare (se manca: alla fine), cosa viene dopo. */
-const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.3 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 }, rinvio: { sp: 1.15 } };
+const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.3 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 }, rinvio: { sp: 1.15 }, testa: { sp: 1.3, cut: .45 } };
 /** Il portiere tiene la palla in mano per HOLD secondi; il rinvio con le mani parte prima, così la palla esce quando il braccio arriva in alto. */
 const HOLD = 1, LANCIO = HOLD - .73 / 1.15;
 const hasFx = (n) => !!(MODEL && MODEL.fx && MODEL.fx[n]);
