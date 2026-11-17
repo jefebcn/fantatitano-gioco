@@ -65,7 +65,7 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
   usa il proprio secondo colore se si distingue da quello di casa, altrimenti bianco o nero (`pickKits`).
 - Animazioni registrate (Mixamo, «Soccer Game Pack»): tiro, passaggio, scivolata, caduta di chi
   subisce la scivolata, tuffo del portiere a destra e a sinistra, presa, attesa del portiere, passi laterali
-  del portiere, rinvio con le mani, corsetta. L'esultanza è costruita (braccia alzate sopra la posa d'attesa).
+  del portiere, rinvio con le mani, colpo di testa (`testa`), corsetta. L'esultanza è costruita (braccia alzate sopra la posa d'attesa).
   Il portiere che ha il pallone lo tiene in mano all'altezza del petto e lo rilancia dopo un secondo
   (`HOLD`, `LANCIO`): il pallone parte nel momento in cui il braccio lo lascia.
   Le fa partire `azione(p, nome)`; velocità e sfumature stanno nella tabella `FX`.
@@ -84,7 +84,7 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 
 ## Cosa manca, in ordine
 
-1. **Animazioni che mancano.** Esultanza vera, colpo di testa, stop, rimessa laterale, rinvio di piede
+1. **Animazioni che mancano.** Esultanza vera (nel pacchetto non c'è), stop, rimessa laterale, rinvio di piede
    del portiere. Molte sono già nel pacchetto scaricato (54 clip): basta aggiungerle a `CLIP` in
    `scripts/animazioni.mjs` e a `FX` nel gioco. Gli FBX non stanno nel repository (i file grezzi di Mixamo non
    si ridistribuiscono): vanno riscaricati da mixamo.com (Soccer Game Pack, FBX, 30 fps) con un Adobe ID.
