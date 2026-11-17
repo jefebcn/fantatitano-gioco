@@ -85,6 +85,12 @@ table.tab{width:100%;border-collapse:collapse;font-size:12.5px}table.tab th{font
 .sez{font:900 10px Lato;letter-spacing:.12em;text-transform:uppercase;color:var(--lime);margin:12px 0 5px}.vuoto{margin:0;font-size:13px;color:rgba(255,255,255,.8)}
 .ris2{display:grid;grid-template-columns:1fr 1fr;gap:2px 20px;font-size:12px}.ris2 div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(255,255,255,.07);padding:3px 0}.ris2 .io{color:var(--lime)}.ris2 b{white-space:nowrap}
 .dati{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.dati div{background:rgba(255,255,255,.07);border-radius:10px;padding:9px 6px;text-align:center}.dati b{display:block;font-family:Anton;font-weight:400;font-size:22px}.dati span{font:900 9px Lato;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.mon{font:900 13px Lato;background:rgba(217,245,31,.14);color:var(--lime);padding:7px 12px;border-radius:99px;white-space:nowrap}
+.borsa{font:900 11px Lato;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:6px}.borsa b{font-family:Anton;font-weight:400;font-size:22px;color:var(--lime);margin-left:7px;vertical-align:-3px;letter-spacing:0}
+.lista{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px}.lista .gioc{margin-top:0}
+.gioc{display:flex;align-items:center;gap:8px;width:100%;text-align:left;color:#fff;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:7px 10px;margin-top:5px;min-width:0}
+.gioc img{height:20px;width:auto}.gioc b{font:900 13px Lato;white-space:nowrap}.gioc span{flex:1;min-width:0;font:700 10.5px Lato;color:rgba(255,255,255,.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gioc em{font:900 12px Lato;color:var(--lime);white-space:nowrap}
+.gioc[disabled]{opacity:.4}.gioc.sel{opacity:1;border-color:var(--lime);background:rgba(217,245,31,.1)}.avviso{margin:4px 0 6px;color:var(--lime);font-weight:900;font-size:13px}
 #pan .seg{justify-content:flex-start}#esitoC{font:900 12px Lato;letter-spacing:.1em;text-transform:uppercase;color:var(--lime)}#esitoC:empty{display:none}
 .basso #home .btn.sec{margin-top:2px}
 /* ---------- prima della partita: le due formazioni ---------- */
@@ -212,7 +218,7 @@ table.tab{width:100%;border-collapse:collapse;font-size:12.5px}table.tab th{font
 </div>
 
 <div id="hub" class="scr nas">
-  <div class="top"><img src="img/corona-lime.png" alt="Fantatitano"><span class="tit">La Partita</span><button class="ic" id="hImp" aria-label="Impostazioni">⚙</button>
+  <div class="top"><img src="img/corona-lime.png" alt="Fantatitano"><span class="tit">La Partita</span><button class="ic" id="hImp" aria-label="Impostazioni">⚙</button><span class="mon" id="hMon"></span>
     <div class="prof"><div><b id="hNome"></b><span id="hClub"></span></div><img id="hStemma" alt=""></div></div>
   <div class="carte">
     <button class="carta gioca" id="cCamp"></button><button class="carta" id="cClass"></button>
@@ -220,7 +226,7 @@ table.tab{width:100%;border-collapse:collapse;font-size:12.5px}table.tab th{font
   </div>
   <div class="tessere">
     <button class="tess" id="tRosa"><b>La mia rosa</b><i>Formazione e tattica</i></button><button class="tess" id="tClub"><b>Il mio club</b><i>Numeri e trofei</i></button>
-    <button class="tess" id="hCoppa"><b>Tabellone</b><i>Coppa Titano</i></button><div class="tess off"><b>Trasferimenti</b><i>In arrivo</i></div>
+    <button class="tess" id="hCoppa"><b>Tabellone</b><i>Coppa Titano</i></button><button class="tess" id="tMerc"><b>Trasferimenti</b><i>Mercato</i></button>
   </div>
 </div>
 

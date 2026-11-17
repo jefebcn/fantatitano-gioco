@@ -72,6 +72,11 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
     sono simulate secondo la forza delle squadre. A fine stagione se ne comincia un'altra.
   - **Coppa Titano**: eliminazione diretta dagli ottavi, partita secca; in parità decidono i rigori,
     per ora simulati e non giocati.
+  - **Monete e mercato** (`PREMI`, `prezzo`, `scambio`, pannello `panMercato`): le monete arrivano da
+    risultati, gol, turni di coppa e trofei. Si prende un titolare di un'altra squadra cedendo in cambio
+    un proprio giocatore dello stesso ruolo e pagando la differenza (chi si cede vale il 70% del suo
+    prezzo). Le rose cambiate stanno in `rose` dentro la carriera e valgono anche nelle amichevoli. La
+    forza delle squadre nei risultati simulati non cambia con gli scambi.
   - Tutto è salvato sul dispositivo (`localStorage`, chiave `fantatitano-carriera`): non c'è ancora il
     collegamento all'account dell'app. Uscire a metà partita non registra il risultato.
   - Nel gioco la squadra dell'utente attacca sempre da sinistra a destra, anche in trasferta.
@@ -124,8 +129,8 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
    nella versione a pagamento.
 3. **Collegamento all'app.** Rewrite `/gioco` nel `vercel.json` di `fantasyfootballrsm` verso
    questo deploy, poi login condiviso e tabelle Supabase per carriera e rosa.
-4. **Trasferimenti e sfide**: mancano le monete, il mercato dei giocatori e gli obiettivi. Mancano anche
-   le riserve (ogni squadra ha solo gli undici titolari) e i rigori di coppa giocati davvero.
+4. **Sfide e riserve**: mancano gli obiettivi, le riserve (ogni squadra ha solo gli undici titolari, quindi
+   il mercato è a scambio) e i rigori di coppa giocati davvero. Le altre squadre non fanno mercato tra loro.
 
 ## Cose da sapere
 

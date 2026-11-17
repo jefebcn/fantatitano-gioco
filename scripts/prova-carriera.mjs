@@ -57,5 +57,36 @@ assert.equal(C.stagione, 2); assert.equal(C.giornata, 0); assert.ok(K.classifica
 // risultati simulati: la più forte vince più spesso, i gol sono plausibili
 let v = 0, s = 0, gol = 0; for (let i = 0; i < 4000; i++) { const [a, b] = K.simula(clubs, 'trefiori', 'academy', rnd); v += a > b; s += a < b; gol += a + b; }
 assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v} vittorie, ${s} sconfitte, ${(gol / 4000).toFixed(2)} gol`);
+// monete: premio per risultato e gol, trofei, turni di coppa
+{
+  const P = K.PREMI; let M = K.nuova(clubs, 'm', 'academy', rnd); assert.equal(M.monete, P.inizio);
+  let r = K.giocaCampionato(M, clubs, 3, 1, [], rnd); assert.equal(r.monete, P.v + 3 * P.gol); assert.equal(M.monete, P.inizio + P.v + 60);
+  r = K.giocaCampionato(M, clubs, 0, 0, [], rnd); assert.equal(r.monete, P.n); r = K.giocaCampionato(M, clubs, 0, 2, [], rnd); assert.equal(r.monete, P.p);
+  const prima = M.monete; r = K.giocaCoppa(M, clubs, 2, 0, [], rnd); assert.equal(r.monete, P.v + 40 + P.turno); assert.equal(M.monete, prima + r.monete);
+  const p2 = M.monete; r = K.giocaCoppa(M, clubs, 0, 1, [], rnd); assert.equal(r.monete, P.p); assert.equal(M.monete, p2 + P.p);
+  // carriera salvata prima del mercato: riceve monete e rose vuote
+  const vecchia = JSON.parse(JSON.stringify(M)); delete vecchia.monete; delete vecchia.rose; delete vecchia.movimenti;
+  const letta = K.carica({ getItem: () => JSON.stringify(vecchia) }); assert.equal(letta.monete, P.inizio); assert.deepEqual(letta.rose, {}); assert.deepEqual(letta.movimenti, []);
+}
+// mercato: prezzi, scambio, monete insufficienti, ruolo diverso, numeri di maglia, ritorno alle rose di partenza
+{
+  const cl = JSON.parse(JSON.stringify(clubs)), valore = (ruolo, q) => 50 + q; // valore di prova: cresce col prezzo del listone
+  assert.ok(K.prezzo(88) > K.prezzo(70) * 3 && K.prezzo(55) < 100 && K.prezzo(50) === 0);
+  assert.equal(K.costoScambio(70, 70), K.prezzo(70) - Math.round(K.prezzo(70) * .7 / 10) * 10); assert.ok(K.costoScambio(60, 80) < 0);
+  const M = K.nuova(cl, 'm', 'academy', rnd); K.applica(M, cl);
+  const mio = cl.find((c) => c.id === 'academy'), forte = cl.find((c) => c.id === 'trefiori'), iIn = 9, iOut = 9, preso = forte.xi[iIn].slice(), ceduto = mio.xi[iOut].slice();
+  const costo = K.costoScambio(valore(preso[1], preso[3]), valore(ceduto[1], ceduto[3])); assert.ok(costo > M.monete, 'il più forte deve costare più delle monete iniziali');
+  assert.deepEqual(K.scambio(M, cl, valore, 'trefiori', iIn, iOut), { ok: false, motivo: 'monete', costo }); assert.equal(mio.xi[iOut][0], ceduto[0]);
+  assert.equal(K.scambio(M, cl, valore, 'trefiori', 0, 9).motivo, 'ruolo'); assert.equal(K.scambio(M, cl, valore, 'academy', 9, 9).motivo, 'squadra');
+  M.monete = costo + 5; const r = K.scambio(M, cl, valore, 'trefiori', iIn, iOut);
+  assert.deepEqual(r, { ok: true, costo }); assert.equal(M.monete, 5); assert.equal(mio.xi[iOut][0], preso[0]); assert.equal(forte.xi[iIn][0], ceduto[0]);
+  assert.equal(new Set(mio.xi.map((x) => x[2])).size, 11, 'numeri di maglia doppi'); assert.equal(new Set(forte.xi.map((x) => x[2])).size, 11);
+  assert.equal(mio.xi.map((x) => x[1]).join(''), 'PDDDDCCCAAA'); assert.equal(M.movimenti[0].preso, preso[0]); assert.equal(mio.xi0[iOut][0], ceduto[0]);
+  // salvata e riletta, la rosa resta quella nuova; senza carriera tornano le rose di partenza
+  const letta = K.carica({ getItem: () => JSON.stringify(M) }), cl2 = JSON.parse(JSON.stringify(clubs)); K.applica(letta, cl2);
+  assert.equal(cl2.find((c) => c.id === 'academy').xi[iOut][0], preso[0]); K.applica(null, cl2); assert.equal(cl2.find((c) => c.id === 'academy').xi[iOut][0], ceduto[0]);
+  // cedere un forte per uno scarso fa incassare
+  M.monete = 0; const r2 = K.scambio(M, cl, valore, 'trefiori', iIn, iOut); assert.ok(r2.ok && r2.costo < 0 && M.monete === -r2.costo);
+}
 assert.equal(K.carica({ getItem: () => '{rotto' }), null); assert.equal(K.carica({ getItem: () => null }), null);
 console.log(`Carriera: tutte le prove passate (forte contro debole: ${v} vittorie, ${s} sconfitte su 4000, ${(gol / 4000).toFixed(2)} gol a partita)`);
