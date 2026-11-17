@@ -1,0 +1,9 @@
+{
+  "name": "Fantatitano — La Partita",
+  "short_name": "La Partita",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0A0A0C",
+  "theme_color": "#0A0A0C"
+}

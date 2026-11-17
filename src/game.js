@@ -58,7 +58,7 @@ const img = (id) => `img/${id}.webp`;
 
 const G = {
   state: 'menu', stateT: 0, t: 0, teams: [], ball: null, ctrl: null, clock: 0, half: 1, auto: false, diff: DIFF.normale,
-  lastTouch: null, lastKicker: null, intended: null, poss: null, shotId: 0, charge: -1, paused: false, portrait: false,
+  lastTouch: null, lastKicker: null, intended: null, poss: null, shotId: 0, charge: -1, paused: false, rot: false,
   in: { jx: 0, jy: 0, sprint: false }, idle: 0, stats: null, goals: [], cards: [], next: null, taker: null,
   headId: -1, fk: null, wait: 1.1, offs: null, noOff: false, pen: false, penId: -1, penWait: 0,
 };
@@ -506,7 +506,7 @@ function slide(p) { if (p.st !== 'run' || p.stun > 0) return; p.st = 'slide'; p.
 function switchCtrl() { const b = G.ball; const n = nearestTo(G.teams[0], b.x + b.vx * .3, b.z + b.vz * .3, G.ctrl); if (n) setCtrl(n); }
 
 /* comandi dell'utente */
-function inputWorld() { const { jx, jy } = G.in; return G.portrait ? [-jy, jx] : [jx, jy]; }
+function inputWorld() { return [G.in.jx, G.in.jy]; }
 function pressA() {
   if (G.state !== 'play' || G.auto || G.penWait > 0) return; const c = G.ctrl, b = G.ball; if (!c) return;
   if (b.owner === c) {
@@ -1034,11 +1034,11 @@ function updateCamera(dt) {
   if (b) { fx = b.x; fz = b.z; if (G.state === 'goal' && G.scorer && G.stateT > .9) { fx = G.scorer.x; fz = G.scorer.z; } }
   let px, py, pz, lx, lz, fov;
   if (G.dbgCam) { cam.position.set(G.dbgCam[0], G.dbgCam[1], G.dbgCam[2]); cam.lookAt(G.dbgCam[3], G.dbgCam[4], G.dbgCam[5]); cam.fov = G.dbgCam[6] || 30; cam.updateProjectionMatrix(); return; }
-  if (G.state === 'menu') { const a = G.t * .07; px = Math.sin(a) * 74; pz = Math.cos(a) * 62; py = 30; lx = 0; lz = 0; fov = G.portrait ? 62 : 40; }
-  else if (!G.portrait) {
+  if (G.state === 'menu') { const a = G.t * .07; px = Math.sin(a) * 74; pz = Math.cos(a) * 62; py = 30; lx = 0; lz = 0; fov = 40; }
+  else {
     const close = G.state === 'goal' && G.stateT > .9; lx = clamp(fx, -39, 39); lz = fz * .55; px = lx * .96; pz = lz + (close ? 26 : 39); py = close ? 13 : 25; fov = 36;
     if (cam.aspect < 1.5) { py += 8; pz += 10; }
-  } else { const close = G.state === 'goal' && G.stateT > .9; lx = fx + (close ? 0 : 7); lz = fz * .8; px = fx - (close ? 18 : 23); pz = fz * .8; py = close ? 15 : 33; fov = 58; }
+  }
   const k = 1 - Math.exp(-(G.state === 'menu' ? 2 : 4.2) * dt);
   camPos.x += (px - camPos.x) * k; camPos.y += (py - camPos.y) * k; camPos.z += (pz - camPos.z) * k;
   camLook.x += (lx - camLook.x) * k; camLook.z += (lz - camLook.z) * k;
@@ -1075,13 +1075,12 @@ function hud() {
 }
 const radar = $('#radar'), rx = radar.getContext('2d');
 function drawRadar() {
-  const w = radar.width, h = radar.height, P = G.portrait; rx.clearRect(0, 0, w, h);
+  const w = radar.width, h = radar.height; rx.clearRect(0, 0, w, h);
   rx.fillStyle = 'rgba(10,10,12,.62)'; rx.fillRect(0, 0, w, h); rx.strokeStyle = 'rgba(255,255,255,.45)'; rx.lineWidth = 2; rx.strokeRect(5, 5, w - 10, h - 10);
   rx.beginPath(); rx.moveTo(w / 2, 5); rx.lineTo(w / 2, h - 5); rx.stroke();
   const X = (x) => 5 + (x + HL) / (HL * 2) * (w - 10), Z = (z) => 5 + (z + HW) / (HW * 2) * (h - 10);
   for (const t of G.teams) for (const p of t.players) { rx.fillStyle = p === G.ctrl ? '#D9F51F' : (t.idx ? '#ff5a5a' : '#ffffff'); rx.beginPath(); rx.arc(X(p.x), Z(p.z), p === G.ctrl ? 6 : 4.4, 0, 7); rx.fill(); }
   rx.fillStyle = '#ffb300'; rx.beginPath(); rx.arc(X(G.ball.x), Z(G.ball.z), 3.6, 0, 7); rx.fill();
-  radar.style.transform = P ? 'translateX(-50%)' : 'translateX(-50%)';
 }
 
 /* ------------------------------------------------------------------ audio (sintetizzato) */
@@ -1114,10 +1113,11 @@ const AU = {
 /* ------------------------------------------------------------------ comandi */
 function bindInput() {
   const zona = $('#stickZona'), stick = $('#stick'), knob = stick.firstElementChild; let sid = null, ox = 0, oy = 0; const R = 50;
-  const place = (x, y) => { const r = zona.getBoundingClientRect(); stick.style.left = `${x - r.left - 56}px`; stick.style.top = `${y - r.top - 56}px`; stick.style.bottom = 'auto'; };
-  zona.addEventListener('pointerdown', (e) => { if (sid !== null) return; sid = e.pointerId; zona.setPointerCapture(sid); ox = e.clientX; oy = e.clientY; place(ox, oy); e.preventDefault(); });
+  const loc = (e) => (G.rot ? [e.clientY, window.innerWidth - e.clientX] : [e.clientX, e.clientY]); // dal tocco sullo schermo al punto nel gioco
+  const place = (x, y) => { stick.style.left = `${x - zona.offsetLeft - 56}px`; stick.style.top = `${y - zona.offsetTop - 56}px`; stick.style.bottom = 'auto'; };
+  zona.addEventListener('pointerdown', (e) => { if (sid !== null) return; sid = e.pointerId; zona.setPointerCapture(sid); [ox, oy] = loc(e); place(ox, oy); e.preventDefault(); });
   zona.addEventListener('pointermove', (e) => {
-    if (e.pointerId !== sid) return; let dx = e.clientX - ox, dy = e.clientY - oy; const l = hyp(dx, dy);
+    if (e.pointerId !== sid) return; const q = loc(e); let dx = q[0] - ox, dy = q[1] - oy; const l = hyp(dx, dy);
     if (l > R) { dx *= R / l; dy *= R / l; } G.in.jx = dx / R; G.in.jy = dy / R; knob.style.transform = `translate(${dx}px,${dy}px)`;
   });
   const end = (e) => { if (e.pointerId !== sid) return; sid = null; G.in.jx = G.in.jy = 0; knob.style.transform = ''; };
@@ -1185,7 +1185,7 @@ function buildMenu() {
     refresh();
   });
   $('#diff').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; sel.diff = b.dataset.d; for (const x of $('#diff').children) x.classList.toggle('on', x === b); save(); });
-  $('#vai').onclick = () => { AU.init(); show('#scelta'); refresh(); };
+  $('#vai').onclick = () => { AU.init(); try { screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* dove non si può bloccare ci pensa resize() */ } show('#scelta'); refresh(); };
   $('#indietro').onclick = () => show('#home');
   $('#inizio').onclick = showPre; $('#preInd').onclick = () => { show('#scelta'); refresh(); };
   $('#gioca').onclick = () => startMatch(sel.mia, sel.loro, sel.diff);
@@ -1235,8 +1235,13 @@ function showEnd() {
 }
 
 /* ------------------------------------------------------------------ avvio */
+// Solo orizzontale: se lo schermo è in verticale (anche col blocco della rotazione) il gioco si disegna ruotato di lato
 function resize() {
-  const w = window.innerWidth, h = window.innerHeight; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); G.portrait = h > w * 1.05;
+  const iw = window.innerWidth, ih = window.innerHeight, rot = ih > iw, w = rot ? ih : iw, h = rot ? iw : ih, root = document.documentElement, st = document.body.style;
+  G.rot = rot; st.width = `${w}px`; st.height = `${h}px`; st.left = rot ? `${iw}px` : '0'; st.transform = rot ? 'rotate(90deg)' : 'none';
+  root.style.setProperty('--vw', `${w / 100}px`); root.style.setProperty('--vh', `${h / 100}px`);
+  root.classList.toggle('rot', rot); root.classList.toggle('largo', w / h >= 1.3); root.classList.toggle('basso', h <= 480); root.classList.toggle('bassissimo', h <= 430);
+  renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
 }
 const CREST = {};
 function loadImg(src) { return new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }

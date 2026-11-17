@@ -39,7 +39,11 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 
 ## Cosa c'è
 
-- Partita 11 contro 11 di 4 minuti, tre difficoltà, visuale TV in orizzontale e da dietro in verticale.
+- Partita 11 contro 11 di 4 minuti, tre difficoltà, visuale TV.
+- **Solo orizzontale** (`resize`): se lo schermo è in verticale, anche col blocco della rotazione, il gioco si
+  disegna ruotato di lato e i tocchi vengono riportati nel verso giusto. In CSS si usano `--vw` e `--vh`
+  (misure del gioco) al posto di `vw` e `vh`, e le classi `largo`, `basso`, `bassissimo` al posto delle
+  regole `@media`. `manifest.webmanifest` chiede l'orizzontale quando il gioco è installato.
 - Comandi touch (levetta, Passa/Cambia, Cross, Tira/Scivolata, Scatto) e tastiera (frecce, X, C, Spazio, Shift).
 - Gol, rimesse, angoli, rimesse dal fondo, pali e traverse.
 - **Falli e cartellini** (`foul`, `card`, numeri in `FOUL`): fallo sul contrasto in piedi o in
