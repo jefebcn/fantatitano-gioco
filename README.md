@@ -112,7 +112,8 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
   usa il proprio secondo colore se si distingue da quello di casa, altrimenti bianco o nero (`pickKits`).
 - Animazioni registrate (Mixamo, «Soccer Game Pack»): tiro, passaggio, scivolata, caduta di chi
   subisce la scivolata, tuffo del portiere a destra e a sinistra, presa, attesa del portiere, passi laterali
-  del portiere, rinvio con le mani, colpo di testa (`testa`), corsetta. L'esultanza è costruita (braccia alzate sopra la posa d'attesa).
+  del portiere, rinvio con le mani, colpo di testa (`testa`), corsetta. Costruite a mano sopra le clip di base:
+  `aereo` (corsa a braccia aperte del marcatore) e `bandiera` (braccio alzato del guardalinee). L'esultanza è costruita (braccia alzate sopra la posa d'attesa).
   Il portiere che ha il pallone lo tiene in mano all'altezza del petto e lo rilancia dopo un secondo
   (`HOLD`, `LANCIO`): il pallone parte nel momento in cui il braccio lo lascia.
   Le fa partire `azione(p, nome)`; velocità e sfumature stanno nella tabella `FX`.
@@ -137,6 +138,12 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
     riparte, quindi un gol su punizione o rigore ha un replay corto.
   - **Arbitro** in campo: segue l'azione restando a qualche metro dal pallone; non tocca niente e non fischia
     (i fischi li decide sempre il gioco). La maglia è il colore più lontano da quelli delle due squadre e dei portieri.
+  - **Guardalinee**, uno per metà campo su lati opposti: seguono il penultimo difensore (o il pallone, se è più
+    avanti) e alzano la bandierina per due secondi quando il gioco fischia un fuorigioco nella loro metà (`ASS`).
+  - **Pubblico coi colori delle squadre**: la curva dietro la porta a -x è degli ospiti, il resto è di casa; dopo un
+    gol salta il pubblico della squadra che ha segnato (`TIFO`).
+  - **Esultanza**: il marcatore corre verso la bandierina a braccia aperte piegandosi di lato (clip `aereo`), poi
+    festeggia coi compagni.
   - **Segnaposto col nome** sopra il giocatore che si comanda, al posto della freccia.
   - **Tabelloni** a bordo campo che scorrono con «GOL!» e il nome del marcatore.
   - **Telecamera in diagonale** vicino alle porte (`DIAG`), così la porta si vede; prato tagliato a cerchi.
@@ -160,6 +167,18 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
    coi dati dell'app perché abbia le riserve; il mercato resta a scambio. Le altre squadre non fanno mercato tra loro.
 
 ## Cose da sapere
+
+- **Il gioco non è ancora pubblico** (Alex, 17/11: «non deve essere ancora visibile per tutte le persone, finché non
+  decido io di pubblicarlo»). Il collegamento a fantatitano.site/gioco è pronto nella PR #114 dell'app
+  (`jefebcn/fantasyfootballrsm`, bozza): **non va unita finché Alex non lo dice**. Intanto il deploy di questo repository
+  chiede ai motori di ricerca di non mostrarlo (`X-Robots-Tag` in `vercel.json` e `public/robots.txt`): resta
+  raggiungibile da chi ha l'indirizzo fantatitano-gioco.vercel.app. **Quando si pubblica** vanno tolti tutti e due,
+  se no anche fantatitano.site/gioco resterebbe fuori dai motori di ricerca.
+- **Dentro l'app per iPhone.** Alex, 17/11: dall'app dell'App Store il gioco deve aprirsi dentro l'app, non nel
+  browser. L'app carica fantatitano.site, quindi fantatitano.site/gioco/ resta nella stessa finestra; la PR #114
+  lascia anche i link universali su /gioco (un link toccato fuori apre l'app). Nell'app non c'è la barra del browser:
+  quando il gioco gira sotto /gioco/ la schermata iniziale mostra «‹ Fantatitano», che riporta all'app
+  (`public/casa.js`). Sul deploy di prova non compare.
 
 - **Prove.** Quelle automatiche sono fatte in un browser senza scheda grafica; Alex l'ha provato sul
   suo telefono e funziona. Su altri telefoni la fluidità è da verificare: se scatta, abbassare ancora il
