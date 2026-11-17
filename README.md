@@ -34,7 +34,7 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 | `scripts/calciatore.mjs` | Alleggerisce il modello tenendo conto di UV e normali |
 | `scripts/maschera-divisa.py` | Dice, per ogni punto della texture del corpo, se è pelle, maglia, pantaloncini, calzettoni, scarpe |
 | `scripts/animazioni.mjs` | Porta le clip Mixamo sullo scheletro del calciatore; in cima c'è l'elenco `CLIP` |
-| `scripts/simula.cjs` | Gioca partite simulate e stampa gol, tiri, possesso, inserimenti e scivolate: serve per tarare l'IA (richiede Playwright). Stampa anche falli, fuorigioco, rigori e cartellini |
+| `scripts/simula.cjs` | Gioca partite simulate e stampa gol, tiri, possesso, inserimenti e scivolate: serve per tarare l'IA (richiede Playwright). Stampa anche falli, fuorigioco, rigori, cartellini, angoli, cross e colpi di testa |
 | `scripts/analizza.mjs` | Misura le clip di un pacchetto Mixamo, per scegliere quali usare e dove ritagliarle |
 
 ## Cosa c'è
@@ -52,6 +52,13 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 - **Fuorigioco** (`offsideLine`, `offside`): si guarda la posizione al momento del passaggio, non
   vale su rimessa, angolo e rimessa dal fondo. I compagni restano in linea coi difensori e scattano
   col passaggio. Tra due squadre guidate dall'IA capita di rado, perché le difese stanno basse.
+- **Gioco aereo** (`cross`, `header`, `corner`, numeri in `AIR`): dalla fascia, vicino al fondo,
+  **Passa** diventa un traversone verso il compagno in area, e l'IA crossa da sola. Sul pallone alto
+  chi ci arriva colpisce di testa: in porta se è a tiro, via dall'area se difende, di sponda negli
+  altri casi; i tiri forti passano. Sul calcio d'angolo cinque attaccanti entrano in area, ognuno con
+  un marcatore, e chi batte crossa. Il portiere esce sui traversoni che scendono vicino alla porta e
+  alcune sue respinte finiscono in angolo. Manca l'animazione del colpo di testa: il gioco la userà
+  da sola quando `testa` sarà in `public/anim.js` e in `FX`.
 - **Qualità e fatica**: chi vale di più (`q`) sbaglia meno tiri e passaggi (`qf`); lo scatto consuma
   energia (`TIRE`, barretta sotto il nome) e chi è stanco scatta meno forte.
 - **Pagelle** a fine partita (`vote`, pesi in `VOTE`): voto da 3 a 10 da gol, assist, passaggi,
@@ -99,8 +106,8 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
   rapporto in `npm run modello` (oggi 0.36 del corpo originale) e rigenerare.
 - **Livello degli avversari** tarato solo con partite simulate (`DIFF` in cima a `src/game.js`):
   `node scripts/simula.cjs 64` dopo `npm run build`. Con la squadra di casa che gioca da sola, oggi
-  finisce in media 2,7-0,7 a facile, 1,4-1,0 a normale, 0,6-1,3 a difficile, con uno o due falli a
-  partita e un rigore ogni cinque partite circa.
+  finisce in media 2,4-0,5 a facile, 1,0-0,8 a normale, 0,6-1,2 a difficile, con uno o due falli,
+  due cross e meno di un angolo a partita, e un rigore ogni cinque partite circa.
 - **Colori delle maglie** da `src/data.js` dell'app; il secondo colore è scelto a occhio dagli
   stemmi (`scripts/genera-dati.py`). Qualche divisa non combacia col suo stemma.
 - **Nomi dei calciatori**: sono quelli del listone dell'app. Verificare che l'accordo con

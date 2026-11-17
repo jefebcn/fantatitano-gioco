@@ -1,4 +1,4 @@
-/* Partite simulate, senza disegnare, per tarare l'IA: stampa gol, tiri, possesso, inserimenti, scivolate, falli, fuorigioco, rigori e cartellini per difficoltà.
+/* Partite simulate, senza disegnare, per tarare l'IA: stampa gol, tiri, possesso, inserimenti, scivolate, falli, fuorigioco, rigori, cartellini, angoli, cross e colpi di testa per difficoltà.
    La squadra di casa gioca da sola come compagni dell'utente (MATE), quella in trasferta col livello scelto (DIFF).
    Uso: npm run build && node scripts/simula.cjs [partite per difficoltà, 24]
    Serve Playwright (non è tra le dipendenze): npm i -D playwright && npx playwright install chromium
@@ -25,13 +25,13 @@ srv.listen(0, async () => {
         G.diff = g.DIFF[d]; G.shown = true; g.newMatch(window.CLUBS[(k * 3) % 16], window.CLUBS[(k * 5 + 7) % 16]); G.auto = true;
         let n = 0; while (G.state !== 'full' && n++ < 40000) g.step(1 / 60);
         const s = G.stats, tot = s.poss[0] + s.poss[1] || 1;
-        out.push({ gol: [G.teams[0].score, G.teams[1].score], tiri: s.shots, inserimenti: s.runs, scivolate: s.slides, falli: s.fouls, fuorigioco: s.offs, rigori: s.pens, gialli: s.yel, rossi: s.red, poss: s.poss[0] / tot });
+        out.push({ gol: [G.teams[0].score, G.teams[1].score], tiri: s.shots, inserimenti: s.runs, scivolate: s.slides, falli: s.fouls, fuorigioco: s.offs, rigori: s.pens, gialli: s.yel, rossi: s.red, angoli: s.corners, cross: s.crosses, testa: s.heads, 'gol di testa': s.headGoals, poss: s.poss[0] / tot });
       }
       return out;
     }, { d, N });
     const avg = (f) => (res.reduce((s, r) => s + f(r), 0) / res.length).toFixed(2), two = (k) => `${k} ${avg((r) => r[k][0])}-${avg((r) => r[k][1])}`;
     const v = res.filter((r) => r.gol[0] > r.gol[1]).length, p = res.filter((r) => r.gol[0] < r.gol[1]).length;
-    console.log(`${d.padEnd(9)} ${two('gol')}  ${two('tiri')}  possesso casa ${avg((r) => r.poss * 100)}%  V/N/P ${v}/${res.length - v - p}/${p}  ${two('inserimenti')}  ${two('scivolate')}\n          ${two('falli')}  ${two('fuorigioco')}  ${two('rigori')}  ${two('gialli')}  ${two('rossi')}`);
+    console.log(`${d.padEnd(9)} ${two('gol')}  ${two('tiri')}  possesso casa ${avg((r) => r.poss * 100)}%  V/N/P ${v}/${res.length - v - p}/${p}  ${two('inserimenti')}  ${two('scivolate')}\n          ${two('falli')}  ${two('fuorigioco')}  ${two('rigori')}  ${two('gialli')}  ${two('rossi')}\n          ${two('angoli')}  ${two('cross')}  ${two('testa')}  ${two('gol di testa')}`);
   }
   if (errs.length) console.log('Errori nella pagina:', [...new Set(errs)].slice(0, 5));
   await br.close(); srv.close();
