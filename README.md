@@ -157,6 +157,13 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 
 ## Cose da sapere
 
+- **Il gioco non è ancora pubblico** (Alex, 17/11: «non deve essere ancora visibile per tutte le persone, finché non
+  decido io di pubblicarlo»). Il collegamento a fantatitano.site/gioco è pronto nella PR #114 dell'app
+  (`jefebcn/fantasyfootballrsm`, bozza): **non va unita finché Alex non lo dice**. Intanto il deploy di questo repository
+  chiede ai motori di ricerca di non mostrarlo (`X-Robots-Tag` in `vercel.json` e `public/robots.txt`): resta
+  raggiungibile da chi ha l'indirizzo fantatitano-gioco.vercel.app. **Quando si pubblica** vanno tolti tutti e due,
+  se no anche fantatitano.site/gioco resterebbe fuori dai motori di ricerca.
+
 - **Prove.** Quelle automatiche sono fatte in un browser senza scheda grafica; Alex l'ha provato sul
   suo telefono e funziona. Su altri telefoni la fluidità è da verificare: se scatta, abbassare ancora il
   rapporto in `npm run modello` (oggi 0.36 del corpo originale) e rigenerare.
