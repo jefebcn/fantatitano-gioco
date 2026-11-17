@@ -7,11 +7,18 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
 const HALF_SECS = 120;
 const DIFF = {
-  facile:    { spd: .88, steal: .7,  save: .58, err: 1.7, think: .6 },
-  normale:   { spd: .97, steal: 1.25, save: .7, err: 1.0, think: .4 },
-  difficile: { spd: 1.04, steal: 1.9, save: .87, err: .6, think: .26 },
+  facile:    { spd: .88, steal: .7,  save: .58, err: 1.7, think: .6, wait: 1.2, slide: 1.5 },
+  normale:   { spd: .97, steal: 1.25, save: .7, err: 1.0, think: .4, wait: 1.0, slide: 4 },
+  difficile: { spd: 1.04, steal: 1.9, save: .87, err: .6, think: .26, wait: .6, slide: 6 },
 };
-const MATE = { spd: 1, steal: .95, save: .72, err: 1, think: .4 };
+const MATE = { spd: 1, steal: .95, save: .72, err: 1, think: .4, wait: .9, slide: 4 };
+// `wait`: secondi in cui chi difende temporeggia prima di andare sul pallone; `slide`: scivolate al secondo quando ce n'è l'occasione
+// Inserimenti senza palla: ogni quanti secondi si valuta, quanti insieme, quanto durano, punteggio minimo per partire, profondità in metri,
+// probabilità del dai e vai dopo un passaggio e di cercare chi si inserisce
+const RUN = { every: 1.2, max: 2, life: 2.8, min: 8.5, depth: 13, oneTwo: .35, thru: .3 };
+// Difesa a tre distanze dal portatore: oltre `far` ci si avvicina, fino a `near` si temporeggia, sotto si va sul pallone.
+// `danger` è la distanza dalla propria porta sotto cui non si aspetta più; `slide` l'intervallo utile per la scivolata
+const DEF = { far: 8.5, near: 2.4, hold: 2.3, danger: 24, slide: [1.2, 3.2] };
 const FORM = [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-13, -14], [-17, 0], [-13, 14], [7, -19], [11, 0], [7, 19]];
 const $ = (s) => document.querySelector(s);
 const rnd = (a = 1, b) => (b === undefined ? Math.random() * a : a + Math.random() * (b - a));
@@ -298,7 +305,7 @@ function newMatch(home, away) {
     club.xi.forEach(([name, role, num, q], i) => {
       const fig = (MODEL ? makeSkinned : makeFigure)(i === 0 ? gkit : kit, hash(club.id + name), num); scene.add(fig.root);
       const base = 7.3 + clamp((q - 20) / 40, -.5, .6) + (club.str - 3) * .07;
-      t.players.push({ team: t, i, role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? 6.6 : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1 });
+      t.players.push({ team: t, i, role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? 6.6 : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1, run: null, mark: null, jock: false, slideCd: 0 });
     });
     return t;
   };
@@ -306,7 +313,7 @@ function newMatch(home, away) {
   G.teams[0].opp = G.teams[1]; G.teams[1].opp = G.teams[0];
   G.ball = { x: 0, y: BR, z: 0, vx: 0, vy: 0, vz: 0, owner: null };
   ballMesh.visible = ballShadow.visible = true;
-  G.clock = 0; G.half = 1; G.goals = []; G.stats = { shots: [0, 0], poss: [0, 0] }; G.ctrl = null; G.charge = -1;
+  G.clock = 0; G.half = 1; G.goals = []; G.stats = { shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0] }; G.ctrl = null; G.charge = -1;
   paintBoards(home, away, CREST);
   $('#sbH').src = img(home.id + '-mini'); $('#sbA').src = img(away.id + '-mini'); $('#sbHn').textContent = home.short; $('#sbAn').textContent = away.short;
   hud(); kickoff(G.teams[0]);
@@ -323,7 +330,7 @@ function kickoff(team) {
     if (t !== team && Math.abs(kz) < 10) kx = Math.min(kx, -10.5);
     if (t === team && p.i === 9) { kx = -.7; kz = 0; }
     if (t === team && p.i === 10) { kx = -1.2; kz = 5; }
-    p.x = kx * t.side; p.z = kz * t.side; p.vx = p.vz = 0; p.dir = t.side > 0 ? Math.PI / 2 : -Math.PI / 2; p.st = 'run'; p.stT = 0; p.cool = p.stun = 0; p.tx = p.x; p.tz = p.z; p.fx = null; p.fallen = false;
+    p.x = kx * t.side; p.z = kz * t.side; p.vx = p.vz = 0; p.dir = t.side > 0 ? Math.PI / 2 : -Math.PI / 2; p.st = 'run'; p.stT = 0; p.cool = p.stun = 0; p.tx = p.x; p.tz = p.z; p.fx = null; p.fallen = false; p.run = p.mark = null;
   }
   G.taker = team.players[9]; G.next = team; G.poss = team; G.lastTouch = G.taker; G.intended = null;
   setState('kickoff'); banner(G.half === 1 && G.clock === 0 ? "Calcio d'inizio" : '', '', 1100); AU.whistle();
@@ -355,19 +362,27 @@ function bestPass(p, ix, iz) {
     if (m === p || (m.i === 0 && !(dirGiven && false))) continue;
     const dx = m.x - p.x, dz = m.z - p.z, d = hyp(dx, dz); if (d < 4 || d > 44) continue;
     let sc;
-    if (dirGiven) { const dot = (dx * ix + dz * iz) / d; if (dot < .45) continue; sc = dot * 34 - d * .22 + Math.min(openness(m), 6) * .6 - (laneBlocked(p, m) ? 5 : 0); }
-    else sc = dx * s * .55 + Math.min(openness(m), 8) * 1.3 - (laneBlocked(p, m) ? 13 : 0) - d * .08 + rnd(3) - (m.x * s < -30 ? 6 : 0);
+    if (dirGiven) { const dot = (dx * ix + dz * iz) / d; if (dot < .45) continue; sc = dot * 34 - d * .22 + Math.min(openness(m), 6) * .6 - (laneBlocked(p, m) ? 5 : 0) + (m.run ? 3 : 0); }
+    else sc = dx * s * .55 + Math.min(openness(m), 8) * 1.3 - (laneBlocked(p, m) ? 13 : 0) - d * .08 + rnd(3) - (m.x * s < -30 ? 6 : 0) + (m.run ? 6 : 0);
     if (sc > bs) { bs = sc; best = m; }
   }
   return best;
 }
 function pass(p, m) {
   const d0 = hyp(m.x - p.x, m.z - p.z), lead = .3 + d0 / 70;
-  const tx = m.x + m.vx * lead, tz = m.z + m.vz * lead, dx = tx - p.x, dz = tz - p.z, d = hyp(dx, dz) || 1;
+  let tx = m.x + m.vx * lead, tz = m.z + m.vz * lead;
+  if (m.run) { const rx = m.run.x - m.x, rz = m.run.z - m.z, rl = hyp(rx, rz) || 1, k = Math.min(rl, m.maxV * 1.2 * (lead + .35)); tx = m.x + rx / rl * k; tz = m.z + rz / rl * k; }
+  const dx = tx - p.x, dz = tz - p.z, d = hyp(dx, dz) || 1;
   const lob = d > 20 && laneBlocked(p, m);
   const sp = lob ? clamp(d * .78, 12, 24) : clamp(9.5 + d * .82, 12, 27);
   kick(p, dx / d * sp, lob ? clamp(d * .42, 6, 11) : .4, dz / d * sp, lob || d > 26 ? 'tiro' : 'passaggio');
-  G.intended = m; if (p.team.human) setCtrl(m);
+  G.intended = m; m.run = null; if (p.team.human) setCtrl(m);
+  // dai e vai: chi ha passato in avanti si butta nello spazio
+  const s = p.team.side;
+  if (p.i && p.role !== 'D' && (m.x - p.x) * s > -6 && p.x * s > -10 && rnd() < RUN.oneTwo) {
+    const ax = Math.min(p.x * s + 12, HL - 6, defLine(p.team) + 4);
+    if (ax - p.x * s > 5) { p.run = { x: ax * s, z: clamp(p.z + sgn(p.z - m.z || rnd(-1, 1)) * 4, -HW + 3, HW - 3), t: 2.2 }; G.stats.runs[p.team.idx]++; }
+  }
 }
 function shoot(p, tz, pow, err) {
   const s = p.team.side, gx = s * HL, d0 = hyp(gx - p.x, tz - p.z);
@@ -426,7 +441,69 @@ function roles() {
       if (d < ad) { c = a; cd = ad; a = p; ad = d; } else if (d < cd) { c = p; cd = d; }
     }
     t.chaser = a; t.chaserD = ad; t.cover = c;
+    // marcature: ogni difensore prende l'avversario più vicino alla sua zona; chi si inserisce allarga la zona e viene seguito anche dai centrocampisti
+    for (const p of t.players) p.mark = null;
+    const own = b.owner; if (!own || own.team === t || G.state !== 'play') continue;
+    const taken = new Set();
+    for (const p of t.players) {
+      if (p.i === 0 || p === a || p === c || p.role === 'A' || p.stun > 0 || userDrives(p)) continue;
+      const h = homeOf(p); let m = null, md = 9;
+      for (const o of t.opp.players) {
+        if (o.i === 0 || o === own || taken.has(o) || (p.role === 'C' && !o.run)) continue;
+        const d = hyp(o.x - h[0], o.z - h[1]) - (o.run ? 5 : 0); if (d < md) { md = d; m = o; }
+      }
+      if (m) { p.mark = m; taken.add(m); }
+    }
   }
+}
+function defLine(t) { // fin dove arriva l'ultimo difensore avversario, nel verso d'attacco di t
+  const s = t.side; let l = G.ball.x * s; for (const o of t.opp.players) if (o.i) l = Math.max(l, o.x * s); return l;
+}
+function runScore(p, x, z, line) {
+  const t = p.team, s = t.side, b = G.ball; let opp = 99, mate = 99;
+  for (const o of t.opp.players) if (o.i) opp = Math.min(opp, hyp(o.x - x, o.z - z));
+  for (const m of t.players) { if (m === p || m.i === 0) continue; const r = m.run; mate = Math.min(mate, hyp((r ? r.x : m.x) - x, (r ? r.z : m.z) - z)); }
+  const dGoal = hyp(s * HL - x, z), dBall = hyp(x - b.x, z - b.z);
+  // vicino alla porta, in uno spazio libero, lontano dai compagni, a distanza di passaggio, non oltre la linea dei difensori
+  return (55 - dGoal) * .14 + Math.min(opp, 8) * .8 + Math.min(mate, 9) * .4 - Math.abs(dBall - 16) * .15 - Math.max(0, x * s - line - 3) * 1.2 + (x - p.x) * s * .1;
+}
+function runs(dt) {
+  const b = G.ball, own = b.owner;
+  for (const t of G.teams) {
+    const has = G.state === 'play' && G.poss === t && (!own || own.team === t); let n = 0;
+    for (const p of t.players) { const r = p.run; if (!r) continue; r.t -= dt; if (!has || r.t <= 0 || p.stun > 0 || own === p || userDrives(p)) p.run = null; else n++; }
+    if (!has || !own || own.i === 0) continue;
+    t.runT = (t.runT || 0) - dt; if (t.runT > 0 || n >= RUN.max) continue; t.runT = RUN.every * rnd(.7, 1.3);
+    const s = t.side, line = defLine(t); let best = null, bs = RUN.min, bx = 0, bz = 0;
+    for (const p of t.players) {
+      if (p.i === 0 || p === own || p.run || p.role === 'D' || p.stun > 0 || userDrives(p)) continue;
+      if (hyp(p.x - own.x, p.z - own.z) > 34 || (p.x - own.x) * s < -8) continue;
+      const ax = Math.min(p.x * s + RUN.depth, HL - 6, line + 4); if (ax - p.x * s < 5) continue;
+      for (const k of [-1, 0, 1]) { // dritto, taglio dentro, taglio fuori
+        const z = clamp(p.z + k * 8, -HW + 3, HW - 3), sc = runScore(p, ax * s, z, line) + rnd(1.5);
+        if (sc > bs) { bs = sc; best = p; bx = ax * s; bz = z; }
+      }
+    }
+    if (best) { best.run = { x: bx, z: bz, t: RUN.life }; G.stats.runs[t.idx]++; }
+  }
+}
+// Il più vicino al portatore: si avvicina, temporeggia tenendosi tra lui e la porta, poi va sul pallone; in scivolata solo se serve
+function chase(p, own, dt) {
+  const t = p.team, s = t.side, gx = -s * HL, D = diffOf(p), b = G.ball, d = t.chaserD;
+  let ux = gx - own.x, uz = -own.z; const threat = hyp(ux, uz) || 1; ux /= threat; uz /= threat;
+  if (t.jWho !== p || t.jOwn !== own) { t.jWho = p; t.jOwn = own; t.jT = 0; }
+  const beaten = (p.x - own.x) * ux + (p.z - own.z) * uz < -.4;
+  if (p.slideCd <= 0 && own.shield <= 0 && own.i !== 0 && hyp(own.vx, own.vz) > 4.5 && (beaten || threat < 20)) {
+    const px = b.x + own.vx * .25, pz = b.z + own.vz * .25, pd = hyp(px - p.x, pz - p.z);
+    if (pd > DEF.slide[0] && pd < DEF.slide[1] && rnd() < D.slide * dt) { p.dir = Math.atan2(px - p.x, pz - p.z); p.slideCd = 3.5; G.stats.slides[t.idx]++; return slide(p); }
+  }
+  if (d > DEF.far) t.jT = 0;
+  else if (d > DEF.near && !beaten) {
+    t.jT += dt; const c = t.cover;
+    const go = threat < DEF.danger || t.jT > D.wait || own.stun > 0 || (c && hyp(c.x - own.x, c.z - own.z) < 5.5);
+    if (!go) { p.tx = own.x + own.vx * .3 + ux * DEF.hold; p.tz = own.z + own.vz * .3 + uz * DEF.hold; p.jock = true; return; }
+  }
+  p.tx = own.x + own.vx * .25 + (gx - own.x) * .05; p.tz = own.z + own.vz * .25 - own.z * .04; p.sprint = d > 3 || beaten;
 }
 function think(p, dt) {
   const b = G.ball, t = p.team, s = t.side, own = b.owner; p.sprint = false;
@@ -447,12 +524,13 @@ function think(p, dt) {
     if (p === G.intended || p === t.chaser) { const [ix, iz] = intercept(p); p.tx = ix; p.tz = iz; p.sprint = true; return; }
   } else if (own.team !== t) {
     const gx = -s * HL;
-    if (p === t.chaser && (!t.human || G.auto || t.chaserD < 15)) { p.tx = own.x + own.vx * .25 + (gx - own.x) * .05; p.tz = own.z + own.vz * .25 - own.z * .04; p.sprint = t.chaserD > 3; return; }
+    if (p === t.chaser && (!t.human || G.auto || t.chaserD < 15)) return chase(p, own, dt);
     if (p === t.cover) { const dx = gx - own.x, dz = -own.z, d = hyp(dx, dz) || 1, k = Math.min(7, d * .5); p.tx = own.x + dx / d * k; p.tz = own.z + dz / d * k; return; }
-    const h = homeOf(p);
-    if (p.role === 'D') { let m = null, md = 9; for (const o of t.opp.players) { if (o.i === 0 || o === own) continue; const d = hyp(o.x - h[0], o.z - h[1]); if (d < md) { md = d; m = o; } } if (m) { p.tx = m.x + sgn(gx - m.x) * 2.8; p.tz = m.z * .92; return; } }
-    p.tx = h[0]; p.tz = h[1]; return;
+    const m = p.mark;
+    if (m) { const lead = m.run ? .35 : 0; p.tx = m.x + m.vx * lead + sgn(gx - m.x) * 2.8; p.tz = (m.z + m.vz * lead) * .92; p.sprint = !!m.run; return; }
+    const h = homeOf(p); p.tx = h[0]; p.tz = h[1]; return;
   }
+  if (p.run) { p.tx = p.run.x; p.tz = p.run.z; p.sprint = true; return; }
   const h = homeOf(p); p.tx = h[0]; p.tz = h[1];
   if (own && own.team === t) { const d = hyp(p.tx - own.x, p.tz - own.z); if (d < 6) { p.tx += (p.tx - own.x) / (d || 1) * 5; p.tz += (p.tz - own.z) / (d || 1) * 5 + sgn(p.z - own.z) * 3; } }
 }
@@ -467,7 +545,8 @@ function ownerThink(p, dt) {
   if (dGoal < 29 && Math.abs(p.z) < 20 && (p.x - gx) * s < -3 && (dGoal < 17 || rnd() < .35)) {
     return shoot(p, sgn(rnd(-1, 1)) * GH * rnd(.4, .9), rnd(.45, .84), D.err * 1.25);
   }
-  if ((nd < 3.6 && rnd() < .6) || rnd() < .12 || (p.x * s > HL - 9 && rnd() < .7)) { const m = bestPass(p); if (m) pass(p, m); }
+  const thru = t.players.some((m) => m.run && (m.x - p.x) * s > 3 && !laneBlocked(p, m));
+  if ((nd < 3.6 && rnd() < .6) || rnd() < .12 || (p.x * s > HL - 9 && rnd() < .7) || (thru && rnd() < RUN.thru)) { const m = bestPass(p); if (m) pass(p, m); }
 }
 function gkThink(p, dt) {
   const b = G.ball, t = p.team, s = t.side, gx = -s * HL, own = b.owner;
@@ -519,9 +598,9 @@ function step(dt) {
   } else if (G.state === 'half') { if (G.stateT > 2.6) { G.half = 2; G.clock = 0; kickoff(G.teams[1]); } }
   else if (G.state === 'full') { if (G.stateT > 2 && !G.shown) { G.shown = true; showEnd(); } }
 
-  roles();
+  roles(); runs(dt);
   const ps = all();
-  for (const p of ps) { p.cool -= dt; p.stun -= dt; p.shield -= dt; if (!userDrives(p) || G.state !== 'play') think(p, dt); else userThink(p); }
+  for (const p of ps) { p.cool -= dt; p.stun -= dt; p.shield -= dt; p.slideCd -= dt; p.jock = false; if (!userDrives(p) || G.state !== 'play') think(p, dt); else userThink(p); }
   for (const p of ps) movePlayer(p, dt);
   for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) { // non si attraversano
     const a = ps[i], c = ps[j], dx = c.x - a.x, dz = c.z - a.z, d = hyp(dx, dz);
@@ -548,14 +627,14 @@ function movePlayer(p, dt) {
   else if (p.st === 'dive') { const k = Math.max(0, 1 - p.stT / .5) * (p.diveV || 8); p.vx *= .8; p.vz = p.diveS * k; if (p.stT > .5) { p.st = 'down'; p.stT = 0; } }
   else if (p.st === 'down') { p.vx *= .7; p.vz *= .7; if (p.stT > (p.i === 0 ? DOWN.gk : DOWN.pl)) { p.st = 'run'; p.stT = 0; } }
   else {
-    let sp = p.maxV * (p.team.human ? 1 : G.diff.spd) * (p.sprint ? 1.27 : 1) * (b.owner === p ? .93 : 1) * (p.stun > 0 ? (p.fallen ? 0 : .25) : 1); if (p.fallen && p.stun <= 0) p.fallen = false;
+    let sp = p.maxV * (p.team.human ? 1 : G.diff.spd) * (p.sprint ? 1.27 : 1) * (b.owner === p ? .93 : 1) * (p.stun > 0 ? (p.fallen ? 0 : .25) : 1) * (p.jock ? .85 : 1); if (p.fallen && p.stun <= 0) p.fallen = false;
     if (G.state === 'goal' && !p.sprint) sp *= .5;
     const dx = p.tx - p.x, dz = p.tz - p.z, d = hyp(dx, dz); let wx = 0, wz = 0;
     if (d > .2) { const k = Math.min(1, d / 1.3) * sp / d; wx = dx * k; wz = dz * k; }
     const a = Math.min(1, dt * (userDrives(p) ? 11 : 8)); p.vx += (wx - p.vx) * a; p.vz += (wz - p.vz) * a;
     const v = hyp(p.vx, p.vz); let want = p.dir;
     if (p.i === 0 && b.owner !== p && G.state === 'play') want = Math.atan2(b.x - p.x, b.z - p.z); // il portiere guarda sempre la palla, anche quando si sposta di lato
-    else if (v > .7) want = Math.atan2(p.vx, p.vz); else if (b.owner !== p) want = Math.atan2(b.x - p.x, b.z - p.z);
+    else if (v > .7 && !p.jock) want = Math.atan2(p.vx, p.vz); else if (b.owner !== p) want = Math.atan2(b.x - p.x, b.z - p.z); // anche chi temporeggia guarda il pallone
     let da = want - p.dir; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; p.dir += da * Math.min(1, dt * (v > .7 ? 13 : 6));
   }
   p.x = clamp(p.x + p.vx * dt, -HL - 3.5, HL + 3.5); p.z = clamp(p.z + p.vz * dt, -HW - 3, HW + 3);
@@ -909,6 +988,6 @@ async function boot() {
   Promise.all(CLUBS.map((c) => loadImg(img(c.id + '-mini')).then((i) => { CREST[c.id] = i; }))).then(() => { if (G.teams.length) paintBoards(G.teams[0].club, G.teams[1].club, CREST); });
   $('#carica').remove(); show('#home'); requestAnimationFrame(loop);
 }
-window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, pressA, pressB, OV, NUMP, model: () => MODEL };
+window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, pressA, pressB, OV, NUMP, model: () => MODEL };
 boot();
 })();
