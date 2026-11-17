@@ -28,7 +28,7 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 | `public/img/` | Stemmi di fantasia (grande e `-mini`), pose di Tito, logo: copiati da `media/` dell'app |
 | `public/anim.js` | Le animazioni da calcio (tiro, passaggio, scivolata, caduta, tuffi, presa, corsetta). **Generato**: `node scripts/animazioni.mjs <cartella degli FBX>` |
 | `scripts/animazioni.mjs` | Converte le clip Mixamo per il nostro scheletro e le ritaglia; in cima c'è l'elenco `CLIP` di quali usare |
-| `scripts/simula.cjs` | Gioca partite simulate e stampa gol, tiri, possesso, inserimenti e scivolate: serve per tarare l'IA (richiede Playwright) |
+| `scripts/simula.cjs` | Gioca partite simulate e stampa gol, tiri, possesso, inserimenti e scivolate: serve per tarare l'IA (richiede Playwright). Stampa anche falli, fuorigioco, rigori e cartellini |
 | `scripts/analizza.mjs` | Misura le clip di un pacchetto Mixamo, per scegliere quali usare e dove ritagliarle |
 | `modelli/giocatore.glb` | Modello ridotto (5.600 triangoli, clip `idle`, `walk`, `run`) |
 | `modelli/riduci.mjs` | Riduce un GLB e tiene solo le clip che servono |
@@ -37,7 +37,21 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 
 - Partita 11 contro 11 di 4 minuti, tre difficoltà, visuale TV in orizzontale e da dietro in verticale.
 - Comandi touch (levetta, Passa/Cambia, Tira/Scivolata, Scatto) e tastiera (frecce, X, Spazio, Shift).
-- Gol, rimesse, angoli, rimesse dal fondo, pali e traverse. Niente falli né fuorigioco.
+- Gol, rimesse, angoli, rimesse dal fondo, pali e traverse.
+- **Falli e cartellini** (`foul`, `card`, numeri in `FOUL`): fallo sul contrasto in piedi o in
+  scivolata (molto più probabile da dietro) e per contatto prolungato. Giallo, secondo giallo e
+  rosso diretto per il fallo da ultimo uomo: l'espulso esce e la squadra resta in dieci (mai sotto
+  i sette; il portiere non viene espulso). Non c'è la regola del vantaggio.
+- **Punizioni e rigori** (`freeKick`, `penalty`): se la punizione è a tiro, tre avversari fanno
+  barriera a 9 metri e l'IA calcia in porta. Sul rigore tutti escono dall'area; l'utente mira con
+  la levetta e tira (dopo 6 secondi parte da solo).
+- **Fuorigioco** (`offsideLine`, `offside`): si guarda la posizione al momento del passaggio, non
+  vale su rimessa, angolo e rimessa dal fondo. I compagni restano in linea coi difensori e scattano
+  col passaggio. Tra due squadre guidate dall'IA capita di rado, perché le difese stanno basse.
+- **Qualità e fatica**: chi vale di più (`q`) sbaglia meno tiri e passaggi (`qf`); lo scatto consuma
+  energia (`TIRE`, barretta sotto il nome) e chi è stanco scatta meno forte.
+- **Pagelle** a fine partita (`vote`, pesi in `VOTE`): voto da 3 a 10 da gol, assist, passaggi,
+  contrasti, palloni intercettati, parate, falli, cartellini e risultato; migliore in campo.
 - Giocatori con scheletro: corsa, camminata e attesa vengono dal modello; la divisa è dipinta sui
   vertici (`loadModel` in `src/game.js` divide il corpo in maglia, pantaloncini, calzettoni, pelle,
   capelli partendo dalle ossa).
@@ -79,8 +93,8 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
   rapporto in `npm run modello` (oggi 0.11).
 - **Livello degli avversari** tarato solo con partite simulate (`DIFF` in cima a `src/game.js`):
   `node scripts/simula.cjs 64` dopo `npm run build`. Con la squadra di casa che gioca da sola, oggi
-  finisce in media 2,9-0,4 a facile, 1,2-0,7 a normale, 0,5-1,3 a difficile. Con gli inserimenti si
-  tira e si segna più di prima (a normale erano 0,9-0,5).
+  finisce in media 2,7-0,7 a facile, 1,4-1,0 a normale, 0,6-1,3 a difficile, con uno o due falli a
+  partita e un rigore ogni cinque partite circa.
 - **Colori delle maglie** da `src/data.js` dell'app; il secondo colore è scelto a occhio dagli
   stemmi (`scripts/genera-dati.py`). Qualche divisa non combacia col suo stemma.
 - **Nomi dei calciatori**: sono quelli del listone dell'app. Verificare che l'accordo con
