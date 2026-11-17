@@ -1,9 +1,9 @@
 /* Fantatitano — La Partita (prototipo). Partita 3D giocabile: motore, IA, comandi, schermate. */
 import * as T from 'three';
+import { creaRegia } from './regia.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { creaDivisa, TONI } from './divisa.js';
-import { creaRegia } from './regia.js';
 
 (() => {
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
