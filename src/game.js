@@ -43,8 +43,9 @@ const FORMS = {
   '4-2-3-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-19, -7], [-19, 7], [-3, 0], [1, -20], [11, 0], [1, 20]], roles: 'PDDDDCCCAAA' },
 };
 // Mentalità (-1, 0, 1): quanti metri in più si sale quando si attacca, quanto restano alti gli attaccanti quando si difende
-// (con la difensiva rientrano), quanto spesso ci si inserisce, quanto prima si va sul pallone con l'offensiva
-const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], push: 4, stay: 6, runs: .3, press: .4 };
+// (con la difensiva rientrano), quanto spesso ci si inserisce, quanto prima si va sul pallone con l'offensiva;
+// con la difensiva: a quanti metri dal portatore sta il secondo uomo in copertura, quanti metri prima si smette di temporeggiare
+const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
 function setTactics(t, name, ment) {
   t.formName = FORMS[name] ? name : '4-3-3'; const f = FORMS[t.formName]; t.form = f.pos; if (ment !== undefined) t.ment = ment;
   for (const p of t.players.concat(t.off)) p.role = f.roles[p.i];
@@ -550,9 +551,9 @@ function userShoot(pow) {
 /* ------------------------------------------------------------------ IA */
 function homeOf(p) {
   const t = p.team, s = t.side, b = G.ball, f = t.form[p.i], bx = b.x * s, att = G.poss === t;
-  let hx = f[0] + bx * .55 + (att ? 7 + t.ment * MENT.push : -5 + (p.role === 'A' ? t.ment * MENT.stay : 0)), hz = f[1] * (att ? 1 : .8) + b.z * s * .28;
+  let hx = f[0] + bx * .55 + (att ? 7 + (t.ment < 0 ? -MENT.back : t.ment * MENT.push) : -5 + (p.role === 'A' ? t.ment * MENT.stay : 0)), hz = f[1] * (att ? 1 : .8) + b.z * s * .28;
   if (p.role === 'D') hx = clamp(hx, -42, att ? 12 + t.ment * 8 : 3); // con la mentalità offensiva salgono anche i difensori
-  else if (p.role === 'C') hx = clamp(hx, -34, 36);
+  else if (p.role === 'C') hx = clamp(hx, -34, 36 + Math.min(t.ment, 0) * MENT.hold); // con la difensiva i centrocampisti non salgono fino in fondo
   else { if (att) hx = Math.max(hx, Math.min(bx + 13, 43)); hx = clamp(hx, -14, 44); }
   hx += Math.sin(G.t * .7 + p.i * 2.1) * 1.6; hz += Math.cos(G.t * .5 + p.i * 1.3) * 1.6;
   return [hx * s, clamp(hz, -HW + 3, HW - 3) * s];
@@ -569,20 +570,20 @@ function intercept(p) {
 function roles() {
   const b = G.ball, bx = b.x + b.vx * .3, bz = b.z + b.vz * .3;
   for (const t of G.teams) {
-    let a = null, c = null, ad = 1e9, cd = 1e9;
+    let a = null, c = null, e = null, ad = 1e9, cd = 1e9, ed = 1e9;
     for (const p of t.players) {
       if (p.i === 0 || p.stun > 0 || userDrives(p) || p === b.owner) continue;
       const d = hyp(p.x - bx, p.z - bz);
-      if (d < ad) { c = a; cd = ad; a = p; ad = d; } else if (d < cd) { c = p; cd = d; }
+      if (d < ad) { e = c; ed = cd; c = a; cd = ad; a = p; ad = d; } else if (d < cd) { e = c; ed = cd; c = p; cd = d; } else if (d < ed) { e = p; ed = d; }
     }
-    t.chaser = a; t.chaserD = ad; t.cover = c; t.offLine = offsideLine(t);
+    t.chaser = a; t.chaserD = ad; t.cover = c; t.cover2 = t.ment < 0 ? e : null; t.offLine = offsideLine(t); // con la mentalità difensiva copre anche un secondo uomo
     if (!t.human) { const late = (G.half - 1) * HALF_SECS + G.clock > HALF_SECS * 1.2, d = t.score - t.opp.score; t.ment = late ? (d < 0 ? 1 : d > 0 ? -1 : 0) : 0; } // sotto nel finale attacca, sopra si copre
     // marcature: ogni difensore prende l'avversario più vicino alla sua zona; chi si inserisce allarga la zona e viene seguito anche dai centrocampisti
     for (const p of t.players) p.mark = null;
     const own = b.owner; if (!own || own.team === t || G.state !== 'play') continue;
     const taken = new Set();
     for (const p of t.players) {
-      if (p.i === 0 || p === a || p === c || p.role === 'A' || p.stun > 0 || userDrives(p)) continue;
+      if (p.i === 0 || p === a || p === c || p === t.cover2 || p.role === 'A' || p.stun > 0 || userDrives(p)) continue;
       const h = homeOf(p); let m = null, md = 9;
       for (const o of t.opp.players) {
         if (o.i === 0 || o === own || taken.has(o) || (p.role === 'C' && !o.run && t.ment >= 0)) continue; // con la mentalità difensiva marcano anche i centrocampisti
@@ -609,7 +610,7 @@ function runs(dt) {
     const has = G.state === 'play' && G.poss === t && (!own || own.team === t); let n = 0;
     for (const p of t.players) { const r = p.run; if (!r) continue; r.t -= dt; if (!has || r.t <= 0 || p.stun > 0 || own === p || userDrives(p)) p.run = null; else n++; }
     if (!has || !own || own.i === 0) continue;
-    t.runT = (t.runT || 0) - dt; if (t.runT > 0 || n >= RUN.max) continue; t.runT = RUN.every * rnd(.7, 1.3) * (1 - MENT.runs * t.ment);
+    t.runT = (t.runT || 0) - dt; if (t.runT > 0 || n >= RUN.max + Math.min(t.ment, 0)) continue; // con la difensiva un solo inserimento alla volta t.runT = RUN.every * rnd(.7, 1.3) * (1 - MENT.runs * t.ment);
     const s = t.side, line = defLine(t); let best = null, bs = RUN.min, bx = 0, bz = 0;
     for (const p of t.players) {
       if (p.i === 0 || p === own || p.run || p.role === 'D' || p.stun > 0 || userDrives(p)) continue;
@@ -636,7 +637,7 @@ function chase(p, own, dt) {
   if (d > DEF.far) t.jT = 0;
   else if (d > DEF.near && !beaten) {
     t.jT += dt; const c = t.cover;
-    const go = threat < DEF.danger || t.jT > D.wait * (1 - MENT.press * Math.max(t.ment, 0)) || own.stun > 0 || (c && hyp(c.x - own.x, c.z - own.z) < 5.5);
+    const go = threat < DEF.danger + (t.ment < 0 ? MENT.guard : 0) || t.jT > D.wait * (1 - MENT.press * Math.max(t.ment, 0)) || own.stun > 0 || (c && hyp(c.x - own.x, c.z - own.z) < 5.5);
     if (!go) { p.tx = own.x + own.vx * .3 + ux * DEF.hold; p.tz = own.z + own.vz * .3 + uz * DEF.hold; p.jock = true; return; }
   }
   p.tx = own.x + own.vx * .25 + (gx - own.x) * .05; p.tz = own.z + own.vz * .25 - own.z * .04; p.sprint = d > 3 || beaten;
@@ -667,6 +668,7 @@ function think(p, dt) {
     const gx = -s * HL;
     if (p === t.chaser && (!t.human || G.auto || t.chaserD < 15)) return chase(p, own, dt);
     if (p === t.cover) { const dx = gx - own.x, dz = -own.z, d = hyp(dx, dz) || 1, k = Math.min(7, d * .5); p.tx = own.x + dx / d * k; p.tz = own.z + dz / d * k; return; }
+    if (p === t.cover2) { const dx = gx - own.x, dz = -own.z, d = hyp(dx, dz) || 1, k = Math.min(MENT.cover, d * .7); p.tx = own.x + dx / d * k; p.tz = (own.z + dz / d * k) * .6; return; } // più indietro e più al centro
     const m = p.mark;
     if (m) { const lead = m.run ? .35 : 0; p.tx = m.x + m.vx * lead + sgn(gx - m.x) * 2.8; p.tz = (m.z + m.vz * lead) * .92; p.sprint = !!m.run; return; }
     const h = homeOf(p); p.tx = h[0]; p.tz = h[1]; return;
