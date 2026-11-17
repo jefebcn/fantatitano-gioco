@@ -34,6 +34,8 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 | `scripts/calciatore.mjs` | Alleggerisce il modello tenendo conto di UV e normali |
 | `scripts/maschera-divisa.py` | Dice, per ogni punto della texture del corpo, se è pelle, maglia, pantaloncini, calzettoni, scarpe |
 | `scripts/animazioni.mjs` | Porta le clip Mixamo sullo scheletro del calciatore; in cima c'è l'elenco `CLIP` |
+| `src/carriera.js` | La logica della carriera, senza schermate: calendario, risultati simulati, classifica, coppa, salvataggio |
+| `scripts/prova-carriera.mjs` | Prove della logica della carriera: `npm run prova` |
 | `scripts/simula.cjs` | Gioca partite simulate e stampa gol, tiri, possesso, inserimenti e scivolate: serve per tarare l'IA (richiede Playwright). Stampa anche falli, fuorigioco, rigori, cartellini, angoli, cross e colpi di testa |
 | `scripts/analizza.mjs` | Misura le clip di un pacchetto Mixamo, per scegliere quali usare e dove ritagliarle |
 
@@ -64,6 +66,16 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
   un marcatore, e chi batte crossa. Il portiere esce sui traversoni che scendono vicino alla porta e
   alcune sue respinte finiscono in angolo. Manca l'animazione del colpo di testa: il gioco la userà
   da sola quando `testa` sarà in `public/anim.js` e in `FX`.
+- **Carriera** (`src/carriera.js`, schermate in `drawHub` e nei pannelli `pan…`): al primo avvio si
+  scelgono nome e squadra. La dashboard mostra la prossima partita di campionato, la classifica, la
+  Coppa Titano, l'amichevole, la rosa, i numeri del club e il tabellone di coppa.
+  - **Campionato**: 16 squadre, 15 giornate a girone unico; le altre sette partite di ogni giornata
+    sono simulate secondo la forza delle squadre. A fine stagione se ne comincia un'altra.
+  - **Coppa Titano**: eliminazione diretta dagli ottavi, partita secca; in parità decidono i rigori,
+    per ora simulati e non giocati.
+  - Tutto è salvato sul dispositivo (`localStorage`, chiave `fantatitano-carriera`): non c'è ancora il
+    collegamento all'account dell'app. Uscire a metà partita non registra il risultato.
+  - Nel gioco la squadra dell'utente attacca sempre da sinistra a destra, anche in trasferta.
 - **Prima della partita** (`showPre`, `drawSide`): dopo la scelta delle squadre si vedono le due formazioni
   sul campo, con numero, nome, compito e valore di ogni giocatore (da 55 a 88, confrontato con quelli
   del suo ruolo), stelle della squadra e modulo.
@@ -109,7 +121,8 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
    nella versione a pagamento.
 3. **Collegamento all'app.** Rewrite `/gioco` nel `vercel.json` di `fantasyfootballrsm` verso
    questo deploy, poi login condiviso e tabelle Supabase per carriera e rosa.
-4. **Carriera, Coppa Titano, La mia rosa**: nel menu sono solo segnaposto.
+4. **Trasferimenti e sfide**: mancano le monete, il mercato dei giocatori e gli obiettivi. Mancano anche
+   le riserve (ogni squadra ha solo gli undici titolari) e i rigori di coppa giocati davvero.
 
 ## Cose da sapere
 
