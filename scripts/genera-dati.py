@@ -24,12 +24,18 @@ for cid, name, sh, c1, c2, st in CLUBS:
     ris = []
     for role, n in [('P', 1), ('D', 2), ('C', 2), ('A', 2)]:
         ris += [r for r in sorted([r for r in sq if r[3] == role], key=lambda r: -r[4]) if r not in xi][:n]
+    # cognomi uguali nella stessa squadra: si aggiunge l'inizio del nome, quanto basta a distinguerli («Az. Garcia Rufer», «Au. Garcia Rufer»)
+    def nome(r):
+        altri = [o[1] for o in xi + ris if o[2] == r[2] and o is not r]
+        if not altri: return r[2]
+        k = next((k for k in range(1, len(r[1]) + 1) if all(o[:k].lower() != r[1][:k].lower() for o in altri)), len(r[1]))
+        return f'{r[1][:k]}. {r[2]}' if k < len(r[1]) else f'{r[1]} {r[2]}'
     used, pl = set(), []
     for r in xi + ris:
         n = nums.get(norm(r[1] + r[2]))
         if n is None or n in used or n > 99:
             n = next(k for k in ([1] if r[3] == 'P' else []) + list(range(2, 100)) if k not in used)
-        used.add(n); pl.append([r[2], r[3], n, r[4]])
+        used.add(n); pl.append([nome(r), r[3], n, r[4]])
     d = dict(id=cid, name=name, short=sh, c1=c1, c2=c2, str=st, xi=pl[:11])
     if ris: d['pan'] = pl[11:]  # riserve: [nome, ruolo, numero, quotazione], come i titolari
     if cid in STILE: d['st'] = STILE[cid]  # disegno della maglia: 'righe' = righe verticali col secondo colore

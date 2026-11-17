@@ -1016,7 +1016,7 @@ function foul(d, own, sliding, behind) {
   }
   b.owner = null; G.lastPass = null;
   own.stun = sliding ? DOWN.fall : .5; own.cool = Math.max(.8, own.stun); if (sliding) { own.fallen = true; azione(own, 'caduta'); }
-  const male = own.i !== 0 && !own.inj && t.bench.length > 0 && rnd() < FOUL.inj[sliding ? 1 : 0]; // ci si fa male solo se c'è una panchina da cui sostituire if (male) { own.inj = true; G.stats.inj[t.idx]++; } // infortunio: resta in campo ma va piano
+  const male = own.i !== 0 && !own.inj && t.bench.length > 0 && rnd() < FOUL.inj[sliding ? 1 : 0]; if (male) { own.inj = true; G.stats.inj[t.idx]++; } // infortunio: resta in campo ma va piano; solo se c'è una panchina da cui sostituire
   if (inBox) penalty(t); else freeKick(t, x, z, 'Punizione', sliding || male ? own : null);
   if (male && !c) { banner(inBox ? 'Rigore!' : '', `Infortunio · ${own.name}`, 2300); G.wait += .6; }
   if (c) { card(d, c === 'r'); banner(c === 'r' ? 'Espulso!' : (inBox ? 'Rigore!' : ''), `${c === 'r' ? 'Cartellino rosso' : 'Ammonito'} · ${d.name}`, 2300, c); G.wait += .8; }
@@ -1260,10 +1260,24 @@ function drawSide(el, c, formName, kit, gk) {
   el.innerHTML = `<div class="testa"><img src="${img(c.id + '-mini')}" alt=""><div><b>${esc(c.name)}</b><span class="st">${'★'.repeat(c.str)}<s>${'★'.repeat(5 - c.str)}</s></span></div><em>${formName}</em></div><div class="erba">`
     + c.xi.map(([name, role, num, q], i) => { const [x, z] = f.pos[i], k = i ? kit : gk; return `<div class="pl" style="left:${(50 + z / 23 * 37).toFixed(1)}%;top:${(i ? 67 - (x + 35) / 46 * 54 : 88).toFixed(1)}%"><b style="background:${k.shirt};color:${k.ink}">${num}</b><span>${esc(name)}</span><i>${RUOLO[f.roles[i]]} ${ovr(role, q)}</i></div>`; }).join('') + '</div>';
 }
-function showPre() {
+// La mia rosa: titolari e riserve; toccando un titolare e una riserva dello stesso ruolo si scambiano
+let rXi = -1, rPan = -1;
+function drawRosa(msg) {
+  const H = club(sel.mia), pan = H.pan || [], riga = (x, attr, scelto) => `<button class="gioc${scelto ? ' sel' : ''}" ${attr}><b>${x[2]} ${esc(x[0])}</b><span>${RUOLO[x[1]]}</span><em>${ovr(x[1], x[3])}</em></button>`;
+  $('#campoA').innerHTML = `<div class="rosa"><div><h4>Titolari</h4>${H.xi.map((x, i) => riga(x, `data-x="${i}"`, i === rXi)).join('')}</div><div><h4>Riserve</h4>${pan.map((x, i) => riga(x, `data-n="${i}"`, i === rPan)).join('') || '<p class="vuoto">Nessuna riserva</p>'}`
+    + `<p class="nota">${msg || (pan.length ? 'Tocca un titolare e una riserva dello stesso ruolo per scambiarli' : '')}</p></div></div>`;
+}
+function tapRosa(e) {
+  const b = e.target.closest('button'); if (!b || !K || !G.comp || G.comp.tipo !== 'rosa') return;
+  if (b.dataset.x) rXi = +b.dataset.x; else if (b.dataset.n) rPan = +b.dataset.n; else return;
+  if (rXi < 0 || rPan < 0) return drawRosa();
+  const H = club(K.club), entra = H.pan[rPan][0], ok = CAR.cambiaTitolare(K, CLUBS, rXi, rPan); rXi = rPan = -1; if (ok) CAR.salva(K);
+  showPre(ok ? `${esc(entra)} è titolare` : 'Devono avere lo stesso ruolo');
+}
+function showPre(msg) {
   const c = G.comp, rosa = !!c && c.tipo === 'rosa', H = club(sel.mia), A = club(sel.loro), [kh, ka, g1, g2] = kitsFor(H, A, !!(c && c.fuori));
   drawSide($('#campoH'), H, sel.form, kh, g1);
-  if (rosa) $('#campoA').innerHTML = `<table class="tab"><tr><th>N</th><th>Giocatore</th><th>Ruolo</th><th>Valore</th></tr>${H.xi.map(([name, role, num, q]) => `<tr><td>${num}</td><td>${esc(name)}</td><td>${RUOLO[role]}</td><td>${ovr(role, q)}</td></tr>`).join('')}</table>`;
+  if (rosa) drawRosa(typeof msg === 'string' ? msg : '');
   else drawSide($('#campoA'), A, aiForm(A), ka, g2);
   $('#gioca').classList.toggle('nas', rosa); $('#preInd').textContent = c ? '‹ Indietro' : '‹ Squadre';
   $('#preT').textContent = rosa ? 'La mia rosa' : c ? c.titolo : `Amichevole · ${sel.diff}`; show('#pre');
@@ -1353,7 +1367,7 @@ function buildMenu() {
   const vai = () => { AU.init(); try { screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* dove non si può bloccare ci pensa resize() */ } G.comp = null; sel.mia = sel.loro = null; show('#scelta'); refresh(); };
   $('#vai').onclick = vai; $('#cAmic').onclick = vai;
   $('#indietro').onclick = casa;
-  $('#inizio').onclick = showPre; $('#preInd').onclick = () => { if (G.comp) casa(); else { show('#scelta'); refresh(); } };
+  $('#inizio').onclick = () => showPre(); $('#preInd').onclick = () => { if (G.comp) casa(); else { show('#scelta'); refresh(); } };
   // ingresso: nome dell'allenatore e squadra
   const gn = $('#grigliaN'); gn.innerHTML = g.innerHTML; let mia = null;
   gn.addEventListener('click', (e) => { const b = e.target.closest('.sq'); if (!b) return; mia = b.dataset.id; for (const el of gn.children) el.classList.toggle('mia', el === b); $('#inizia').disabled = false; });
@@ -1365,7 +1379,8 @@ function buildMenu() {
   $('#cCamp').onclick = () => { const p = CAR.prossima(K); if (p) gioca('camp', p.avv, `Campionato · giornata ${p.giornata} di ${p.totale} · ${p.inCasa ? 'in casa' : 'in trasferta'}`, !p.inCasa); else { CAR.nuovaStagione(K, CLUBS); CAR.salva(K); drawHub(); } };
   $('#cCoppa').onclick = () => { const p = CAR.coppaProssima(K); if (p) gioca('coppa', p.avv, `Coppa Titano · ${p.nome.toLowerCase()}`); else panCoppa(); };
   $('#cClass').onclick = panClassifica; $('#tClub').onclick = panClub; $('#tMerc').onclick = () => { mPreso = null; panMercato(); }; $('#hImp').onclick = () => { armato = false; panImp(); }; $('#hCoppa').onclick = panCoppa;
-  $('#tRosa').onclick = () => { sel.mia = K.club; sel.loro = CLUBS.find((c) => c.id !== K.club).id; G.comp = { tipo: 'rosa' }; showPre(); };
+  $('#campoA').addEventListener('click', tapRosa);
+  $('#tRosa').onclick = () => { rXi = rPan = -1; sel.mia = K.club; sel.loro = CLUBS.find((c) => c.id !== K.club).id; G.comp = { tipo: 'rosa' }; showPre(); };
   $('#panInd').onclick = casa; $('#continua').onclick = () => { toMenu(); };
   $('#panC').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;

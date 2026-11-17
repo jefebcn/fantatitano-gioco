@@ -23,7 +23,7 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 |---|---|
 | `src/game.js` | Tutto il gioco: scena, motore della partita, IA, comandi, schermate, audio |
 | `public/index.html` | Pagina, stile e schermate (home, scelta squadre, VS, pausa, fine partita) |
-| `public/data.js` | 16 squadre con colori e undici titolari. **Generato**: `python3 scripts/genera-dati.py <cartella dell'app>` |
+| `public/data.js` | 16 squadre con colori, undici titolari e riserve. **Generato**: `python3 scripts/genera-dati.py <cartella dell'app>` |
 | `src/regia.js` | Regia: sequenza del gol (primo piano, scheda del marcatore, replay, transizione), arbitro, segnaposto col nome, tabelloni che festeggiano. Crea da sola la sua grafica, senza toccare `index.html` |
 | `src/divisa.js` | Disegna la divisa come texture: una per divisa e tono di pelle, non per giocatore |
 | `public/modello.js` | Calciatore e acconciature in base64. **Generato**: `npm run modello` |
@@ -37,6 +37,7 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 | `scripts/animazioni.mjs` | Porta le clip Mixamo sullo scheletro del calciatore; in cima c'è l'elenco `CLIP` |
 | `src/carriera.js` | La logica della carriera, senza schermate: calendario, risultati simulati, classifica, coppa, salvataggio |
 | `scripts/prova-carriera.mjs` | Prove della logica della carriera: `npm run prova` |
+| `scripts/controlla-commenti.mjs` | Cerca i commenti che si sono mangiati del codice nelle righe lunghe: `npm run controlla` |
 | `scripts/simula.cjs` | Gioca partite simulate e stampa gol, tiri, possesso, inserimenti e scivolate: serve per tarare l'IA (richiede Playwright). Stampa anche falli, fuorigioco, rigori, cartellini, angoli, cross e colpi di testa |
 | `scripts/analizza.mjs` | Misura le clip di un pacchetto Mixamo, per scegliere quali usare e dove ritagliarle |
 
@@ -59,9 +60,9 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 - **Panchina e sostituzioni** (`creaGiocatore`, `sostituisci`, `aiSubs`, numeri in `SUB`): cinque cambi a
   partita dalla pausa (si tocca chi esce e chi entra; il portiere si cambia solo con un portiere). L'IA ne
   fa fino a tre a gioco fermo: prima chi si è fatto male, poi forze fresche nel secondo tempo.
-  **Servono le riserve nei dati**: il campo `pan` di ogni squadra in `public/data.js`, che
-  `scripts/genera-dati.py` ora scrive. Finché `data.js` non viene rigenerato dai dati dell'app, panchina
-  e infortuni restano spenti. Per provarle senza dati: `PANCHINA=1 node scripts/simula.cjs`.
+  Le riserve stanno nel campo `pan` di ogni squadra in `public/data.js` (da 5 a 7: un portiere e fino a due
+  per ruolo), scritte da `scripts/genera-dati.py`. In «La mia rosa» si tocca un titolare e una riserva dello
+  stesso ruolo per scambiarli (`cambiaTitolare` in `src/carriera.js`).
 - **Calci di rigore** (`startShootout`, `soKick`, `soEsito`): le partite di coppa finite in parità si
   decidono ai rigori giocati, cinque a testa e poi a oltranza. Ognuno tira nella porta verso cui attaccava.
 - **Casa e trasferta**: in trasferta si comincia attaccando verso sinistra e, se i colori si somigliano, è
@@ -163,8 +164,8 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
    nella versione a pagamento.
 3. **Collegamento all'app.** Rewrite `/gioco` nel `vercel.json` di `fantasyfootballrsm` verso
    questo deploy, poi login condiviso e tabelle Supabase per carriera e rosa.
-4. **Sfide e riserve nei dati**: mancano gli obiettivi. La panchina è pronta ma `public/data.js` va rigenerato
-   coi dati dell'app perché abbia le riserve; il mercato resta a scambio. Le altre squadre non fanno mercato tra loro.
+4. **Sfide**: mancano gli obiettivi. Il mercato resta a scambio tra titolari e le riserve non si comprano. Le
+   altre squadre non fanno mercato tra loro.
 
 ## Cose da sapere
 

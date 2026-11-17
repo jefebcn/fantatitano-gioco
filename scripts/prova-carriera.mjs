@@ -93,5 +93,17 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
   // cedere un forte per uno scarso fa incassare
   M.monete = 0; const r2 = K.scambio(M, cl, valore, 'trefiori', iIn, iOut); assert.ok(r2.ok && r2.costo < 0 && M.monete === -r2.costo);
 }
+// panchina: i dati hanno le riserve; titolare e riserva dello stesso ruolo si scambiano, e lo scambio resta salvato
+{
+  for (const c of clubs) { assert.ok(c.pan && c.pan.length >= 5, c.id + ' senza riserve'); assert.equal(c.pan[0][1], 'P'); const tutti = c.xi.concat(c.pan); assert.equal(new Set(tutti.map((x) => x[0])).size, tutti.length, c.id + ': nomi doppi'); assert.equal(new Set(tutti.map((x) => x[2])).size, tutti.length, c.id + ': numeri doppi'); }
+  const cl = JSON.parse(JSON.stringify(clubs)), M = K.nuova(cl, 'm', 'trefiori', rnd); K.applica(M, cl);
+  const mio = cl.find((c) => c.id === 'trefiori'), tit = mio.xi[2].slice(), ris = mio.pan[1].slice(); assert.equal(tit[1], 'D'); assert.equal(ris[1], 'D');
+  assert.equal(K.cambiaTitolare(M, cl, 2, 0), false, 'difensore con portiere'); assert.equal(K.cambiaTitolare(M, cl, 2, 99), false);
+  assert.equal(K.cambiaTitolare(M, cl, 2, 1), true); assert.equal(mio.xi[2][0], ris[0]); assert.equal(mio.pan[1][0], tit[0]); assert.equal(mio.xi.map((x) => x[1]).join(''), 'PDDDDCCCAAA'); assert.equal(mio.xi0[2][0], tit[0]);
+  const letta = K.carica({ getItem: () => JSON.stringify(M) }), cl2 = JSON.parse(JSON.stringify(clubs)); K.applica(letta, cl2); const m2 = cl2.find((c) => c.id === 'trefiori');
+  assert.equal(m2.xi[2][0], ris[0]); assert.equal(m2.pan[1][0], tit[0]); K.applica(null, cl2); assert.equal(m2.xi[2][0], tit[0]); assert.equal(m2.pan[1][0], ris[0]);
+  // il mercato dopo uno scambio in rosa: la panchina resta com'è
+  M.monete = 99999; const r = K.scambio(M, cl, (ruolo, q) => 50 + q, 'virtus', 9, 9); assert.ok(r.ok); assert.equal(mio.pan[1][0], tit[0]); assert.equal(mio.xi[2][0], ris[0]);
+}
 assert.equal(K.carica({ getItem: () => '{rotto' }), null); assert.equal(K.carica({ getItem: () => null }), null);
 console.log(`Carriera: tutte le prove passate (forte contro debole: ${v} vittorie, ${s} sconfitte su 4000, ${(gol / 4000).toFixed(2)} gol a partita)`);
