@@ -1,18 +1,21 @@
 // Regia della partita: sequenza del gol (primo piano del marcatore, scheda, replay, transizione), arbitro in campo,
 // segnaposto col nome sopra il giocatore che si comanda, tabelloni che festeggiano, telecamera che guarda in diagonale
-// vicino alle porte. Sta in un file a parte e si aggancia a game.js in pochi punti: draw() chiama figure() e dopo(),
+// vicino alle porte, guardalinee con la bandierina, pubblico coi colori delle squadre che salta dopo un gol. Sta in un file a parte e si aggancia a game.js in pochi punti: draw() chiama figure() e dopo(),
 // step() legge G.goalEnd, think() legge G.cine per la corsa del marcatore. Tutto il resto lo capisce da sola guardando G.
 // La grafica (scheda, scritte, transizione) la crea qui, senza toccare index.html.
 
-import { Vector3, CanvasTexture, Sprite, SpriteMaterial, SRGBColorSpace } from 'three';
+import { Vector3, Quaternion, CanvasTexture, Sprite, SpriteMaterial, SRGBColorSpace, Group, Mesh, CylinderGeometry, PlaneGeometry, MeshBasicMaterial, MeshLambertMaterial, DoubleSide } from 'three';
 
 export function creaRegia(X) {
   const { scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, ring, arrow, camPos, camLook, boards } = X;
+  const extra = () => [S.arb, ...S.ass].filter(Boolean); // arbitro e guardalinee
 
   // Numeri da ritoccare
   const SEQ = { vivo: 1, festa: 3.4, tenda: .32 };                    // secondi: azione che finisce, primo piano, metà della transizione
   const REP = { hz: 30, secs: 6.5, prima: 3.6, dopo: 1, vel: .8, min: 1.2 }; // replay: quanto si registra, quanto si rivede, a che velocità
   const ARB = { dist: 8, v: 6.2 };                                    // arbitro: quanto sta lontano dal pallone, quanto corre
+  const ASS = { fuori: 1.4, v: 7, band: 2 };                          // guardalinee: quanto fuori dalla linea, quanto corrono, secondi di bandierina alzata
+  const TIFO = { casa: [.5, .3], salto: .014 };                       // pubblico: quota del primo e del secondo colore; quanto salta dopo un gol
   const DIAG = .3;                                                    // quanto la telecamera resta indietro verso il centro (0 = sempre di fronte)
 
   /* ---------------------------------------------------------------- grafica */
@@ -56,7 +59,7 @@ export function creaRegia(X) {
   const REC = { n: 0, i: 0, len: 0, acc: 0, data: null, figs: [], B: 0, fs: 0, stride: 0, vivo: null };
   function recInit() {
     const A = window.ANIMS; REC.data = null; REC.len = REC.i = 0; REC.acc = 0;
-    REC.figs = all().map((p) => p.fig).concat(S.arb ? [S.arb.fig] : []).filter((f) => f.skinned);
+    REC.figs = all().map((p) => p.fig).concat(extra().map((a) => a.fig)).filter((f) => f.skinned);
     if (!REC.figs.length || !A) return;
     REC.B = A.ossa.length; REC.fs = 7 + REC.B * 4; REC.stride = 5 + REC.figs.length * REC.fs; REC.n = Math.round(REP.hz * REP.secs);
     for (const f of REC.figs) { f.rb = A.ossa.map((n) => f.bones[n]); f.pel = f.bones[A.bacino]; }
@@ -115,14 +118,83 @@ export function creaRegia(X) {
 
   /* ---------------------------------------------------------------- arbitro */
   const SQ_ARB = { club: {}, idx: -1 };
-  function creaArbitro() {
-    if (!X.model()) return null;
+  function kitArbitro() {
     const [kh, ka, g1, g2] = X.pickKits(G.teams[0].club, G.teams[1].club), altri = [kh.shirt, kh.c2, ka.shirt, ka.c2, g1.shirt, g2.shirt];
     const lontano = (c) => Math.min(...altri.map((o) => X.cdist(c, o)));
     const shirt = ['#FF5A1F', '#F2E21B', '#E91E8C', '#19D3B1', '#3FA9F5', '#9B5DE5', '#16161a'].sort((a, b) => lontano(b) - lontano(a))[0];
-    const kit = { shirt, shorts: '#16161a', socks: '#16161a', sleeve: shirt, boots: '#16161a', ink: '#111', c2: '#16161a', stile: null };
-    const fig = X.makeSkinned(kit, 90210, '', null, ''); scene.add(fig.root);
-    return { fig, x: 0, z: -ARB.dist, vx: 0, vz: 0, dir: 0, team: SQ_ARB, i: 5, fx: null, fxNew: false, fxT: 0, st: 'run' };
+    return { shirt, shorts: '#16161a', socks: '#16161a', sleeve: shirt, boots: '#16161a', ink: '#111', c2: '#16161a', stile: null };
+  }
+  const ufficiale = (kit, seed, x, z) => { const fig = X.makeSkinned(kit, seed, '', null, ''); scene.add(fig.root); return { fig, x, z, vx: 0, vz: 0, dir: 0, team: SQ_ARB, i: 5, fx: null, fxNew: false, fxT: 0, st: 'run' }; };
+  function creaArbitro(kit) { return X.model() ? ufficiale(kit, 90210, 0, -ARB.dist) : null; }
+  /* ---------------------------------------------------------------- guardalinee */
+  // Uno per metà campo, su lati opposti come nelle partite vere: seguono il penultimo difensore (o il pallone, se è più avanti)
+  // e alzano la bandierina quando il gioco fischia un fuorigioco nella loro metà.
+  const tela = (() => { const c = document.createElement('canvas'); c.width = c.height = 32; const x = c.getContext('2d');
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { x.fillStyle = (i + j) % 2 ? '#F2E21B' : '#E5262B'; x.fillRect(i * 8, j * 8, 8, 8); }
+    const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; return t; })();
+  const bastone = new CylinderGeometry(.014, .014, .55, 5), drappo = new PlaneGeometry(.4, .3);
+  function bandierina() {
+    const g = new Group(), b = new Mesh(bastone, new MeshLambertMaterial({ color: 0x222222 })); b.position.y = .275; g.add(b);
+    const d = new Mesh(drappo, new MeshBasicMaterial({ map: tela, side: DoubleSide })); d.position.set(.2, .4, 0); g.add(d);
+    scene.add(g); return g;
+  }
+  function creaGuardalinee(kit) {
+    if (!X.model()) return [];
+    // metà +x sul lato lontano dalla telecamera, metà -x su quello vicino
+    return [[1, -1], [-1, 1]].map(([meta, lato], k) => { const a = ufficiale(kit, 4711 + k * 977, meta * HL / 2, lato * (HW + ASS.fuori)); a.meta = meta; a.lato = lato; a.dir = lato > 0 ? Math.PI : 0; a.flag = bandierina(); a.su = 0; return a; });
+  }
+  function muoviGuardalinee(dt) {
+    const b = G.ball;
+    for (const a of S.ass) {
+      // chi attacca verso questa metà: la squadra di casa attacca verso +x
+      const att = a.meta > 0 ? G.teams[0] : G.teams[1], l = X.offsideLine(att) * att.side;
+      const tx = G.state === 'play' || G.state === 'restart' ? clamp(a.meta > 0 ? Math.max(l, 0) : Math.min(l, 0), a.meta > 0 ? 0 : -HL + 1, a.meta > 0 ? HL - 1 : 0) : a.x;
+      const e = tx - a.x, v = Math.abs(e) < .4 ? 0 : Math.sign(e) * Math.min(ASS.v, Math.abs(e) * 2.2), k = Math.min(1, dt * 4);
+      a.vx += (v - a.vx) * k; a.vz = 0; a.x += a.vx * dt; a.z = a.lato * (HW + ASS.fuori);
+      // corre guardando dove va; fermo, o con la bandierina alzata, guarda il campo
+      const verso = Math.abs(a.vx) > 3.2 && a.su <= 0 ? Math.atan2(a.vx, 0) : a.lato > 0 ? Math.PI : 0;
+      let da = verso - a.dir; da = Math.atan2(Math.sin(da), Math.cos(da)); a.dir += da * Math.min(1, dt * 7);
+      a.su -= dt;
+    }
+    const off = G.stats ? G.stats.offs[0] + G.stats.offs[1] : 0;
+    if (off > S.offs) { const a = S.ass.find((q) => q.meta === (sgn(b.x) || 1)); if (a) { a.fx = 'bandiera'; a.fxNew = true; a.fxT = 0; a.su = ASS.band; a.vx = 0; } }
+    S.offs = off;
+  }
+  const _p = new Vector3(), _g = new Vector3(), _q = new Quaternion(), SU = new Vector3(0, 1, 0);
+  function bandiere() { // la bandierina sta nella mano destra e prosegue la linea dell'avambraccio
+    for (const a of S.ass) {
+      const bo = a.fig.bones; if (!bo.hand_r || !bo.lowerarm_r) continue;
+      a.fig.root.updateMatrixWorld(true); bo.hand_r.getWorldPosition(_p); bo.lowerarm_r.getWorldPosition(_g);
+      a.flag.position.copy(_p); a.flag.quaternion.setFromUnitVectors(SU, _g.subVectors(_p, _g).normalize());
+    }
+  }
+  /* ---------------------------------------------------------------- pubblico */
+  // Ogni tribuna ridipinta coi colori della squadra che ci tifa: la curva dietro la porta a -x è degli ospiti, il resto è di casa.
+  function pubblico() {
+    const st = boards.stands; if (!st) return;
+    const [h, o] = G.teams.map((t) => t.club), pelle = ['#e8b98f', '#c98f5a', '#8a5a3a', '#f0cba8'];
+    const tela = (cl) => {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 256; const x = c.getContext('2d'); x.fillStyle = '#1a2038'; x.fillRect(0, 0, 512, 256);
+      const neutri = ['#f2f2f2', '#d8d8e0', '#2a2f45', '#5a5f72'];
+      for (let r = 0; r < 20; r++) for (let k = 0; k < 64; k++) {
+        if (Math.random() < .1) continue;
+        const px = k * 8 + (r % 2) * 4 + (Math.random() * 2 - 1), py = r * 12.8 + 4, u = Math.random();
+        x.fillStyle = u < TIFO.casa[0] ? cl.c1 : u < TIFO.casa[0] + TIFO.casa[1] ? cl.c2 : neutri[(Math.random() * neutri.length) | 0]; x.fillRect(px, py + 3, 5.5, 7);
+        x.fillStyle = pelle[(Math.random() * 4) | 0]; x.beginPath(); x.arc(px + 2.7, py + 1.5, 2.3, 0, 7); x.fill();
+      }
+      return c;
+    };
+    const tc = { h: tela(h), o: tela(o) };
+    for (const s of st) {
+      s.tifo = s.x < -HL ? 1 : 0; const old = s.m.material.map, t = new CanvasTexture(s.tifo ? tc.o : tc.h);
+      t.colorSpace = old.colorSpace; t.anisotropy = old.anisotropy; t.wrapS = old.wrapS; t.wrapT = old.wrapT; t.repeat.copy(old.repeat);
+      s.m.material.map = t; s.m.material.needsUpdate = true; old.dispose();
+    }
+  }
+  function saltano(dt) { // dopo un gol salta il pubblico della squadra che ha segnato
+    const st = boards.stands; if (!st) return;
+    const chi = S.on && G.state === 'goal' && G.scorer ? G.scorer.team.idx : -1;
+    for (const s of st) { const o = s.m.material.map.offset; o.y = s.tifo === chi ? TIFO.salto * Math.abs(Math.sin(G.t * 8.5)) : o.y * Math.max(0, 1 - dt * 8); }
   }
   function muoviArbitro(dt) {
     const a = S.arb, b = G.ball; if (!a || !b) return;
@@ -157,7 +229,7 @@ export function creaRegia(X) {
   /* ---------------------------------------------------------------- sequenza del gol */
   // S.on: la sequenza è in corso. I tempi sono in secondi di G.stateT: c0 fine dell'azione dal vivo, c1 fine del primo piano,
   // c2 fine del replay (uguale a c1 se il replay non c'è). step() dà il calcio d'inizio quando G.stateT supera G.goalEnd.
-  const S = { squadra: null, arb: null, visti: 0, on: false, c0: 0, c1: 0, c2: 0, rp: false, f0: 0, f1: 0, t1: false, t2: false, salvato: false, a0: 0, prima: '', scatto: false, pinDi: null, guarda: new Vector3(), var: 0, porta: 1 };
+  const S = { squadra: null, arb: null, ass: [], offs: 0, visti: 0, on: false, c0: 0, c1: 0, c2: 0, rp: false, f0: 0, f1: 0, t1: false, t2: false, salvato: false, a0: 0, prima: '', scatto: false, pinDi: null, guarda: new Vector3(), var: 0, porta: 1 };
   const inReplay = () => S.on && S.rp && G.state === 'goal' && G.stateT >= S.c1;
   const inFesta = () => S.on && G.state === 'goal' && G.stateT >= S.c0 && G.stateT < S.c1;
 
@@ -208,10 +280,10 @@ export function creaRegia(X) {
     },
     /** Chiamata da draw() dopo la telecamera normale: tutto il resto. */
     dopo(dt) {
-      if (!G.teams.length || !G.ball) { if (S.on) fine(); if (S.arb) { scene.remove(S.arb.fig.root); S.arb = null; } S.squadra = null; pin.visible = false; return; }
+      if (!G.teams.length || !G.ball) { if (S.on) fine(); for (const a of extra()) { scene.remove(a.fig.root); if (a.flag) scene.remove(a.flag); } S.arb = null; S.ass = []; S.squadra = null; pin.visible = false; return; }
       if (G.teams[0] !== S.squadra) { // partita nuova
-        if (S.arb) scene.remove(S.arb.fig.root);
-        S.squadra = G.teams[0]; S.arb = creaArbitro(); S.visti = 0; S.on = false; S.pinDi = null; G.cine = null; G.goalEnd = 0; recInit();
+        for (const a of extra()) { scene.remove(a.fig.root); if (a.flag) scene.remove(a.flag); }
+        S.squadra = G.teams[0]; const kit = kitArbitro(); S.arb = creaArbitro(kit); S.ass = creaGuardalinee(kit); S.offs = 0; pubblico(); S.visti = 0; S.on = false; S.pinDi = null; G.cine = null; G.goalEnd = 0; recInit();
       }
       const st = G.state, t = G.stateT, replay = inReplay(); if (replay) palla();
       if (st === 'goal' && !S.on && G.goals.length !== S.visti) inizio();
@@ -220,12 +292,14 @@ export function creaRegia(X) {
 
       if (!replay) {
         if (S.arb) { muoviArbitro(dt); pose(S.arb, dt); }
+        if (S.ass.length) { muoviGuardalinee(dt); for (const a of S.ass) pose(a, dt); }
         if (REC.data && (st === 'play' || (st === 'goal' && t < SEQ.vivo))) {
           REC.acc += dt;
           if (REC.acc >= 1 / REP.hz) { REC.acc %= 1 / REP.hz; recScrivi(REC.data, REC.i * REC.stride); REC.i = (REC.i + 1) % REC.n; REC.len = Math.min(REC.n, REC.len + 1); }
         }
       }
 
+      bandiere(); saltano(dt);
       // segnaposto col nome al posto della freccia
       const c = G.ctrl, cine = S.on && t >= S.c0; arrow.visible = false; pin.visible = ring.visible && !!c && !cine;
       if (cine) ring.visible = false;
