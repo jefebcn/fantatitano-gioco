@@ -94,6 +94,9 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 #banner .t{font-family:Anton;font-size:clamp(46px,13vw,120px);color:var(--lime);text-shadow:0 5px 0 var(--viola),0 10px 30px rgba(0,0,0,.6);text-transform:uppercase;letter-spacing:.03em}
 #banner .s{font-family:Anton;font-size:clamp(17px,4.4vw,30px);text-transform:uppercase;background:var(--ink);display:inline-block;padding:4px 14px;border-radius:8px;margin-top:6px}
 #banner .s:empty{display:none}
+#banner[data-c=g] .s{background:#FFD21F;color:#111}
+#banner[data-c=r] .s{background:#E5262B;color:#fff}
+#cart{font-size:13px;opacity:.9;margin:2px 0 6px}#cart span{display:inline-block;margin:0 7px}#cart i{display:inline-block;width:9px;height:13px;border-radius:2px;margin-right:5px;vertical-align:-2px}#cart i.g{background:#FFD21F}#cart i.r{background:#E5262B}#cart:empty{display:none}
 #stickZona{position:absolute;left:0;bottom:0;width:50%;top:90px;pointer-events:auto}
 #stick{position:absolute;width:112px;height:112px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(10,10,12,.28);
   left:26px;bottom:34px;transform:none}
@@ -176,7 +179,8 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
   <div class="h esito" id="esito"></div>
   <div class="ris"><img id="fH" alt=""><span id="fS"></span><img id="fA" alt=""></div>
   <div class="marc" id="marc"></div>
-  <table><tr><td id="tH"></td><td>Tiri</td><td id="tA"></td></tr><tr><td id="pH"></td><td>Possesso</td><td id="pA"></td></tr></table>
+  <div id="cart"></div>
+  <table><tr><td id="tH"></td><td>Tiri</td><td id="tA"></td></tr><tr><td id="pH"></td><td>Possesso</td><td id="pA"></td></tr><tr><td id="flH"></td><td>Falli</td><td id="flA"></td></tr><tr><td id="fgH"></td><td>Fuorigioco</td><td id="fgA"></td></tr></table>
   <img class="tito" id="fTito" alt="Tito">
   <div class="az"><button class="btn" id="rivincita">Rivincita</button><button class="btn sec" id="cambia">Cambia squadre</button></div>
 </div>
