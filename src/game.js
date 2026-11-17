@@ -180,6 +180,12 @@ function makeFigure(kit, seed, num) {
 }
 /* --- figure con scheletro e animazioni registrate (modello GLB): se il modello non si carica restano quelle a blocchi --- */
 let MODEL = null;
+/** Quanto si resta a terra dopo una scivolata, un tuffo o un contrasto subito: si allunga se ci sono le clip registrate. */
+const DOWN = { pl: .38, gk: .5, fall: .7 };
+/** Le azioni registrate: velocità, da che secondo cominciano a sfumare (se manca: alla fine), cosa viene dopo. */
+const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.3 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 } };
+const hasFx = (n) => !!(MODEL && MODEL.fx && MODEL.fx[n]);
+function azione(p, name) { if (hasFx(name) && p.fig.skinned) { p.fx = name; p.fxT = 0; p.fxNew = true; } }
 const R = { SKIN: 0, SHIRT: 1, SHORTS: 2, SOCKS: 3, BOOTS: 4, HAIR: 5, ARM: 6, HAND: 7 };
 const bname = (n) => n.replace(/^mixamorig:?/, '');
 async function loadModel() {
@@ -211,7 +217,17 @@ async function loadModel() {
     });
     const box = new T.Box3().setFromObject(scene), h = box.max.y - box.min.y;
     MODEL = { scene, clips: Object.fromEntries(gltf.animations.map((a) => [a.name, a])), geos: meshes.map((m) => m.geometry), regions, k: 2.72 / h, P, mat: new T.MeshLambertMaterial({ vertexColors: true }) };
-    if (!MODEL.clips.idle || !MODEL.clips.run || !MODEL.clips.walk) MODEL = null;
+    if (!MODEL.clips.idle || !MODEL.clips.run || !MODEL.clips.walk) { MODEL = null; return; }
+    // animazioni da calcio (public/anim.js, da Mixamo): stesso scheletro, quindi basta ricostruire le tracce
+    MODEL.fx = {}; const A = window.ANIMS, pre = sk.bones.find((b) => bname(b.name) === 'Hips').name.replace(/Hips$/, '');
+    if (A) for (const [nome, c] of Object.entries(A.clip)) {
+      const B = A.ossa.length, times = new Float32Array(c.n), pos = new Float32Array(c.n * 3);
+      for (let i = 0; i < c.n; i++) { times[i] = i / A.fps; pos[i * 3] = c.x; pos[i * 3 + 1] = c.y[i]; pos[i * 3 + 2] = c.z; }
+      const tracks = [new T.VectorKeyframeTrack(`${pre}Hips.position`, times, pos)];
+      A.ossa.forEach((b, k) => { const v = new Float32Array(c.n * 4); for (let i = 0; i < c.n; i++) for (let j = 0; j < 4; j++) v[i * 4 + j] = c.q[(i * B + k) * 4 + j] / 10000; tracks.push(new T.QuaternionKeyframeTrack(`${pre}${b}.quaternion`, times, v)); });
+      MODEL.fx[nome] = new T.AnimationClip(nome, (c.n - 1) / A.fps, tracks);
+    }
+    if (MODEL.fx.scivolata) DOWN.pl = .81; if (MODEL.fx.tuffoS) DOWN.gk = 1.1; if (MODEL.fx.caduta) DOWN.fall = 1.35;
   } catch (e) { console.warn('modello 3D non caricato', e); MODEL = null; }
 }
 const lin = (hex) => { const c = new T.Color(hex); return [c.r, c.g, c.b]; };
@@ -235,8 +251,9 @@ function makeSkinned(kit, seed, num) {
   if (bones.Spine2) { const n = new T.Mesh(GEO.num, numMat(num, kit.ink)); n.scale.setScalar(NUMP[3]); n.position.set(NUMP[0], NUMP[1], NUMP[2]); n.rotation.y = Math.PI; bones.Spine2.add(n); }
   const sh = new T.Mesh(GEO.shadow, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; sh.scale.setScalar(1.5); root.add(sh);
   const mixer = new T.AnimationMixer(obj), A = {};
-  for (const n of ['idle', 'walk', 'run']) { const a = mixer.clipAction(MODEL.clips[n]); a.play(); a.time = rnd(MODEL.clips[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; }
-  return { root, body, mixer, A, bones, geos, w: [1, 0, 0], saved: [], skinned: true };
+  const base = { idle: MODEL.clips.idle, walk: MODEL.clips.walk, run: MODEL.clips.run, jog: MODEL.fx.jog, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null };
+  for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = rnd(base[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; }
+  return { root, body, mixer, A, bones, geos, w: { idle: 1, walk: 0, run: 0, jog: 0, gkIdle: 0 }, saved: [], act: null, old: null, fxW: 0, oldW: 0, skinned: true };
 }
 const NUMP = [0, 4, -13.5, 78];
 const lum = (h) => { const c = new T.Color(h); return .299 * c.r + .587 * c.g + .114 * c.b; };
@@ -306,7 +323,7 @@ function kickoff(team) {
     if (t !== team && Math.abs(kz) < 10) kx = Math.min(kx, -10.5);
     if (t === team && p.i === 9) { kx = -.7; kz = 0; }
     if (t === team && p.i === 10) { kx = -1.2; kz = 5; }
-    p.x = kx * t.side; p.z = kz * t.side; p.vx = p.vz = 0; p.dir = t.side > 0 ? Math.PI / 2 : -Math.PI / 2; p.st = 'run'; p.stT = 0; p.cool = p.stun = 0; p.tx = p.x; p.tz = p.z;
+    p.x = kx * t.side; p.z = kz * t.side; p.vx = p.vz = 0; p.dir = t.side > 0 ? Math.PI / 2 : -Math.PI / 2; p.st = 'run'; p.stT = 0; p.cool = p.stun = 0; p.tx = p.x; p.tz = p.z; p.fx = null; p.fallen = false;
   }
   G.taker = team.players[9]; G.next = team; G.poss = team; G.lastTouch = G.taker; G.intended = null;
   setState('kickoff'); banner(G.half === 1 && G.clock === 0 ? "Calcio d'inizio" : '', '', 1100); AU.whistle();
@@ -321,9 +338,9 @@ function gain(p) {
   p.thinkT = diffOf(p).think * rnd(.6, 1.3);
   if (p.team.human) { if (p.i !== 0) setCtrl(p); } else if (prev !== p.team || !G.ctrl) setCtrl(nearestTo(G.teams[0], b.x, b.z));
 }
-function kick(p, vx, vy, vz) {
+function kick(p, vx, vy, vz, anim = 'passaggio') {
   const b = G.ball; b.owner = null; b.x = p.x + Math.sin(p.dir) * .8; b.z = p.z + Math.cos(p.dir) * .8; b.y = BR;
-  b.vx = vx; b.vy = vy; b.vz = vz; p.cool = .45; p.st = 'kick'; p.stT = 0; G.lastTouch = G.lastKicker = p; AU.kick(hyp(vx, vz));
+  b.vx = vx; b.vy = vy; b.vz = vz; p.cool = .45; p.st = 'kick'; p.stT = 0; G.lastTouch = G.lastKicker = p; AU.kick(hyp(vx, vz)); azione(p, anim);
   const a = Math.atan2(vx, vz); p.dir = a;
 }
 function openness(m) { let d = 99; for (const o of m.team.opp.players) d = Math.min(d, hyp(o.x - m.x, o.z - m.z)); return d; }
@@ -349,7 +366,7 @@ function pass(p, m) {
   const tx = m.x + m.vx * lead, tz = m.z + m.vz * lead, dx = tx - p.x, dz = tz - p.z, d = hyp(dx, dz) || 1;
   const lob = d > 20 && laneBlocked(p, m);
   const sp = lob ? clamp(d * .78, 12, 24) : clamp(9.5 + d * .82, 12, 27);
-  kick(p, dx / d * sp, lob ? clamp(d * .42, 6, 11) : .4, dz / d * sp);
+  kick(p, dx / d * sp, lob ? clamp(d * .42, 6, 11) : .4, dz / d * sp, lob || d > 26 ? 'tiro' : 'passaggio');
   G.intended = m; if (p.team.human) setCtrl(m);
 }
 function shoot(p, tz, pow, err) {
@@ -357,10 +374,10 @@ function shoot(p, tz, pow, err) {
   tz += rnd(-1, 1) * (.4 + d0 * .04) * err;
   const dx = gx - p.x, dz = tz - p.z, d = hyp(dx, dz) || 1, sp = 19 + 15 * pow, t = d / sp / .94;
   const h = .35 + pow * 1.85 + (pow > .86 ? (pow - .86) * 11 : 0) + rnd(-.25, .25) * err;
-  kick(p, dx / d * sp, clamp((h - BR + .5 * GRAV * t * t) / t, 0, 15), dz / d * sp);
+  kick(p, dx / d * sp, clamp((h - BR + .5 * GRAV * t * t) / t, 0, 15), dz / d * sp, 'tiro');
   G.shotId++; G.intended = null; G.stats.shots[p.team.idx]++;
 }
-function slide(p) { if (p.st !== 'run' || p.stun > 0) return; p.st = 'slide'; p.stT = 0; p.hit = false; }
+function slide(p) { if (p.st !== 'run' || p.stun > 0) return; p.st = 'slide'; p.stT = 0; p.hit = false; azione(p, 'scivolata'); }
 function switchCtrl() { const b = G.ball; const n = nearestTo(G.teams[0], b.x + b.vx * .3, b.z + b.vz * .3, G.ctrl); if (n) setCtrl(n); }
 
 /* comandi dell'utente */
@@ -466,7 +483,7 @@ function gkThink(p, dt) {
       const zp = b.z + b.vz * tt;
       if (Math.abs(zp) < GH + 2.5) {
         p.tx = p.x; p.tz = clamp(zp, -GH - .6, GH + .6); p.sprint = true;
-        if (tt < .42 && Math.abs(zp - p.z) > 1.1 && p.st === 'run') { p.st = 'dive'; p.stT = 0; p.diveS = sgn(zp - p.z); p.diveV = clamp(Math.abs(zp - p.z) / .38, 4, 9.5); }
+        if (tt < .42 && Math.abs(zp - p.z) > 1.1 && p.st === 'run') { p.st = 'dive'; p.stT = 0; p.diveS = sgn(zp - p.z); p.diveV = clamp(Math.abs(zp - p.z) / .38, 4, 9.5); azione(p, -p.diveS * Math.sin(p.dir) > 0 ? 'tuffoS' : 'tuffoD'); }
         return;
       }
     }
@@ -529,15 +546,16 @@ function movePlayer(p, dt) {
   if (p.st === 'kick' && p.stT > .32) p.st = 'run';
   if (p.st === 'slide') { const k = Math.max(0, 1 - p.stT / .55) * 11.5; p.vx = Math.sin(p.dir) * k; p.vz = Math.cos(p.dir) * k; if (p.stT > .55) { p.st = 'down'; p.stT = 0; } }
   else if (p.st === 'dive') { const k = Math.max(0, 1 - p.stT / .5) * (p.diveV || 8); p.vx *= .8; p.vz = p.diveS * k; if (p.stT > .5) { p.st = 'down'; p.stT = 0; } }
-  else if (p.st === 'down') { p.vx *= .7; p.vz *= .7; if (p.stT > (p.i === 0 ? .5 : .38)) { p.st = 'run'; p.stT = 0; } }
+  else if (p.st === 'down') { p.vx *= .7; p.vz *= .7; if (p.stT > (p.i === 0 ? DOWN.gk : DOWN.pl)) { p.st = 'run'; p.stT = 0; } }
   else {
-    let sp = p.maxV * (p.team.human ? 1 : G.diff.spd) * (p.sprint ? 1.27 : 1) * (b.owner === p ? .93 : 1) * (p.stun > 0 ? .25 : 1);
+    let sp = p.maxV * (p.team.human ? 1 : G.diff.spd) * (p.sprint ? 1.27 : 1) * (b.owner === p ? .93 : 1) * (p.stun > 0 ? (p.fallen ? 0 : .25) : 1); if (p.fallen && p.stun <= 0) p.fallen = false;
     if (G.state === 'goal' && !p.sprint) sp *= .5;
     const dx = p.tx - p.x, dz = p.tz - p.z, d = hyp(dx, dz); let wx = 0, wz = 0;
     if (d > .2) { const k = Math.min(1, d / 1.3) * sp / d; wx = dx * k; wz = dz * k; }
     const a = Math.min(1, dt * (userDrives(p) ? 11 : 8)); p.vx += (wx - p.vx) * a; p.vz += (wz - p.vz) * a;
     const v = hyp(p.vx, p.vz); let want = p.dir;
-    if (v > .7) want = Math.atan2(p.vx, p.vz); else if (b.owner !== p) want = Math.atan2(b.x - p.x, b.z - p.z);
+    if (p.i === 0 && b.owner !== p && G.state === 'play') want = Math.atan2(b.x - p.x, b.z - p.z); // il portiere guarda sempre la palla, anche quando si sposta di lato
+    else if (v > .7) want = Math.atan2(p.vx, p.vz); else if (b.owner !== p) want = Math.atan2(b.x - p.x, b.z - p.z);
     let da = want - p.dir; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; p.dir += da * Math.min(1, dt * (v > .7 ? 13 : 6));
   }
   p.x = clamp(p.x + p.vx * dt, -HL - 3.5, HL + 3.5); p.z = clamp(p.z + p.vz * dt, -HW - 3, HW + 3);
@@ -574,7 +592,7 @@ function contacts(dt) {
       const pr = (p.team.human ? MATE.save : G.diff.save) - Math.max(0, sp - 22) * .012 + (p.st === 'dive' ? 0 : .08);
       if (rnd() > pr) { p.cool = .6; return; }
       AU.kick(14);
-      if (sp < 21 || rnd() < .4) return gain(p);
+      if (sp < 21 || rnd() < .4) { if (p.st === 'run') azione(p, 'presa'); return gain(p); }
       b.vx = p.team.side * rnd(5, 9); b.vz = sgn(b.z - p.z || rnd(-1, 1)) * rnd(5, 10); b.vy = rnd(3, 6); G.lastTouch = p; p.cool = .5; return;
     }
     if (sp > 19 && p !== G.intended && !gk) { // deviazione
@@ -591,7 +609,7 @@ function contacts(dt) {
     const dist = hyp(d.x - b.x, d.z - b.z), dBody = hyp(d.x - own.x, d.z - own.z);
     if (own.i === 0) continue;
     if (d.st === 'slide') {
-      if (!d.hit && dist < 1.35) { d.hit = true; if (rnd() < .85) { b.owner = null; b.vx = Math.sin(d.dir) * 7 + rnd(-2, 2); b.vz = Math.cos(d.dir) * 7 + rnd(-2, 2); b.vy = 1.5; own.stun = .7; own.cool = .8; d.cool = .1; G.lastTouch = d; G.poss = d.team; AU.kick(9); return; } }
+      if (!d.hit && dist < 1.35) { d.hit = true; if (rnd() < .85) { b.owner = null; b.vx = Math.sin(d.dir) * 7 + rnd(-2, 2); b.vz = Math.cos(d.dir) * 7 + rnd(-2, 2); b.vy = 1.5; own.stun = DOWN.fall; own.cool = Math.max(.8, DOWN.fall); own.fallen = true; azione(own, 'caduta'); d.cool = .1; G.lastTouch = d; G.poss = d.team; AU.kick(9); return; } }
       continue;
     }
     if (dist < 1.15 || dBody < .95) {
@@ -635,24 +653,54 @@ function goal(team) {
 
 /* ------------------------------------------------------------------ animazione delle figure */
 const _E = new T.Euler(), _Q = new T.Quaternion();
+function startFx(f, name) {
+  const a = f.mixer.clipAction(MODEL.fx[name]);
+  if (f.old && f.old !== a) f.old.stop();
+  f.old = f.act && f.act !== a ? f.act : null; f.oldW = f.old ? f.fxW : 0; f.fxW = 0;
+  a.setLoop(T.LoopOnce, 1); a.clampWhenFinished = true; a.reset(); a.timeScale = FX[name].sp; a.play(); f.act = a;
+}
 function poseSkinned(p, dt) {
   const f = p.fig, v = hyp(p.vx, p.vz), o = {}; f.root.position.set(p.x, 0, p.z); f.root.rotation.y = p.dir;
   for (const [b, q] of f.saved) b.quaternion.copy(q); // toglie i ritocchi del fotogramma prima: il mixer non riscrive un osso che non è cambiato
   f.saved.length = 0;
+  if (G.dbgFx && hasFx(G.dbgFx.name)) { // per le prove: tutti fermi su un fotogramma di una clip
+    for (const k in f.A) f.A[k].setEffectiveWeight(0); if (f.act) f.act.setEffectiveWeight(0);
+    const a = f.mixer.clipAction(MODEL.fx[G.dbgFx.name]); a.play(); a.paused = true; a.time = G.dbgFx.t; a.setEffectiveWeight(1); f.dbg = a; f.mixer.update(0);
+    f.body.rotation.set(0, 0, 0); f.body.position.y = 0; return;
+  } else if (f.dbg) { f.dbg.stop(); f.dbg = null; }
+  // l'azione registrata in corso (tiro, scivolata, tuffo…)
+  if (p.fxNew) { p.fxNew = false; startFx(f, p.fx); }
+  let on = false;
+  if (p.fx && f.act) {
+    p.fxT += dt; const c = FX[p.fx], dur = f.act.getClip().duration / c.sp;
+    if (p.fxT >= dur - .03) { if (c.next && hasFx(c.next)) { p.fx = c.next; p.fxT = 0; startFx(f, p.fx); on = true; } else p.fx = null; }
+    else on = p.fxT < (c.cut || dur - .12);
+  }
+  f.fxW += ((on ? 1 : 0) - f.fxW) * Math.min(1, dt * (on ? 16 : 6)); f.oldW += (0 - f.oldW) * Math.min(1, dt * 9);
+  if (f.act) { f.act.setEffectiveWeight(f.fxW); if (!p.fx && f.fxW < .02) { f.act.stop(); f.act = null; f.fxW = 0; } }
+  if (f.old) { f.old.setEffectiveWeight(f.oldW); if (f.oldW < .02) { f.old.stop(); f.old = null; f.oldW = 0; } }
+  const busy = f.fxW > .25;
+  // le pose a codice restano per ciò che non ha una clip
   let rx = 0, rz = 0, by = 0, still = false;
-  if (p.st === 'kick') { const k = p.stT / .32, sw = k < .3 ? k / .3 * .8 : .8 - (k - .3) / .7 * 2.2; o.RightUpLeg = [sw * OV.leg, 0, 0]; o.RightLeg = [(k < .3 ? 1 : .1) * OV.knee, 0, 0]; o.Spine = [-.12 * OV.leg, 0, 0]; }
-  else if (p.st === 'slide' || (p.st === 'down' && p.i !== 0)) { still = true; rx = -1.2; by = .16; o.LeftUpLeg = [-.5 * OV.leg, 0, 0]; o.RightUpLeg = [.25 * OV.leg, 0, 0]; o.RightLeg = [.9 * OV.knee, 0, 0]; o.LeftArm = [0, 0, -.5 * OV.arm]; o.RightArm = [0, 0, .5 * OV.arm]; }
-  else if (p.st === 'dive' || (p.st === 'down' && p.i === 0)) {
+  if (p.st === 'kick' && !hasFx('tiro')) { const k = p.stT / .32, sw = k < .3 ? k / .3 * .8 : .8 - (k - .3) / .7 * 2.2; o.RightUpLeg = [sw * OV.leg, 0, 0]; o.RightLeg = [(k < .3 ? 1 : .1) * OV.knee, 0, 0]; o.Spine = [-.12 * OV.leg, 0, 0]; }
+  else if ((p.st === 'slide' || (p.st === 'down' && p.i !== 0)) && !hasFx('scivolata')) { still = true; rx = -1.2; by = .16; o.LeftUpLeg = [-.5 * OV.leg, 0, 0]; o.RightUpLeg = [.25 * OV.leg, 0, 0]; o.RightLeg = [.9 * OV.knee, 0, 0]; o.LeftArm = [0, 0, -.5 * OV.arm]; o.RightArm = [0, 0, .5 * OV.arm]; }
+  else if ((p.st === 'dive' || (p.st === 'down' && p.i === 0)) && !hasFx('tuffoS')) {
     still = true; const k = p.st === 'dive' ? Math.min(1, p.stT / .22) : 1, side = p.diveS * (Math.sin(p.dir) > 0 ? 1 : -1); rz = side * 1.35 * k;
     by = p.st === 'dive' ? Math.sin(Math.min(1, p.stT / .5) * Math.PI) * .7 + .25 : .28; o.LeftArm = [0, 0, 2.4 * OV.arm * k]; o.RightArm = [0, 0, -2.4 * OV.arm * k];
   }
+  else if (busy) { /* la clip fa tutto */ }
   else if (G.state === 'goal' && G.scorer && p.team === G.scorer.team && p.i !== 0 && v < 5) { const a = 2.2 + Math.sin(G.t * 9 + p.i) * .2; o.LeftArm = [0, 0, a * OV.arm]; o.RightArm = [0, 0, -a * OV.arm]; by = Math.abs(Math.sin(G.t * 7 + p.i)) * .3; }
   else if (G.ball.owner === p && p.i === 0) { o.LeftArm = [0, 0, .35 * OV.arm]; o.RightArm = [0, 0, -.35 * OV.arm]; }
-  else if (p.i === 0 && v < 2 && G.state === 'play') { o.LeftArm = [0, 0, .55 * OV.arm]; o.RightArm = [0, 0, -.55 * OV.arm]; o.LeftUpLeg = [-.3 * OV.leg, 0, 0]; o.RightUpLeg = [-.3 * OV.leg, 0, 0]; o.LeftLeg = [.55 * OV.knee, 0, 0]; o.RightLeg = [.55 * OV.knee, 0, 0]; by = -.1; }
-  let wr = clamp((v - 2.6) / 2.6, 0, 1), ww = clamp(v / 2.2, 0, 1) * (1 - wr); if (still) wr = ww = 0;
-  const tg = [1 - wr - ww, ww, wr], a = Math.min(1, dt * 10); for (let i = 0; i < 3; i++) f.w[i] += (tg[i] - f.w[i]) * a;
-  f.A.idle.setEffectiveWeight(f.w[0]); f.A.walk.setEffectiveWeight(f.w[1]); f.A.run.setEffectiveWeight(f.w[2]);
-  f.A.run.timeScale = clamp(v / 6.6, .8, 1.5); f.A.walk.timeScale = clamp(v / 1.9, .7, 1.7);
+  else if (p.i === 0 && v < 2 && G.state === 'play' && !f.A.gkIdle) { o.LeftArm = [0, 0, .55 * OV.arm]; o.RightArm = [0, 0, -.55 * OV.arm]; o.LeftUpLeg = [-.3 * OV.leg, 0, 0]; o.RightUpLeg = [-.3 * OV.leg, 0, 0]; o.LeftLeg = [.55 * OV.knee, 0, 0]; o.RightLeg = [.55 * OV.knee, 0, 0]; by = -.1; }
+  // camminata, corsetta e corsa secondo la velocità
+  const tg = { idle: 0, walk: 0, run: 0, jog: 0, gkIdle: 0 };
+  if (f.A.jog) { const m = clamp(v / 1.2, 0, 1), r = clamp((v - 6.4) / 1.8, 0, 1), j = clamp((v - 2) / 1.8, 0, 1) * (1 - r); tg.run = m * r; tg.jog = m * j; tg.walk = m * (1 - r - j); tg.idle = 1 - m; }
+  else { tg.run = clamp((v - 2.6) / 2.6, 0, 1); tg.walk = clamp(v / 2.2, 0, 1) * (1 - tg.run); tg.idle = 1 - tg.run - tg.walk; }
+  if (still) { tg.idle = 1; tg.walk = tg.run = tg.jog = 0; }
+  if (f.A.gkIdle && G.state === 'play' && G.ball.owner !== p) { tg.gkIdle = tg.idle; tg.idle = 0; }
+  const a = Math.min(1, dt * 10), rest = Math.max(0, 1 - f.fxW - f.oldW);
+  for (const k in f.A) { f.w[k] += (tg[k] - f.w[k]) * a; f.A[k].setEffectiveWeight(f.w[k] * rest); }
+  f.A.run.timeScale = clamp(v / 6.6, .8, 1.5); f.A.walk.timeScale = clamp(v / 1.9, .7, 1.7); if (f.A.jog) f.A.jog.timeScale = clamp(v / 4.1, .8, 1.5);
   f.mixer.update(dt);
   const ov = G.dbg ? Object.assign(o, G.dbg) : o;
   for (const k in ov) { const b = f.bones[k]; if (b) { f.saved.push([b, b.quaternion.clone()]); _E.set(ov[k][0], ov[k][1], ov[k][2]); b.quaternion.multiply(_Q.setFromEuler(_E)); } }
@@ -861,6 +909,6 @@ async function boot() {
   Promise.all(CLUBS.map((c) => loadImg(img(c.id + '-mini')).then((i) => { CREST[c.id] = i; }))).then(() => { if (G.teams.length) paintBoards(G.teams[0].club, G.teams[1].club, CREST); });
   $('#carica').remove(); show('#home'); requestAnimationFrame(loop);
 }
-window.__g = { G, step, startMatch, newMatch, club, DIFF, pressA, pressB, OV, NUMP, model: () => MODEL };
+window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, pressA, pressB, OV, NUMP, model: () => MODEL };
 boot();
 })();
