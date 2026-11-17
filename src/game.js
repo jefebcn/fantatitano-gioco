@@ -143,6 +143,7 @@ function buildStadium(lockup) {
     const g = new T.Group(); g.position.set(cx, 0, cz); g.rotation.y = ry;
     const h = 30, a = .95, m = new T.Mesh(new T.PlaneGeometry(len, h), new T.MeshLambertMaterial({ map: ctex(c, len / 26, 1) }));
     m.rotation.x = -a; m.position.set(0, h / 2 * Math.cos(a) + 1.2, -h / 2 * Math.sin(a)); g.add(m);
+    (boards.stands || (boards.stands = [])).push({ m, x: cx, z: cz }); // la regia le ridipinge coi colori delle squadre
     const w = new T.Mesh(new T.BoxGeometry(len, 1.2, .5), mat(0x0d1733)); w.position.set(0, .6, .2); g.add(w);
     scene.add(g);
   };
@@ -223,7 +224,7 @@ let MODEL = null;
 /** Quanto si resta a terra dopo una scivolata, un tuffo o un contrasto subito: si allunga se ci sono le clip registrate. */
 const DOWN = { pl: .38, gk: .5, fall: .7 };
 /** Le azioni registrate: velocità, da che secondo cominciano a sfumare (se manca: alla fine), cosa viene dopo. */
-const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.3 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 }, rinvio: { sp: 1.15 }, testa: { sp: 1.3, cut: .45 } };
+const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.3 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 }, rinvio: { sp: 1.15 }, testa: { sp: 1.3, cut: .45 }, bandiera: { sp: 1 } };
 /** Il portiere tiene la palla in mano per HOLD secondi; il rinvio con le mani parte prima, così la palla esce quando il braccio arriva in alto. */
 const HOLD = 1, LANCIO = HOLD - .73 / 1.15;
 const hasFx = (n) => !!(MODEL && MODEL.fx && MODEL.fx[n]);
@@ -302,7 +303,7 @@ function makeSkinned(kit, seed, num, clubId, nome) {
   if (sm) { const c = new T.Mesh(GEO1, sm); c.scale.set(sm.userData.ratio, 1, 1); c.applyMatrix4(MODEL.stemmaM); bones.spine_03.add(c); }
   const sh = new T.Mesh(GEO.shadow, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; sh.scale.setScalar(1.5); root.add(sh);
   const mixer = new T.AnimationMixer(obj), A = {}, w = {};
-  const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null, passoS: kit.gloves ? MODEL.fx.passoS : null, passoD: kit.gloves ? MODEL.fx.passoD : null };
+  const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, aereo: kit.gloves ? null : MODEL.fx.aereo, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null, passoS: kit.gloves ? MODEL.fx.passoS : null, passoD: kit.gloves ? MODEL.fx.passoD : null };
   for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = rnd(base[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; w[n] = n === 'idle' ? 1 : 0; }
   return { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true };
 }
@@ -1011,7 +1012,7 @@ function poseSkinned(p, dt) {
   if (f.act) { f.act.setEffectiveWeight(f.fxW); if (!p.fx && f.fxW < .02) { f.act.stop(); f.act = null; f.fxW = 0; } }
   if (f.old) { f.old.setEffectiveWeight(f.oldW); if (f.oldW < .02) { f.old.stop(); f.old = null; f.oldW = 0; } }
   // attesa, camminata, corsetta e corsa secondo la velocità; esultanza dopo un gol
-  const tg = { idle: 0, walk: 0, run: 0, jog: 0, gkIdle: 0, esulta: 0, passoS: 0, passoD: 0 }; let by = 0;
+  const tg = { idle: 0, walk: 0, run: 0, jog: 0, gkIdle: 0, esulta: 0, passoS: 0, passoD: 0, aereo: 0 }; let by = 0;
   const festa = G.state === 'goal' && G.scorer && p.team === G.scorer.team && p.i !== 0 && v < 5 && f.fxW < .25;
   if (festa && f.A.esulta) { tg.esulta = 1; by = Math.abs(Math.sin(G.t * 7 + p.i)) * .3; }
   else if (f.A.jog) { const m = clamp(v / 1.2, 0, 1), r = clamp((v - 6.4) / 1.8, 0, 1), j = clamp((v - 2) / 1.8, 0, 1) * (1 - r); tg.run = m * r; tg.jog = m * j; tg.walk = m * (1 - r - j); tg.idle = 1 - m; }
@@ -1020,6 +1021,9 @@ function poseSkinned(p, dt) {
   if (f.A.passoS && G.state === 'play' && G.ball.owner !== p) { // il portiere guarda la palla: se si sposta di lato fa i passi laterali, non la corsa
     const lat = p.vx * Math.cos(p.dir) - p.vz * Math.sin(p.dir), av = Math.abs(p.vx * Math.sin(p.dir) + p.vz * Math.cos(p.dir));
     if (Math.abs(lat) > av && Math.abs(lat) > .8) { const m = tg.walk + tg.jog + tg.run; tg.walk = tg.jog = tg.run = 0; tg[lat > 0 ? 'passoS' : 'passoD'] = m; f.A.passoS.timeScale = f.A.passoD.timeScale = clamp(Math.abs(lat) / 3.6, .7, 1.7); }
+  }
+  if (f.A.aereo && G.state === 'goal' && p === G.scorer && v > 2.2) { // il marcatore corre verso la bandierina a braccia aperte
+    const m = tg.walk + tg.jog + tg.run; tg.walk = tg.jog = tg.run = 0; tg.aereo = m; f.A.aereo.timeScale = clamp(v / 6.6, .8, 1.4);
   }
   const a = Math.min(1, dt * 10), rest = Math.max(0, 1 - f.fxW - f.oldW);
   for (const k in f.A) { f.w[k] += (tg[k] - f.w[k]) * a; f.A[k].setEffectiveWeight(f.w[k] * rest); }
@@ -1075,7 +1079,7 @@ function draw(dt) {
   updateCamera(dt); REGIA.dopo(dt); renderer.render(scene, cam);
 }
 const REGIA = creaRegia({ scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, ring, arrow, camPos, camLook, boards, img, cdist, lum,
-  makeSkinned, pickKits, paintBoards, updateCamera, model: () => MODEL, crest: () => CREST });
+  makeSkinned, pickKits, paintBoards, updateCamera, offsideLine, model: () => MODEL, crest: () => CREST });
 window.__regia = REGIA;
 
 /* ------------------------------------------------------------------ HUD */

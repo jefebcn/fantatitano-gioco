@@ -31,6 +31,8 @@ const CLIP = {
   passoD: ['goalkeeper sidestep (2)', 0, 0], // verso la sua destra
   testa: ['header soccerball', 0.78, 1.5], // la fronte colpisce a 0,17 s dall'inizio del ritaglio
   esulta: ['base:idle', 0, 1, 'braccia'], // non c'è nel pacchetto: braccia alzate sopra la posa d'attesa
+  aereo: ['base:run', 0, 0, 'aereo'],     // corsa a braccia aperte del marcatore, piegandosi a destra e a sinistra (costruita)
+  bandiera: ['base:idle', 0, 2, 'bandiera'], // guardalinee: braccio destro alzato, fermo (costruita)
 };
 // osso Mixamo -> osso del calciatore
 const OSSA = { Hips: 'pelvis', Spine: 'spine_01', Spine1: 'spine_02', Spine2: 'spine_03', Neck: 'neck_01', Head: 'Head',
@@ -75,14 +77,30 @@ for (const [nome, [da_dove, da, a, opz]] of Object.entries(CLIP)) {
   const s = da_dove.startsWith('base:') ? sorgenti.base : sorgenti.fbx;
   const clip = s === sorgenti.base ? base.animations.find((c) => c.name === da_dove.slice(5)) : fbx.parse(ab(`${dir}/${da_dove}.fbx`), '').animations[0];
   if (!clip) throw new Error(`clip non trovata: ${da_dove}`);
-  const fine = a || clip.duration, n = Math.max(2, Math.round((fine - da) * FPS) + 1), p = [], q = [], prev = SRC.map(() => null);
+  // la corsa a braccia aperte gira su un numero intero di passi (circa due secondi), così l'ultimo fotogramma torna al primo
+  const giri = opz === 'aereo' ? Math.max(1, Math.round(2 / clip.duration)) : 0;
+  const fine = giri ? giri * clip.duration : a || clip.duration, n = Math.max(2, Math.round((fine - da) * FPS) + 1), p = [], q = [], prev = SRC.map(() => null);
   const mx = new T.AnimationMixer(s.root); mx.clipAction(clip).play();
   for (let i = 0; i < n; i++) {
-    mx.setTime(opz === 'braccia' ? 0 : Math.min(da + i / FPS, clip.duration - 1e-4));
+    const fermo = opz === 'braccia' || opz === 'bandiera';
+    mx.setTime(fermo ? 0 : giri ? (i / (n - 1) * fine) % clip.duration : Math.min(da + i / FPS, clip.duration - 1e-4));
     if (opz === 'braccia') { const k = 2.25 + .18 * Math.sin(i / (n - 1) * Math.PI * 2); for (const [b, sg] of [['LeftArm', 1], ['RightArm', -1]]) s.bones[b].quaternion.multiply(_q.setFromEuler(_e.set(0, 0, sg * k))); }
     s.root.updateMatrixWorld(true);
     let D = SRC.map((b, k) => mondoQ(s.bones[b]).multiply(s.riposo[k])); // rotazione nel mondo rispetto alla posa a T
     if (opz === 'specchio') D = D.map((_, k) => { const d = D[SCAMBIO[k]]; return new T.Quaternion(d.x, -d.y, -d.z, d.w); });
+    if (opz === 'bandiera') { // braccio destro teso verso l'alto, un po' in fuori e in avanti (nella posa a T punta verso -x)
+      const su = new T.Quaternion().setFromUnitVectors(new T.Vector3(-1, 0, 0), new T.Vector3(-.22, 1, .3).normalize());
+      for (const b of ['RightArm', 'RightForeArm', 'RightHand']) D[SRC.indexOf(b)] = su.clone();
+    }
+    if (opz === 'aereo') { // braccia tese come nella posa a T, un po' basse e indietro; il busto si piega da un lato e dall'altro
+      const ang = .32 * Math.sin(i / (n - 1) * Math.PI * 2 * Math.max(1, Math.round(giri / 2)));
+      const Rb = new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 0, 1), ang), id = new T.Quaternion();
+      const braccio = (sg) => Rb.clone().multiply(new T.Quaternion().setFromEuler(_e.set(0, sg * .3, -sg * .2)));
+      SRC.forEach((b, k) => {
+        if (/^(Left|Right)(Shoulder|Arm|ForeArm|Hand)$/.test(b)) D[k] = braccio(b.startsWith('Left') ? 1 : -1);
+        else if (/^Spine|^Neck|^Head/.test(b)) { const w = { Spine: .3, Spine1: .6, Spine2: .9, Neck: .9, Head: .6 }[b] || 0; D[k] = id.clone().slerp(Rb, w).multiply(D[k]); }
+      });
+    }
     const W = D.map((d, k) => d.clone().multiply(s.corr[k]).multiply(tRest[k])); // rotazione nel mondo dell'osso del calciatore
     W.forEach((w, k) => {
       const padre = typeof tPadre[k] === 'number' ? W[tPadre[k]] : tPadre[k], l = padre.clone().invert().multiply(w).normalize();

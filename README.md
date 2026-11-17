@@ -101,7 +101,8 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
   usa il proprio secondo colore se si distingue da quello di casa, altrimenti bianco o nero (`pickKits`).
 - Animazioni registrate (Mixamo, «Soccer Game Pack»): tiro, passaggio, scivolata, caduta di chi
   subisce la scivolata, tuffo del portiere a destra e a sinistra, presa, attesa del portiere, passi laterali
-  del portiere, rinvio con le mani, colpo di testa (`testa`), corsetta. L'esultanza è costruita (braccia alzate sopra la posa d'attesa).
+  del portiere, rinvio con le mani, colpo di testa (`testa`), corsetta. Costruite a mano sopra le clip di base:
+  `aereo` (corsa a braccia aperte del marcatore) e `bandiera` (braccio alzato del guardalinee). L'esultanza è costruita (braccia alzate sopra la posa d'attesa).
   Il portiere che ha il pallone lo tiene in mano all'altezza del petto e lo rilancia dopo un secondo
   (`HOLD`, `LANCIO`): il pallone parte nel momento in cui il braccio lo lascia.
   Le fa partire `azione(p, nome)`; velocità e sfumature stanno nella tabella `FX`.
@@ -126,6 +127,12 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
     riparte, quindi un gol su punizione o rigore ha un replay corto.
   - **Arbitro** in campo: segue l'azione restando a qualche metro dal pallone; non tocca niente e non fischia
     (i fischi li decide sempre il gioco). La maglia è il colore più lontano da quelli delle due squadre e dei portieri.
+  - **Guardalinee**, uno per metà campo su lati opposti: seguono il penultimo difensore (o il pallone, se è più
+    avanti) e alzano la bandierina per due secondi quando il gioco fischia un fuorigioco nella loro metà (`ASS`).
+  - **Pubblico coi colori delle squadre**: la curva dietro la porta a -x è degli ospiti, il resto è di casa; dopo un
+    gol salta il pubblico della squadra che ha segnato (`TIFO`).
+  - **Esultanza**: il marcatore corre verso la bandierina a braccia aperte piegandosi di lato (clip `aereo`), poi
+    festeggia coi compagni.
   - **Segnaposto col nome** sopra il giocatore che si comanda, al posto della freccia.
   - **Tabelloni** a bordo campo che scorrono con «GOL!» e il nome del marcatore.
   - **Telecamera in diagonale** vicino alle porte (`DIAG`), così la porta si vede; prato tagliato a cerchi.
