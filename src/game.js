@@ -32,7 +32,22 @@ const VOTE = { g: 1.1, a: .7, kp: .12, sot: .15, tk: .2, int: .08, sv: .4, pass:
 // velocità oltre la quale il pallone non si prende di testa (i tiri passano), probabilità che l'IA crossi quando può,
 // distanza massima per tirare di testa, quante respinte del portiere finiscono in angolo
 const AIR = { low: 1.55, top: 2.6, reach: 1.05, fast: 19.5, wide: 13, deep: 24, cross: .5, shot: 15, behind: .55 };
-const FORM = [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-13, -14], [-17, 0], [-13, 14], [7, -19], [11, 0], [7, 19]];
+// Moduli: dove sta ciascuno degli undici e che compito ha (P portiere, D difensore, C centrocampista, A attaccante).
+// Nei dati l'ordine è sempre portiere, quattro difensori, tre centrocampisti, tre attaccanti: cambiando modulo qualcuno cambia compito
+const FORMS = {
+  '4-3-3': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-13, -14], [-17, 0], [-13, 14], [7, -19], [11, 0], [7, 19]], roles: 'PDDDDCCCAAA' },
+  '4-4-2': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-15, -7], [-15, 7], [-11, -21], [-11, 21], [9, -6], [9, 6]], roles: 'PDDDDCCCCAA' },
+  '3-5-2': { pos: [[-46, 0], [-33, -12], [-35, 0], [-33, 12], [-16, -23], [-18, 0], [-9, -9], [-9, 9], [-16, 23], [9, -6], [9, 6]], roles: 'PDDDCCCCCAA' },
+  '4-2-3-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-19, -7], [-19, 7], [-3, 0], [1, -20], [11, 0], [1, 20]], roles: 'PDDDDCCCAAA' },
+};
+// Mentalità (-1, 0, 1): quanti metri in più si sale quando si attacca, quanto restano alti gli attaccanti quando si difende
+// (con la difensiva rientrano), quanto spesso ci si inserisce, quanto prima si va sul pallone con l'offensiva
+const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], push: 4, stay: 6, runs: .3, press: .4 };
+function setTactics(t, name, ment) {
+  t.formName = FORMS[name] ? name : '4-3-3'; const f = FORMS[t.formName]; t.form = f.pos; if (ment !== undefined) t.ment = ment;
+  for (const p of t.players.concat(t.off)) p.role = f.roles[p.i];
+}
+const aiForm = (c) => Object.keys(FORMS)[hash(c.id) % 4];
 const $ = (s) => document.querySelector(s);
 const rnd = (a = 1, b) => (b === undefined ? Math.random() * a : a + Math.random() * (b - a));
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -328,12 +343,13 @@ function newMatch(home, away) {
   clearMatch();
   const [kh, ka, g1, g2] = pickKits(home, away);
   const mk = (club, side, human, kit, gkit) => {
-    const t = { club, side, human, score: 0, players: [], off: [], idx: side > 0 ? 0 : 1, chaser: null, cover: null };
+    const t = { club, side, human, score: 0, players: [], off: [], idx: side > 0 ? 0 : 1, chaser: null, cover: null, ment: 0 };
     club.xi.forEach(([name, role, num, q], i) => {
       const fig = (MODEL ? makeSkinned : makeFigure)(i === 0 ? gkit : kit, hash(club.id + name), num, i === 0 ? null : club.id); scene.add(fig.root);
       const base = 7.3 + clamp((q - 20) / 40, -.5, .6) + (club.str - 3) * .07;
-      t.players.push({ team: t, i, role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? 6.6 : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1, run: null, mark: null, jock: false, slideCd: 0, yel: 0, red: false, fkShot: false, en: 1, by: null, s: { g: 0, a: 0, kp: 0, sh: 0, sot: 0, pa: 0, pc: 0, tk: 0, int: 0, sv: 0, fl: 0, og: 0 } });
+      t.players.push({ team: t, i, role, nat: role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? 6.6 : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1, run: null, mark: null, jock: false, slideCd: 0, yel: 0, red: false, fkShot: false, en: 1, by: null, s: { g: 0, a: 0, kp: 0, sh: 0, sot: 0, pa: 0, pc: 0, tk: 0, int: 0, sv: 0, fl: 0, og: 0 } });
     });
+    setTactics(t, human ? sel.form : aiForm(club), human ? sel.ment : 0);
     return t;
   };
   G.teams = [mk(home, 1, true, kh, g1), mk(away, -1, false, ka, g2)];
@@ -353,7 +369,7 @@ const userDrives = (p) => p === G.ctrl && p.team.human && !G.auto;
 function kickoff(team) {
   const b = G.ball; b.x = b.z = 0; b.y = BR; b.vx = b.vy = b.vz = 0; b.owner = null;
   for (const t of G.teams) for (const p of t.players) {
-    const f = FORM[p.i]; let kx = p.i === 0 ? -46 : Math.min(-1.5, -4 - (8 - f[0]) * .9), kz = f[1];
+    const f = t.form[p.i]; let kx = p.i === 0 ? -46 : Math.min(-1.5, -4 - (8 - f[0]) * .9), kz = f[1];
     if (t !== team && Math.abs(kz) < 10) kx = Math.min(kx, -10.5);
     if (t === team && p.i === 9) { kx = -.7; kz = 0; }
     if (t === team && p.i === 10) { kx = -1.2; kz = 5; }
@@ -522,9 +538,9 @@ function userShoot(pow) {
 
 /* ------------------------------------------------------------------ IA */
 function homeOf(p) {
-  const t = p.team, s = t.side, b = G.ball, f = FORM[p.i], bx = b.x * s, att = G.poss === t;
-  let hx = f[0] + bx * .55 + (att ? 7 : -5), hz = f[1] * (att ? 1 : .8) + b.z * s * .28;
-  if (p.role === 'D') hx = clamp(hx, -42, att ? 12 : 3);
+  const t = p.team, s = t.side, b = G.ball, f = t.form[p.i], bx = b.x * s, att = G.poss === t;
+  let hx = f[0] + bx * .55 + (att ? 7 + t.ment * MENT.push : -5 + (p.role === 'A' ? t.ment * MENT.stay : 0)), hz = f[1] * (att ? 1 : .8) + b.z * s * .28;
+  if (p.role === 'D') hx = clamp(hx, -42, att ? 12 + t.ment * 8 : 3); // con la mentalità offensiva salgono anche i difensori
   else if (p.role === 'C') hx = clamp(hx, -34, 36);
   else { if (att) hx = Math.max(hx, Math.min(bx + 13, 43)); hx = clamp(hx, -14, 44); }
   hx += Math.sin(G.t * .7 + p.i * 2.1) * 1.6; hz += Math.cos(G.t * .5 + p.i * 1.3) * 1.6;
@@ -549,6 +565,7 @@ function roles() {
       if (d < ad) { c = a; cd = ad; a = p; ad = d; } else if (d < cd) { c = p; cd = d; }
     }
     t.chaser = a; t.chaserD = ad; t.cover = c; t.offLine = offsideLine(t);
+    if (!t.human) { const late = (G.half - 1) * HALF_SECS + G.clock > HALF_SECS * 1.2, d = t.score - t.opp.score; t.ment = late ? (d < 0 ? 1 : d > 0 ? -1 : 0) : 0; } // sotto nel finale attacca, sopra si copre
     // marcature: ogni difensore prende l'avversario più vicino alla sua zona; chi si inserisce allarga la zona e viene seguito anche dai centrocampisti
     for (const p of t.players) p.mark = null;
     const own = b.owner; if (!own || own.team === t || G.state !== 'play') continue;
@@ -557,7 +574,7 @@ function roles() {
       if (p.i === 0 || p === a || p === c || p.role === 'A' || p.stun > 0 || userDrives(p)) continue;
       const h = homeOf(p); let m = null, md = 9;
       for (const o of t.opp.players) {
-        if (o.i === 0 || o === own || taken.has(o) || (p.role === 'C' && !o.run)) continue;
+        if (o.i === 0 || o === own || taken.has(o) || (p.role === 'C' && !o.run && t.ment >= 0)) continue; // con la mentalità difensiva marcano anche i centrocampisti
         const d = hyp(o.x - h[0], o.z - h[1]) - (o.run ? 5 : 0); if (d < md) { md = d; m = o; }
       }
       if (m) { p.mark = m; taken.add(m); }
@@ -581,7 +598,7 @@ function runs(dt) {
     const has = G.state === 'play' && G.poss === t && (!own || own.team === t); let n = 0;
     for (const p of t.players) { const r = p.run; if (!r) continue; r.t -= dt; if (!has || r.t <= 0 || p.stun > 0 || own === p || userDrives(p)) p.run = null; else n++; }
     if (!has || !own || own.i === 0) continue;
-    t.runT = (t.runT || 0) - dt; if (t.runT > 0 || n >= RUN.max) continue; t.runT = RUN.every * rnd(.7, 1.3);
+    t.runT = (t.runT || 0) - dt; if (t.runT > 0 || n >= RUN.max) continue; t.runT = RUN.every * rnd(.7, 1.3) * (1 - MENT.runs * t.ment);
     const s = t.side, line = defLine(t); let best = null, bs = RUN.min, bx = 0, bz = 0;
     for (const p of t.players) {
       if (p.i === 0 || p === own || p.run || p.role === 'D' || p.stun > 0 || userDrives(p)) continue;
@@ -608,7 +625,7 @@ function chase(p, own, dt) {
   if (d > DEF.far) t.jT = 0;
   else if (d > DEF.near && !beaten) {
     t.jT += dt; const c = t.cover;
-    const go = threat < DEF.danger || t.jT > D.wait || own.stun > 0 || (c && hyp(c.x - own.x, c.z - own.z) < 5.5);
+    const go = threat < DEF.danger || t.jT > D.wait * (1 - MENT.press * Math.max(t.ment, 0)) || own.stun > 0 || (c && hyp(c.x - own.x, c.z - own.z) < 5.5);
     if (!go) { p.tx = own.x + own.vx * .3 + ux * DEF.hold; p.tz = own.z + own.vz * .3 + uz * DEF.hold; p.jock = true; return; }
   }
   p.tx = own.x + own.vx * .25 + (gx - own.x) * .05; p.tz = own.z + own.vz * .25 - own.z * .04; p.sprint = d > 3 || beaten;
@@ -903,8 +920,8 @@ function freeKick(team, x, z, label, skip) {
 function corner(team, x, z) {
   restart(team, x, z, "Calcio d'angolo"); G.wait = 2.5; G.stats.corners[team.idx]++;
   const s = team.side, e = sgn(z), pos = new Map(), slots = [[5.5, 3.2], [10.5, -.5], [7, -5.5], [13, 4], [18.5, -2]];
-  const att = team.players.filter((p) => p.i && p !== G.taker).sort((a, c) => FORM[c.i][0] - FORM[a.i][0]).slice(0, 5);
-  const def = team.opp.players.filter((p) => p.i).sort((a, c) => FORM[a.i][0] - FORM[c.i][0]).slice(0, 5);
+  const att = team.players.filter((p) => p.i && p !== G.taker).sort((a, c) => team.form[c.i][0] - team.form[a.i][0]).slice(0, 5);
+  const def = team.opp.players.filter((p) => p.i).sort((a, c) => team.opp.form[a.i][0] - team.opp.form[c.i][0]).slice(0, 5);
   slots.forEach(([dx, dz], k) => { const px = s * (HL - dx), pz = e * dz; if (att[k]) pos.set(att[k], [px, pz]); if (def[k]) pos.set(def[k], [px + s * 1.2, pz * .85]); });
   G.fk = { corner: true, pos };
 }
@@ -1124,8 +1141,35 @@ function bindInput() {
 }
 
 /* ------------------------------------------------------------------ schermate */
-const show = (id) => { for (const s of ['#home', '#scelta', '#vs', '#stop', '#fine']) $(s).classList.toggle('nas', s !== id); };
-const sel = { mia: null, loro: null, diff: 'normale' };
+const show = (id) => { for (const s of ['#home', '#scelta', '#pre', '#vs', '#stop', '#fine']) $(s).classList.toggle('nas', s !== id); };
+const sel = { mia: null, loro: null, diff: 'normale', form: '4-3-3', ment: 0 };
+const SAVE = 'fantatitano-partita';
+try { const v = JSON.parse(localStorage.getItem(SAVE) || '{}'); if (FORMS[v.form]) sel.form = v.form; if ([-1, 0, 1].includes(v.ment)) sel.ment = v.ment; if (DIFF[v.diff]) sel.diff = v.diff; } catch (e) { /* si parte dai valori di base */ }
+const save = () => { try { localStorage.setItem(SAVE, JSON.stringify({ form: sel.form, ment: sel.ment, diff: sel.diff })); } catch (e) { /* senza memoria si gioca lo stesso */ } };
+const esc = (n) => String(n).replace(/[<>&"]/g, '');
+// Valore del giocatore da 55 a 88, confrontato con quelli del suo ruolo
+const RANGE = {}; for (const c of CLUBS) for (const [, r, , q] of c.xi) { const v = RANGE[r] || (RANGE[r] = [q, q]); v[0] = Math.min(v[0], q); v[1] = Math.max(v[1], q); }
+const ovr = (r, q) => Math.round(55 + clamp((q - RANGE[r][0]) / (RANGE[r][1] - RANGE[r][0] || 1), 0, 1) * 33);
+const RUOLO = { P: 'POR', D: 'DIF', C: 'CEN', A: 'ATT' };
+function drawSide(el, c, formName, kit, gk) {
+  const f = FORMS[formName];
+  el.innerHTML = `<div class="testa"><img src="${img(c.id + '-mini')}" alt=""><div><b>${esc(c.name)}</b><span class="st">${'★'.repeat(c.str)}<s>${'★'.repeat(5 - c.str)}</s></span></div><em>${formName}</em></div><div class="erba">`
+    + c.xi.map(([name, role, num, q], i) => { const [x, z] = f.pos[i], k = i ? kit : gk; return `<div class="pl" style="left:${(50 + z / 23 * 37).toFixed(1)}%;top:${(i ? 67 - (x + 35) / 46 * 54 : 88).toFixed(1)}%"><b style="background:${k.shirt};color:${k.ink}">${num}</b><span>${esc(name)}</span><i>${RUOLO[f.roles[i]]} ${ovr(role, q)}</i></div>`; }).join('') + '</div>';
+}
+function showPre() {
+  const H = club(sel.mia), A = club(sel.loro), [kh, ka, g1, g2] = pickKits(H, A);
+  drawSide($('#campoH'), H, sel.form, kh, g1); drawSide($('#campoA'), A, aiForm(A), ka, g2);
+  $('#preT').textContent = `Amichevole · ${sel.diff}`; show('#pre');
+}
+// Pulsanti a scelta singola per modulo e mentalità: gli stessi prima della partita e in pausa
+function tactics() {
+  const forms = Object.keys(FORMS).map((n) => `<button data-f="${n}" class="${n === sel.form ? 'on' : ''}">${n}</button>`).join('');
+  const ments = MENT.names.map((n, k) => `<button data-m="${k - 1}" class="${k - 1 === sel.ment ? 'on' : ''}">${n}</button>`).join('');
+  for (const id of ['#segForm', '#segFormP']) $(id).innerHTML = forms; for (const id of ['#segMent', '#segMentP']) $(id).innerHTML = ments;
+  $('#ment').textContent = MENT.names[sel.ment + 1]; save();
+  const t = G.teams[0]; if (t && t.human) setTactics(t, sel.form, sel.ment);
+  if (!$('#pre').classList.contains('nas')) showPre();
+}
 function buildMenu() {
   const g = $('#griglia');
   g.innerHTML = CLUBS.map((c) => `<button class="sq" data-id="${c.id}"><img src="${img(c.id)}" alt=""><span>${c.name}</span></button>`).join('');
@@ -1140,10 +1184,15 @@ function buildMenu() {
     if (id === sel.mia) { sel.mia = null; sel.loro = null; } else if (!sel.mia) sel.mia = id; else sel.loro = id === sel.loro ? null : id;
     refresh();
   });
-  $('#diff').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; sel.diff = b.dataset.d; for (const x of $('#diff').children) x.classList.toggle('on', x === b); });
+  $('#diff').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; sel.diff = b.dataset.d; for (const x of $('#diff').children) x.classList.toggle('on', x === b); save(); });
   $('#vai').onclick = () => { AU.init(); show('#scelta'); refresh(); };
   $('#indietro').onclick = () => show('#home');
-  $('#inizio').onclick = () => startMatch(sel.mia, sel.loro, sel.diff);
+  $('#inizio').onclick = showPre; $('#preInd').onclick = () => { show('#scelta'); refresh(); };
+  $('#gioca').onclick = () => startMatch(sel.mia, sel.loro, sel.diff);
+  for (const id of ['#segForm', '#segFormP', '#segMent', '#segMentP']) $(id).addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.f) sel.form = b.dataset.f; else sel.ment = +b.dataset.m; tactics(); });
+  $('#ment').addEventListener('pointerdown', (e) => { e.preventDefault(); sel.ment = sel.ment === 1 ? -1 : sel.ment + 1; tactics(); }); // in campo: un tocco cambia mentalità
+  for (const x of $('#diff').children) x.classList.toggle('on', x.dataset.d === sel.diff);
+  tactics();
   $('#pausa').onclick = () => pause(true); $('#riprendi').onclick = () => pause(false);
   $('#esci').onclick = () => { G.paused = false; toMenu(); };
   $('#audio').onclick = () => AU.toggle();
@@ -1209,6 +1258,6 @@ async function boot() {
   Promise.all(CLUBS.map((c) => loadImg(img(c.id + '-mini')).then((i) => { CREST[c.id] = i; }))).then(() => { if (G.teams.length) paintBoards(G.teams[0].club, G.teams[1].club, CREST); });
   $('#carica').remove(); show('#home'); requestAnimationFrame(loop);
 }
-window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, model: () => MODEL };
+window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, setTactics, sel, tactics, showPre, model: () => MODEL };
 boot();
 })();

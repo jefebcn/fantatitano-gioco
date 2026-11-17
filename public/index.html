@@ -53,7 +53,24 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 #diff{display:flex;gap:6px}
 #diff button{background:rgba(255,255,255,.08);border-radius:99px;padding:7px 14px;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
 #diff button.on{background:var(--viola);box-shadow:0 0 0 2px var(--lime) inset}
-#scelta .indietro{position:absolute;left:12px;top:12px;background:none;font-size:13px;opacity:.7;padding:6px}
+.indietro{position:absolute;left:12px;top:12px;background:none;font-size:13px;opacity:.7;padding:6px}
+/* ---------- prima della partita: le due formazioni ---------- */
+#pre{justify-content:flex-start;gap:8px;padding-top:14px}#pre>*{flex-shrink:0}#pre .passo{color:var(--lime);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.campi{display:flex;gap:12px;width:min(900px,100%);justify-content:center}.campo{flex:1;min-width:0;max-width:440px}
+.testa{display:flex;align-items:center;gap:8px;margin-bottom:5px;text-align:left}.testa img{height:32px;width:auto}.testa b{display:block;font-family:Anton;font-weight:400;font-size:16px;line-height:1.05;text-transform:uppercase}
+.testa .st{color:var(--lime);font-size:11px;letter-spacing:1px}.testa .st s{text-decoration:none;opacity:.25}.testa em{margin-left:auto;font:900 12px Lato;background:rgba(255,255,255,.1);padding:4px 9px;border-radius:99px}
+.erba{position:relative;height:clamp(200px,52vh,400px);border-radius:10px;overflow:hidden;background:repeating-linear-gradient(0deg,#2f8f3f 0 12.5%,#35a046 12.5% 25%);box-shadow:inset 0 0 0 2px rgba(255,255,255,.6)}
+.erba::before{content:'';position:absolute;left:24%;right:24%;bottom:0;height:17%;border:2px solid rgba(255,255,255,.6);border-bottom:0}
+.erba::after{content:'';position:absolute;left:38%;right:38%;top:-14%;height:28%;border:2px solid rgba(255,255,255,.6);border-radius:50%}
+.pl{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;width:70px;z-index:1}
+.pl b{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-family:Anton;font-weight:400;font-size:13px;box-shadow:0 0 0 2px rgba(255,255,255,.9),0 3px 6px rgba(0,0,0,.5)}
+.pl span{font:900 9.5px Lato;margin-top:3px;max-width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000,0 0 2px #000}
+.pl i{font:900 8px Lato;color:var(--lime);letter-spacing:.04em;text-shadow:0 1px 3px #000}
+.tatt{display:flex;flex-direction:column;gap:6px;align-items:center}.seg{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+.seg button{background:rgba(255,255,255,.08);border-radius:99px;padding:7px 13px;font-size:12px;font-weight:900;letter-spacing:.05em;text-transform:uppercase}.seg button.on{background:var(--viola);box-shadow:0 0 0 2px var(--lime) inset}
+@media (max-aspect-ratio:1/1){.campi{flex-direction:column;align-items:center}.campo{width:100%}.erba{height:clamp(200px,34vh,330px)}}
+@media (max-height:480px){#pre{gap:5px;padding:8px 16px}#pre .campi{margin-top:12px}.erba{height:55vh;min-height:170px}.pl b{width:20px;height:20px;font-size:10px}.pl span{margin-top:1px;font-size:9px}.pl i{font-size:7.5px}.tatt{flex-direction:row;gap:14px}#pre .btn{min-width:0;padding:7px 46px;font-size:18px}.testa{margin-bottom:3px}.testa img{height:24px}.testa b{font-size:14px}}
+#ment{position:absolute;left:50%;bottom:98px;transform:translateX(-50%);pointer-events:auto;font:900 10px Lato;letter-spacing:.08em;text-transform:uppercase;color:var(--lime);background:rgba(10,10,12,.72);padding:5px 12px;border-radius:99px;z-index:6}
 
 #vs{justify-content:center;gap:4vw;flex-direction:row;background:radial-gradient(circle at 50% 50%,rgba(75,6,252,.85),rgba(10,10,12,.96) 70%)}
 #vs .lato{display:flex;flex-direction:column;align-items:center;gap:10px;width:38vw}
@@ -119,7 +136,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 #pow i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--lime) 70%,#ff4d4d)}
 #ruota{animation:via 1s 6s forwards;position:absolute;left:50%;top:92px;transform:translateX(-50%);font-size:11px;background:rgba(10,10,12,.6);padding:4px 10px;border-radius:99px;white-space:nowrap;color:rgba(255,255,255,.85)}
 @media (min-aspect-ratio:1/1){#ruota{display:none}}
-@media (max-aspect-ratio:1/1){#radar{left:10px;top:60px;bottom:auto;transform:none;width:104px;height:68px}#pausa,#audio{top:60px}#chi{top:62px}#en{top:86px}#ruota{top:96px}}
+@media (max-aspect-ratio:1/1){#radar{left:10px;top:60px;bottom:auto;transform:none;width:104px;height:68px}#pausa,#audio{top:60px}#chi{top:62px}#en{top:86px}#ment{left:10px;top:132px;bottom:auto;transform:none}#ruota{top:96px}}
 @media (max-height:480px){#fine{gap:3px;padding:8px 16px}#fine .esito{font-size:34px}#fine .ris{font-size:42px}#fine .ris img{height:54px}#fine table{margin:2px 0 6px}
   #fine .tito{position:absolute;right:5vw;bottom:0;height:46vh}#stop{gap:7px}#stop .h{font-size:30px}#scelta{padding-top:8px}#scelta h2{font-size:24px;margin:0}#scelta .passo{margin-bottom:6px}
   .sq{padding:5px 2px 4px}.sq img{height:44px}#barra{flex-direction:row;justify-content:center;margin-top:8px}}
@@ -135,6 +152,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 
 <div id="hud" class="nas">
   <div id="sb"><img id="sbH" alt=""><b id="sbHn"></b><span id="sbS">0 - 0</span><b id="sbAn"></b><img id="sbA" alt=""><i id="sbT">00:00</i></div>
+  <button id="ment">Equilibrata</button>
   <div id="chi"></div>
   <div id="en"><i></i></div>
   <div id="ruota">Ruota il telefono per la visuale TV</div>
@@ -167,8 +185,16 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
   <div id="griglia"></div>
   <div id="barra">
     <div id="diff"><button data-d="facile">Facile</button><button data-d="normale" class="on">Normale</button><button data-d="difficile">Difficile</button></div>
-    <button class="btn" id="inizio" disabled>Calcio d'inizio</button>
+    <button class="btn" id="inizio" disabled>Avanti</button>
   </div>
+</div>
+
+<div id="pre" class="scr nas">
+  <button class="indietro" id="preInd">‹ Squadre</button>
+  <div class="passo" id="preT">Amichevole</div>
+  <div class="campi"><div class="campo" id="campoH"></div><div class="campo" id="campoA"></div></div>
+  <div class="tatt"><div class="seg" id="segForm"></div><div class="seg" id="segMent"></div></div>
+  <button class="btn" id="gioca">Gioca</button>
 </div>
 
 <div id="vs" class="scr nas">
@@ -178,7 +204,8 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 <div id="stop" class="scr nas">
   <div class="h">Pausa</div>
   <p>Levetta: muovi il giocatore<br><b>Passa</b> · <b>Tira</b> (tieni premuto per la potenza) · <b>Scatto</b><br>
-  <b>Cross</b>: traversone in area, o lancio lungo se in area non c'è nessuno<br>Senza palla: <b>Cambia</b> giocatore · <b>Scivolata</b> (da dietro è fallo)<br>Tastiera: frecce, X passa, C cross, Spazio tira, Shift scatto</p>
+  <b>Cross</b>: traversone in area, o lancio lungo se in area non c'è nessuno<br>Senza palla: <b>Cambia</b> giocatore · <b>Scivolata</b> (da dietro è fallo)<br>Tastiera: frecce, X passa, C cross, Spazio tira, Shift scatto<br>In campo: tocca la mentalità sopra la mappa per cambiarla</p>
+  <div class="tatt"><div class="seg" id="segFormP"></div><div class="seg" id="segMentP"></div></div>
   <button class="btn" id="riprendi">Riprendi</button>
   <button class="btn sec" id="esci">Esci dalla partita</button>
 </div>

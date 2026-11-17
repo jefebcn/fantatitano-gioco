@@ -60,6 +60,13 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
   un marcatore, e chi batte crossa. Il portiere esce sui traversoni che scendono vicino alla porta e
   alcune sue respinte finiscono in angolo. Manca l'animazione del colpo di testa: il gioco la userà
   da sola quando `testa` sarà in `public/anim.js` e in `FX`.
+- **Prima della partita** (`showPre`, `drawSide`): dopo la scelta delle squadre si vedono le due formazioni
+  sul campo, con numero, nome, compito e valore di ogni giocatore (da 55 a 88, confrontato con quelli
+  del suo ruolo), stelle della squadra e modulo.
+- **Tattica** (`FORMS`, `MENT`, `setTactics`): quattro moduli (4-3-3, 4-4-2, 3-5-2, 4-2-3-1) e tre
+  mentalità. Si scelgono prima della partita e dalla pausa; in campo un tocco sulla scritta sopra la
+  mappa cambia mentalità. Ogni avversaria ha il suo modulo e nel finale attacca se è sotto e si copre
+  se è sopra. Le scelte restano salvate sul dispositivo (`localStorage`).
 - **Qualità e fatica**: chi vale di più (`q`) sbaglia meno tiri e passaggi (`qf`); lo scatto consuma
   energia (`TIRE`, barretta sotto il nome) e chi è stanco scatta meno forte.
 - **Pagelle** a fine partita (`vote`, pesi in `VOTE`): voto da 3 a 10 da gol, assist, passaggi,
