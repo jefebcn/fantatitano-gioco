@@ -3,6 +3,7 @@ import * as T from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { creaDivisa, TONI } from './divisa.js';
+import { creaRegia } from './regia.js';
 
 (() => {
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
@@ -68,7 +69,7 @@ function cv(w, h) { const c = document.createElement('canvas'); c.width = w; c.h
 function buildPitch() {
   const s = 10, M = 6, [c, x] = cv((HL * 2 + M * 2) * s, (HW * 2 + M * 2) * s);
   const X = (wx) => (wx + HL + M) * s, Z = (wz) => (wz + HW + M) * s;
-  for (let i = 0, wx = -HL - M; wx < HL + M; wx += 5.6, i++) { x.fillStyle = i % 2 ? '#2f8f3f' : '#35a046'; x.fillRect(X(wx), 0, 5.6 * s + 1, c.height); }
+  for (let i = Math.ceil(hyp(HL + M, HW + M) / 5.6); i >= 0; i--) { x.fillStyle = i % 2 ? '#2f8f3f' : '#35a046'; x.beginPath(); x.arc(X(0), Z(0), (i + 1) * 5.6 * s, 0, 7); x.fill(); } // erba tagliata a cerchi
   x.strokeStyle = 'rgba(255,255,255,.92)'; x.fillStyle = 'rgba(255,255,255,.92)'; x.lineWidth = 2.4; x.lineJoin = 'round';
   x.strokeRect(X(-HL), Z(-HW), HL * 2 * s, HW * 2 * s);
   x.beginPath(); x.moveTo(X(0), Z(-HW)); x.lineTo(X(0), Z(HW)); x.stroke();
@@ -563,7 +564,7 @@ function think(p, dt) {
   if (G.state !== 'play') {
     if (G.state === 'goal') {
       const sc = G.scorer;
-      if (sc && t === sc.team && p.i !== 0) { if (p === sc) { p.tx = sgn(sc.x) * (HL - 7); p.tz = sgn(sc.z || 1) * (HW - 7); } else { p.tx = sc.x - s * 1.5 + Math.sin(p.i * 2) * 1.6; p.tz = sc.z + Math.cos(p.i * 2) * 1.6; } p.sprint = true; }
+      if (sc && t === sc.team && p.i !== 0) { if (p === sc) { const c = G.cine; p.tx = c ? c.fx : sgn(sc.x) * (HL - 7); p.tz = c ? c.fz : sgn(sc.z || 1) * (HW - 7); } else { p.tx = sc.x - s * 1.5 + Math.sin(p.i * 2) * 1.6; p.tz = sc.z + Math.cos(p.i * 2) * 1.6; } p.sprint = true; }
       else { const h = homeOf(p); p.tx = h[0]; p.tz = h[1]; }
     } else if (G.state === 'restart') {
       const fk = G.fk, w = fk && fk.wall && fk.wall.find((q) => q.p === p);
@@ -652,7 +653,7 @@ function step(dt) {
       else { setState('full'); banner('Fine partita', '', 1800); AU.whistle(3); }
     }
   } else if (G.state === 'kickoff') { if (G.stateT > 1.2) { gain(G.taker); G.taker.thinkT = .2; setState('play'); } }
-  else if (G.state === 'goal') { if (G.stateT > 4.2) kickoff(G.next); }
+  else if (G.state === 'goal') { if (G.stateT > (G.goalEnd || 4.2)) kickoff(G.next); } // G.goalEnd lo allunga la regia quando c'è la sequenza del gol
   else if (G.state === 'restart') {
     if (G.stateT > G.wait) {
       const k = G.taker, fk = G.fk; k.x = b.x - k.team.side * .5; k.z = b.z; k.vx = k.vz = 0;
@@ -953,15 +954,18 @@ function updateCamera(dt) {
 function draw(dt) {
   const b = G.ball;
   if (b) {
-    for (const p of all()) pose(p, dt);
+    if (!REGIA.figure()) for (const p of all()) pose(p, dt); // durante il replay le figure le mette in posa la regia
     const sp = hyp(b.vx, b.vz);
     ballMesh.position.set(b.x, b.y, b.z); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; }
     ballShadow.position.set(b.x, .04, b.z); ballShadow.scale.setScalar(1 + b.y * .18);
     const c = G.ctrl; ring.visible = arrow.visible = !!c && !G.auto && G.state !== 'full';
     if (c) { ring.position.set(c.x, .05, c.z); arrow.position.set(c.x, 3.35 + Math.sin(G.t * 6) * .08, c.z); }
   }
-  updateCamera(dt); renderer.render(scene, cam);
+  updateCamera(dt); REGIA.dopo(dt); renderer.render(scene, cam);
 }
+const REGIA = creaRegia({ scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, ring, arrow, camPos, camLook, boards, img, cdist, lum,
+  makeSkinned, pickKits, paintBoards, updateCamera, model: () => MODEL, crest: () => CREST });
+window.__regia = REGIA;
 
 /* ------------------------------------------------------------------ HUD */
 let bannerT = 0;

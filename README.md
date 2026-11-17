@@ -24,6 +24,7 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
 | `src/game.js` | Tutto il gioco: scena, motore della partita, IA, comandi, schermate, audio |
 | `public/index.html` | Pagina, stile e schermate (home, scelta squadre, VS, pausa, fine partita) |
 | `public/data.js` | 16 squadre con colori e undici titolari. **Generato**: `python3 scripts/genera-dati.py <cartella dell'app>` |
+| `src/regia.js` | Regia: sequenza del gol (primo piano, scheda del marcatore, replay, transizione), arbitro, segnaposto col nome, tabelloni che festeggiano. Crea da sola la sua grafica, senza toccare `index.html` |
 | `src/divisa.js` | Disegna la divisa come texture: una per divisa e tono di pelle, non per giocatore |
 | `public/modello.js` | Calciatore e acconciature in base64. **Generato**: `npm run modello` |
 | `public/anim.js` | Tutte le animazioni, già adattate allo scheletro del calciatore. **Generato**: `node scripts/animazioni.mjs <cartella degli FBX>` |
@@ -80,6 +81,21 @@ npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
   - **Marcature** (`roles`): un avversario per difensore, senza doppioni; chi si inserisce viene
     seguito anche dai centrocampisti.
   I numeri stanno in `RUN`, `DEF` e nei campi `wait` e `slide` di `DIFF`, in cima a `src/game.js`.
+- **Regia** (`src/regia.js`), presa a esempio da un video di Dream League Soccer ma rifatta con grafica nostra:
+  - **Dopo un gol**: un secondo di azione dal vivo, poi primo piano del marcatore che corre verso la bandierina ed
+    esulta coi compagni, con la scheda (stemma, numero, nome, minuto, assist); transizione con la corona; **replay**
+    dell'azione da un'altra telecamera (dietro la porta o bassa dal lato opposto, a turno) con lo zoom che segue il
+    pallone; seconda transizione e calcio d'inizio. Si salta toccando lo schermo. I tempi sono in `SEQ` e `REP`.
+  - Il replay non rifà girare la partita: di ogni figura si registrano posizione, verso e rotazioni delle ossa
+    (30 volte al secondo, ultimi 6,5 secondi) e si rimettono com'erano. Dopo un calcio da fermo la registrazione
+    riparte, quindi un gol su punizione o rigore ha un replay corto.
+  - **Arbitro** in campo: segue l'azione restando a qualche metro dal pallone; non tocca niente e non fischia
+    (i fischi li decide sempre il gioco). La maglia è il colore più lontano da quelli delle due squadre e dei portieri.
+  - **Segnaposto col nome** sopra il giocatore che si comanda, al posto della freccia.
+  - **Tabelloni** a bordo campo che scorrono con «GOL!» e il nome del marcatore.
+  - **Telecamera in diagonale** vicino alle porte (`DIAG`), così la porta si vede; prato tagliato a cerchi.
+  - Agganci in `game.js`: `REGIA.figure()` e `REGIA.dopo()` in `draw()`, `G.goalEnd` in `step()`, `G.cine` in `think()`.
+    Con i pupazzi a blocchi la sequenza non parte e il gol resta com'era (4,2 secondi).
 - Se il modello non si carica, il gioco ripiega da solo sui pupazzi a blocchi (`makeFigure`).
 
 ## Cosa manca, in ordine
