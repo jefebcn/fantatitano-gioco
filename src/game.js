@@ -2,6 +2,7 @@
 import * as T from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { creaDivisa, TONI } from './divisa.js';
 
 (() => {
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
@@ -202,82 +203,91 @@ const DOWN = { pl: .38, gk: .5, fall: .7 };
 const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.3 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 } };
 const hasFx = (n) => !!(MODEL && MODEL.fx && MODEL.fx[n]);
 function azione(p, name) { if (hasFx(name) && p.fig.skinned) { p.fx = name; p.fxT = 0; p.fxNew = true; } }
-const R = { SKIN: 0, SHIRT: 1, SHORTS: 2, SOCKS: 3, BOOTS: 4, HAIR: 5, ARM: 6, HAND: 7 };
-const bname = (n) => n.replace(/^mixamorig:?/, '');
+const b64 = (t) => Uint8Array.from(atob(t), (c) => c.charCodeAt(0)).buffer;
+const pixel = (im) => { const [c, x] = cv(im.naturalWidth || im.width, im.naturalHeight || im.height); x.drawImage(im, 0, 0); return x.getImageData(0, 0, c.width, c.height); };
+/**
+ * Il calciatore (Quaternius, CC0): corpo con la divisa come texture, occhi, sopracciglia, capelli agganciati alla testa.
+ * Le animazioni stanno in public/anim.js, già adattate al suo scheletro da scripts/animazioni.mjs.
+ */
 async function loadModel() {
   try {
-    const bin = Uint8Array.from(atob(window.MODEL_B64), (c) => c.charCodeAt(0)).buffer;
-    const gltf = await new GLTFLoader().parseAsync(bin, '');
-    const scene = gltf.scene, meshes = []; scene.updateMatrixWorld(true);
-    scene.traverse((o) => { if (o.isSkinnedMesh) meshes.push(o); });
-    const sm = meshes[0], sk = sm.skeleton, P = {};
-    sk.bones.forEach((b, i) => { P[bname(b.name)] = new T.Vector3().setFromMatrixPosition(new T.Matrix4().copy(sk.boneInverses[i]).invert().premultiply(sm.bindMatrixInverse)); });
-    // le ossa possono essere in un'altra unità rispetto ai vertici (cm contro metri): si riportano alla stessa
-    let gy = 0; for (const m of meshes) { m.geometry.computeBoundingBox(); gy = Math.max(gy, m.geometry.boundingBox.max.y); }
-    const un = Math.pow(10, Math.round(Math.log10(gy / (P.HeadTop_End ? P.HeadTop_End.y : P.Head.y * 1.1)))); for (const k in P) P[k].multiplyScalar(un);
-    const hip = P.Hips.y, knee = P.LeftLeg.y, ank = P.LeftFoot.y, neck = P.Neck.y, head = P.Head.y, top = P.HeadTop_End ? P.HeadTop_End.y : head + (head - neck) * 1.7;
-    const shX = Math.abs(P.LeftArm.x), elX = Math.abs(P.LeftForeArm.x), wrX = Math.abs(P.LeftHand.x);
-    const regions = meshes.map((m) => {
-      const pos = m.geometry.attributes.position, r = new Uint8Array(pos.count);
-      for (let i = 0; i < pos.count; i++) {
-        const x = Math.abs(pos.getX(i)), y = pos.getY(i), z = pos.getZ(i);
-        if (x > shX * .98 && y > hip) r[i] = x < shX + (elX - shX) * .6 ? R.SHIRT : x < wrX * .97 ? R.ARM : R.HAND;
-        else if (y > neck + (head - neck) * .3) r[i] = (y > head + (top - head) * .52 || (z < P.Head.z - (top - head) * .12 && y > head + (top - head) * .05)) ? R.HAIR : R.SKIN;
-        else if (y > hip - (hip - knee) * .08) r[i] = R.SHIRT;
-        else if (y > knee + (hip - knee) * .28) r[i] = R.SHORTS;
-        else if (y > knee - (knee - ank) * .14) r[i] = R.SKIN;
-        else if (y > ank + (knee - ank) * .1) r[i] = R.SOCKS;
-        else r[i] = R.BOOTS;
-      }
-      return r;
-    });
-    const box = new T.Box3().setFromObject(scene), h = box.max.y - box.min.y;
-    MODEL = { scene, clips: Object.fromEntries(gltf.animations.map((a) => [a.name, a])), geos: meshes.map((m) => m.geometry), regions, k: 2.72 / h, P, mat: new T.MeshLambertMaterial({ vertexColors: true }) };
-    if (!MODEL.clips.idle || !MODEL.clips.run || !MODEL.clips.walk) { MODEL = null; return; }
-    // animazioni da calcio (public/anim.js, da Mixamo): stesso scheletro, quindi basta ricostruire le tracce
-    MODEL.fx = {}; const A = window.ANIMS, pre = sk.bones.find((b) => bname(b.name) === 'Hips').name.replace(/Hips$/, '');
-    if (A) for (const [nome, c] of Object.entries(A.clip)) {
+    const L = new GLTFLoader();
+    const [g, h, im, ip, io] = await Promise.all([L.parseAsync(b64(window.MODEL_B64), ''), L.parseAsync(b64(window.HAIR_B64), ''), loadImg('img/divisa-maschera.png'), loadImg('img/pelle.webp'), loadImg('img/occhi.webp')]);
+    if (!im || !ip) throw new Error('mancano le texture della divisa');
+    const scene = g.scene; scene.updateMatrixWorld(true);
+    let head = null, spine = null, body = null;
+    scene.traverse((o) => { if (o.isBone && o.name === 'Head') head = o; if (o.isBone && o.name === 'spine_03') spine = o; if (o.isSkinnedMesh && o.material.name === CORPO) body = o; });
+    if (!head || !spine || !body) throw new Error('modello non riconosciuto');
+    const box = new T.Box3().setFromObject(scene), k = 2.72 / (box.max.y - box.min.y);
+    // capelli: portati nello spazio dell'osso della testa, così basta appenderli
+    const hair = {}, hInv = new T.Matrix4().copy(head.matrixWorld).invert(); h.scene.updateMatrixWorld(true);
+    h.scene.traverse((o) => { if (o.isMesh) { const geo = o.geometry.clone(); geo.applyMatrix4(o.matrixWorld).applyMatrix4(hInv); geo.computeVertexNormals(); hair[o.name] = geo; } });
+    // dove stanno numero (schiena) e stemma (petto): un raggio contro il corpo nella posa a riposo, poi tutto riferito all'osso del torace
+    const fermo = new T.Mesh(body.geometry, new T.MeshBasicMaterial({ side: T.DoubleSide })); fermo.matrixWorld.copy(body.matrixWorld);
+    const sInv = new T.Matrix4().copy(spine.matrixWorld).invert(), rc = new T.Raycaster();
+    const appoggio = (x, y, davanti, lato) => {
+      rc.set(new T.Vector3(x, y, davanti ? 2 : -2), new T.Vector3(0, 0, davanti ? -1 : 1)); const hit = rc.intersectObject(fermo, false)[0]; if (!hit) return null;
+      const m = new T.Matrix4().compose(new T.Vector3(x, y, hit.point.z + (davanti ? .012 : -.03)), new T.Quaternion().setFromEuler(new T.Euler(0, davanti ? 0 : Math.PI, 0)), new T.Vector3(lato, lato, lato));
+      return m.premultiply(sInv);
+    };
+    const alto = box.max.y - box.min.y;
+    MODEL = { scene, k, hair, clips: {}, fx: {}, maschera: pixel(im), pelle: pixel(ip), divise: new Map(),
+      numM: appoggio(0, box.min.y + alto * .75, false, .19 / .3), stemmaM: appoggio(.075, box.min.y + alto * .775, true, .085),
+      occhi: io ? new T.MeshLambertMaterial({ map: Object.assign(new T.Texture(io), { flipY: false, colorSpace: T.SRGBColorSpace, needsUpdate: true }) }) : mat(0xffffff) };
+    const A = window.ANIMS; if (!A) throw new Error('mancano le animazioni');
+    for (const [nome, c] of Object.entries(A.clip)) {
       const B = A.ossa.length, times = new Float32Array(c.n), pos = new Float32Array(c.n * 3);
-      for (let i = 0; i < c.n; i++) { times[i] = i / A.fps; pos[i * 3] = c.x; pos[i * 3 + 1] = c.y[i]; pos[i * 3 + 2] = c.z; }
-      const tracks = [new T.VectorKeyframeTrack(`${pre}Hips.position`, times, pos)];
-      A.ossa.forEach((b, k) => { const v = new Float32Array(c.n * 4); for (let i = 0; i < c.n; i++) for (let j = 0; j < 4; j++) v[i * 4 + j] = c.q[(i * B + k) * 4 + j] / 10000; tracks.push(new T.QuaternionKeyframeTrack(`${pre}${b}.quaternion`, times, v)); });
+      for (let i = 0; i < c.n; i++) { times[i] = i / A.fps; for (let j = 0; j < 3; j++) pos[i * 3 + j] = c.p[i * 3 + j] / 10000; }
+      const tracks = [new T.VectorKeyframeTrack(`${A.bacino}.position`, times, pos)];
+      A.ossa.forEach((b, n) => { const v = new Float32Array(c.n * 4); for (let i = 0; i < c.n; i++) for (let j = 0; j < 4; j++) v[i * 4 + j] = c.q[(i * B + n) * 4 + j] / 10000; tracks.push(new T.QuaternionKeyframeTrack(`${b}.quaternion`, times, v)); });
       MODEL.fx[nome] = new T.AnimationClip(nome, (c.n - 1) / A.fps, tracks);
     }
+    if (!MODEL.fx.idle || !MODEL.fx.walk || !MODEL.fx.run) throw new Error('mancano le animazioni di base');
     if (MODEL.fx.scivolata) DOWN.pl = .81; if (MODEL.fx.tuffoS) DOWN.gk = 1.1; if (MODEL.fx.caduta) DOWN.fall = 1.35;
   } catch (e) { console.warn('modello 3D non caricato', e); MODEL = null; }
 }
-const lin = (hex) => { const c = new T.Color(hex); return [c.r, c.g, c.b]; };
-function makeSkinned(kit, seed, num) {
+const CORPO = 'MI_Superhero_Male', OCCHI = 'MI_Eyes';
+const ACCONCIATURE = [null, 'Hair_Buzzed', 'Hair_SimpleParted', 'Hair_Buzzed', 'Hair_SimpleParted', 'Hair_SimpleParted'];
+/** Il materiale del corpo per una divisa e un tono di pelle: si disegna una volta e si riusa per tutti quelli uguali. */
+function divisaMat(kit, tono) {
+  const key = [kit.shirt, kit.shorts, kit.socks, kit.boots, kit.c2, kit.stile, kit.gloves, tono].join('|'); let m = MODEL.divise.get(key);
+  if (!m) { const tx = new T.CanvasTexture(creaDivisa(MODEL.maschera, MODEL.pelle, kit, tono)); tx.flipY = false; tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = 4; m = new T.MeshLambertMaterial({ map: tx }); MODEL.divise.set(key, m); }
+  return m;
+}
+const stemmi3d = new Map();
+function stemmaMat(id) {
+  let m = stemmi3d.get(id); if (m || !CREST[id]) return m || null;
+  const tx = new T.Texture(CREST[id]); tx.colorSpace = T.SRGBColorSpace; tx.needsUpdate = true;
+  m = new T.MeshBasicMaterial({ map: tx, transparent: true, alphaTest: .4 }); m.userData.ratio = CREST[id].width / CREST[id].height; stemmi3d.set(id, m); return m;
+}
+const GEO1 = new T.PlaneGeometry(1, 1);
+function makeSkinned(kit, seed, num, clubId) {
   const root = new T.Group(), body = new T.Group(); root.add(body);
   const obj = SkeletonUtils.clone(MODEL.scene); obj.scale.multiplyScalar(MODEL.k); body.add(obj);
-  const skin = lin(SKIN[seed % SKIN.length]), pal = [];
-  pal[R.SKIN] = skin; pal[R.SHIRT] = lin(kit.shirt); pal[R.SHORTS] = lin(kit.shorts); pal[R.SOCKS] = lin(kit.socks); pal[R.BOOTS] = lin(kit.boots);
-  pal[R.HAIR] = lin(HAIR[(seed >>> 4) % HAIR.length]); pal[R.ARM] = kit.gloves ? pal[R.SHIRT] : skin; pal[R.HAND] = kit.gloves ? lin(kit.gloves) : skin;
-  const bones = {}, geos = []; let mi = 0;
+  const tono = seed % TONI.length, pelo = mat(HAIR[(seed >>> 4) % HAIR.length]), bones = {};
   obj.traverse((o) => {
-    if (o.isBone) bones[bname(o.name)] = o;
-    if (o.isSkinnedMesh) {
-      const base = MODEL.geos[mi], reg = MODEL.regions[mi++], g = new T.BufferGeometry(); g.index = base.index;
-      for (const n in base.attributes) g.setAttribute(n, base.attributes[n]);
-      const arr = new Float32Array(reg.length * 3); for (let i = 0; i < reg.length; i++) arr.set(pal[reg[i]], i * 3);
-      g.setAttribute('color', new T.BufferAttribute(arr, 3)); g.boundingSphere = base.boundingSphere; g.boundingBox = base.boundingBox;
-      o.geometry = g; o.material = MODEL.mat; o.frustumCulled = false; geos.push(g);
-    }
+    if (o.isBone) bones[o.name] = o;
+    if (o.isSkinnedMesh) { o.frustumCulled = false; o.material = o.material.name === CORPO ? divisaMat(kit, tono) : o.material.name === OCCHI ? MODEL.occhi : pelo; }
   });
-  if (bones.Spine2) { const n = new T.Mesh(GEO.num, numMat(num, kit.ink)); n.scale.setScalar(NUMP[3]); n.position.set(NUMP[0], NUMP[1], NUMP[2]); n.rotation.y = Math.PI; bones.Spine2.add(n); }
+  const stile = ACCONCIATURE[(seed >>> 8) % ACCONCIATURE.length];
+  if (stile && MODEL.hair[stile]) bones.Head.add(new T.Mesh(MODEL.hair[stile], pelo));
+  if ((seed >>> 12) % 4 === 0 && MODEL.hair.Hair_Beard) bones.Head.add(new T.Mesh(MODEL.hair.Hair_Beard, pelo));
+  if (MODEL.numM) { const n = new T.Mesh(GEO.num, numMat(num, kit.ink)); n.applyMatrix4(MODEL.numM); bones.spine_03.add(n); }
+  const sm = clubId && MODEL.stemmaM ? stemmaMat(clubId) : null;
+  if (sm) { const c = new T.Mesh(GEO1, sm); c.scale.set(sm.userData.ratio, 1, 1); c.applyMatrix4(MODEL.stemmaM); bones.spine_03.add(c); }
   const sh = new T.Mesh(GEO.shadow, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; sh.scale.setScalar(1.5); root.add(sh);
-  const mixer = new T.AnimationMixer(obj), A = {};
-  const base = { idle: MODEL.clips.idle, walk: MODEL.clips.walk, run: MODEL.clips.run, jog: MODEL.fx.jog, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null };
-  for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = rnd(base[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; }
-  return { root, body, mixer, A, bones, geos, w: { idle: 1, walk: 0, run: 0, jog: 0, gkIdle: 0 }, saved: [], act: null, old: null, fxW: 0, oldW: 0, skinned: true };
+  const mixer = new T.AnimationMixer(obj), A = {}, w = {};
+  const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null };
+  for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = rnd(base[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; w[n] = n === 'idle' ? 1 : 0; }
+  return { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true };
 }
-const NUMP = [0, 4, -13.5, 78];
 const lum = (h) => { const c = new T.Color(h); return .299 * c.r + .587 * c.g + .114 * c.b; };
 const cdist = (a, b) => { const x = new T.Color(a), y = new T.Color(b); return hyp(x.r - y.r, x.g - y.g, x.b - y.b); };
 function pickKits(h, a) {
   const kit = (c, away) => {
     const shirt = away ? '#F3F3F3' : c.c1, shorts = away ? c.c1 : (cdist(c.c1, c.c2) < .25 ? '#FFFFFF' : c.c2);
-    return { shirt, shorts, socks: shirt, sleeve: shirt, boots: '#16161a', ink: lum(shirt) > .55 ? '#111' : '#fff' };
+    const c2 = away ? c.c1 : (cdist(c.c1, c.c2) < .25 ? '#FFFFFF' : c.c2);
+    return { shirt, shorts, socks: shirt, sleeve: shirt, boots: '#16161a', ink: lum(shirt) > .55 ? '#111' : '#fff', c2, stile: away ? null : c.st || null };
   };
   const kh = kit(h, false), ka = kit(a, cdist(h.c1, a.c1) < .45);
   // i pantaloncini dell'una non devono sembrare la maglia dell'altra
@@ -286,7 +296,7 @@ function pickKits(h, a) {
   const gk = (other) => {
     const opts = ['#FF7A1A', '#19D3B1', '#E91E8C', '#111111'];
     const best = opts.sort((p, q) => Math.min(cdist(q, kh.shirt), cdist(q, ka.shirt), cdist(q, other || '#000') + .2) - Math.min(cdist(p, kh.shirt), cdist(p, ka.shirt), cdist(p, other || '#000') + .2))[0];
-    return { shirt: best, shorts: best, socks: best, sleeve: best, boots: '#16161a', ink: lum(best) > .55 ? '#111' : '#fff', gloves: '#F3F3F3' };
+    return { shirt: best, shorts: best, socks: best, sleeve: best, boots: '#16161a', ink: lum(best) > .55 ? '#111' : '#fff', gloves: '#F3F3F3', c2: best, stile: null };
   };
   const g1 = gk(null), g2 = gk(g1.shirt);
   return [kh, ka, g1, g2];
@@ -305,14 +315,18 @@ const ballMesh = (() => {
 const ballShadow = new T.Mesh(new T.CircleGeometry(.3, 12), shadowMat); ballShadow.rotation.x = -Math.PI / 2; ballShadow.position.y = .04; ballShadow.visible = false; scene.add(ballShadow);
 
 /* ------------------------------------------------------------------ partita */
-function clearMatch() { for (const t of G.teams) for (const p of t.players.concat(t.off)) { scene.remove(p.fig.root); if (p.fig.geos) for (const g of p.fig.geos) g.deleteAttribute('color'); } G.teams = []; }
+function clearMatch() {
+  for (const t of G.teams) for (const p of t.players.concat(t.off)) scene.remove(p.fig.root);
+  if (MODEL) { for (const m of MODEL.divise.values()) { m.map.dispose(); m.dispose(); } MODEL.divise.clear(); }
+  G.teams = [];
+}
 function newMatch(home, away) {
   clearMatch();
   const [kh, ka, g1, g2] = pickKits(home, away);
   const mk = (club, side, human, kit, gkit) => {
     const t = { club, side, human, score: 0, players: [], off: [], idx: side > 0 ? 0 : 1, chaser: null, cover: null };
     club.xi.forEach(([name, role, num, q], i) => {
-      const fig = (MODEL ? makeSkinned : makeFigure)(i === 0 ? gkit : kit, hash(club.id + name), num); scene.add(fig.root);
+      const fig = (MODEL ? makeSkinned : makeFigure)(i === 0 ? gkit : kit, hash(club.id + name), num, i === 0 ? null : club.id); scene.add(fig.root);
       const base = 7.3 + clamp((q - 20) / 40, -.5, .6) + (club.str - 3) * .07;
       t.players.push({ team: t, i, role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? 6.6 : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1, run: null, mark: null, jock: false, slideCd: 0, yel: 0, red: false, fkShot: false, en: 1, by: null, s: { g: 0, a: 0, kp: 0, sh: 0, sot: 0, pa: 0, pc: 0, tk: 0, int: 0, sv: 0, fl: 0, og: 0 } });
     });
@@ -339,7 +353,7 @@ function kickoff(team) {
     if (t !== team && Math.abs(kz) < 10) kx = Math.min(kx, -10.5);
     if (t === team && p.i === 9) { kx = -.7; kz = 0; }
     if (t === team && p.i === 10) { kx = -1.2; kz = 5; }
-    p.x = kx * t.side; p.z = kz * t.side; p.vx = p.vz = 0; p.dir = t.side > 0 ? Math.PI / 2 : -Math.PI / 2; p.st = 'run'; p.stT = 0; p.cool = p.stun = 0; p.tx = p.x; p.tz = p.z; p.fx = null; p.fallen = false; p.run = p.mark = null; p.fkShot = false;
+    p.x = kx * t.side; p.z = kz * t.side; p.vx = p.vz = 0; p.dir = t.side > 0 ? Math.PI / 2 : -Math.PI / 2; p.st = 'run'; p.stT = 0; p.cool = p.stun = 0; p.tx = p.x; p.tz = p.z; p.fx = null; p.fxNew = false; p.fallen = false; p.run = p.mark = null; p.fkShot = false; // fxNew va azzerato insieme a fx, se no il disegno fa partire un'animazione senza nome
   }
   G.taker = team.players.find((p) => p.i === 9) || nearestTo(team, 0, 0); G.taker.x = -.7 * team.side; G.taker.z = 0; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penWait = 0;
   G.next = team; G.poss = team; G.lastTouch = G.taker; G.intended = null;
@@ -850,7 +864,6 @@ function goal(team) {
 }
 
 /* ------------------------------------------------------------------ animazione delle figure */
-const _E = new T.Euler(), _Q = new T.Quaternion();
 function startFx(f, name) {
   const a = f.mixer.clipAction(MODEL.fx[name]);
   if (f.old && f.old !== a) f.old.stop();
@@ -858,16 +871,13 @@ function startFx(f, name) {
   a.setLoop(T.LoopOnce, 1); a.clampWhenFinished = true; a.reset(); a.timeScale = FX[name].sp; a.play(); f.act = a;
 }
 function poseSkinned(p, dt) {
-  const f = p.fig, v = hyp(p.vx, p.vz), o = {}; f.root.position.set(p.x, 0, p.z); f.root.rotation.y = p.dir;
-  for (const [b, q] of f.saved) b.quaternion.copy(q); // toglie i ritocchi del fotogramma prima: il mixer non riscrive un osso che non è cambiato
-  f.saved.length = 0;
+  const f = p.fig, v = hyp(p.vx, p.vz); f.root.position.set(p.x, 0, p.z); f.root.rotation.y = p.dir;
   if (G.dbgFx && hasFx(G.dbgFx.name)) { // per le prove: tutti fermi su un fotogramma di una clip
     for (const k in f.A) f.A[k].setEffectiveWeight(0); if (f.act) f.act.setEffectiveWeight(0);
-    const a = f.mixer.clipAction(MODEL.fx[G.dbgFx.name]); a.play(); a.paused = true; a.time = G.dbgFx.t; a.setEffectiveWeight(1); f.dbg = a; f.mixer.update(0);
-    f.body.rotation.set(0, 0, 0); f.body.position.y = 0; return;
+    const a = f.mixer.clipAction(MODEL.fx[G.dbgFx.name]); if (f.dbg && f.dbg !== a) f.dbg.stop(); a.play(); a.paused = true; a.time = G.dbgFx.t; a.setEffectiveWeight(1); f.dbg = a; f.mixer.update(0); f.body.position.y = 0; return;
   } else if (f.dbg) { f.dbg.stop(); f.dbg = null; }
   // l'azione registrata in corso (tiro, scivolata, tuffo…)
-  if (p.fxNew) { p.fxNew = false; if (p.fx) startFx(f, p.fx); } // p.fx può essere stato azzerato dal calcio d'inizio prima del disegno
+  if (p.fxNew) { p.fxNew = false; startFx(f, p.fx); }
   let on = false;
   if (p.fx && f.act) {
     p.fxT += dt; const c = FX[p.fx], dur = f.act.getClip().duration / c.sp;
@@ -877,34 +887,18 @@ function poseSkinned(p, dt) {
   f.fxW += ((on ? 1 : 0) - f.fxW) * Math.min(1, dt * (on ? 16 : 6)); f.oldW += (0 - f.oldW) * Math.min(1, dt * 9);
   if (f.act) { f.act.setEffectiveWeight(f.fxW); if (!p.fx && f.fxW < .02) { f.act.stop(); f.act = null; f.fxW = 0; } }
   if (f.old) { f.old.setEffectiveWeight(f.oldW); if (f.oldW < .02) { f.old.stop(); f.old = null; f.oldW = 0; } }
-  const busy = f.fxW > .25;
-  // le pose a codice restano per ciò che non ha una clip
-  let rx = 0, rz = 0, by = 0, still = false;
-  if (p.st === 'kick' && !hasFx('tiro')) { const k = p.stT / .32, sw = k < .3 ? k / .3 * .8 : .8 - (k - .3) / .7 * 2.2; o.RightUpLeg = [sw * OV.leg, 0, 0]; o.RightLeg = [(k < .3 ? 1 : .1) * OV.knee, 0, 0]; o.Spine = [-.12 * OV.leg, 0, 0]; }
-  else if ((p.st === 'slide' || (p.st === 'down' && p.i !== 0)) && !hasFx('scivolata')) { still = true; rx = -1.2; by = .16; o.LeftUpLeg = [-.5 * OV.leg, 0, 0]; o.RightUpLeg = [.25 * OV.leg, 0, 0]; o.RightLeg = [.9 * OV.knee, 0, 0]; o.LeftArm = [0, 0, -.5 * OV.arm]; o.RightArm = [0, 0, .5 * OV.arm]; }
-  else if ((p.st === 'dive' || (p.st === 'down' && p.i === 0)) && !hasFx('tuffoS')) {
-    still = true; const k = p.st === 'dive' ? Math.min(1, p.stT / .22) : 1, side = p.diveS * (Math.sin(p.dir) > 0 ? 1 : -1); rz = side * 1.35 * k;
-    by = p.st === 'dive' ? Math.sin(Math.min(1, p.stT / .5) * Math.PI) * .7 + .25 : .28; o.LeftArm = [0, 0, 2.4 * OV.arm * k]; o.RightArm = [0, 0, -2.4 * OV.arm * k];
-  }
-  else if (busy) { /* la clip fa tutto */ }
-  else if (G.state === 'goal' && G.scorer && p.team === G.scorer.team && p.i !== 0 && v < 5) { const a = 2.2 + Math.sin(G.t * 9 + p.i) * .2; o.LeftArm = [0, 0, a * OV.arm]; o.RightArm = [0, 0, -a * OV.arm]; by = Math.abs(Math.sin(G.t * 7 + p.i)) * .3; }
-  else if (G.ball.owner === p && p.i === 0) { o.LeftArm = [0, 0, .35 * OV.arm]; o.RightArm = [0, 0, -.35 * OV.arm]; }
-  else if (p.i === 0 && v < 2 && G.state === 'play' && !f.A.gkIdle) { o.LeftArm = [0, 0, .55 * OV.arm]; o.RightArm = [0, 0, -.55 * OV.arm]; o.LeftUpLeg = [-.3 * OV.leg, 0, 0]; o.RightUpLeg = [-.3 * OV.leg, 0, 0]; o.LeftLeg = [.55 * OV.knee, 0, 0]; o.RightLeg = [.55 * OV.knee, 0, 0]; by = -.1; }
-  // camminata, corsetta e corsa secondo la velocità
-  const tg = { idle: 0, walk: 0, run: 0, jog: 0, gkIdle: 0 };
-  if (f.A.jog) { const m = clamp(v / 1.2, 0, 1), r = clamp((v - 6.4) / 1.8, 0, 1), j = clamp((v - 2) / 1.8, 0, 1) * (1 - r); tg.run = m * r; tg.jog = m * j; tg.walk = m * (1 - r - j); tg.idle = 1 - m; }
+  // attesa, camminata, corsetta e corsa secondo la velocità; esultanza dopo un gol
+  const tg = { idle: 0, walk: 0, run: 0, jog: 0, gkIdle: 0, esulta: 0 }; let by = 0;
+  const festa = G.state === 'goal' && G.scorer && p.team === G.scorer.team && p.i !== 0 && v < 5 && f.fxW < .25;
+  if (festa && f.A.esulta) { tg.esulta = 1; by = Math.abs(Math.sin(G.t * 7 + p.i)) * .3; }
+  else if (f.A.jog) { const m = clamp(v / 1.2, 0, 1), r = clamp((v - 6.4) / 1.8, 0, 1), j = clamp((v - 2) / 1.8, 0, 1) * (1 - r); tg.run = m * r; tg.jog = m * j; tg.walk = m * (1 - r - j); tg.idle = 1 - m; }
   else { tg.run = clamp((v - 2.6) / 2.6, 0, 1); tg.walk = clamp(v / 2.2, 0, 1) * (1 - tg.run); tg.idle = 1 - tg.run - tg.walk; }
-  if (still) { tg.idle = 1; tg.walk = tg.run = tg.jog = 0; }
-  if (f.A.gkIdle && G.state === 'play' && G.ball.owner !== p) { tg.gkIdle = tg.idle; tg.idle = 0; }
+  if (f.A.gkIdle && G.state === 'play') { tg.gkIdle = tg.idle; tg.idle = 0; }
   const a = Math.min(1, dt * 10), rest = Math.max(0, 1 - f.fxW - f.oldW);
   for (const k in f.A) { f.w[k] += (tg[k] - f.w[k]) * a; f.A[k].setEffectiveWeight(f.w[k] * rest); }
   f.A.run.timeScale = clamp(v / 6.6, .8, 1.5); f.A.walk.timeScale = clamp(v / 1.9, .7, 1.7); if (f.A.jog) f.A.jog.timeScale = clamp(v / 4.1, .8, 1.5);
-  f.mixer.update(dt);
-  const ov = G.dbg ? Object.assign(o, G.dbg) : o;
-  for (const k in ov) { const b = f.bones[k]; if (b) { f.saved.push([b, b.quaternion.clone()]); _E.set(ov[k][0], ov[k][1], ov[k][2]); b.quaternion.multiply(_Q.setFromEuler(_E)); } }
-  f.body.rotation.x = rx; f.body.rotation.z = rz; f.body.position.y = by;
+  f.mixer.update(dt); f.body.position.y = by;
 }
-const OV = { leg: 1, knee: 1, arm: 1, hold: -1 };
 function pose(p, dt) {
   if (p.fig.skinned) return poseSkinned(p, dt);
   const f = p.fig, v = hyp(p.vx, p.vz), a = Math.min(1, v / 6.5);
@@ -1122,6 +1116,6 @@ async function boot() {
   Promise.all(CLUBS.map((c) => loadImg(img(c.id + '-mini')).then((i) => { CREST[c.id] = i; }))).then(() => { if (G.teams.length) paintBoards(G.teams[0].club, G.teams[1].club, CREST); });
   $('#carica').remove(); show('#home'); requestAnimationFrame(loop);
 }
-window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE, VOTE, vote, penalty, freeKick, foul, pass, gain, pressA, pressB, OV, NUMP, model: () => MODEL };
+window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE, VOTE, vote, penalty, freeKick, foul, pass, gain, pressA, pressB, model: () => MODEL };
 boot();
 })();
