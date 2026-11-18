@@ -4,6 +4,7 @@ import { creaRegia } from './regia.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { creaDivisa, TONI } from './divisa.js';
+import * as CLOUD from './cloud.js';
 import * as CAR from './carriera.js';
 
 (() => {
@@ -58,7 +59,8 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const hyp = Math.hypot;
 const sgn = (v) => (v < 0 ? -1 : 1);
 const hash = (s) => { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
-const img = (id) => `img/${id}.webp`;
+const IMGX = {}; // immagini fatte al momento al posto dei file (lo stemma del club dell'utente)
+const img = (id) => IMGX[id] || `img/${id}.webp`;
 
 const G = {
   state: 'menu', stateT: 0, t: 0, teams: [], ball: null, ctrl: null, clock: 0, half: 1, auto: false, diff: DIFF.normale,
@@ -1271,7 +1273,7 @@ function tapRosa(e) {
   const b = e.target.closest('button'); if (!b || !K || !G.comp || G.comp.tipo !== 'rosa') return;
   if (b.dataset.x) rXi = +b.dataset.x; else if (b.dataset.n) rPan = +b.dataset.n; else return;
   if (rXi < 0 || rPan < 0) return drawRosa();
-  const H = club(K.club), entra = H.pan[rPan][0], ok = CAR.cambiaTitolare(K, CLUBS, rXi, rPan); rXi = rPan = -1; if (ok) CAR.salva(K);
+  const H = club(K.club), entra = H.pan[rPan][0], ok = CAR.cambiaTitolare(K, CLUBS, rXi, rPan); rXi = rPan = -1; if (ok) { applicaMio(); salvaK(); }
   showPre(ok ? `${esc(entra)} è titolare` : 'Devono avere lo stesso ruolo');
 }
 function showPre(msg) {
@@ -1283,38 +1285,203 @@ function showPre(msg) {
   $('#preT').textContent = rosa ? 'La mia rosa' : c ? c.titolo : `Amichevole · ${sel.diff}`; show('#pre');
 }
 /* ------------------------------------------------------------------ carriera: dashboard e pannelli (la logica è in carriera.js) */
-let K = null; // la carriera salvata sul dispositivo, se c'è
+let K = null; // la carriera: sul dispositivo e, con l'accesso, anche sull'account (cloud.js)
 const stelle = (n) => `<span class="st">${'★'.repeat(n)}<s>${'★'.repeat(5 - n)}</s></span>`;
 const mini = (id) => `<img src="${img(id + '-mini')}" alt="">`;
 const mon = (n) => Number(n).toLocaleString('it-IT');
+const fmtTempo = (ms) => { const h = Math.max(0, Math.floor(ms / 36e5)); return h >= 24 ? `${Math.floor(h / 24)}g ${h % 24}h` : `${h}h ${Math.floor((ms % 36e5) / 6e4)}m`; };
+function avviso(t) { const el = $('#avviso'); el.textContent = t; el.classList.add('su'); clearTimeout(avviso.t); avviso.t = setTimeout(() => el.classList.remove('su'), 2800); }
+
+/* --- il club dell'utente: nome, colori e stemma scelti all'inizio. Prende il posto della SM Academy U22 e parte dai suoi ragazzi,
+   più il capitano ingaggiato: così le altre quindici squadre restano quelle vere. */
+const POSTO = 'academy';
+const COLORI = [['#4B06FC', '#D9F51F'], ['#C0392B', '#FFFFFF'], ['#111111', '#D9F51F'], ['#1D4F8A', '#FFFFFF'], ['#2E8B57', '#F2B822'], ['#E0B400', '#111111'], ['#7A1F3D', '#E8C77A'], ['#FF7A1A', '#1B2A5C']];
+const STILI = [['', 'Tinta unita'], ['righe', 'Righe'], ['banda', 'Banda'], ['meta', 'Metà']];
+const NOMI = ['Titani FC', 'Real Montale', 'Atletico Borgo', 'Sporting Serravalle', 'Libera Acquaviva', 'Rocca United', 'Guaita Calcio', 'Cesta FC', 'Dogana Stars', 'Chiesanuova FC', 'Torri Unite', 'Olimpia Titano'];
+const sigla = (n) => (String(n).replace(/[^A-Za-zÀ-ÿ ]/g, '').split(/\s+/).filter((w) => w.length > 2 && !/^(fc|real|united|calcio)$/i.test(w))[0] || String(n) || 'MIO').slice(0, 3).toUpperCase();
+// Lo stemma del club: uno scudo coi colori e il disegno scelti, la sigla e la corona di Fantatitano
+function disegnaStemma(m, w) {
+  const h = Math.round(w * 1.18), [c, x] = cv(w, h), k = w / 240, sh = () => { x.beginPath(); x.moveTo(20 * k, 34 * k); x.lineTo(220 * k, 34 * k); x.lineTo(220 * k, 150 * k); x.quadraticCurveTo(220 * k, 238 * k, 120 * k, 278 * k); x.quadraticCurveTo(20 * k, 238 * k, 20 * k, 150 * k); x.closePath(); };
+  x.save(); sh(); x.clip(); x.fillStyle = m.c1; x.fillRect(0, 0, w, h); x.fillStyle = m.c2;
+  if (m.stile === 'righe') for (let i = 0; i < 4; i++) x.fillRect((44 + i * 48) * k, 0, 24 * k, h);
+  else if (m.stile === 'banda') { x.beginPath(); x.moveTo(0, 80 * k); x.lineTo(w, 180 * k); x.lineTo(w, 240 * k); x.lineTo(0, 140 * k); x.fill(); }
+  else if (m.stile === 'meta') x.fillRect(120 * k, 0, w, h);
+  x.restore(); sh(); x.lineWidth = 12 * k; x.strokeStyle = m.stile ? '#FFFFFF' : m.c2; x.stroke();
+  x.fillStyle = '#D9F51F'; x.strokeStyle = '#0A0A0C'; x.lineWidth = 4 * k; x.beginPath(); // corona
+  for (const [px, py] of [[78, 30], [86, 4], [104, 20], [120, 0], [136, 20], [154, 4], [162, 30]]) x.lineTo(px * k, py * k);
+  x.closePath(); x.stroke(); x.fill();
+  x.font = `${Math.round(78 * k)}px Anton, Impact, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
+  x.lineWidth = 14 * k; x.strokeStyle = 'rgba(10,10,12,.55)'; x.strokeText(m.sigla || 'MIO', 120 * k, 152 * k); x.fillStyle = '#FFFFFF'; x.fillText(m.sigla || 'MIO', 120 * k, 152 * k);
+  return c.toDataURL('image/png');
+}
+const forzaClub = (c) => clamp(Math.round((c.xi.reduce((s, x) => s + ovr(x[1], x[3]), 0) / c.xi.length - 58) / 5), 1, 5);
+/** Mette sul posto della SM Academy U22 il club dell'utente (nome, sigla, colori, stemma), o la rimette com'era se non c'è. */
+function applicaMio() {
+  const c = club(POSTO); if (!c) return;
+  if (!c.orig) c.orig = { name: c.name, short: c.short, c1: c.c1, c2: c.c2, st: c.st, str: c.str };
+  const m = K && K.club === POSTO && K.mio && K.mio.nome ? K.mio : null;
+  if (m) { Object.assign(c, { name: m.nome, short: m.sigla, c1: m.c1, c2: m.c2, st: m.stile || undefined }); c.str = forzaClub(c); IMGX[POSTO] = disegnaStemma(m, 240); IMGX[POSTO + '-mini'] = disegnaStemma(m, 96); }
+  else { Object.assign(c, c.orig); delete IMGX[POSTO]; delete IMGX[POSTO + '-mini']; }
+  stemmi3d.delete(POSTO); loadImg(img(POSTO + '-mini')).then((i) => { CREST[POSTO] = i; stemmi3d.delete(POSTO); });
+}
+// Le doti di un giocatore, ricavate dal suo valore e dal ruolo (con un po' di differenza tra uno e l'altro): servono alle carte
+const DOTI = { P: [['PAR', 5], ['RIF', 4], ['PRE', 3], ['POS', 2], ['RIN', -3], ['PAS', -10], ['VEL', -15], ['POT', -4]], D: [['VEL', 0], ['ACC', -3], ['RES', 4], ['POT', 5], ['CON', -2], ['PAS', -1], ['TIR', -14], ['DIF', 9]], C: [['VEL', -2], ['ACC', 1], ['RES', 4], ['POT', -2], ['CON', 4], ['PAS', 6], ['TIR', -4], ['DIF', -1]], A: [['VEL', 4], ['ACC', 4], ['RES', 0], ['POT', 1], ['CON', 3], ['PAS', -2], ['TIR', 7], ['DIF', -22]] };
+const attributi = (x) => DOTI[x[1]].map(([k, d]) => [k, clamp(ovr(x[1], x[3]) + d + (hash(x[0] + k) % 11) - 5, 30, 95)]);
+// Maglia e icone disegnate, per le carte della dashboard
+function maglia(c1, c2, st) {
+  const id = 'mg' + hash(c1 + c2 + st), f = 'M30 5 L42 2 Q50 9 58 2 L70 5 L95 22 L84 40 L74 34 L74 88 L26 88 L26 34 L16 40 L5 22 Z';
+  const dis = st === 'righe' ? [0, 1, 2, 3, 4].map((k) => `<rect x="${14 + k * 16}" width="8" height="90" fill="${c2}"/>`).join('') : st === 'banda' ? `<path d="M0 26 L100 66 L100 86 L0 46Z" fill="${c2}"/>` : st === 'meta' ? `<rect x="50" width="50" height="90" fill="${c2}"/>` : '';
+  return `<svg viewBox="0 0 100 90" class="maglia"><defs><clipPath id="${id}"><path d="${f}"/></clipPath></defs><g clip-path="url(#${id})"><rect width="100" height="90" fill="${c1}"/>${dis}<path d="M42 2 Q50 13 58 2" fill="none" stroke="${c2}" stroke-width="5"/><rect x="0" y="0" width="16" height="40" fill="${c2}" opacity=".9" transform="rotate(-34 5 22)"/><rect x="84" y="0" width="16" height="40" fill="${c2}" opacity=".9" transform="rotate(34 95 22)"/></g><path d="${f}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/></svg>`;
+}
+const COPPA = '<svg viewBox="0 0 64 64" class="icona"><path d="M18 8h28v10a14 14 0 0 1-28 0z" fill="currentColor"/><path d="M18 12H9a9 9 0 0 0 11 13M46 12h9a9 9 0 0 1-11 13" fill="none" stroke="currentColor" stroke-width="4"/><rect x="29" y="31" width="6" height="12" fill="currentColor"/><path d="M20 56h24l-3-12H23z" fill="currentColor"/></svg>';
+const TORRI = '<svg viewBox="0 0 64 64" class="icona"><path d="M2 60 L14 40 L22 46 L32 26 L42 46 L50 40 L62 60Z" fill="currentColor" opacity=".45"/><path d="M10 40v-14h2v-3h2v3h2v-3h2v3h2v14zM27 30V10h2V7h2v3h2V7h2v3h2v20zM44 40V26h2v-3h2v3h2v-3h2v3h2v14z" fill="currentColor"/></svg>';
+
+/* --- ingresso: il club (nome, colori, stemma) e poi il capitano. Lo stesso modulo serve a «Personalizza» dal mio club */
+const NV = { passo: 1, modifica: false, col: 0, stile: '', cap: null };
+function candidatiCapitano() { // nove tra i migliori, uno per squadra: un portiere, due difensori, tre centrocampisti, tre attaccanti
+  const tutti = []; for (const c of CLUBS) if (c.id !== POSTO) c.xi.forEach((x, i) => tutti.push({ c, x, i, v: ovr(x[1], x[3]) }));
+  tutti.sort((a, b) => b.v - a.v || b.x[3] - a.x[3]);
+  const out = [], vuoi = { P: 1, D: 2, C: 3, A: 3 }, prese = new Set();
+  for (const t of tutti) { if (out.filter((o) => o.x[1] === t.x[1]).length >= vuoi[t.x[1]] || prese.has(t.c.id)) continue; out.push(t); prese.add(t.c.id); if (out.length === 9) break; }
+  return out.sort((a, b) => 'PDCA'.indexOf(a.x[1]) - 'PDCA'.indexOf(b.x[1]) || b.v - a.v);
+}
+const cartaGiocatore = (t, scelto) => `<button class="cap${scelto ? ' sel' : ''}" data-cap="${t.c.id}:${t.i}"><div class="cn">${esc(t.x[0])}<small>${esc(t.c.name)}</small></div><div class="at">${attributi(t.x).map(([k, v]) => `<span><i>${k}</i><b class="${v >= 80 ? 'a' : v >= 60 ? 'b' : 'c'}">${v}</b></span>`).join('')}</div><div class="sc"><em>${t.v}</em>${mini(t.c.id)}<b>${t.x[2]}</b><u>${RUOLO[t.x[1]]}</u></div></button>`;
+function mioDaModulo() { const nome = ($('#nvClub').value.trim() || NOMI[0]).slice(0, 22), sg = ($('#nvSigla').value.trim() || sigla(nome)).slice(0, 3).toUpperCase(); return { nome, sigla: sg, c1: COLORI[NV.col][0], c2: COLORI[NV.col][1], stile: NV.stile }; }
+function anteprimaClub() { const m = mioDaModulo(); $('#nvStemma').src = disegnaStemma(m, 160); $('#nvMaglia').innerHTML = maglia(m.c1, m.c2, m.stile); for (const b of $('#nvCol').children) b.classList.toggle('on', +b.dataset.col === NV.col); for (const b of $('#nvStile').children) b.classList.toggle('on', b.dataset.stile === NV.stile); }
+function drawNuovo() {
+  const el = $('#nuovo');
+  if (NV.passo === 1) {
+    const m = NV.modifica && K && K.mio ? K.mio : null;
+    el.innerHTML = `<button class="indietro" id="nvInd">‹ Indietro</button><h2 class="h">${NV.modifica ? 'Personalizza il club' : 'Il tuo club'}</h2>
+      <div class="nv"><div class="campi">${NV.modifica ? '' : '<label>Il tuo nome<input id="nvNome" maxlength="18" placeholder="Mister" autocomplete="off"></label>'}
+        <label>Nome del club<span class="riga"><input id="nvClub" maxlength="22" autocomplete="off" placeholder="${NOMI[0]}"><button id="nvDado" aria-label="Nome a caso">🎲</button></span></label>
+        <label>Sigla<input id="nvSigla" maxlength="3" autocomplete="off" placeholder="TIT"></label>
+        <div class="lbl">Colori</div><div class="col" id="nvCol">${COLORI.map(([a, b], i) => `<button data-col="${i}" style="background:linear-gradient(135deg,${a} 50%,${b} 50%)"></button>`).join('')}</div>
+        <div class="lbl">Disegno</div><div class="seg" id="nvStile">${STILI.map(([k, n]) => `<button data-stile="${k}">${n}</button>`).join('')}</div></div>
+      <div class="ante"><img id="nvStemma" alt=""><div id="nvMaglia"></div></div></div>
+      <button class="btn" id="nvAvanti">${NV.modifica ? 'Salva' : 'Avanti: il capitano'}</button>`;
+    if (m) { $('#nvClub').value = m.nome; $('#nvSigla').value = m.sigla; NV.col = Math.max(0, COLORI.findIndex(([a, b]) => a === m.c1 && b === m.c2)); NV.stile = m.stile || ''; }
+    anteprimaClub();
+  } else {
+    const cand = candidatiCapitano();
+    el.innerHTML = `<button class="indietro" id="nvInd">‹ Il club</button><h2 class="h">Ingaggia il tuo capitano</h2><div class="caps">${cand.map((t) => cartaGiocatore(t, NV.cap === `${t.c.id}:${t.i}`)).join('')}</div>
+      <button class="btn ingaggia" id="nvAvanti" ${NV.cap ? '' : 'disabled'}>${NV.cap ? `Ingaggia ${esc(club(NV.cap.split(':')[0]).xi[+NV.cap.split(':')[1]][0])}` : 'Tocca un giocatore'}</button>`;
+  }
+}
+function apriNuovo(modifica = false) { Object.assign(NV, { passo: 1, modifica, cap: null }); if (!modifica) { NV.col = 0; NV.stile = ''; } drawNuovo(); show('#nuovo'); }
+function tapNuovo(e) {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'nvInd') { if (NV.passo === 2) { NV.passo = 1; drawNuovo(); return $('#nvClub') && ($('#nvClub').value = NV.club || '', $('#nvSigla').value = NV.sigla || '', $('#nvNome') && ($('#nvNome').value = NV.nome || ''), anteprimaClub()); } return NV.modifica ? panClubMio() : show('#home'); }
+  if (b.id === 'nvDado') { const n = NOMI[(NOMI.indexOf($('#nvClub').value) + 1 + Math.floor(rnd(NOMI.length - 1))) % NOMI.length]; $('#nvClub').value = n; $('#nvSigla').value = sigla(n); return anteprimaClub(); }
+  if (b.dataset.col) { NV.col = +b.dataset.col; return anteprimaClub(); }
+  if (b.dataset.stile !== undefined) { NV.stile = b.dataset.stile; return anteprimaClub(); }
+  if (b.dataset.cap) { NV.cap = b.dataset.cap; return drawNuovo(); }
+  if (b.id !== 'nvAvanti') return;
+  if (NV.passo === 1) {
+    const m = mioDaModulo();
+    if (NV.modifica) { K.mio = { ...K.mio, ...m }; applicaMio(); salvaK(); avviso('Club aggiornato'); return panClubMio(); }
+    Object.assign(NV, { nome: ($('#nvNome').value.trim() || 'Mister').slice(0, 18), club: $('#nvClub').value, sigla: $('#nvSigla').value, mio: m, passo: 2 }); return drawNuovo();
+  }
+  const [da, i] = NV.cap.split(':');
+  CAR.applica(null, CLUBS); K = CAR.nuova(CLUBS, NV.nome, POSTO, Math.random, NV.mio); CAR.applica(K, CLUBS); CAR.scegliCapitano(K, CLUBS, da, +i); applicaMio(); salvaK();
+  avviso(`Benvenuto, ${K.nome}: ${K.mio.capitano} è il tuo capitano`); casa();
+}
+
+/* --- la dashboard */
 function drawHub() {
-  const me = club(K.club), p = CAR.prossima(K), cp = CAR.coppaProssima(K), k = K.coppa, tab = CAR.classifica(K, CLUBS), pos = tab.findIndex((r) => r.id === K.club);
-  $('#hMon').textContent = `● ${mon(K.monete)}`; $('#hNome').textContent = K.nome; $('#hClub').innerHTML = `${esc(me.name)} ${stelle(me.str)}`; $('#hStemma').src = img(me.id + '-mini');
-  const avv = (c, righe) => `<div class="avv"><img src="${img(c.id)}" alt=""><div><b>${esc(c.name)}</b>${righe}</div></div>`;
-  $('#cCamp').innerHTML = `<span class="et">${p ? 'Gioca adesso' : 'Stagione finita'}</span><h3>Campionato</h3>`
-    + (p ? avv(club(p.avv), `${stelle(club(p.avv).str)}<i>Giornata ${p.giornata} di ${p.totale} · ${p.inCasa ? 'in casa' : 'in trasferta'}</i>`) : avv(club(K.campione), `<i>Campione · tu ${pos + 1}º</i><i class="vai">Tocca per la nuova stagione</i>`));
+  const me = club(K.club), p = CAR.prossima(K), tab = CAR.classifica(K, CLUBS), pos = tab.findIndex((r) => r.id === K.club), oggi = new Date(), st = CAR.statoSfide(K, oggi);
+  const kit = maglia(me.c1, me.c2, me.st);
+  $('#hGem').innerHTML = `<i>◆</i>${mon(K.gemme)}`; $('#hMon').innerHTML = `<i>●</i>${mon(K.monete)}`; $('#hNome').textContent = K.nome; $('#hClub').innerHTML = `${esc(me.name)} ${stelle(me.str)}`; $('#hStemma').src = img(me.id + '-mini');
+  $('#hSettT').textContent = fmtTempo(CAR.fineSettimana(oggi) - oggi); $('#hSettP').textContent = `${st.conti.w[0]}/${st.conti.w[1]}`;
+  $('#hPremiN').textContent = st.daRiscuotere || ''; $('#hPremi').classList.toggle('pieno', st.daRiscuotere > 0);
+  const avv = (id, righe) => `<div class="avv"><img src="${img(id)}" alt=""><div><b>${esc(club(id).name)}</b>${righe}</div></div>`;
+  $('#cCamp').innerHTML = `<div class="tt gioca"><span>${p ? 'Gioca adesso' : 'Stagione finita'}</span><h3>Campionato</h3></div><div class="corpo">`
+    + (p ? avv(p.avv, `${stelle(club(p.avv).str)}<i>Partita ${p.giornata} di ${p.totale} · ${p.inCasa ? 'in casa' : 'in trasferta'}</i>`) : avv(K.campione, `<i>Campione · tu ${pos + 1}º</i><i class="vai">Tocca per la nuova stagione</i>`)) + kit + '</div>';
   const da = clamp(pos - 2, 0, tab.length - 5);
-  $('#cClass').innerHTML = `<span class="et">Classifica</span><table class="mini"><tr><th></th><th></th><th>G</th><th>DR</th><th>PT</th></tr>${tab.slice(da, da + 5).map((r, i) => `<tr class="${r.id === K.club ? 'io' : ''}"><td>${da + i + 1}</td><td>${mini(r.id)}${esc(club(r.id).name)}</td><td>${r.g}</td><td>${r.gf - r.gs}</td><td>${r.pt}</td></tr>`).join('')}</table>`;
-  $('#cCoppa').innerHTML = `<span class="et">${cp ? 'Prossima partita' : k.vinta ? 'Vinta!' : 'Coppa finita'}</span><h3>Coppa Titano</h3>`
-    + (cp ? avv(club(cp.avv), `${stelle(club(cp.avv).str)}<i>${cp.nome}</i>`) : avv(club(k.campione), `<i>${k.vinta ? 'La coppa è tua' : `Vince la coppa · tu fuori: ${CAR.TURNI[k.fuori].toLowerCase()}`}</i>`));
+  $('#cClass').innerHTML = `<div class="tt"><h3>Campionato · stagione ${K.stagione}</h3><em>»</em></div><div class="corpo"><table class="mini"><tr><th>G</th><th></th><th>Squadra</th><th>DR</th><th>PUN</th></tr>${tab.slice(da, da + 5).map((r, i) => `<tr class="${r.id === K.club ? 'io' : ''}"><td>${r.g || '–'}</td><td>${da + i + 1}</td><td>${mini(r.id)}${esc(club(r.id).name)}</td><td>${r.gf - r.gs}</td><td>${r.pt}</td></tr>`).join('')}</table><img class="logo" src="img/corona-lime.png" alt=""></div>`;
+  const cupCard = (titolo, icona, pr, fineF) => { const fine = pr ? null : fineF(); return `<div class="tt"><h3>${titolo}</h3><em>»</em></div><div class="corpo"><div><span class="pp">${pr ? 'Prossima partita' : fine.titolo}</span>${pr ? avv(pr.avv, `${stelle(club(pr.avv).str)}<i>${pr.nome}</i>`) : avv(fine.id, `<i>${fine.testo}</i>`)}</div>${icona}</div>`; }; // la fine si calcola solo quando c'è
+  const kc = K.castelli, cc = CAR.castelliProssima(K), camC = CAR.castelliCampione(K);
+  $('#cCast').innerHTML = cupCard('Trofeo dei Castelli', TORRI, cc, () => ({ titolo: kc.vinta ? 'Vinto!' : 'Trofeo finito', id: camC || K.club, testo: kc.vinta ? 'Il trofeo è tuo' : `Lo vince ${esc(club(camC).name)} · tu fuori ${kc.fuori === 'gironi' ? 'ai gironi' : CAR.TURNI_KO[kc.fuori].toLowerCase()}` }));
+  const k = K.coppa, cp = CAR.coppaProssima(K);
+  $('#cCoppa').innerHTML = cupCard('Coppa Titano', COPPA, cp, () => ({ titolo: k.vinta ? 'Vinta!' : 'Coppa finita', id: k.campione || K.club, testo: k.vinta ? 'La coppa è tua' : `La vince ${esc(club(k.campione).name)} · tu fuori: ${CAR.TURNI[k.fuori].toLowerCase()}` }));
+  $('#tSfide').innerHTML = `<h4>Sfide</h4><div class="conti">${Object.entries({ d: 'Oggi', w: 'Sett.', c: 'Carriera', s: 'Stagione' }).map(([g, n]) => `<span><i>${n}</i><b>${st.conti[g][0]}/${st.conti[g][1]}</b></span>`).join('')}</div>${st.daRiscuotere ? `<em class="bollo">${st.daRiscuotere}</em>` : ''}`;
+  const cap = me.xi.find((x) => K.mio && x[0] === K.mio.capitano) || me.xi.slice().sort((a, b) => ovr(b[1], b[3]) - ovr(a[1], a[3]))[0];
+  $('#tRosa').innerHTML = `<h4>Squadra</h4><span class="sx">${K.mio && cap[0] === K.mio.capitano ? 'Capitano' : 'Il migliore'}</span><b class="big">${esc(cap[0])}</b><span class="rr">${RUOLO[cap[1]]} · ${ovr(cap[1], cap[3])}</span>`;
+  const t = consigliato(); $('#tMerc').innerHTML = `<h4>Trasferimenti</h4><p>Rinforza la squadra: scambia i tuoi giocatori con quelli delle altre.</p>${t ? `<div class="mcard"><em>${t.v}</em>${mini(t.c.id)}<b>${esc(t.x[0])}</b><u>${RUOLO[t.x[1]]}</u></div>` : ''}`;
+  $('#tClub').innerHTML = `<h4>Il mio club</h4><button data-club="stadio">Stadio · ${K.stadio}</button><button data-club="personalizza">Stemma</button><button data-club="allenamento">Allena</button><button data-club="amichevole">Amichevole</button>`;
+  aggiornaCloud();
+}
+// Il giocatore più forte che si può prendere adesso al posto del più debole del suo ruolo (o, se non basta niente, il più vicino)
+function consigliato() {
+  const me = club(K.club), debole = {}; for (const x of me.xi) { const v = ovr(x[1], x[3]); if (!debole[x[1]] || v < debole[x[1]]) debole[x[1]] = v; }
+  const tutti = []; for (const c of CLUBS) if (c.id !== K.club) c.xi.forEach((x, i) => { const v = ovr(x[1], x[3]); if (v > debole[x[1]]) tutti.push({ c, x, i, v, costo: CAR.costoScambio(v, debole[x[1]]) }); });
+  return tutti.filter((t) => t.costo <= K.monete).sort((a, b) => b.v - a.v)[0] || tutti.sort((a, b) => a.costo - b.costo)[0] || null;
 }
 function pan(titolo, html) { $('#panT').textContent = titolo; $('#panC').innerHTML = html; show('#pan'); }
 const riga = (a, b, r, rg) => `<div class="${a === K.club || b === K.club ? 'io' : ''}"><span>${esc(club(a).name)} – ${esc(club(b).name)}</span><b>${r[0]}-${r[1]}${rg ? ` (${rg[0]}-${rg[1]} rig.)` : ''}</b></div>`;
+const tabella = (tab, corta) => `<table class="tab"><tr><th></th><th>Squadra</th><th>G</th>${corta ? '' : '<th>V</th><th>N</th><th>P</th>'}<th>GF</th><th>GS</th><th>DR</th><th>PT</th></tr>${tab.map((r, i) => `<tr class="${r.id === K.club ? 'io' : ''}"><td>${i + 1}</td><td>${mini(r.id)}${esc(club(r.id).name)}</td><td>${r.g}</td>${corta ? '' : `<td>${r.v}</td><td>${r.n}</td><td>${r.p}</td>`}<td>${r.gf}</td><td>${r.gs}</td><td>${r.gf - r.gs}</td><td>${r.pt}</td></tr>`).join('')}</table>`;
 function panClassifica() {
-  const tab = CAR.classifica(K, CLUBS), g = K.giornata - 1;
-  pan(`Campionato · stagione ${K.stagione}`, `<table class="tab"><tr><th></th><th>Squadra</th><th>G</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th><th>PT</th></tr>${tab.map((r, i) => `<tr class="${r.id === K.club ? 'io' : ''}"><td>${i + 1}</td><td>${mini(r.id)}${esc(club(r.id).name)}</td><td>${r.g}</td><td>${r.v}</td><td>${r.n}</td><td>${r.p}</td><td>${r.gf}</td><td>${r.gs}</td><td>${r.gf - r.gs}</td><td>${r.pt}</td></tr>`).join('')}</table>`
-    + (g >= 0 ? `<div class="sez">Giornata ${g + 1}</div><div class="ris2">${K.cal[g].map(([a, b], i) => riga(a, b, K.ris[g][i])).join('')}</div>` : ''));
+  const g = K.giornata - 1;
+  pan(`Campionato · stagione ${K.stagione}`, tabella(CAR.classifica(K, CLUBS)) + (g >= 0 ? `<div class="sez">Giornata ${g + 1}</div><div class="ris2">${K.cal[g].map(([a, b], i) => riga(a, b, K.ris[g][i])).join('')}</div>` : ''));
 }
+function gioca(tipo, avv, titolo, fuori, rigori) { sel.mia = K.club; sel.loro = avv; G.comp = { tipo, titolo, fuori: !!fuori, rigori: !!rigori }; showPre(); }
+// Come nelle schermate dei tornei: prima il quadro, e in cima il tasto per giocare la prossima partita
+function giocaCoppa() { const p = CAR.coppaProssima(K); if (p) gioca('coppa', p.avv, `Coppa Titano · ${p.nome.toLowerCase()}`, false, true); }
+function giocaCastelli() { const p = CAR.castelliProssima(K); if (p) gioca('castelli', p.avv, `Trofeo dei Castelli · ${p.nome.toLowerCase()}`, p.fase === 'gironi' && !p.inCasa, p.fase === 'ko'); }
+const tastoGioca = (p, az) => (p ? `<button class="btn gioca2" data-az="${az}">Gioca · ${esc(p.nome)} contro ${esc(club(p.avv).name)}</button>` : '');
 function panCoppa() {
   const k = K.coppa;
-  pan('Coppa Titano', k.storia.map((t, i) => `<div class="sez">${CAR.TURNI[i]}</div><div class="ris2">${t.map((m) => riga(m.a, m.b, m.r, m.rg)).join('')}</div>`).join('') || '<p class="vuoto">La coppa comincia dagli ottavi di finale: sedici squadre, partita secca, rigori in caso di parità.</p>');
+  pan('Coppa Titano', tastoGioca(CAR.coppaProssima(K), 'giocaCoppa') + k.storia.map((t, i) => `<div class="sez">${CAR.TURNI[i]}</div><div class="ris2">${t.map((m) => riga(m.a, m.b, m.r, m.rg)).join('')}</div>`).join('') || '<p class="vuoto">La coppa comincia dagli ottavi di finale: sedici squadre, partita secca, rigori in caso di parità.</p>');
 }
-function panClub() {
-  const st = K.stat, top = CAR.capocannoniere(K), me = club(K.club), d = (v, e) => `<div><b>${v}</b><span>${e}</span></div>`;
-  pan(me.name, `<div class="dati">${d(K.stagione, 'Stagione')}${d(st.g, 'Partite')}${d(`${st.v}-${st.n}-${st.p}`, 'Vinte-pari-perse')}${d(`${st.gf}-${st.gs}`, 'Gol fatti-subiti')}</div>`
+function panCastelli() {
+  const k = K.castelli, mio = CAR.castelliGirone(K);
+  pan('Trofeo dei Castelli', tastoGioca(CAR.castelliProssima(K), 'giocaCastelli') + `<p class="nota2">Quattro gironi da quattro, tre giornate: le prime due vanno ai quarti, poi semifinale e finale con i rigori in caso di parità.</p><div class="gironi">${k.gironi.map((g, gi) => `<div class="${gi === mio ? 'mio' : ''}"><div class="sez">Girone ${'ABCD'[gi]}</div>${tabella(CAR.castelliTabella(K, gi), true)}</div>`).join('')}</div>`
+    + (k.ko ? k.ko.storia.map((t, i) => `<div class="sez">${CAR.TURNI_KO[i]}</div><div class="ris2">${t.map((m) => riga(m.a, m.b, m.r, m.rg)).join('')}</div>`).join('') : ''));
+}
+let sTab = 'd';
+function panSfide(tab) {
+  if (tab) sTab = tab;
+  const st = CAR.statoSfide(K), premio = (x) => [x.monete ? `● ${mon(x.monete)}` : '', x.gemme ? `◆ ${x.gemme}` : ''].filter(Boolean).join(' ');
+  const fine = (x, id) => (x.preso ? '<span class="fatto">✓</span>' : x.fatto ? `<button data-riscuoti="${sTab}:${id}">Riscuoti</button>` : '<span></span>');
+  const righe = st[sTab].map((x) => `<div class="sfida${x.fatto ? ' ok' : ''}"><div><b>${x.t}</b><span class="barra"><i style="width:${(x.prog / x.n) * 100}%"></i></span></div><em>${x.prog}/${x.n}</em><u>${premio(x)}</u>${fine(x, x.id)}</div>`).join('');
+  const b = st.bonus[sTab], bonus = b ? `<div class="sfida bonus${b.fatto ? ' ok' : ''}"><div><b>Tutte fatte</b></div><em></em><u>${premio(b)}</u>${fine(b, 'tutte')}</div>` : '';
+  const quando = sTab === 'd' ? 'Ripartono a mezzanotte' : sTab === 'w' ? `Ripartono tra ${fmtTempo(CAR.fineSettimana(new Date()) - new Date())}` : sTab === 's' ? `Valgono per la stagione ${K.stagione}` : 'Si fanno una volta sola';
+  pan('Sfide', `<div class="seg">${Object.entries(CAR.GRUPPI).map(([g, n]) => `<button data-stab="${g}" class="${g === sTab ? 'on' : ''}">${n} ${st.conti[g][0]}/${st.conti[g][1]}</button>`).join('')}${st.daRiscuotere ? '<button data-az="tutto" class="oro">Riscuoti tutto</button>' : ''}</div><p class="nota2">${quando}</p>${righe}${bonus}`);
+}
+function riscuotiTutto() { const r = CAR.riscuotiTutto(K); if (!r.n) return avviso('Niente da riscuotere: completa le sfide'); salvaK(); avviso(`Premi riscossi: ${[r.monete ? `+${mon(r.monete)} monete` : '', r.gemme ? `+${r.gemme} gemme` : ''].filter(Boolean).join(', ')}`); }
+let cTab = 'stadio';
+function panClubMio(tab, msg) {
+  if (tab) cTab = tab;
+  const me = club(K.club), s = CAR.STADIO[K.stadio - 1], prox = CAR.STADIO[K.stadio], borsa = `<div class="borsa">● <b>${mon(K.monete)}</b> ◆ <b>${K.gemme}</b></div>`;
+  const tabs = `<div class="seg">${[['stadio', 'Stadio'], ['allenamento', 'Allenamento']].map(([k, n]) => `<button data-ctab="${k}" class="${k === cTab ? 'on' : ''}">${n}</button>`).join('')}<button data-club="personalizza">Personalizza</button><button data-club="amichevole">Amichevole</button></div>`;
+  let corpo;
+  if (cTab === 'stadio') {
+    corpo = `<div class="stadio"><div class="liv">${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= K.stadio ? 'on' : ''}"></i>`).join('')}</div><b>Livello ${K.stadio} di 5 · ${mon(s.posti)} posti</b><span>+${mon(s.bonus)} monete a ogni partita in casa</span>`
+      + (prox ? `<button data-az="stadio" class="${K.monete < prox.monete || K.gemme < prox.gemme ? 'no' : ''}">Amplia a ${mon(prox.posti)} posti (+${mon(prox.bonus)} a partita) · ● ${mon(prox.monete)}${prox.gemme ? ` ◆ ${prox.gemme}` : ''}</button>` : '<em>Lo stadio è al massimo</em>') + '</div>';
+  } else {
+    const riga2 = (x, dove, i) => { const n = (K.allen || {})[x[0]] || 0, c = CAR.costoAllenamento(K, x[0]), max = n >= CAR.ALLENA.max; return `<button class="gioc" data-allena="${dove}:${i}" ${max || c > K.monete ? 'disabled' : ''}><b>${x[2]} ${esc(x[0])}</b><span>${RUOLO[x[1]]} · sedute ${n}/${CAR.ALLENA.max}</span><em>${ovr(x[1], x[3])}</em><u>${max ? 'al massimo' : `● ${mon(c)}`}</u></button>`; };
+    corpo = `<p class="nota2">Ogni seduta alza di un punto la quotazione del giocatore (fino a ${CAR.ALLENA.max} sedute a testa).</p><div class="lista">${me.xi.map((x, i) => riga2(x, 'xi', i)).join('')}${(me.pan || []).map((x, i) => riga2(x, 'pan', i)).join('')}</div>`;
+  }
+  pan(me.name, `${borsa}${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}`);
+}
+function panInfo() {
+  pan('Come si gioca', `<div class="info"><div><div class="sez">In campo</div><p>Levetta a sinistra per muovere il giocatore. <b>Passa</b>, <b>Tira</b> (tieni premuto per la potenza), <b>Cross</b> e <b>Scatto</b>. Senza palla: <b>Cambia</b> giocatore e <b>Scivolata</b> (da dietro è fallo). La scritta sopra la mappa cambia la mentalità; dalla pausa si fanno le sostituzioni.</p>
+    <div class="sez">La carriera</div><p>Campionato a 16 squadre, Coppa Titano a eliminazione diretta e Trofeo dei Castelli a gironi. Le partite danno monete; le sfide danno monete e gemme. Con le monete si fanno scambi al mercato e sedute di allenamento; con monete e gemme si amplia lo stadio, che rende di più a ogni partita in casa.</p></div>
+    <div><div class="sez">Il salvataggio</div><p>La carriera resta su questo dispositivo. Con l'accesso all'account Fantatitano si salva anche sull'account e si ritrova su un altro telefono: dentro l'app è automatico, qui si accede dal profilo in alto a destra.</p>
+    <div class="sez">Tastiera</div><p>Frecce per muoversi, X passa, C cross, Spazio tira, Shift scatto, P pausa.</p></div></div>`);
+}
+function accountHtml() {
+  const a = CLOUD.info(), u = a.utente;
+  if (u) return `<div class="acc"><p>Connesso come <b>${esc(u.nome || u.email)}</b>${u.email && u.nome !== u.email ? ` (${esc(u.email)})` : ''}. La carriera si salva anche sul tuo account.</p><p class="nota2" id="accStato">${testoCloud(a.stato)}</p><div class="seg"><button data-az="salvaora">Salva adesso</button><button data-az="esci">Esci</button></div></div>`;
+  if (a.stato === 'spento') return '<div class="acc"><p>Il salvataggio sull\'account non è raggiungibile adesso: la carriera resta su questo dispositivo. Riprova più tardi.</p></div>';
+  return `<div class="acc"><p>Accedi con l'account Fantatitano per salvare la carriera e ritrovarla su un altro telefono.</p><div class="form"><input id="accEmail" type="email" autocomplete="username" placeholder="Email" enterkeyhint="next"><input id="accPw" type="password" autocomplete="current-password" placeholder="Password" enterkeyhint="go"><button data-az="accedi" class="oro">Accedi</button></div><p class="nota2" id="accErr"></p><p class="nota2">Non hai un account? Crealo nell'app Fantatitano su <b>fantatitano.site</b>, poi torna qui.</p></div>`;
+}
+function panProfilo() {
+  const st = K ? K.stat : null, top = K && CAR.capocannoniere(K), d = (v, e) => `<div><b>${v}</b><span>${e}</span></div>`;
+  pan(K ? K.nome : 'Account', `<div class="sez">Account</div>${accountHtml()}` + (K ? `<div class="sez">${esc(club(K.club).name)}</div><div class="dati">${d(K.stagione, 'Stagione')}${d(st.g, 'Partite')}${d(`${st.v}-${st.n}-${st.p}`, 'Vinte-pari-perse')}${d(`${st.gf}-${st.gs}`, 'Gol fatti-subiti')}</div>`
     + `<div class="sez">Capocannoniere</div><p class="vuoto">${top ? `${esc(top.nome)} · ${top.gol} gol` : 'Ancora nessun gol'}</p>`
     + `<div class="sez">Trofei</div><p class="vuoto">${K.trofei.length ? K.trofei.map((t) => `${t.tipo} (stagione ${t.stagione})`).join(' · ') : 'Ancora nessuno'}</p>`
-    + `<div class="sez">Mercato · ${mon(K.monete)} monete</div><p class="vuoto">${K.movimenti.length ? K.movimenti.slice(0, 6).map((m) => `${esc(m.preso)} per ${esc(m.ceduto)} (${esc(club(m.da).name)})`).join(' · ') : 'Ancora nessuno scambio'}</p>`);
+    + `<div class="sez">Mercato</div><p class="vuoto">${K.movimenti.length ? K.movimenti.slice(0, 6).map((m) => `${esc(m.preso)} per ${esc(m.ceduto)} (${esc(club(m.da).name)})`).join(' · ') : 'Ancora nessuno scambio'}</p>` : ''));
 }
 // Mercato: si sceglie un titolare di un'altra squadra, poi chi cedere in cambio tra i propri dello stesso ruolo
 let mRuolo = 'T', mPreso = null;
@@ -1325,7 +1492,7 @@ function panMercato(msg) {
     const c = club(mPreso[0]), x = c.xi[mPreso[1]], v = val(x);
     return pan('Mercato', `${borsa}<div class="sez">Prendi</div>${scheda(c, x, v, mon(CAR.prezzo(v)))}<div class="sez">Chi cedi in cambio?</div>`
       + me.xi.map((y, j) => { if (y[1] !== x[1]) return ''; const k = CAR.costoScambio(v, val(y)); return scheda(null, y, val(y), k > 0 ? `paghi ${mon(k)}` : k < 0 ? `incassi ${mon(-k)}` : 'alla pari', `data-out="${j}" ${k > K.monete ? 'disabled' : ''}`); }).join('')
-      + (me.xi.every((y) => y[1] !== x[1] || CAR.costoScambio(v, val(y)) > K.monete) ? '<p class="avviso">Non hai abbastanza monete: si guadagnano giocando le partite di campionato e di coppa.</p>' : '')
+      + (me.xi.every((y) => y[1] !== x[1] || CAR.costoScambio(v, val(y)) > K.monete) ? '<p class="avviso">Non hai abbastanza monete: si guadagnano giocando le partite e completando le sfide.</p>' : '')
       + '<div class="seg" style="margin-top:10px"><button data-az="annulla">Annulla</button></div>');
   }
   const tutti = []; for (const c of CLUBS) if (c.id !== K.club) c.xi.forEach((x, i) => { if (mRuolo === 'T' || x[1] === mRuolo) tutti.push({ c, x, i, v: val(x) }); });
@@ -1337,9 +1504,53 @@ let armato = false;
 function panImp() {
   pan('Impostazioni', `<div class="sez">Difficoltà</div><div class="seg">${Object.keys(DIFF).map((d) => `<button data-d="${d}" class="${d === sel.diff ? 'on' : ''}">${d}</button>`).join('')}</div>`
     + `<div class="sez">Audio</div><div class="seg"><button data-az="audio" class="${AU.on ? 'on' : ''}">${AU.on ? 'Acceso' : 'Spento'}</button></div>`
-    + (K ? `<div class="sez">Carriera</div><div class="seg"><button data-az="reset">${armato ? 'Sicuro? Tocca ancora per cancellare tutto' : 'Ricomincia la carriera da capo'}</button></div>` : ''));
+    + `<div class="sez">Account</div>${accountHtml()}`
+    + (K ? `<div class="sez">Carriera</div><div class="seg"><button data-az="reset">${armato ? 'Sicuro? Tocca ancora per cancellare tutto, anche dall\'account' : 'Ricomincia la carriera da capo'}</button></div>` : ''));
 }
-const casa = () => { if (K) { drawHub(); show('#hub'); } else show('#home'); };
+const casa = () => { if (K) { drawHub(); show('#hub'); } else { drawHome(); show('#home'); } };
+function drawHome() { $('#carr').textContent = K ? 'Continua la carriera' : 'Inizia la carriera'; const u = CLOUD.info().utente; $('#hAcc').textContent = u ? `Connesso come ${u.nome || u.email}` : 'Accedi con l\'account Fantatitano'; }
+
+/* --- salvataggio: sempre sul dispositivo, e sull'account se c'è l'accesso */
+let syncT = 0;
+function salvaK() { if (!K) return; CAR.salva(K); clearTimeout(syncT); syncT = setTimeout(sincronizza, 1200); }
+const testoCloud = (s) => ({ salvato: 'Salvata sull\'account', salvo: 'Salvataggio sull\'account…', errore: 'Salvataggio sull\'account non riuscito: si riprova alla prossima partita', pronto: 'Collegato all\'account' }[s] || '');
+function aggiornaCloud() {
+  const a = CLOUD.info(), el = $('#hCloud'); if (el) { el.className = a.utente ? a.stato : 'fuori'; el.title = a.utente ? testoCloud(a.stato) : 'Solo su questo dispositivo: accedi per salvare sull\'account'; }
+  const s = $('#accStato'); if (s) s.textContent = testoCloud(a.stato);
+  if (!$('#home').classList.contains('nas')) drawHome();
+}
+async function sincronizza(forza = false) {
+  if (!K || !CLOUD.info().utente) return;
+  const r = await CLOUD.salva(K, forza);
+  if (r.conflitto) { // un altro dispositivo ha salvato dopo: si sceglie quale tenere
+    const o = await CLOUD.carica().catch(() => null), q = CLOUD.scegli(K, o && o.dati);
+    if (q === 'online') adotta(o.dati, 'Ripresa la copia più avanti dal tuo account'); else if (q === 'chiedi') chiediQuale(o.dati); else await CLOUD.salva(K, true);
+  }
+}
+function adotta(dati, msg) {
+  const nuova = CAR.completa(JSON.parse(JSON.stringify(dati)), CLUBS); if (!nuova) return;
+  CAR.applica(null, CLUBS); K = nuova; CAR.applica(K, CLUBS); applicaMio(); CAR.salva(K); if (msg) avviso(msg);
+  if (!$('#hub').classList.contains('nas') || !$('#home').classList.contains('nas') || !$('#pan').classList.contains('nas')) casa();
+}
+// Dopo l'accesso (o all'avvio con la sessione già aperta): si confronta la copia del telefono con quella dell'account
+async function allAccesso() {
+  let o = null; try { o = await CLOUD.carica(); } catch (e) { return; }
+  const q = CLOUD.scegli(K, o && o.dati);
+  if (q === 'online') adotta(o.dati, 'Carriera ritrovata dal tuo account'); else if (q === 'locale') sincronizza(true); else if (q === 'chiedi') chiediQuale(o.dati);
+}
+function chiediQuale(online) {
+  const desc = (C) => { const c = club(C.club), nome = C.mio && C.mio.nome && C.club === POSTO ? C.mio.nome : c ? c.name : C.club; return `<b>${esc(nome)}</b><span>${esc(C.nome)} · stagione ${C.stagione}, giornata ${C.giornata} · ${C.trofei.length} trofei</span>`; };
+  chiediQuale.online = online;
+  pan('Due carriere', `<p class="nota2">Sul tuo account c'è una carriera diversa da quella di questo telefono. Quale tieni? L'altra viene sostituita.</p><div class="due"><button data-az="tieniOnline">${desc(online)}<em>Quella dell'account</em></button><button data-az="tieniLocale">${desc(K)}<em>Quella di questo telefono</em></button></div>`);
+}
+async function tapAccount(az) {
+  if (az === 'accedi') { const e = $('#accErr'); e.textContent = 'Accesso…'; const r = await CLOUD.accedi($('#accEmail').value, $('#accPw').value); if (!r.ok) { e.textContent = r.errore; return true; } avviso('Accesso fatto'); await allAccesso(); if (!$('#pan').classList.contains('nas') && $('#panT').textContent !== 'Due carriere') casa(); return true; }
+  if (az === 'esci') { await CLOUD.esci(); avviso('Sei uscito: la carriera resta su questo dispositivo'); if (!$('#pan').classList.contains('nas')) panProfilo(); return true; }
+  if (az === 'salvaora') { await sincronizza(); avviso(CLOUD.info().stato === 'salvato' ? 'Salvata sull\'account' : 'Salvataggio non riuscito'); return true; }
+  if (az === 'tieniOnline') { adotta(chiediQuale.online, 'Tenuta la carriera dell\'account'); casa(); return true; }
+  if (az === 'tieniLocale') { await CLOUD.salva(K, true); avviso('Tenuta la carriera di questo telefono'); casa(); return true; }
+  return false;
+}
 // Pulsanti a scelta singola per modulo e mentalità: gli stessi prima della partita e in pausa
 function tactics() {
   const forms = Object.keys(FORMS).map((n) => `<button data-f="${n}" class="${n === sel.form ? 'on' : ''}">${n}</button>`).join('');
@@ -1365,33 +1576,44 @@ function buildMenu() {
   });
   $('#diff').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; sel.diff = b.dataset.d; for (const x of $('#diff').children) x.classList.toggle('on', x === b); save(); });
   const vai = () => { AU.init(); try { screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* dove non si può bloccare ci pensa resize() */ } G.comp = null; sel.mia = sel.loro = null; show('#scelta'); refresh(); };
-  $('#vai').onclick = vai; $('#cAmic').onclick = vai;
+  $('#vai').onclick = vai;
   $('#indietro').onclick = casa;
   $('#inizio').onclick = () => showPre(); $('#preInd').onclick = () => { if (G.comp) casa(); else { show('#scelta'); refresh(); } };
-  // ingresso: nome dell'allenatore e squadra
-  const gn = $('#grigliaN'); gn.innerHTML = g.innerHTML; let mia = null;
-  gn.addEventListener('click', (e) => { const b = e.target.closest('.sq'); if (!b) return; mia = b.dataset.id; for (const el of gn.children) el.classList.toggle('mia', el === b); $('#inizia').disabled = false; });
-  $('#carr').onclick = () => { AU.init(); show('#nuovo'); };
-  $('#nuovoInd').onclick = () => show('#home');
-  $('#inizia').onclick = () => { K = CAR.nuova(CLUBS, $('#nome').value.trim() || 'Mister', mia); CAR.applica(K, CLUBS); CAR.salva(K); casa(); };
-  // dashboard
-  const gioca = (tipo, avv, titolo, fuori) => { sel.mia = K.club; sel.loro = avv; G.comp = { tipo, titolo, fuori: !!fuori, rigori: tipo === 'coppa' }; showPre(); };
-  $('#cCamp').onclick = () => { const p = CAR.prossima(K); if (p) gioca('camp', p.avv, `Campionato · giornata ${p.giornata} di ${p.totale} · ${p.inCasa ? 'in casa' : 'in trasferta'}`, !p.inCasa); else { CAR.nuovaStagione(K, CLUBS); CAR.salva(K); drawHub(); } };
-  $('#cCoppa').onclick = () => { const p = CAR.coppaProssima(K); if (p) gioca('coppa', p.avv, `Coppa Titano · ${p.nome.toLowerCase()}`); else panCoppa(); };
-  $('#cClass').onclick = panClassifica; $('#tClub').onclick = panClub; $('#tMerc').onclick = () => { mPreso = null; panMercato(); }; $('#hImp').onclick = () => { armato = false; panImp(); }; $('#hCoppa').onclick = panCoppa;
+  // ingresso e dashboard
+  $('#nuovo').addEventListener('click', tapNuovo);
+  $('#nuovo').addEventListener('input', (e) => { if (e.target.id === 'nvSigla') e.target.dataset.mano = 1; if (e.target.id === 'nvClub' && !$('#nvSigla').dataset.mano) $('#nvSigla').value = sigla(e.target.value); if (NV.passo === 1) anteprimaClub(); });
+  $('#carr').onclick = () => { AU.init(); if (K) casa(); else apriNuovo(); };
+  $('#hAcc').onclick = () => panProfilo();
+  $('#cCamp').onclick = () => { const p = CAR.prossima(K); if (p) gioca('camp', p.avv, `Campionato · giornata ${p.giornata} di ${p.totale} · ${p.inCasa ? 'in casa' : 'in trasferta'}`, !p.inCasa); else { CAR.nuovaStagione(K, CLUBS); salvaK(); drawHub(); } };
+  $('#cCoppa').onclick = panCoppa; $('#cCast').onclick = panCastelli;
+  $('#cClass').onclick = panClassifica; $('#tMerc').onclick = () => { mPreso = null; panMercato(); }; $('#tSfide').onclick = () => panSfide();
+  $('#hImp').onclick = () => { armato = false; panImp(); }; $('#hInfo').onclick = panInfo; $('#hHome').onclick = () => { drawHome(); show('#home'); }; $('#hProf').onclick = panProfilo;
+  $('#hSett').onclick = () => panSfide('w'); $('#hPremi').onclick = () => { riscuotiTutto(); drawHub(); };
+  const clubAz = (k) => (k === 'personalizza' ? (K.mio && K.club === POSTO ? apriNuovo(true) : avviso('Si personalizza il club creato all\'inizio della carriera')) : k === 'amichevole' ? vai() : panClubMio(k));
+  $('#tClub').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) clubAz(b.dataset.club); });
   $('#campoA').addEventListener('click', tapRosa);
   $('#tRosa').onclick = () => { rXi = rPan = -1; sel.mia = K.club; sel.loro = CLUBS.find((c) => c.id !== K.club).id; G.comp = { tipo: 'rosa' }; showPre(); };
   $('#panInd').onclick = casa; $('#continua').onclick = () => { toMenu(); };
-  $('#panC').addEventListener('click', (e) => {
+  $('#panC').addEventListener('click', async (e) => {
     const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.az && await tapAccount(b.dataset.az)) return;
+    if (b.dataset.stab) return panSfide(b.dataset.stab);
+    if (b.dataset.riscuoti) { const [g, id] = b.dataset.riscuoti.split(':'), r = CAR.riscuoti(K, g, id); if (r.ok) { salvaK(); avviso(`Premio riscosso: ${[r.monete ? `+${mon(r.monete)} monete` : '', r.gemme ? `+${r.gemme} gemme` : ''].filter(Boolean).join(', ')}`); } return panSfide(); }
+    if (b.dataset.az === 'giocaCoppa') return giocaCoppa();
+    if (b.dataset.az === 'giocaCastelli') return giocaCastelli();
+    if (b.dataset.az === 'tutto') { riscuotiTutto(); return panSfide(); }
+    if (b.dataset.ctab) return panClubMio(b.dataset.ctab);
+    if (b.dataset.club) return clubAz(b.dataset.club);
+    if (b.dataset.az === 'stadio') { const r = CAR.miglioraStadio(K); if (r.ok) salvaK(); return panClubMio('stadio', r.ok ? `Stadio ampliato: livello ${r.livello}` : r.motivo === 'massimo' ? 'Lo stadio è già al massimo' : 'Servono più monete o gemme'); }
+    if (b.dataset.allena) { const [dove, i] = b.dataset.allena.split(':'), me = club(K.club), x = (dove === 'pan' ? me.pan : me.xi)[+i], r = CAR.allena(K, CLUBS, dove, +i); if (r.ok) { applicaMio(); salvaK(); } return panClubMio('allenamento', r.ok ? `${esc(x[0])} sale a ${ovr(x[1], x[3] + 1)}` : r.motivo === 'massimo' ? 'Già allenato al massimo' : 'Servono più monete'); }
     if (b.dataset.r) { mRuolo = b.dataset.r; return panMercato(); }
     if (b.dataset.p) { const [id, i] = b.dataset.p.split(':'); mPreso = [id, +i]; return panMercato(); }
     if (b.dataset.az === 'annulla') { mPreso = null; return panMercato(); }
-    if (b.dataset.out) { const x = club(mPreso[0]).xi[mPreso[1]], r = CAR.scambio(K, CLUBS, ovr, mPreso[0], mPreso[1], +b.dataset.out); mPreso = null; if (r.ok) CAR.salva(K); return panMercato(r.ok ? `${esc(x[0])} è tuo${r.costo > 0 ? `: pagato ${mon(r.costo)}` : r.costo < 0 ? `: incassato ${mon(-r.costo)}` : ''}.` : 'Scambio non riuscito.'); }
+    if (b.dataset.out) { const x = club(mPreso[0]).xi[mPreso[1]], r = CAR.scambio(K, CLUBS, ovr, mPreso[0], mPreso[1], +b.dataset.out); mPreso = null; if (r.ok) { applicaMio(); salvaK(); } return panMercato(r.ok ? `${esc(x[0])} è tuo${r.costo > 0 ? `: pagato ${mon(r.costo)}` : r.costo < 0 ? `: incassato ${mon(-r.costo)}` : ''}.` : 'Scambio non riuscito.'); }
     if (b.dataset.d) { sel.diff = b.dataset.d; save(); for (const x of $('#diff').children) x.classList.toggle('on', x.dataset.d === sel.diff); }
     else if (b.dataset.az === 'audio') { AU.init(); AU.toggle(); }
     else if (b.dataset.az !== 'reset') return;
-    else { if (!armato) armato = true; else { armato = false; CAR.cancella(); K = null; CAR.applica(null, CLUBS); return show('#home'); } }
+    else { if (!armato) armato = true; else { armato = false; CAR.cancella(); CLOUD.cancella(); K = null; CAR.applica(null, CLUBS); applicaMio(); drawHome(); return show('#home'); } }
     panImp();
   });
   $('#gioca').onclick = () => startMatch(sel.mia, sel.loro, sel.diff);
@@ -1442,12 +1664,16 @@ function showEnd() {
   const [h, a] = G.teams, w = h.score > a.score, l = h.score < a.score;
   $('#esito').textContent = w ? 'Vittoria!' : l ? 'Sconfitta' : 'Pareggio';
   $('#fH').src = img(h.club.id); $('#fA').src = img(a.club.id); $('#fS').textContent = `${h.score} - ${a.score}`;
-  const c = G.comp, carr = !!(K && c && (c.tipo === 'camp' || c.tipo === 'coppa')); let nota = '';
+  const c = G.comp, carr = !!(K && c && ['camp', 'coppa', 'castelli'].includes(c.tipo)); let nota = '';
   if (carr) { // carriera: si registra il risultato e si simulano le altre partite
     const marc = G.goals.filter((g) => g.t === 0 && !g.name.startsWith('Autogol')).map((g) => g.name);
     if (c.tipo === 'camp') { const r = CAR.giocaCampionato(K, CLUBS, h.score, a.score, marc); G.premio = r ? r.monete : 0; if (r) nota = r.finita ? (r.campione === K.club ? 'Campioni!' : `Stagione finita · ${r.posizione}º posto`) : `Campionato · ora sei ${r.posizione}º`; }
-    else { const r = CAR.giocaCoppa(K, CLUBS, h.score, a.score, marc, Math.random, G.soRes); G.premio = r ? r.monete : 0; if (r) { if (r.rigori) { $('#esito').textContent = r.passa ? 'Avanti ai rigori!' : 'Fuori ai rigori'; $('#fS').textContent = `${h.score} - ${a.score} (${r.rigori[0]}-${r.rigori[1]} rig.)`; } nota = r.vinta ? 'La Coppa Titano è tua!' : r.passa ? `Coppa Titano · ${r.turno.toLowerCase()} superato` : `Coppa Titano · eliminato: ${r.turno.toLowerCase()}`; } }
-    CAR.salva(K); G.comp = null;
+    else {
+      const ko = (r, nome) => { if (r.rigori) { $('#esito').textContent = r.passa ? 'Avanti ai rigori!' : 'Fuori ai rigori'; $('#fS').textContent = `${h.score} - ${a.score} (${r.rigori[0]}-${r.rigori[1]} rig.)`; } return r.vinta ? `${nome}: è tuo!` : r.passa ? `${nome} · ${r.turno.toLowerCase()} superato` : `${nome} · eliminato: ${r.turno.toLowerCase()}`; };
+      if (c.tipo === 'coppa') { const r = CAR.giocaCoppa(K, CLUBS, h.score, a.score, marc, Math.random, G.soRes); G.premio = r ? r.monete : 0; if (r) nota = ko(r, 'Coppa Titano'); }
+      else { const r = CAR.giocaCastelli(K, CLUBS, h.score, a.score, marc, Math.random, G.soRes); G.premio = r ? r.monete : 0; if (r) nota = r.fase === 'gironi' ? `Trofeo dei Castelli · ${r.posizione}º nel girone${r.finiti ? (r.passa ? ': ai quarti!' : ': eliminato') : ''}` : ko(r, 'Trofeo dei Castelli'); }
+    }
+    salvaK(); G.comp = null;
   }
   if (carr && G.premio) nota += ` · +${mon(G.premio)} monete`;
   $('#esitoC').textContent = nota; $('#continua').classList.toggle('nas', !carr); $('#rivincita').classList.toggle('nas', carr); $('#cambia').classList.toggle('nas', carr);
@@ -1491,11 +1717,12 @@ async function boot() {
   const lock = await loadImg('img/corona-lime.png');
   buildStadium(lock); paintBoards(CLUBS[0], CLUBS[1], null);
   buildMenu(); bindInput();
-  Promise.all(CLUBS.map((c) => loadImg(img(c.id + '-mini')).then((i) => { CREST[c.id] = i; }))).then(() => { if (G.teams.length) paintBoards(G.teams[0].club, G.teams[1].club, CREST); });
   K = CAR.carica(); if (K && !club(K.club)) K = null;
-  CAR.applica(K, CLUBS); // le rose cambiate col mercato
+  CAR.applica(K, CLUBS); applicaMio(); // le rose cambiate col mercato e il club dell'utente, prima di caricare gli stemmi
+  Promise.all(CLUBS.map((c) => loadImg(img(c.id + '-mini')).then((i) => { CREST[c.id] = i; }))).then(() => { if (G.teams.length) paintBoards(G.teams[0].club, G.teams[1].club, CREST); });
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
+  CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, drawHub, model: () => MODEL };
+window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();

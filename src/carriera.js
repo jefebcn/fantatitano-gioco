@@ -74,7 +74,8 @@ export function calendario(ids, rnd = Math.random) {
 function nuovaCoppa(ids, rnd) { return { turno: 0, squadre: mescola(ids, rnd), storia: [], fuori: null, vinta: false, campione: null }; }
 // Trofeo dei Castelli: quattro gironi da quattro, tre giornate di sola andata; le prime due di ogni girone vanno ai quarti
 function nuoviCastelli(ids, rnd) { const t = mescola(ids, rnd); return { gironi: [0, 1, 2, 3].map((g) => t.slice(g * 4, g * 4 + 4)), giornata: 0, ris: [], ko: null, fuori: null, vinta: false, campione: null }; }
-const GIRO = [[[0, 1], [2, 3]], [[0, 2], [3, 1]], [[3, 0], [1, 2]]]; // chi gioca con chi nelle tre giornate (indici nel girone; il primo è in casa)
+// Chi gioca con chi nelle tre giornate: indici nel girone, il primo è in casa
+const GIRO = [[[0, 1], [2, 3]], [[0, 2], [3, 1]], [[3, 0], [1, 2]]];
 const idCarriera = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 function nuoveSfide() { return { d: { chiave: '', c: {} }, w: { chiave: '', c: {} }, s: { chiave: 1, c: {} }, presi: {} }; }
 
