@@ -16,6 +16,7 @@ import { creaSpalti } from './grafica/spalti.js';
 import { creaBordoCampo } from './grafica/bordocampo.js';
 import { creaAudio } from './audio.js';
 import { creaPrestazioni } from './prestazioni.js';
+import { creaResa } from './grafica/resa.js';
 
 (() => {
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
@@ -83,7 +84,7 @@ const G = {
 const canvas = $('#c');
 const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 // risoluzione che si adatta ai fotogrammi e indicatore ?debug (src/prestazioni.js)
-const PERF = creaPrestazioni({ renderer, debug: /[?&]debug\b/.test(location.search), livello: () => QUAL.livello });
+const PERF = creaPrestazioni({ renderer, debug: /[?&]debug\b/.test(location.search), livello: () => QUAL.livello + (RESA && RESA.effetti() ? ' · alone' : ''), rinuncia: () => !!RESA && RESA.rinuncia() });
 const scene = new T.Scene();
 scene.background = new T.Color(0x86b9ea);
 scene.fog = new T.Fog(0xa9cdee, 130, 330);
@@ -94,7 +95,7 @@ const sun = new T.DirectionalLight(0xfff4dd, 1.9); sun.position.set(30, 70, 40);
 // Ombre vere del sole: una mappa d'ombra morbida che copre solo la zona inquadrata e la segue (vedi seguiOmbre), così resta
 // nitida e leggera. Sui telefoni deboli si scende a una mappa più piccola, e se i fotogrammi calano si spengono (vedi qualita).
 const OMBRA = { lato: 34, mappa: (navigator.hardwareConcurrency || 4) >= 6 && (window.devicePixelRatio || 1) < 2.5 ? 2048 : 1024 };
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFShadowMap; // in three r18x la PCF usa shadow.radius: ombre morbide senza il vecchio PCFSoft
 sun.castShadow = true; sun.shadow.mapSize.set(OMBRA.mappa, OMBRA.mappa); sun.shadow.bias = -.0006; sun.shadow.normalBias = .03; sun.shadow.radius = 3;
 Object.assign(sun.shadow.camera, { left: -OMBRA.lato, right: OMBRA.lato, top: OMBRA.lato, bottom: -OMBRA.lato, near: 10, far: 160 }); sun.shadow.camera.updateProjectionMatrix();
 const SOLE = new T.Vector3(30, 70, 40);
@@ -118,7 +119,7 @@ async function buildPitch() {
   PORTE = [-1, 1].map((d) => new Porta(T, scene, { d, gx: d * HL, GH, GT }));
   BANDIERINE = new Bandierine(T, scene, { HL, HW });
 }
-let PORTE = [], BANDIERINE = null, FARI = null, CAMPO = null, SFONDO = null, ATMO = null, SPALTI = null, BORDO = null;
+let RESA = null, PORTE = [], BANDIERINE = null, FARI = null, CAMPO = null, SFONDO = null, ATMO = null, SPALTI = null, BORDO = null;
 const PART = new Particelle(T, scene); // ciuffi d'erba e polvere: scivolate, frenate, tiri forti
 
 let boards = [], standMat = null, titoSprite = null;
@@ -1902,7 +1903,7 @@ function draw(dt) {
     if (BANDIERINE && G.ball) BANDIERINE.muovi(dt, [{ x: G.ball.x, z: G.ball.z, vx: G.ball.vx, vz: G.ball.vz, alto: G.ball.y }, ...all().map((p) => ({ x: p.x, z: p.z, vx: p.vx, vz: p.vz, alto: 0 }))]);
     PART.muovi(dt); if (SPALTI) folla(dt); if (BORDO && G.ball) BORDO.muovi(dt, G.ball.x, G.ball.z); rilievoDivise();
   }
-  updateCamera(dt); REGIA.dopo(dt); seguiOmbre(); dettagliFigure(); renderer.render(scene, cam);
+  updateCamera(dt); REGIA.dopo(dt); seguiOmbre(); dettagliFigure(); if (RESA) RESA.disegna(); else renderer.render(scene, cam);
 }
 const REGIA = creaRegia({ scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, ring, arrow, camPos, camLook, boards, img, cdist, lum,
   makeSkinned, pickKits, paintBoards, updateCamera, offsideLine, model: () => MODEL, crest: () => CREST });
@@ -2481,7 +2482,8 @@ async function boot() {
   try { await Promise.race([document.fonts.load('40px Anton'), new Promise((r) => setTimeout(r, 2500))]); } catch (e) { /* si disegna col font di sistema */ }
   const lock = await loadImg('img/corona-lime.png');
   buildStadium(lock); paintBoards(CLUBS[0], CLUBS[1], null);
-  ATMO = creaAtmosfera(T, { scene, hemi, sun, sole: SOLE, fari: FARI, sfondo: SFONDO, campo: CAMPO, tribune: SPALTI.materiali }); ATMO.applica(sel.ora); // giorno o notte, scelto prima della partita
+  RESA = creaResa(T, { renderer, scene, cam, torri: FARI.luci.map((l) => l.pos) }); // riflessi, tonalità e alone (src/grafica/resa.js)
+  ATMO = creaAtmosfera(T, { scene, hemi, sun, sole: SOLE, fari: FARI, sfondo: SFONDO, campo: CAMPO, tribune: SPALTI.materiali, resa: RESA }); ATMO.applica(sel.ora); // giorno o notte, scelto prima della partita
   buildMenu(); bindInput();
   K = CAR.carica(); if (K && !club(K.club)) K = null;
   CAR.applica(K, CLUBS); applicaMio(); // le rose cambiate col mercato e il club dell'utente, prima di caricare gli stemmi
@@ -2489,6 +2491,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, cam, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, cam, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
