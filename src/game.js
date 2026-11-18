@@ -6,9 +6,11 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { creaDivisa, TONI } from './divisa.js';
 import * as CLOUD from './cloud.js';
 import * as CAR from './carriera.js';
+import * as FIS from './fisica/pallone.js';
 
 (() => {
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
+FIS.FIS.g = GRAV; FIS.FIS.r = BR; // la fisica del pallone usa le stesse misure del campo
 const HALF_SECS = 120;
 const DIFF = {
   facile:    { spd: .88, steal: .7,  save: .58, err: 1.7, think: .6, wait: 1.2, slide: 1.5 },
@@ -397,7 +399,7 @@ function newMatch(home, away) {
   G.teams = [mk(home, 1, true, kh, g1), mk(away, -1, false, ka, g2)];
   G.teams[0].opp = G.teams[1]; G.teams[1].opp = G.teams[0];
   if (fuori) { G.teams[0].side = -1; G.teams[1].side = 1; } // in trasferta si comincia attaccando verso sinistra
-  G.ball = { x: 0, y: BR, z: 0, vx: 0, vy: 0, vz: 0, owner: null };
+  G.ball = { x: 0, y: BR, z: 0, vx: 0, vy: 0, vz: 0, c: 0, t: 0, resto: 0, owner: null };
   ballMesh.visible = ballShadow.visible = true;
   G.clock = 0; G.half = 1; G.goals = []; G.cards = []; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penId = -1; G.penWait = 0; G.lastPass = G.shooter = null; G.so = G.soRes = null; $('#hud').classList.remove('rigori'); G.stats = { shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0], fouls: [0, 0], offs: [0, 0], pens: [0, 0], yel: [0, 0], red: [0, 0], crosses: [0, 0], heads: [0, 0], headGoals: [0, 0], corners: [0, 0], adv: [0, 0], inj: [0, 0], subs: [0, 0] }; G.ctrl = null; G.charge = -1;
   paintBoards(home, away, CREST);
@@ -410,7 +412,7 @@ const diffOf = (p) => (p.team.human ? MATE : G.diff);
 const userDrives = (p) => p === G.ctrl && p.team.human && !G.auto;
 
 function kickoff(team) {
-  const b = G.ball; b.x = b.z = 0; b.y = BR; b.vx = b.vy = b.vz = 0; b.owner = null;
+  const b = G.ball; b.x = b.z = 0; b.y = BR; b.vx = b.vy = b.vz = 0; b.c = b.t = 0; b.owner = null;
   for (const t of G.teams) for (const p of t.players) {
     const f = t.form[p.i]; let kx = p.i === 0 ? -46 : Math.min(-1.5, -4 - (8 - f[0]) * .9), kz = f[1];
     if (t !== team && Math.abs(kz) < 10) kx = Math.min(kx, -10.5);
@@ -443,11 +445,22 @@ function gain(p) {
   if (G.state === 'play') { if (lp && lp.team === p.team && lp !== p) { lp.s.pc++; p.by = lp; } else if (!G.ball.owner && lk && lk.team !== p.team && p.i) p.s.int++; }
   const b = G.ball, prev = G.poss; b.owner = p; G.lastTouch = p; G.intended = null; G.poss = p.team; p.shield = .45; p.hold = 0;
   p.thinkT = diffOf(p).think * rnd(.6, 1.3);
+  if (p.i && G.state === 'play') { // stop (anche di petto): la palla si smorza davanti al piede, verso la levetta (o verso la porta per chi gioca da solo)
+    const [jx, jz] = userDrives(p) ? inputWorld() : [0, 0], s = p.team.side;
+    FIS.controlla(b, p, tecnica(p), Math.random, hyp(jx, jz) > .3 ? { x: jx, z: jz } : userDrives(p) ? null : { x: s * (HL - 11) - p.x, z: -p.z * .5 }); // verso il dischetto: dentro al campo anche vicino alla linea di fondo
+  }
   if (p.team.human) { if (p.i !== 0) setCtrl(p); } else if (prev !== p.team || !G.ctrl) setCtrl(nearestTo(G.teams[0], b.x, b.z));
 }
-function kick(p, vx, vy, vz, anim = 'passaggio') {
-  const b = G.ball; b.owner = null; b.x = p.x + Math.sin(p.dir) * .8; b.z = p.z + Math.cos(p.dir) * .8; b.y = BR;
-  b.vx = vx; b.vy = vy; b.vz = vz; p.cool = .45; p.st = 'kick'; p.stT = 0; G.lastTouch = G.lastKicker = p; AU.kick(hyp(vx, vz));
+// Da dove parte il calcio: il pallone è dove l'ha lasciato l'ultimo tocco (non incollato al piede). Se per qualche motivo è
+// troppo lontano (rimesse, palla appena data), lo si mette davanti al piede.
+function piede(p) {
+  const b = G.ball, d = hyp(b.x - p.x, b.z - p.z);
+  if (d <= 1.6 && b.y < 1.2 && !(p.i === 0 && b.owner === p)) return { x: b.x, y: BR, z: b.z };
+  return { x: p.x + Math.sin(p.dir) * .8, y: BR, z: p.z + Math.cos(p.dir) * .8 };
+}
+function kick(p, vx, vy, vz, anim = 'passaggio', c = 0, tp = 0) {
+  const b = G.ball, o = piede(p); b.owner = null; b.x = o.x; b.z = o.z; b.y = BR;
+  b.vx = vx; b.vy = vy; b.vz = vz; b.c = c; b.t = tp; b.resto = 0; p.cool = .45; p.st = 'kick'; p.stT = 0; G.lastTouch = G.lastKicker = p; AU.kick(hyp(vx, vz));
   if (p.i === 0 && p.fx === 'rinvio') { b.y = 2.3; b.vy = Math.max(b.vy, 1.2); } // rinvio con le mani: la palla parte dall'alto
   else azione(p, anim);
   const a = Math.atan2(vx, vz); p.dir = a;
@@ -460,9 +473,8 @@ function markOffside(p) {
 }
 // Dove arriva un pallone alto quando scende ad altezza di testa
 function landing() {
-  const b = G.ball, h = .05, f = Math.exp(-.22 * h); let x = b.x, y = b.y, z = b.z, vx = b.vx, vy = b.vy, vz = b.vz;
-  for (let t = 0; t < 3; t += h) { vy -= GRAV * h; x += vx * h; y += vy * h; z += vz * h; vx *= f; vz *= f; if (vy < 0 && y < 1.95) break; }
-  return [clamp(x, -HL - 2, HL + 2), clamp(z, -HW - 2, HW + 2)];
+  const b = G.ball, a = FIS.atterraggio(b, 1.95, 3) || FIS.atterraggio(b, 1.2, 3), q = a || ((pp) => pp[pp.length - 1])(FIS.percorso(b, 3, .1));
+  return [clamp(q.x, -HL - 2, HL + 2), clamp(q.z, -HW - 2, HW + 2)];
 }
 const airborne = () => { const b = G.ball; return !b.owner && (b.y > 1.2 || b.vy > 4); };
 // Il compagno in area a cui crossare: libero, vicino alla porta, non troppo vicino a chi crossa
@@ -479,8 +491,9 @@ const canCross = (p) => Math.abs(p.z) > AIR.wide && p.x * p.team.side > HL - AIR
 function cross(p, m) {
   const s = p.team.side, e = 1.5 * qf(p) * (userDrives(p) ? .7 : diffOf(p).err);
   const tx = clamp((m.x + m.vx * .5) * s + 1, -HL, HL - 2.5) * s + rnd(-1, 1) * e, tz = m.z + m.vz * .5 + rnd(-1, 1) * e;
-  const dx = tx - p.x, dz = tz - p.z, d = hyp(dx, dz) || 1, T = clamp(d / 18, .75, 1.35), v = d * .22 / (1 - Math.exp(-.22 * T));
-  kick(p, dx / d * v, (1.95 - BR + .5 * GRAV * T * T) / T, dz / d * v, 'tiro');
+  const o = piede(p), d = hyp(tx - o.x, tz - o.z) || 1, T = clamp(d / 18, .75, 1.35);
+  const c = effettoVerso(o, tx, tz, s * HL, 0) * rnd(.4, .7) * (rnd() < .7 ? 1 : -1), v = FIS.mira(o, { x: tx, y: 1.95, z: tz }, T, c, .15); // a rientrare verso la porta, ogni tanto a uscire
+  kick(p, v.vx, v.vy, v.vz, 'tiro', c, .15);
   G.intended = m; m.run = null; p.s.pa++; G.lastPass = p; if (m.x * s > HL - 19) G.stats.crosses[p.team.idx]++; if (p.team.human) setCtrl(m);
 }
 // Colpo di testa: in porta se si è a tiro, via dall'area se si difende, altrimenti di sponda a un compagno
@@ -491,15 +504,15 @@ function header(p) {
   const lp = G.lastPass; G.lastPass = null; p.by = lp && lp.team === t && lp !== p ? lp : null; if (p.by) lp.s.pc++;
   let vx, vy, vz; G.intended = null; G.stats.heads[t.idx]++;
   if (toGoal) {
-    const mk = openness(p) < 1.6 ? 1.6 : 1, tz = sgn(rnd(-1, 1)) * GH * rnd(.3, .95) + rnd(-1, 1) * (1.5 + dG * .16) * D.err * qf(p) * mk, dx = gx - b.x, dz = tz - b.z, d = hyp(dx, dz) || 1, sp = rnd(12, 16) / (mk > 1 ? 1.15 : 1), T = d / sp;
-    vx = dx / d * sp; vz = dz / d * sp; vy = (rnd(.3, 1.7) * (rnd() < .2 * mk ? 2 : 1) - b.y + .5 * GRAV * T * T) / T; // ogni tanto finisce alto
+    const mk = openness(p) < 1.6 ? 1.6 : 1, tz = sgn(rnd(-1, 1)) * GH * rnd(.3, .95) + rnd(-1, 1) * (1.5 + dG * .16) * D.err * qf(p) * mk, d = hyp(gx - b.x, tz - b.z) || 1, sp = rnd(12, 16) / (mk > 1 ? 1.15 : 1), T = d / sp;
+    ({ vx, vy, vz } = FIS.mira(b, { x: gx, y: rnd(.3, 1.7) * (rnd() < .2 * mk ? 2 : 1), z: tz }, T)); // ogni tanto finisce alto
     G.shotId++; G.headId = G.shotId; G.stats.shots[t.idx]++; p.s.sh++; if (p.by) p.by.s.kp++; G.shooter = p;
   } else {
     const m = p.x * s < -HL + 24 ? null : bestPass(p);
     if (m) { const dx = m.x - b.x, dz = m.z - b.z, d = hyp(dx, dz) || 1, sp = clamp(6 + d * .5, 8, 15); vx = dx / d * sp; vz = dz / d * sp; vy = 2.5; G.intended = m; p.s.pa++; G.lastPass = p; }
     else { vx = s * rnd(9, 13); vz = sgn(p.z || rnd(-1, 1)) * rnd(3, 8); vy = rnd(6, 9); } // respinta
   }
-  b.vx = vx; b.vy = vy; b.vz = vz; p.cool = .5; p.dir = Math.atan2(vx, vz); G.lastTouch = G.lastKicker = p; G.poss = t; AU.kick(11); azione(p, 'testa'); markOffside(p);
+  b.vx = vx; b.vy = vy; b.vz = vz; b.c = b.t = 0; p.cool = .5; p.dir = Math.atan2(vx, vz); G.lastTouch = G.lastKicker = p; G.poss = t; AU.kick(11); azione(p, 'testa'); markOffside(p);
 }
 function openness(m) { let d = 99; for (const o of m.team.opp.players) d = Math.min(d, hyp(o.x - m.x, o.z - m.z)); return d; }
 function laneBlocked(p, m) {
@@ -521,14 +534,15 @@ function bestPass(p, ix, iz) {
   return best;
 }
 function pass(p, m) {
-  const d0 = hyp(m.x - p.x, m.z - p.z), lead = .3 + d0 / 70;
+  const d0 = hyp(m.x - p.x, m.z - p.z), vArr = (d) => clamp(8 + d * .2, 8.5, 14); // velocità d'arrivo: passaggi tesi, che non si fermano a metà
+  const lead = FIS.rotolaFino(FIS.rasoterra(d0, vArr(d0), 30), d0).t + .1; // anticipo: quanto ci mette davvero la palla ad arrivare
   let tx = m.x + m.vx * lead, tz = m.z + m.vz * lead;
   if (m.run) { const rx = m.run.x - m.x, rz = m.run.z - m.z, rl = hyp(rx, rz) || 1, k = Math.min(rl, m.maxV * 1.2 * (lead + .35)); tx = m.x + rx / rl * k; tz = m.z + rz / rl * k; }
-  let dx = tx - p.x, dz = tz - p.z; const d = hyp(dx, dz) || 1;
+  const o = piede(p); let dx = tx - o.x, dz = tz - o.z; const d = hyp(dx, dz) || 1;
   { const e = rnd(-1, 1) * .035 * qf(p) * (userDrives(p) ? .6 : diffOf(p).err), c = Math.cos(e), n = Math.sin(e), x = dx * c - dz * n; dz = dx * n + dz * c; dx = x; } // imprecisione
   const lob = d > 20 && laneBlocked(p, m);
-  const sp = lob ? clamp(d * .78, 12, 24) : clamp(9.5 + d * .82, 12, 27);
-  kick(p, dx / d * sp, lob ? clamp(d * .42, 6, 11) : .4, dz / d * sp, lob || d > 26 ? 'tiro' : 'passaggio');
+  if (lob) { const T = clamp(d / 17, .85, 1.7), v = FIS.mira(o, { x: o.x + dx, y: 1, z: o.z + dz }, T, 0, -.35); kick(p, v.vx, v.vy, v.vz, 'tiro', 0, -.35); } // a scavalcare, con un po' di rotazione all'indietro
+  else { const sp = FIS.rasoterra(d, vArr(d), 30); kick(p, dx / d * sp, 0, dz / d * sp, d > 26 ? 'tiro' : 'passaggio'); } // forza dosata: arriva al compagno né troppo piano né troppo forte
   G.intended = m; m.run = null; if (p.team.human) setCtrl(m);
   p.s.pa++; G.lastPass = p;
   // dai e vai: chi ha passato in avanti si butta nello spazio
@@ -541,11 +555,18 @@ function pass(p, m) {
 function shoot(p, tz, pow, err) {
   const s = p.team.side, gx = s * HL, d0 = hyp(gx - p.x, tz - p.z);
   err *= qf(p); tz += rnd(-1, 1) * (.4 + d0 * .04) * err;
-  const dx = gx - p.x, dz = tz - p.z, d = hyp(dx, dz) || 1, sp = 19 + 15 * pow, t = d / sp / .94;
+  const o = piede(p), d = hyp(gx - o.x, tz - o.z) || 1, sp = 19 + 15 * pow, t = d / sp / .94;
   const h = .35 + pow * 1.85 + (pow > .86 ? (pow - .86) * 11 : 0) + rnd(-.25, .25) * err;
-  kick(p, dx / d * sp, clamp((h - BR + .5 * GRAV * t * t) / t, 0, 15), dz / d * sp, 'tiro');
+  const c = pow > .45 ? effettoVerso(o, gx, tz, gx, 0) * Math.min(.65, (pow - .45) * 1.3) : 0, tp = .3 * pow; // caricato: a giro verso il centro della porta e con la palla che scende
+  const v = FIS.mira(o, { x: gx, y: h, z: tz }, t, c, tp);
+  kick(p, v.vx, clamp(v.vy, 0, 15), v.vz, 'tiro', c, tp);
   G.shotId++; G.intended = null; G.lastPass = null; G.shooter = p; if (!G.so) { G.stats.shots[p.team.idx]++; p.s.sh++; if (p.by) p.by.s.kp++; } // i rigori dopo la partita non contano nelle statistiche
   if (G.pen) { G.pen = false; G.penId = G.shotId; }
+}
+// Il segno dell'effetto che fa rientrare la palla verso il punto (cx, cz) mentre va da o a (tx, tz): curva a sinistra di chi calcia è +
+function effettoVerso(o, tx, tz, cx, cz) {
+  const dx = tx - o.x, dz = tz - o.z, l = hyp(dx, dz) || 1, lato = (-dz * (cx - tx) + dx * (cz - tz)) / l;
+  return Math.abs(lato) < .3 ? (rnd() < .5 ? 1 : -1) : sgn(lato);
 }
 function slide(p) { if (p.st !== 'run' || p.stun > 0) return; p.st = 'slide'; p.stT = 0; p.hit = false; azione(p, 'scivolata'); }
 function switchCtrl() { const b = G.ball; const n = nearestTo(G.teams[0], b.x + b.vx * .3, b.z + b.vz * .3, G.ctrl); if (n) setCtrl(n); }
@@ -593,12 +614,10 @@ function homeOf(p) {
 }
 function intercept(p) {
   if (airborne()) return landing();
-  const b = G.ball, k = .85; let px = b.x, pz = b.z;
-  for (let t = .1; t <= 2.2; t += .1) {
-    const e = (1 - Math.exp(-k * t)) / k; px = b.x + b.vx * e; pz = b.z + b.vz * e;
-    if (hyp(px - p.x, pz - p.z) <= p.maxV * 1.15 * t + .6) break;
-  }
-  return [clamp(px, -HL - 2, HL + 2), clamp(pz, -HW - 2, HW + 2)];
+  // il primo punto del percorso previsto (calcolato una volta per fotogramma in step) dove si arriva prima del pallone
+  const b = G.ball, path = G.path || FIS.percorso(b, 2.4, .1); let q = path[path.length - 1];
+  for (const pt of path) if (pt.y < 1.7 && hyp(pt.x - p.x, pt.z - p.z) <= p.maxV * 1.15 * pt.t + .6) { q = pt; break; }
+  return [clamp(q.x, -HL - 2, HL + 2), clamp(q.z, -HW - 2, HW + 2)];
 }
 function roles() {
   const b = G.ball, bx = b.x + b.vx * .3, bz = b.z + b.vz * .3;
@@ -745,9 +764,9 @@ function gkThink(p, dt) {
   }
   const toward = b.vx * -s;
   if (!own && toward > 8) {
-    const tt = (p.x - b.x) / b.vx;
+    const a = FIS.attraversa(b, p.x, 1.6), tt = a ? a.t : -1;
     if (tt > 0 && tt < 1.6) {
-      const zp = b.z + b.vz * tt;
+      const zp = a.z;
       if (Math.abs(zp) < GH + 2.5) {
         p.tx = p.x; p.tz = clamp(zp, -GH - .6, GH + .6); p.sprint = true;
         if (tt < .42 && Math.abs(zp - p.z) > 1.1 && p.st === 'run') { p.st = 'dive'; p.stT = 0; p.diveS = sgn(zp - p.z); p.diveV = clamp(Math.abs(zp - p.z) / .38, 4, 9.5); azione(p, -p.diveS * Math.sin(p.dir) > 0 ? 'tuffoS' : 'tuffoD'); }
@@ -811,7 +830,7 @@ function step(dt) {
     if (G.state !== 'play' || b.owner !== k) G.penWait = 0;
     else if (G.penWait <= 0) { G.charge = -1; shoot(k, sgn(rnd(-1, 1)) * GH * .7, .7, 1); }
   }
-  roles(); runs(dt); G.land = airborne() ? landing() : null;
+  roles(); runs(dt); G.land = airborne() ? landing() : null; G.path = G.ball && !G.ball.owner ? FIS.percorso(G.ball, 2.4, .1) : null;
   const ps = all();
   for (const p of ps) {
     p.cool -= dt; p.stun -= dt; p.shield -= dt; p.slideCd -= dt; p.jock = false;
@@ -841,13 +860,18 @@ function movePlayer(p, dt) {
   const b = G.ball; p.stT += dt;
   if (p.st === 'kick' && p.stT > .32) p.st = 'run';
   if (p.st === 'slide') { const k = Math.max(0, 1 - p.stT / .55) * 11.5; p.vx = Math.sin(p.dir) * k; p.vz = Math.cos(p.dir) * k; if (p.stT > .55) { p.st = 'down'; p.stT = 0; } }
-  else if (p.st === 'dive') { const k = Math.max(0, 1 - p.stT / .5) * (p.diveV || 8); p.vx *= .8; p.vz = p.diveS * k; if (p.stT > .5) { p.st = 'down'; p.stT = 0; } }
-  else if (p.st === 'down') { p.vx *= .7; p.vz *= .7; if (p.stT > (p.i === 0 ? DOWN.gk : DOWN.pl)) { p.st = 'run'; p.stT = 0; } }
+  else if (p.st === 'dive') { const k = Math.max(0, 1 - p.stT / .5) * (p.diveV || 8); p.vx *= Math.pow(.8, dt * 60); p.vz = p.diveS * k; if (p.stT > .5) { p.st = 'down'; p.stT = 0; } }
+  else if (p.st === 'down') { const f = Math.pow(.7, dt * 60); p.vx *= f; p.vz *= f; if (p.stT > (p.i === 0 ? DOWN.gk : DOWN.pl)) { p.st = 'run'; p.stT = 0; } }
   else {
     const run = p.sprint && hyp(p.vx, p.vz) > 5; p.en = clamp(p.en + (run ? -TIRE.use : TIRE.rest) * dt, 0, 1); // fatica: lo scatto consuma
-    let sp = p.maxV * (p.team.human ? 1 : G.diff.spd) * (p.sprint ? 1 + .27 * (.3 + .7 * p.en) : 1) * (.95 + .05 * p.en) * (b.owner === p ? .93 : 1) * (p.stun > 0 ? (p.fallen ? 0 : .25) : 1) * (p.jock ? .85 : 1) * (p.inj ? FOUL.limp : 1); if (p.fallen && p.stun <= 0) p.fallen = false;
+    let sp = p.maxV * (p.team.human ? 1 : G.diff.spd) * (p.sprint ? 1 + .27 * (.3 + .7 * p.en) : 1) * (.95 + .05 * p.en) * (b.owner === p ? .97 : 1) * (p.stun > 0 ? (p.fallen ? 0 : .25) : 1) * (p.jock ? .85 : 1) * (p.inj ? FOUL.limp : 1); if (p.fallen && p.stun <= 0) p.fallen = false;
     if (G.state === 'goal' && !p.sprint) sp *= .5;
-    const dx = p.tx - p.x, dz = p.tz - p.z, d = hyp(dx, dz); let wx = 0, wz = 0;
+    let gx = p.tx, gz = p.tz;
+    if (b.owner === p && p.i && G.state === 'play') { // conduzione: se la palla non è sulla strada verso dove vuole andare, prima ci va sopra
+      const bx = b.x - p.x, bz = b.z - p.z, bd = hyp(bx, bz), wx0 = gx - p.x, wz0 = gz - p.z, wd = hyp(wx0, wz0);
+      if (bd > .6 && wd > .3 && (bx * wx0 + bz * wz0) / (bd * wd) < .88) { gx = b.x + wx0 / wd * .3; gz = b.z + wz0 / wd * .3; sp *= 1.12; } // e allunga il passo per riprenderla
+    }
+    const dx = gx - p.x, dz = gz - p.z, d = hyp(dx, dz); let wx = 0, wz = 0;
     if (d > .2) { const k = Math.min(1, d / 1.3) * sp / d; wx = dx * k; wz = dz * k; }
     const a = Math.min(1, dt * (userDrives(p) ? 11 : 8)); p.vx += (wx - p.vx) * a; p.vz += (wz - p.vz) * a;
     const v = hyp(p.vx, p.vz); let want = p.dir;
@@ -857,17 +881,26 @@ function movePlayer(p, dt) {
   }
   p.x = clamp(p.x + p.vx * dt, -HL - 3.5, HL + 3.5); p.z = clamp(p.z + p.vz * dt, -HW - 3, HW + 3);
 }
+const tecnica = (p) => clamp(.5 + (p.q - 20) / 30, 0, 1);
 function moveBall(dt) {
   const b = G.ball, o = b.owner;
+  if (o && o.i !== 0 && G.state === 'play') { // dribbling: tocchi in avanti, la palla è libera tra un tocco e l'altro
+    const r = FIS.conduci(b, o, dt, tecnica(o), Math.random, { x: o.tx - o.x, z: o.tz - o.z });
+    if (r === 'perso') { b.owner = null; G.lastTouch = o; }
+    else if (r === 'tocco') { // vicino alle linee il tocco si accorcia: la palla resta in campo (si esce solo correndoci sopra)
+      const k = .45, ez = b.z + b.vz * k, ex = b.x + b.vx * k, mz = HW - .8, mx = HL - .8;
+      if (Math.abs(ez) > mz && Math.abs(o.z) < HW) b.vz = (sgn(ez) * mz - b.z) / k;
+      if (Math.abs(ex) > mx && Math.abs(o.x) < HL && Math.abs(b.z) > GH + 2) b.vx = (sgn(ex) * mx - b.x) / k;
+    }
+    FIS.passo(b, dt); return;
+  }
   if (o) {
     const mani = o.i === 0 && o.fig.skinned && G.state === 'play', k = mani ? .42 : .8; // il portiere la tiene in mano
     const tx = o.x + Math.sin(o.dir) * k, tz = o.z + Math.cos(o.dir) * k, a = Math.min(1, dt * 20);
     b.x += (tx - b.x) * a; b.z += (tz - b.z) * a; b.y = mani ? b.y + (1.55 - b.y) * Math.min(1, dt * 12) : BR; b.vx = o.vx; b.vz = o.vz; b.vy = 0; return;
   }
   if (G.state === 'kickoff' || G.state === 'restart') return;
-  b.vy -= GRAV * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt;
-  if (b.y <= BR) { b.y = BR; if (b.vy < -2.5) { b.vy = -b.vy * .52; b.vx *= .82; b.vz *= .82; } else b.vy = 0; }
-  const f = Math.exp(-(b.y <= BR + .02 ? .85 : .22) * dt); b.vx *= f; b.vz *= f;
+  FIS.passo(b, dt); // gravità, aria, effetto, rimbalzi e attrito dell'erba (src/fisica/pallone.js)
   if (G.state !== 'play') { // dentro la rete
     if (Math.abs(b.x) > HL + 1.9) { b.x = sgn(b.x) * (HL + 1.9); b.vx *= -.1; b.vz *= .5; }
     if (Math.abs(b.x) > HL && Math.abs(b.z) > GH - .3) { b.z = sgn(b.z) * (GH - .3); b.vz *= -.1; }
@@ -881,6 +914,7 @@ function contacts(dt) {
     for (const p of all()) {
       if (p.cool > 0 || p.stun > 0 || p.st === 'down' || (G.so && p !== G.so.gk)) continue; // ai rigori il pallone lo può toccare solo il portiere
       const d = hyp(p.x - b.x, p.z - b.z), gk = p.i === 0, inBox = Math.abs(p.x) > HL - 17 && Math.abs(p.z) < 20.5;
+      if (sp > 8 && !gk && p !== G.intended && (p.x - b.x) * b.vx + (p.z - b.z) * b.vz < -.3 * sp) continue; // un pallone veloce che si allontana non lo tocca chi gli sta dietro o di fianco
       const reach = gk && inBox ? (p.st === 'dive' ? 2.0 : 1.3) : (p.st === 'slide' ? 1.3 : 1.05), top = gk && inBox ? 2.7 : 1.55;
       if (d < reach && b.y < top && d < bd) { bd = d; best = p; }
     }
@@ -901,7 +935,7 @@ function contacts(dt) {
       if (rnd() < AIR.behind) { b.vx = -p.team.side * rnd(3, 6); b.vz = sgn(b.z - p.z || rnd(-1, 1)) * rnd(9, 13); } // deviata in angolo
       return;
     }
-    if (sp > 19 && p !== G.intended && !gk) { // deviazione
+    if (p !== G.intended && !gk && sp > 10 && (sp > 19 || rnd() < .25 + (sp - 10) * .06)) { // deviazione: un pallone veloce non diretto a te lo si devia, prenderlo pulito è difficile
       if (G.offs && G.offs.includes(p)) return offside(p);
       const nx = (b.x - p.x) / (bd || 1), nz = (b.z - p.z) / (bd || 1), dot = b.vx * nx + b.vz * nz;
       b.vx = (b.vx - 2 * dot * nx) * .35 + rnd(-1, 1); b.vz = (b.vz - 2 * dot * nz) * .35 + rnd(-1, 1); b.vy = rnd(1, 4); p.cool = .4; G.lastTouch = p; AU.kick(10); return;
@@ -910,7 +944,15 @@ function contacts(dt) {
   }
   // contrasti
   if (own.shield > 0) return;
-  const fx = Math.sin(own.dir), fz = Math.cos(own.dir);
+  const fx = Math.sin(own.dir), fz = Math.cos(own.dir), lontana = hyp(b.x - own.x, b.z - own.z);
+  if (own.i !== 0 && lontana > .95 && b.y < 1) for (const d of own.team.opp.players) { // tra un tocco e l'altro: chi arriva prima sul pallone
+    if (d.stun > 0 || d.st === 'down' || d.cool > 0 || d.st === 'slide') continue;
+    const db = hyp(d.x - b.x, d.z - b.z); if (db > .9 || db > lontana - .15) continue;
+    const forza = userDrives(d) ? 1.3 : (d.team.human ? MATE.steal : G.diff.steal) / 1.25;
+    if (rnd() < .5 * forza) { own.cool = .5; G.lastPass = null; gain(d); d.s.tk++; AU.kick(7); return; } // la prende lui
+    b.owner = null; const k = 4 + rnd(3); b.vx = (b.x - d.x) / (db || 1) * k + rnd(-1.5, 1.5); b.vz = (b.z - d.z) / (db || 1) * k + rnd(-1.5, 1.5); b.vy = rnd(.5); // la tocca via: palla contesa
+    d.cool = .3; own.cool = .3; G.lastTouch = d; G.lastPass = null; G.offs = null; AU.kick(6); return;
+  }
   for (const d of own.team.opp.players) {
     if (d.stun > 0 || d.st === 'down' || d.cool > 0) continue;
     const dist = hyp(d.x - b.x, d.z - b.z), dBody = hyp(d.x - own.x, d.z - own.z);
@@ -953,7 +995,7 @@ function bounds() {
   }
 }
 function restart(team, x, z, label, taker) {
-  const b = G.ball; b.owner = null; b.x = x; b.z = z; b.y = BR; b.vx = b.vy = b.vz = 0; G.charge = -1;
+  const b = G.ball; b.owner = null; b.x = x; b.z = z; b.y = BR; b.vx = b.vy = b.vz = 0; b.c = b.t = 0; G.charge = -1;
   G.fk = null; G.wait = 1.1; G.offs = null; G.noOff = true; G.pen = false; G.penWait = 0; for (const p of all()) p.fkShot = p.cornerKick = false;
   aiSubs();
   G.next = team; G.poss = team; G.intended = null; G.taker = taker || nearestTo(team, x, z);
@@ -1153,7 +1195,7 @@ function draw(dt) {
   if (b) {
     if (!REGIA.figure()) for (const p of all()) pose(p, dt); // durante il replay le figure le mette in posa la regia
     const sp = hyp(b.vx, b.vz);
-    ballMesh.position.set(b.x, b.y, b.z); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; }
+    ballMesh.position.set(b.x, b.y, b.z); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; ballMesh.rotation.y += (b.c || 0) * dt * 25; }
     ballShadow.position.set(b.x, .04, b.z); ballShadow.scale.setScalar(1 + b.y * .18);
     const c = G.ctrl; ring.visible = arrow.visible = !!c && !G.auto && G.state !== 'full';
     if (c) { ring.position.set(c.x, .05, c.z); arrow.position.set(c.x, 3.35 + Math.sin(G.t * 6) * .08, c.z); }
