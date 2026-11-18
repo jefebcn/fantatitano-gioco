@@ -255,8 +255,13 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 #bA{width:72px;height:72px;right:92px;bottom:0;background:var(--viola)}
 #bC{width:64px;height:64px;right:98px;bottom:86px;background:rgba(10,10,12,.7)}
 #bD{width:62px;height:62px;right:12px;bottom:134px;background:#fff;color:var(--ink)}
-#pow{position:absolute;right:6px;bottom:130px;width:74px;height:9px;border-radius:9px;background:rgba(10,10,12,.7);overflow:hidden;opacity:0}
-#pow i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--lime) 70%,#ff4d4d)}
+#forza{position:absolute;transform:translate(-50%,0);width:120px;opacity:0;transition:opacity .12s;text-align:center;pointer-events:none}
+#forza.su{opacity:1}#forza b{display:block;font:900 10px Lato;letter-spacing:.12em;text-transform:uppercase;color:#fff;text-shadow:0 1px 3px #000;margin-bottom:3px}
+#forza div{position:relative;height:10px;border-radius:9px;background:rgba(10,10,12,.72);box-shadow:0 0 0 1.5px rgba(255,255,255,.55);overflow:hidden}
+#forza i{display:block;height:100%;width:0;background:linear-gradient(90deg,#3fd45a,var(--lime) 60%,#ffb300 85%,#ff4d4d)}
+#forza u{position:absolute;top:-2px;bottom:-2px;width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 4px #000}
+#forza[data-tipo=tiro] div::after{content:'';position:absolute;left:86%;top:0;bottom:0;right:0;background:rgba(255,77,77,.28)}
+#forza.troppo b{color:#ff4d4d}
 
 .basso #fine{gap:3px;padding:8px 16px}.basso #fine .esito{font-size:34px}.basso #fine .ris{font-size:42px}.basso #fine .ris img{height:54px}.basso #fine table{margin:2px 0 6px}.basso #fine .tito{position:absolute;right:calc(var(--vw)*5);bottom:0;height:calc(var(--vh)*46)}.basso #stop{gap:7px}.basso #stop .h{font-size:30px}.basso #scelta{padding-top:8px}.basso #scelta h2{font-size:24px;margin:0}.basso #scelta .passo{margin-bottom:6px}.basso .sq{padding:5px 2px 4px}.basso .sq img{height:44px}.basso #barra{flex-direction:row;justify-content:center;margin-top:8px}
 .bassissimo #home{gap:5px;padding:8px 16px}.bassissimo #home .tiles{margin-top:8px}.bassissimo #home .nota{display:none}.bassissimo #home .tile{padding:6px}.bassissimo .btn{padding:10px 24px}.bassissimo #home .sub{margin-bottom:4px}
@@ -280,7 +285,7 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
   <div id="banner"><div class="t"></div><div class="s"></div></div>
   <canvas id="radar" width="256" height="168"></canvas>
   <div id="stickZona"><div id="stick"><i></i></div></div>
-  <div id="pow"><i></i></div>
+  <div id="forza"><b>Tiro</b><div><i></i><u></u></div></div>
   <div id="tasti"><button id="bC">Scatto</button><button id="bD" class="nas">Cross</button><button id="bA">Passa</button><button id="bB">Tira</button></div>
 </div>
 
@@ -340,7 +345,7 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 
 <div id="stop" class="scr nas">
   <div class="h">Pausa</div>
-  <p>Levetta: muovi il giocatore<br><b>Passa</b> · <b>Tira</b> (tieni premuto per la potenza) · <b>Scatto</b><br>
+  <p>Levetta: muovi il giocatore<br><b>Passa</b> · <b>Cross</b> · <b>Tira</b> (tieni premuto: la barra mostra la potenza) · <b>Scatto</b><br>
   <b>Cross</b>: traversone in area, o lancio lungo se in area non c'è nessuno<br>Senza palla: <b>Cambia</b> giocatore · <b>Scivolata</b> (da dietro è fallo)<br>Tastiera: frecce, X passa, C cross, Spazio tira, Shift scatto<br>In campo: tocca la mentalità sopra la mappa per cambiarla</p>
   <div class="tatt"><div class="seg" id="segFormP"></div><div class="seg" id="segMentP"></div></div>
   <button class="btn sec nas" id="apriCambi">Sostituzioni</button>
