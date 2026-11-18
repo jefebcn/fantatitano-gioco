@@ -23,7 +23,7 @@ const MATE = { spd: 1, steal: .95, save: .72, err: 1, think: .4, wait: .9, slide
 // `wait`: secondi in cui chi difende temporeggia prima di andare sul pallone; `slide`: scivolate al secondo quando ce n'è l'occasione
 // Inserimenti senza palla: ogni quanti secondi si valuta, quanti insieme, quanto durano, punteggio minimo per partire, profondità in metri,
 // probabilità del dai e vai dopo un passaggio e di cercare chi si inserisce
-const RUN = { every: 1.2, max: 2, life: 2.8, min: 8.5, depth: 13, oneTwo: .35, thru: .3 };
+const RUN = { every: 1.55, max: 2, life: 2.8, min: 8.5, depth: 13, oneTwo: .35, thru: .3 };
 // Difesa a tre distanze dal portatore: oltre `far` ci si avvicina, fino a `near` si temporeggia, sotto si va sul pallone.
 // `danger` è la distanza dalla propria porta sotto cui non si aspetta più; `slide` l'intervallo utile per la scivolata
 const DEF = { far: 8.5, near: 2.4, hold: 2.3, danger: 24, slide: [1.6, 3.4] };
@@ -36,8 +36,9 @@ const FOUL = { stand: [.08, .3], rate: [.45, 1.2], yellow: [.1, .4], wall: 9.15,
 const VOTE = { g: 1.1, a: .7, kp: .12, sot: .15, tk: .2, int: .08, sv: .4, pass: 1.2, fl: -.15, og: -1, yel: -.4, red: -1.5, clean: .6, concGk: -.35, concD: -.22, win: .25 };
 // Gioco aereo: fin dove si arriva di testa, quanto si deve essere vicini, da dove si crossa (larghezza e profondità),
 // velocità oltre la quale il pallone non si prende di testa (i tiri passano), probabilità che l'IA crossi quando può,
-// distanza massima per tirare di testa, quante respinte del portiere finiscono in angolo
-const AIR = { low: 1.55, top: 2.6, reach: 1.05, fast: 19.5, wide: 13, deep: 24, cross: .5, shot: 15, behind: .55 };
+// distanza massima per tirare di testa, quante respinte del portiere finiscono in angolo, da quanti metri chi attacca va incontro
+// al cross e quanto più lontano arriva staccando in corsa
+const AIR = { low: 1.55, top: 2.6, reach: 1.05, fast: 22.6, wide: 13, deep: 24, cross: .5, shot: 15, behind: .55, attacca: 6, stacco: .1 };
 // Moduli: dove sta ciascuno degli undici e che compito ha (P portiere, D difensore, C centrocampista, A attaccante).
 // Nei dati l'ordine è sempre portiere, quattro difensori, tre centrocampisti, tre attaccanti: cambiando modulo qualcuno cambia compito
 const FORMS = {
@@ -401,7 +402,7 @@ function newMatch(home, away) {
   if (fuori) { G.teams[0].side = -1; G.teams[1].side = 1; } // in trasferta si comincia attaccando verso sinistra
   G.ball = { x: 0, y: BR, z: 0, vx: 0, vy: 0, vz: 0, c: 0, t: 0, resto: 0, owner: null };
   ballMesh.visible = ballShadow.visible = true;
-  G.clock = 0; G.half = 1; G.goals = []; G.cards = []; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penId = -1; G.penWait = 0; G.lastPass = G.shooter = null; G.so = G.soRes = null; $('#hud').classList.remove('rigori'); G.stats = { shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0], fouls: [0, 0], offs: [0, 0], pens: [0, 0], yel: [0, 0], red: [0, 0], crosses: [0, 0], heads: [0, 0], headGoals: [0, 0], corners: [0, 0], adv: [0, 0], inj: [0, 0], subs: [0, 0] }; G.ctrl = null; G.charge = -1;
+  G.clock = 0; G.half = 1; G.goals = []; G.cards = []; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penId = -1; G.penWait = 0; G.lastPass = G.shooter = null; G.so = G.soRes = null; $('#hud').classList.remove('rigori'); G.stats = { recAlti: [0, 0], resp: [0, 0], uscite: [0, 0], shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0], fouls: [0, 0], offs: [0, 0], pens: [0, 0], yel: [0, 0], red: [0, 0], crosses: [0, 0], heads: [0, 0], headGoals: [0, 0], corners: [0, 0], adv: [0, 0], inj: [0, 0], subs: [0, 0] }; G.ctrl = null; G.charge = -1;
   paintBoards(home, away, CREST);
   $('#sbH').src = img(home.id + '-mini'); $('#sbA').src = img(away.id + '-mini'); $('#sbHn').textContent = home.short; $('#sbAn').textContent = away.short;
   hud(); kickoff(G.teams[0]);
@@ -443,7 +444,8 @@ function gain(p) {
   // pagella: passaggio riuscito, oppure pallone intercettato a un avversario
   const lp = G.lastPass, lk = G.lastKicker; G.lastPass = null; p.by = null;
   if (G.state === 'play') { if (lp && lp.team === p.team && lp !== p) { lp.s.pc++; p.by = lp; } else if (!G.ball.owner && lk && lk.team !== p.team && p.i) p.s.int++; }
-  const b = G.ball, prev = G.poss; b.owner = p; G.lastTouch = p; G.intended = null; G.poss = p.team; p.shield = .45; p.hold = 0;
+  // chi recupera palla nella metà avversaria (misura del pressing)
+  const b = G.ball, prev = G.poss; if (prev && prev !== p.team && G.state === 'play') { prev.persaT = G.t; if (p.x * p.team.side > 0) G.stats.recAlti[p.team.idx]++; } b.owner = p; G.lastTouch = p; G.intended = null; G.poss = p.team; p.shield = .45; p.hold = 0;
   p.thinkT = diffOf(p).think * rnd(.6, 1.3);
   if (p.i && G.state === 'play') { // stop (anche di petto): la palla si smorza davanti al piede, verso la levetta (o verso la porta per chi gioca da solo)
     const [jx, jz] = userDrives(p) ? inputWorld() : [0, 0], s = p.team.side;
@@ -460,7 +462,7 @@ function piede(p) {
 }
 function kick(p, vx, vy, vz, anim = 'passaggio', c = 0, tp = 0) {
   const b = G.ball, o = piede(p); b.owner = null; b.x = o.x; b.z = o.z; b.y = BR;
-  b.vx = vx; b.vy = vy; b.vz = vz; b.c = c; b.t = tp; b.resto = 0; p.cool = .45; p.st = 'kick'; p.stT = 0; G.lastTouch = G.lastKicker = p; AU.kick(hyp(vx, vz));
+  b.vx = vx; b.vy = vy; b.vz = vz; b.c = c; b.t = tp; b.resto = 0; G.calcioT = G.t; p.cool = .45; p.st = 'kick'; p.stT = 0; G.lastTouch = G.lastKicker = p; AU.kick(hyp(vx, vz));
   if (p.i === 0 && p.fx === 'rinvio') { b.y = 2.3; b.vy = Math.max(b.vy, 1.2); } // rinvio con le mani: la palla parte dall'alto
   else azione(p, anim);
   const a = Math.atan2(vx, vz); p.dir = a;
@@ -506,13 +508,13 @@ function header(p) {
   if (toGoal) {
     const mk = openness(p) < 1.6 ? 1.6 : 1, tz = sgn(rnd(-1, 1)) * GH * rnd(.3, .95) + rnd(-1, 1) * (1.5 + dG * .16) * D.err * qf(p) * mk, d = hyp(gx - b.x, tz - b.z) || 1, sp = rnd(12, 16) / (mk > 1 ? 1.15 : 1), T = d / sp;
     ({ vx, vy, vz } = FIS.mira(b, { x: gx, y: rnd(.3, 1.7) * (rnd() < .2 * mk ? 2 : 1), z: tz }, T)); // ogni tanto finisce alto
-    G.shotId++; G.headId = G.shotId; G.stats.shots[t.idx]++; p.s.sh++; if (p.by) p.by.s.kp++; G.shooter = p;
+    G.shotId++; G.tiroT = G.t; G.headId = G.shotId; G.stats.shots[t.idx]++; p.s.sh++; if (p.by) p.by.s.kp++; G.shooter = p;
   } else {
     const m = p.x * s < -HL + 24 ? null : bestPass(p);
     if (m) { const dx = m.x - b.x, dz = m.z - b.z, d = hyp(dx, dz) || 1, sp = clamp(6 + d * .5, 8, 15); vx = dx / d * sp; vz = dz / d * sp; vy = 2.5; G.intended = m; p.s.pa++; G.lastPass = p; }
     else { vx = s * rnd(9, 13); vz = sgn(p.z || rnd(-1, 1)) * rnd(3, 8); vy = rnd(6, 9); } // respinta
   }
-  b.vx = vx; b.vy = vy; b.vz = vz; b.c = b.t = 0; p.cool = .5; p.dir = Math.atan2(vx, vz); G.lastTouch = G.lastKicker = p; G.poss = t; AU.kick(11); azione(p, 'testa'); markOffside(p);
+  b.vx = vx; b.vy = vy; b.vz = vz; b.c = b.t = 0; G.calcioT = G.t; p.cool = .5; p.dir = Math.atan2(vx, vz); G.lastTouch = G.lastKicker = p; G.poss = t; AU.kick(11); azione(p, 'testa'); markOffside(p);
 }
 // Passaggi rasoterra: velocità d'arrivo (tesi, che non si fermano a metà) e, per ogni distanza, con che forza partire e quanto
 // ci mettono. La tabella si fa una volta sola con la fisica del pallone: così il punto d'incontro si cerca in fretta.
@@ -598,7 +600,7 @@ function shoot(p, tz, pow, err) {
   const c = pow > .45 ? effettoVerso(o, gx, tz, gx, 0) * Math.min(.65, (pow - .45) * 1.3) : 0, tp = .3 * pow; // caricato: a giro verso il centro della porta e con la palla che scende
   const v = FIS.mira(o, { x: gx, y: h, z: tz }, t, c, tp);
   kick(p, v.vx, clamp(v.vy, 0, 15), v.vz, 'tiro', c, tp);
-  G.shotId++; G.intended = null; G.lastPass = null; G.shooter = p; if (!G.so) { G.stats.shots[p.team.idx]++; p.s.sh++; if (p.by) p.by.s.kp++; } // i rigori dopo la partita non contano nelle statistiche
+  G.shotId++; G.tiroT = G.t; G.intended = null; G.lastPass = null; G.shooter = p; if (!G.so) { G.stats.shots[p.team.idx]++; p.s.sh++; if (p.by) p.by.s.kp++; } // i rigori dopo la partita non contano nelle statistiche
   if (G.pen) { G.pen = false; G.penId = G.shotId; }
 }
 // Il segno dell'effetto che fa rientrare la palla verso il punto (cx, cz) mentre va da o a (tx, tz): curva a sinistra di chi calcia è +
@@ -704,12 +706,28 @@ function userShoot(pow) {
 }
 
 /* ------------------------------------------------------------------ IA */
+/**
+ * Il blocco della squadra t (coordinate nel verso d'attacco di t): dove sta la linea difensiva, quanto è lunga la squadra
+ * dalla difesa all'attacco e quanto è larga. Segue la palla; la mentalità (-1 difensiva, 0 equilibrata, 1 offensiva) alza o
+ * abbassa il baricentro e allunga o accorcia la squadra; in possesso ci si allarga e ci si allunga.
+ */
+function blocco(t) {
+  const s = t.side, bx = clamp(G.ball.x * s, -HL, HL), att = G.poss === t, m = t.ment || 0;
+  const lunga = 30 + m * 4 + (att ? 6 : 0);
+  const linea = att ? clamp(bx * .6 - 24 + m * 6, -38, 6 + m * 8) : clamp(bx * .55 - 31 + m * 7, -40, -12 + m * 9);
+  return { linea, lunga, largo: att ? 1 + m * .06 : .78 };
+}
 function homeOf(p) {
   const t = p.team, s = t.side, b = G.ball, f = t.form[p.i], bx = b.x * s, att = G.poss === t;
   let hx = f[0] + bx * .55 + (att ? 7 + (t.ment < 0 ? -MENT.back : t.ment * MENT.push) : -5 + (p.role === 'A' ? t.ment * MENT.stay : 0)), hz = f[1] * (att ? 1 : .8) + b.z * s * .28;
   if (p.role === 'D') hx = clamp(hx, -42, att ? 12 + t.ment * 8 : 3); // con la mentalità offensiva salgono anche i difensori
   else if (p.role === 'C') hx = clamp(hx, -34, 36 + Math.min(t.ment, 0) * MENT.hold); // con la difensiva i centrocampisti non salgono fino in fondo
   else { if (att) hx = Math.max(hx, Math.min(bx + 13, 43)); hx = clamp(hx, -14, 44); }
+  const B = t.B || blocco(t); // dentro il blocco: difesa sulla linea, gli altri entro la sua lunghezza
+  if (p.role === 'D') hx = B.linea + (f[0] + 33) * .5 + (att && Math.abs(f[1]) > 15 ? 5 + t.ment * 3 : 0); // in possesso i terzini salgono un po'
+  else if (p.role === 'C') hx = clamp(hx, B.linea + 5, B.linea + B.lunga - 5);
+  else hx = clamp(hx, B.linea + 10, B.linea + B.lunga + (att ? 10 : 4));
+  hz *= B.largo;
   hx += Math.sin(G.t * .7 + p.i * 2.1) * 1.6; hz += Math.cos(G.t * .5 + p.i * 1.3) * 1.6;
   return [hx * s, clamp(hz, -HW + 3, HW - 3) * s];
 }
@@ -734,10 +752,10 @@ function roles() {
       const d = hyp(p.x - bx, p.z - bz);
       if (d < ad) { e = c; ed = cd; c = a; cd = ad; a = p; ad = d; } else if (d < cd) { e = c; ed = cd; c = p; cd = d; } else if (d < ed) { e = p; ed = d; }
     }
-    t.chaser = a; t.chaserD = ad; t.cover = c; t.cover2 = t.ment < 0 ? e : null; t.offLine = offsideLine(t); // con la mentalità difensiva copre anche un secondo uomo
+    t.B = blocco(t); possesso(t, b.owner); t.chaser = a; t.chaserD = ad; t.cover = c; t.cover2 = t.ment < 0 ? e : null; t.offLine = offsideLine(t); // con la mentalità difensiva copre anche un secondo uomo
     if (!t.human) { const late = (G.half - 1) * HALF_SECS + G.clock > HALF_SECS * 1.2, d = t.score - t.opp.score; t.ment = late ? (d < 0 ? 1 : d > 0 ? -1 : 0) : 0; } // sotto nel finale attacca, sopra si copre
     // marcature: ogni difensore prende l'avversario più vicino alla sua zona; chi si inserisce allarga la zona e viene seguito anche dai centrocampisti
-    for (const p of t.players) p.mark = null;
+    for (const p of t.players) p.mark = p.linea = null;
     const own = b.owner; if (!own || own.team === t || G.state !== 'play') continue;
     const taken = new Set();
     for (const p of t.players) {
@@ -748,6 +766,15 @@ function roles() {
         const d = hyp(o.x - h[0], o.z - h[1]) - (o.run ? 5 : 0); if (d < md) { md = d; m = o; }
       }
       if (m) { p.mark = m; taken.add(m); }
+    }
+    // linee di passaggio: i due avversari liberi più pericolosi (vicini alla nostra porta) vengono schermati da chi è più vicino
+    // alla linea tra loro e il portatore, tra quelli senza un altro compito
+    const gx = -t.side * HL, pericolosi = t.opp.players.filter((o) => o.i && o !== own && !taken.has(o) && hyp(o.x - own.x, o.z - own.z) > 6)
+      .sort((x, y) => hyp(gx - x.x, x.z) - hyp(gx - y.x, y.z)).slice(0, t.ment < 0 ? 2 : 1 + (t.ment > 0 ? 1 : 0));
+    for (const o of pericolosi) {
+      const mx = own.x + (o.x - own.x) * .42, mz = own.z + (o.z - own.z) * .42; let best = null, bd = 14;
+      for (const p of t.players) { if (p.i === 0 || p === a || p === c || p === t.cover2 || p.mark || p.linea || p.stun > 0 || userDrives(p)) continue; const d = hyp(p.x - mx, p.z - mz); if (d < bd) { bd = d; best = p; } }
+      if (best) best.linea = o;
     }
   }
 }
@@ -767,12 +794,18 @@ function runs(dt) {
   for (const t of G.teams) {
     const has = G.state === 'play' && G.poss === t && (!own || own.team === t); let n = 0;
     for (const p of t.players) { const r = p.run; if (!r) continue; r.t -= dt; if (!has || r.t <= 0 || p.stun > 0 || own === p || userDrives(p)) p.run = null; else n++; }
-    if (!has || !own || own.i === 0) continue;
+    const rif = own || (G.intended && G.intended.team === t && G.lastPass && (G.intended.x - G.lastPass.x) * t.side > 3 ? G.intended : null); // anche mentre un passaggio in avanti è in volo: si parte in anticipo
+    if (!has || !rif || rif.i === 0) continue;
+    const s0 = t.side;
+    if ((t.sovrT || 0) < G.t && Math.abs(rif.z) > 13 && rif.x * s0 > -8) { // sovrapposizione: il terzino di quel lato passa alle spalle dell'esterno e va sul fondo
+      const lato = sgn(rif.z), fb = t.players.find((p) => p.role === 'D' && p.i && !p.run && sgn(p.z) === lato && Math.abs(p.z) > 8 && (rif.x - p.x) * s0 > 1 && (rif.x - p.x) * s0 < 26 && !userDrives(p) && p.stun <= 0);
+      if (fb) { fb.run = { x: clamp(rif.x * s0 + 13, -HL, HL - 5) * s0, z: lato * (HW - 3.5), t: 3.4, g: 1, sovr: true }; G.stats.runs[t.idx]++; t.sovrT = G.t + 9; }
+    }
     t.runT = (t.runT || 0) - dt; if (t.runT > 0 || n >= RUN.max + Math.min(t.ment, 0)) continue; t.runT = RUN.every * rnd(.7, 1.3) * (1 - MENT.runs * t.ment); // con la difensiva un solo inserimento alla volta
     const s = t.side, line = defLine(t); let best = null, bs = RUN.min, bx = 0, bz = 0;
     for (const p of t.players) {
-      if (p.i === 0 || p === own || p.run || p.role === 'D' || p.stun > 0 || userDrives(p)) continue;
-      if (hyp(p.x - own.x, p.z - own.z) > 34 || (p.x - own.x) * s < -8) continue;
+      if (p.i === 0 || p === rif || p.run || p.role === 'D' || p.stun > 0 || userDrives(p)) continue;
+      if (hyp(p.x - rif.x, p.z - rif.z) > 34 || (p.x - rif.x) * s < -8) continue;
       const ax = Math.min(p.x * s + RUN.depth, HL - 6, line + 4); if (ax - p.x * s < 5) continue;
       for (const k of [-1, 0, 1]) { // dritto, taglio dentro, taglio fuori
         const z = clamp(p.z + k * 8, -HW + 3, HW - 3), sc = runScore(p, ax * s, z, line) + rnd(1.5);
@@ -822,21 +855,82 @@ function think(p, dt) {
   if (p.i === 0) return gkThink(p, dt);
   if (own === p) return ownerThink(p, dt);
   if (!own) {
-    if (p === G.intended || p === t.chaser || (G.land && hyp(G.land[0] - p.x, G.land[1] - p.z) < 4.5)) { const [ix, iz] = intercept(p); p.tx = ix; p.tz = iz; p.sprint = true; return; }
+    // sul cross chi attacca va incontro al pallone da più lontano
+    if (p === G.intended || p === t.chaser || (G.land && hyp(G.land[0] - p.x, G.land[1] - p.z) < (G.lastKicker && G.lastKicker.team === t ? AIR.attacca : 4.5))) { const [ix, iz] = intercept(p); p.tx = ix; p.tz = iz; p.sprint = true; return; }
   } else if (own.team !== t) {
-    const gx = -s * HL;
-    if (p === t.chaser && (!t.human || G.auto || t.chaserD < 15)) return chase(p, own, dt);
-    if (p === t.cover) { const dx = gx - own.x, dz = -own.z, d = hyp(dx, dz) || 1, k = Math.min(7, d * .5); p.tx = own.x + dx / d * k; p.tz = own.z + dz / d * k; return; }
+    // NON POSSESSO. Pressing: da dove si va sul portatore lo decide la mentalità (offensiva ovunque e in due, equilibrata
+    // dalla metà campo, difensiva solo vicino alla propria area); più in là il primo uomo lo accompagna a distanza senza buttarsi
+    const gx = -s * HL, bxT = own.x * s, pressa = t.ment > 0 || (t.ment < 0 ? bxT < -10 : bxT < 6);
+    p.stato = 'posizione';
+    if (p === t.chaser && (!t.human || G.auto || t.chaserD < 15)) {
+      if (pressa || t.chaserD < 4) { p.stato = 'pressing'; return chase(p, own, dt); }
+      const dx = gx - own.x, dz = -own.z, d = hyp(dx, dz) || 1; p.tx = own.x + dx / d * 6.5; p.tz = own.z + dz / d * 6.5; p.jock = true; p.stato = 'accompagna'; return;
+    }
+    if (p === t.cover) {
+      if (Math.abs(own.z) > HW - 12 && (pressa || bxT < 0)) { p.tx = own.x + own.vx * .3 - s * 1.6; p.tz = own.z + own.vz * .3 - sgn(own.z) * 1.4; p.sprint = true; p.stato = 'raddoppio'; return; } // sulla fascia: raddoppio, chiudendo il rientro verso il centro
+      const dx = gx - own.x, dz = -own.z, d = hyp(dx, dz) || 1, k = Math.min(t.ment > 0 ? 2.5 : 7, d * .5); p.tx = own.x + dx / d * k; p.tz = own.z + dz / d * k; p.stato = t.ment > 0 ? 'pressing' : 'copertura'; p.sprint = t.ment > 0; return; // con l'offensiva il secondo uomo pressa anche lui
+    }
     if (p === t.cover2) { const dx = gx - own.x, dz = -own.z, d = hyp(dx, dz) || 1, k = Math.min(MENT.cover, d * .7); p.tx = own.x + dx / d * k; p.tz = (own.z + dz / d * k) * .6; return; } // più indietro e più al centro
+    const rientra = G.t - (t.persaT || -9) < 4; // appena persa palla: chi è davanti alla sua posizione rientra di corsa
+    if (p.linea) { const r = p.linea, k = .42; p.tx = own.x + (r.x - own.x) * k; p.tz = own.z + (r.z - own.z) * k; p.stato = 'linea'; p.sprint = rientra; return; } // si mette sulla linea di passaggio verso l'avversario più pericoloso
     const m = p.mark;
-    if (m) { const lead = m.run ? .35 : 0; p.tx = m.x + m.vx * lead + sgn(gx - m.x) * 2.8; p.tz = (m.z + m.vz * lead) * .92; p.sprint = !!m.run; return; }
-    const h = homeOf(p); p.tx = h[0]; p.tz = h[1]; return;
+    if (m) { const lead = m.run ? .35 : 0; p.tx = m.x + m.vx * lead + sgn(gx - m.x) * 2.8; p.tz = (m.z + m.vz * lead) * .92; p.sprint = !!m.run || rientra; p.stato = 'marcatura'; return; }
+    const h = homeOf(p); p.tx = h[0]; p.tz = h[1]; if (rientra && (p.x - h[0]) * s > 6) { p.sprint = true; p.stato = 'rientro'; } return;
   }
   // finché il compagno ha palla si resta in linea coi difensori: lo scatto oltre la linea parte col passaggio
   const lim = own && own.team === t ? (t.offLine - .5 + (p.run && p.run.g || 0)) * s : null, onside = () => { if (lim !== null && p.tx * s > lim * s) p.tx = lim; };
-  if (p.run) { p.tx = p.run.x; p.tz = p.run.z; p.sprint = true; return onside(); }
-  const h = homeOf(p); p.tx = h[0]; p.tz = h[1]; onside();
-  if (own && own.team === t) { const d = hyp(p.tx - own.x, p.tz - own.z); if (d < 6) { p.tx += (p.tx - own.x) / (d || 1) * 5; p.tz += (p.tz - own.z) / (d || 1) * 5 + sgn(p.z - own.z) * 3; } }
+  if (p.run) { p.tx = p.run.x; p.tz = p.run.z; p.sprint = true; p.stato = p.run.sovr ? 'sovrapposizione' : 'inserimento'; return onside(); }
+  const h = homeOf(p); p.tx = h[0]; p.tz = h[1]; p.stato = 'posizione';
+  if (own && own.team === t) { // POSSESSO
+    if (p.area) { p.tx = p.area.x; p.tz = p.area.z; p.sprint = hyp(p.tx - p.x, p.tz - p.z) > 3; p.stato = 'area'; return onside(); } // il cross sta per arrivare: ognuno al suo posto in area
+    if (p === t.sostegno) { // il più vicino si offre per lo scarico, dove la linea di passaggio è pulita
+      if (!p.sost || G.t > p.sostT) { p.sost = puntoSostegno(p, own); p.sostT = G.t + .4; }
+      p.tx = p.sost.x; p.tz = p.sost.z; p.stato = 'sostegno'; return onside();
+    }
+    if (p.role !== 'D' && hyp(p.x - own.x, p.z - own.z) < 34) { // gli altri cercano spazio libero vicino alla loro posizione
+      if (!p.smarca || G.t > p.smarcaT) { p.smarca = puntoLibero(p, own, h); p.smarcaT = G.t + .5 + rnd(.25); }
+      p.tx = p.smarca.x; p.tz = p.smarca.z; p.stato = 'smarcamento';
+    }
+    onside();
+    const d = hyp(p.tx - own.x, p.tz - own.z); if (d < 6) { p.tx += (p.tx - own.x) / (d || 1) * 5; p.tz += (p.tz - own.z) / (d || 1) * 5 + sgn(p.z - own.z) * 3; }
+    return;
+  }
+  onside();
+}
+// Dove offrirsi per lo scarico: a 9-13 metri dal portatore, di lato o un po' dietro (davanti la linea di solito è chiusa),
+// nel punto più libero con la linea di passaggio pulita
+function puntoSostegno(p, own) {
+  const s = p.team.side; let best = { x: p.x, z: p.z }, bs = -1e9;
+  for (const r of [9, 13]) for (const a of [-125, -80, -40, 40, 80, 125]) {
+    const ang = Math.atan2(s, 0) + a * Math.PI / 180, x = clamp(own.x + Math.sin(ang) * r, -HL + 2, HL - 2), z = clamp(own.z + Math.cos(ang) * r, -HW + 2, HW - 2);
+    const sc = Math.min(liberoIn(p.team, x, z), 8) - (laneBlocked(own, p, x, z) ? 8 : 0) - hyp(x - p.x, z - p.z) * .12 + (x - own.x) * s * .12;
+    if (sc > bs) { bs = sc; best = { x, z }; }
+  }
+  return best;
+}
+// Smarcamento: il punto più libero intorno alla propria posizione, raggiungibile da un passaggio pulito
+function puntoLibero(p, own, h) {
+  const s = p.team.side; let best = { x: h[0], z: h[1] }, bs = -1e9;
+  for (const [dx, dz] of [[0, 0], [5, 0], [-5, 0], [0, 5], [0, -5], [4, 4], [4, -4], [-4, 4], [-4, -4]]) {
+    const x = clamp(h[0] + dx * s, -HL + 2, HL - 2), z = clamp(h[1] + dz, -HW + 2, HW - 2);
+    const sc = Math.min(liberoIn(p.team, x, z), 9) - (laneBlocked(own, p, x, z) ? 5 : 0) - hyp(dx, dz) * .15 + dx * .05;
+    if (sc > bs) { bs = sc; best = { x, z }; }
+  }
+  return best;
+}
+// In possesso, ogni passo: chi va in area per il cross (primo palo, secondo palo, dischetto, limite) e chi fa da sostegno
+function possesso(t, own) {
+  const s = t.side; for (const p of t.players) p.area = null; t.sostegno = null;
+  if (!own || own.team !== t || own.i === 0) return;
+  if (own.x * s > HL - 34 && Math.abs(own.z) > 9) {
+    const lato = sgn(own.z) || 1, liberi = t.players.filter((p) => p.i && p !== own && !p.run && p.role !== 'D' && !userDrives(p) && p.stun <= 0);
+    for (const [x, z] of [[HL - 6, lato * 2.5], [HL - 7.5, -lato * 4], [HL - 11, 0], [HL - 17, -lato * 3]]) {
+      let best = null, bd = 45; for (const p of liberi) { if (p.area) continue; const d = hyp(p.x - x * s, p.z - z); if (d < bd) { bd = d; best = p; } }
+      if (best) best.area = { x: x * s, z };
+    }
+  }
+  let sup = null, sd = 22; for (const p of t.players) { if (p.i === 0 || p === own || p.run || p.area || userDrives(p) || p.stun > 0) continue; const d = hyp(p.x - own.x, p.z - own.z); if (d < sd) { sd = d; sup = p; } }
+  t.sostegno = sup;
 }
 function ownerThink(p, dt) {
   const t = p.team, s = t.side, gx = s * HL, D = diffOf(p), dGoal = hyp(gx - p.x, p.z);
@@ -869,28 +963,45 @@ function gkThink(p, dt) {
     if (p.hold > HOLD) { const m = bestPass(p) || t.players[1]; pass(p, m); p.hold = 0; }
     return;
   }
-  const toward = b.vx * -s;
+  const toward = b.vx * -s, abilita = p.team.human ? MATE.save : G.diff.save;
+  // TIRO: prima un attimo di reazione (più corto per i più bravi), poi si sposta sul punto in cui il pallone passerà sulla
+  // sua linea (calcolato con aria ed effetto, quindi segue la curva) e, se non ci arriva coi passi, si tuffa
+  if (p.tiroVisto !== G.shotId) { p.tiroVisto = G.shotId; p.reagisce = G.t + .06 + (1 - abilita) * .3; }
   if (!own && toward > 8) {
     const a = FIS.attraversa(b, p.x, 1.6), tt = a ? a.t : -1;
-    if (tt > 0 && tt < 1.6) {
-      const zp = a.z;
-      if (Math.abs(zp) < GH + 2.5) {
-        p.tx = p.x; p.tz = clamp(zp, -GH - .6, GH + .6); p.sprint = true;
-        if (tt < .42 && Math.abs(zp - p.z) > 1.1 && p.st === 'run') { p.st = 'dive'; p.stT = 0; p.diveS = sgn(zp - p.z); p.diveV = clamp(Math.abs(zp - p.z) / .38, 4, 9.5); azione(p, -p.diveS * Math.sin(p.dir) > 0 ? 'tuffoS' : 'tuffoD'); }
-        return;
-      }
+    if (tt > 0 && tt < 1.6 && Math.abs(a.z) < GH + 2.5) {
+      if (G.t < p.reagisce && G.shooter) { p.tx = p.x; p.tz = p.z; return; } // sta ancora leggendo il tiro
+      const zp = a.z; p.tx = p.x; p.tz = clamp(zp, -GH - .6, GH + .6); p.sprint = true; p.tiroY = a.y;
+      if (tt < .45 && Math.abs(zp - p.z) > 1 && p.st === 'run') { p.st = 'dive'; p.stT = 0; p.diveS = sgn(zp - p.z); p.diveV = clamp(Math.abs(zp - p.z) / Math.max(tt, .22), 4, 10); azione(p, -p.diveS * Math.sin(p.dir) > 0 ? 'tuffoS' : 'tuffoD'); }
+      return;
     }
   }
   const dB = hyp(b.x - gx, b.z); let out = 1.2 + clamp(dB / 16, 0, 1) * 3.2;
-  if (airborne() && toward < 13) { // traversone che scende vicino alla porta: esce a prenderlo
-    const [lx, lz] = landing(); if ((lx - gx) * s < 7 && (lx - gx) * s > -.5 && Math.abs(lz) < 7.5) { p.tx = lx; p.tz = lz; p.sprint = true; return; }
+  // CROSS e ANGOLI: legge dove scende il pallone all'altezza delle sue mani e quando. Esce solo se ci arriva in tempo e prima
+  // degli attaccanti, dentro l'area
+  if (airborne() && toward < 15) {
+    const l = FIS.atterraggio(b, 2.3, 3);
+    if (l && (l.x - gx) * s < 10.5 && (l.x - gx) * s > -.5 && Math.abs(l.z) < 11.5) {
+      const io = tempoA(p, l.x, l.z); let loro = 9; for (const o of t.opp.players) if (o.i) loro = Math.min(loro, tempoA(o, l.x, l.z));
+      if (io <= l.t + .15 && io < loro + .03) { p.tx = l.x; p.tz = l.z; p.sprint = true; p.esce = true; if (p.uscitaDi !== G.calcioT) { p.uscitaDi = G.calcioT; G.stats.uscite[t.idx]++; } return; }
+    }
   }
+  p.esce = false;
   if (!own && dB < 17 && Math.abs(b.z) < 19 && hyp(b.vx, b.vz) < 9) { // palla vagante in area: esce
     let od = 99; for (const o of t.opp.players) od = Math.min(od, hyp(o.x - b.x, o.z - b.z));
     if (hyp(p.x - b.x, p.z - b.z) < od + 1) { p.tx = b.x; p.tz = b.z; p.sprint = true; return; }
   }
-  if (own && own.team !== t && dB < 17) { let dd = 99; for (const m of t.players) if (m.i) dd = Math.min(dd, hyp(m.x - own.x, m.z - own.z)); if (dd > 3.5) out = Math.min(dB * .55, 9); }
-  const k = out / (dB || 1); p.tx = gx + (b.x - gx) * k; p.tz = clamp(b.z * k * 1.0, -GH + .4, GH - .4);
+  // UNO CONTRO UNO: nessun difensore vicino al portatore → esce ad accorciare, e se è vicino va sul pallone
+  if (own && own.team !== t && dB < 17) {
+    let dd = 99; for (const m of t.players) if (m.i) dd = Math.min(dd, hyp(m.x - own.x, m.z - own.z));
+    if (dd > 3.5) { out = Math.min(dB * .55, 9); if (dB < 8.5) { p.tx = own.x + own.vx * .25 - s * .6; p.tz = own.z + own.vz * .25; p.sprint = true; return; } }
+  }
+  // POSIZIONE: sulla bisettrice dell'angolo tra pallone e pali, a `out` metri dalla linea di porta (così copre allo stesso modo
+  // i due lati della porta, anche quando il pallone è defilato)
+  const u1x = gx - b.x, u1z = -GH - b.z, u2x = gx - b.x, u2z = GH - b.z, l1 = hyp(u1x, u1z) || 1, l2 = hyp(u2x, u2z) || 1;
+  const bx = u1x / l1 + u2x / l2, bz = u1z / l1 + u2z / l2, X = gx + s * out;
+  if (Math.abs(bx) > .05) { const L = (X - b.x) / bx; p.tx = X; p.tz = clamp(b.z + bz * L, -GH + .4, GH - .4); }
+  else { p.tx = X; p.tz = clamp(b.z * .2, -GH + .4, GH - .4); }
   if ((p.tx - gx) * s < .8) p.tx = gx + s * .8;
 }
 
@@ -1052,19 +1163,33 @@ function contacts(dt) {
     }
     if (!G.so && !(best && best.i === 0) && b.y < AIR.top && sp < AIR.fast && (b.y >= AIR.low || (b.vy < -5 && b.y > 1))) { // pallone alto o che scende forte: chi ci arriva colpisce di testa
       let h = null, hd = 9;
-      for (const p of all()) { if (p.i === 0 || p.cool > 0 || p.stun > 0 || p.st !== 'run') continue; const d = hyp(p.x - b.x, p.z - b.z) + rnd(.3); if (d < AIR.reach + .3 && d < hd) { hd = d; h = p; } }
+      for (const p of all()) { if (p.i === 0 || p.cool > 0 || p.stun > 0 || p.st !== 'run') continue; const d = hyp(p.x - b.x, p.z - b.z) + rnd(.3); if (d < AIR.reach + .3 + (G.lastKicker && p.team === G.lastKicker.team && hyp(p.vx, p.vz) > 2 ? AIR.stacco : 0) && d < hd) { hd = d; h = p; } }
       if (h) header(h);
       return;
     }
     if (!best) return; const p = best, gk = p.i === 0;
-    if (gk && sp > 13 && G.lastKicker && G.lastKicker.team !== p.team) {
+    const tiro = (G.tiroT || -1) >= (G.calcioT || 0) - 1e-6; // l'ultimo pallone calciato era un tiro (non un cross o un lancio)
+    if (gk && !tiro && b.y > 1.3 && G.lastKicker && G.lastKicker.team !== p.team && G.state === 'play') { // cross o lancio alto: presa in uscita, o pugno se c'è un attaccante addosso
+      const conteso = p.team.opp.players.some((o) => o.i && hyp(o.x - p.x, o.z - p.z) < 1.5);
+      if (conteso && rnd() < .65) { const s2 = p.team.side; b.vx = s2 * rnd(8, 13); b.vz = rnd(-6, 6); b.vy = rnd(4, 7); b.c = b.t = 0; G.lastTouch = p; p.cool = .5; G.intended = null; AU.kick(12); azione(p, 'testa'); return; }
+      azione(p, 'presa'); return gain(p);
+    }
+    if (gk && sp > 13 && tiro && G.lastKicker && G.lastKicker.team !== p.team) {
       if (p.saveId === G.shotId) return; p.saveId = G.shotId;
-      const pr = ((p.team.human ? MATE.save : G.diff.save) - Math.max(0, sp - 22) * .012 + (p.st === 'dive' ? 0 : .08)) * (G.penId === G.shotId ? FOUL.penSave : 1);
+      // la parata dipende da quanto il pallone passa lontano dal corpo (rispetto a dove arriva tuffandosi), da quanto è veloce e alto
+      const rx = b.x - p.x, rz = b.z - p.z, tv = Math.max(0, -(rx * b.vx + rz * b.vz) / (sp * sp || 1)), passa = hyp(rx + b.vx * tv, rz + b.vz * tv); // dove il pallone gli passa più vicino
+      const raggio = p.st === 'dive' ? 2 : 1.3, lontano = clamp(passa / raggio, 0, 1), s2 = p.team.side;
+      const pr = clamp(((p.team.human ? MATE.save : G.diff.save) + .23 - lontano * lontano * .35 - Math.max(0, sp - 20) * .014 - (b.y > 2.1 ? .08 : 0) + (p.st === 'dive' ? 0 : .04)) * (G.penId === G.shotId ? FOUL.penSave : 1), .04, .97);
       if (rnd() > pr) { p.cool = .6; return; }
       AU.kick(14); p.s.sv++; if (G.shooter && G.shooter.team !== p.team) { G.shooter.s.sot++; G.shooter = null; }
-      if (sp < 21 || rnd() < .4) { if (p.st === 'run') azione(p, 'presa'); return gain(p); }
-      b.vx = p.team.side * rnd(5, 9); b.vz = sgn(b.z - p.z || rnd(-1, 1)) * rnd(5, 10); b.vy = rnd(3, 6); G.lastTouch = p; p.cool = .5;
-      if (rnd() < AIR.behind) { b.vx = -p.team.side * rnd(3, 6); b.vz = sgn(b.z - p.z || rnd(-1, 1)) * rnd(9, 13); } // deviata in angolo
+      // presa solo se il pallone arriva addosso e non troppo forte; altrimenti respinta
+      if ((sp < 30 && lontano < .45 && b.y > .2 && b.y < 2.55) || (sp < 21 && lontano < .65) || sp < 15) { if (p.st === 'run') azione(p, 'presa'); return gain(p); }
+      G.stats.resp[p.team.idx]++;
+      // respinta: il pallone rimbalza sulle mani verso il campo e di lato (dalla parte del tuffo), più forte se il tiro era forte;
+      // vicino al palo può finire in angolo
+      const lato = p.st === 'dive' ? p.diveS : sgn(b.z - p.z || rnd(-1, 1)), forza = 4 + sp * .22;
+      b.vx = s2 * rnd(.25, .6) * forza - b.vx * .1; b.vz = lato * rnd(.55, .95) * forza + b.vz * .15; b.vy = rnd(1.5, 4.5); b.c = b.t = 0; G.lastTouch = p; p.cool = .5;
+      if (Math.abs(b.z) > GH - 1.4 && rnd() < AIR.behind) { b.vx = -s2 * rnd(2, 5); b.vz = sgn(b.z) * rnd(6, 11); } // deviata in angolo
       return;
     }
     if (p !== G.intended && !gk && sp > 10 && (sp > 19 || rnd() < .25 + (sp - 10) * .06)) { // deviazione: un pallone veloce non diretto a te lo si devia, prenderlo pulito è difficile
@@ -1915,6 +2040,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
