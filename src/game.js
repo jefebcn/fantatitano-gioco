@@ -9,6 +9,7 @@ import * as CAR from './carriera.js';
 import * as FIS from './fisica/pallone.js';
 import * as MOTO from './fisica/corpo.js';
 import * as URTO from './fisica/contatti.js';
+import { creaCampo, texturaOmbra } from './grafica/campo.js';
 
 (() => {
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
@@ -81,8 +82,19 @@ scene.background = new T.Color(0x86b9ea);
 scene.fog = new T.Fog(0xa9cdee, 130, 330);
 const cam = new T.PerspectiveCamera(38, 1, 0.5, 500);
 const camPos = new T.Vector3(0, 60, 80), camLook = new T.Vector3(0, 0, 0);
-scene.add(new T.HemisphereLight(0xffffff, 0x47703a, 2.3));
-const sun = new T.DirectionalLight(0xfff4dd, 1.5); sun.position.set(30, 70, 40); scene.add(sun);
+const hemi = new T.HemisphereLight(0xffffff, 0x47703a, 2.1); scene.add(hemi);
+const sun = new T.DirectionalLight(0xfff4dd, 1.9); sun.position.set(30, 70, 40); scene.add(sun); scene.add(sun.target);
+// Ombre vere del sole: una mappa d'ombra morbida che copre solo la zona inquadrata e la segue (vedi seguiOmbre), così resta
+// nitida e leggera. Sui telefoni deboli si scende a una mappa più piccola, e se i fotogrammi calano si spengono (vedi qualita).
+const OMBRA = { lato: 34, mappa: (navigator.hardwareConcurrency || 4) >= 6 && (window.devicePixelRatio || 1) < 2.5 ? 2048 : 1024 };
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+sun.castShadow = true; sun.shadow.mapSize.set(OMBRA.mappa, OMBRA.mappa); sun.shadow.bias = -.0006; sun.shadow.normalBias = .03; sun.shadow.radius = 3;
+Object.assign(sun.shadow.camera, { left: -OMBRA.lato, right: OMBRA.lato, top: OMBRA.lato, bottom: -OMBRA.lato, near: 10, far: 160 }); sun.shadow.camera.updateProjectionMatrix();
+const SOLE = new T.Vector3(30, 70, 40);
+function seguiOmbre() { // il sole si sposta con l'inquadratura, a passi di un texel (niente ombre che tremolano)
+  const k = OMBRA.lato * 2 / OMBRA.mappa, x = Math.round(camLook.x / k) * k, z = Math.round(camLook.z / k) * k;
+  sun.target.position.set(x, 0, z); sun.position.set(x + SOLE.x, SOLE.y, z + SOLE.z);
+}
 
 const mats = new Map();
 const mat = (hex) => { let m = mats.get(hex); if (!m) { m = new T.MeshLambertMaterial({ color: hex }); mats.set(hex, m); } return m; };
@@ -93,34 +105,15 @@ function ctex(c, repX = 1, repY = 1) {
 }
 function cv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
 
-function buildPitch() {
-  const s = 10, M = 6, [c, x] = cv((HL * 2 + M * 2) * s, (HW * 2 + M * 2) * s);
-  const X = (wx) => (wx + HL + M) * s, Z = (wz) => (wz + HW + M) * s;
-  for (let i = Math.ceil(hyp(HL + M, HW + M) / 5.6); i >= 0; i--) { x.fillStyle = i % 2 ? '#2f8f3f' : '#35a046'; x.beginPath(); x.arc(X(0), Z(0), (i + 1) * 5.6 * s, 0, 7); x.fill(); } // erba tagliata a cerchi
-  x.strokeStyle = 'rgba(255,255,255,.92)'; x.fillStyle = 'rgba(255,255,255,.92)'; x.lineWidth = 2.4; x.lineJoin = 'round';
-  x.strokeRect(X(-HL), Z(-HW), HL * 2 * s, HW * 2 * s);
-  x.beginPath(); x.moveTo(X(0), Z(-HW)); x.lineTo(X(0), Z(HW)); x.stroke();
-  x.beginPath(); x.arc(X(0), Z(0), 9.15 * s, 0, 7); x.stroke();
-  x.beginPath(); x.arc(X(0), Z(0), 4, 0, 7); x.fill();
-  for (const d of [-1, 1]) {
-    const gx = d * HL;
-    x.strokeRect(Math.min(X(gx), X(gx - d * 16.5)), Z(-20), 16.5 * s, 40 * s);
-    x.strokeRect(Math.min(X(gx), X(gx - d * 5.5)), Z(-9.2), 5.5 * s, 18.4 * s);
-    x.beginPath(); x.arc(X(gx - d * 11), Z(0), 3.5, 0, 7); x.fill();
-    x.beginPath(); const a = Math.acos(5.5 / 9.15);
-    x.arc(X(gx - d * 11), Z(0), 9.15 * s, d > 0 ? Math.PI - a : -a, d > 0 ? Math.PI + a : a); x.stroke();
-    for (const e of [-1, 1]) { x.beginPath(); x.arc(X(gx), Z(e * HW), 1 * s, 0, 7); x.stroke(); }
-  }
-  const m = new T.Mesh(new T.PlaneGeometry((HL + M) * 2, (HW + M) * 2), new T.MeshLambertMaterial({ map: ctex(c) }));
-  m.rotation.x = -Math.PI / 2; scene.add(m);
-  const g = new T.Mesh(new T.PlaneGeometry(700, 700), mat(0x2a7d39)); g.rotation.x = -Math.PI / 2; g.position.y = -.05; scene.add(g);
+async function buildPitch() {
+  const { campo, fuori } = await creaCampo(T, { HL, HW, anisotropia: renderer.capabilities.getMaxAnisotropy() }); scene.add(campo, fuori); // prato PBR, strisce, usura e linee: src/grafica/campo.js
   // porte
   const [nc, nx] = cv(64, 64); nx.strokeStyle = 'rgba(255,255,255,.75)'; nx.lineWidth = 3; nx.strokeRect(0, 0, 64, 64);
   const post = mat(0xffffff);
   for (const d of [-1, 1]) {
     const gx = d * HL, dep = 2.2;
-    for (const e of [-1, 1]) { const p = new T.Mesh(new T.CylinderGeometry(.09, .09, GT, 8), post); p.position.set(gx, GT / 2, e * GH); scene.add(p); }
-    const bar = new T.Mesh(new T.CylinderGeometry(.09, .09, GH * 2 + .18, 8), post); bar.rotation.x = Math.PI / 2; bar.position.set(gx, GT, 0); scene.add(bar);
+    for (const e of [-1, 1]) { const p = new T.Mesh(new T.CylinderGeometry(.09, .09, GT, 8), post); p.position.set(gx, GT / 2, e * GH); p.castShadow = true; scene.add(p); }
+    const bar = new T.Mesh(new T.CylinderGeometry(.09, .09, GH * 2 + .18, 8), post); bar.rotation.x = Math.PI / 2; bar.position.set(gx, GT, 0); bar.castShadow = true; scene.add(bar);
     const net = (w, h, px, py, pz, ry, rx) => {
       const n = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ map: ctex(nc, w / .45, h / .45), transparent: true, side: T.DoubleSide, depthWrite: false }));
       n.position.set(px, py, pz); n.rotation.set(rx || 0, ry || 0, 0); scene.add(n);
@@ -196,7 +189,7 @@ const GEO = {
   farm: new T.BoxGeometry(.1, .28, .1), head: new T.SphereGeometry(.145, 12, 9), hair: new T.SphereGeometry(.156, 12, 8, 0, Math.PI * 2, 0, Math.PI * .56),
   num: new T.PlaneGeometry(.3, .3), shadow: new T.CircleGeometry(.5, 14), ring: new T.RingGeometry(.72, .95, 28), tri: new T.ConeGeometry(.22, .4, 3),
 };
-const shadowMat = new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .28, depthWrite: false });
+const shadowMat = new T.MeshBasicMaterial({ map: texturaOmbra(T), transparent: true, opacity: .32, depthWrite: false }); // ombra di contatto morbida sotto i piedi
 const SKIN = [0xf1c9a5, 0xe0ac7e, 0xc68b5e, 0x9a6441, 0x6e452c], HAIR = [0x1c1410, 0x2e2018, 0x5a3a20, 0x8a6a3a, 0x111111, 0xc9a25a];
 function numMat(n, ink, nome) {
   const [c, x] = cv(128, 128); x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = ink;
@@ -345,10 +338,11 @@ const ballMesh = (() => {
   const [c, x] = cv(256, 128); x.fillStyle = '#fafafa'; x.fillRect(0, 0, 256, 128);
   const cols = ['#111', '#111', '#4B06FC', '#111', '#D9F51F', '#111'];
   for (let i = 0; i < 12; i++) { x.fillStyle = cols[i % cols.length]; x.beginPath(); const px = (i % 6) * 43 + 20 + (i > 5 ? 21 : 0), py = i > 5 ? 88 : 38; for (let k = 0; k < 5; k++) { const a = k * 1.2566 - 1.57; x.lineTo(px + Math.cos(a) * 13, py + Math.sin(a) * 15); } x.fill(); }
-  const m = new T.Mesh(new T.SphereGeometry(BR, 18, 14), new T.MeshLambertMaterial({ map: ctex(c) })); m.visible = false; scene.add(m);
+  const m = new T.Mesh(new T.SphereGeometry(BR, 18, 14), new T.MeshLambertMaterial({ map: ctex(c) })); m.visible = false; m.castShadow = true; scene.add(m);
   return m;
 })();
-const ballShadow = new T.Mesh(new T.CircleGeometry(.3, 12), shadowMat); ballShadow.rotation.x = -Math.PI / 2; ballShadow.position.y = .04; ballShadow.visible = false; scene.add(ballShadow);
+// ombra del pallone, con un materiale suo: cambia con l'altezza
+const ballShadow = new T.Mesh(new T.CircleGeometry(.3, 16), new T.MeshBasicMaterial({ map: shadowMat.map, transparent: true, opacity: .5, depthWrite: false })); ballShadow.rotation.x = -Math.PI / 2; ballShadow.position.y = .04; ballShadow.visible = false; scene.add(ballShadow);
 
 /* ------------------------------------------------------------------ partita */
 function clearMatch() {
@@ -360,6 +354,7 @@ function clearMatch() {
 const SUB = { max: 5, ai: 3, from: .55, every: .12 };
 function creaGiocatore(t, i, [name, role, num, q]) {
   const club = t.club, fig = (MODEL ? makeSkinned : makeFigure)(i === 0 ? t.gkit : t.kit, hash(club.id + name), num, i === 0 ? null : club.id, name); scene.add(fig.root);
+  fig.root.traverse((o) => { if (o.isMesh && !(o.material && o.material.transparent)) o.castShadow = true; }); // ombra vera del sole (l'ombra di contatto resta)
   const base = 7.3 + clamp((q - 20) / 40, -.5, .6) + (club.str - 3) * .07;
   return { team: t, i, role, nat: role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: t.side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? 6.6 : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1, run: null, mark: null, jock: false, slideCd: 0, inj: false, yel: 0, red: false, fkShot: false, en: 1, by: null, s: { g: 0, a: 0, kp: 0, sh: 0, sot: 0, pa: 0, pc: 0, tk: 0, int: 0, sv: 0, fl: 0, og: 0 }, massa: 72 + ({ P: 6, D: 5, C: -1, A: 2 }[role] || 0) + (hash(name + club.id) % 9) - 4, sbil: 0 }; // la massa conta nei duelli spalla a spalla
 }
@@ -1471,11 +1466,11 @@ function draw(dt) {
     else for (const p of all()) p.fig.root.rotation.x = p.fig.root.rotation.z = 0;
     const sp = hyp(b.vx, b.vz);
     ballMesh.position.set(b.x, b.y, b.z); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; ballMesh.rotation.y += (b.c || 0) * dt * 25; }
-    ballShadow.position.set(b.x, .04, b.z); ballShadow.scale.setScalar(1 + b.y * .18);
+    ballShadow.position.set(b.x, .04, b.z); ballShadow.scale.setScalar(1.25 + b.y * .16); ballShadow.material.opacity = .62 / (1 + Math.max(0, b.y - BR) * .32); // a terra scura e stretta, in aria larga e chiara: si capisce dove scende un cross
     const c = G.ctrl; ring.visible = arrow.visible = !!c && !G.auto && G.state !== 'full';
     if (c) { ring.position.set(c.x, .05, c.z); arrow.position.set(c.x, 3.35 + Math.sin(G.t * 6) * .08, c.z); }
   }
-  updateCamera(dt); REGIA.dopo(dt); renderer.render(scene, cam);
+  updateCamera(dt); REGIA.dopo(dt); seguiOmbre(); renderer.render(scene, cam);
 }
 const REGIA = creaRegia({ scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, ring, arrow, camPos, camLook, boards, img, cdist, lum,
   makeSkinned, pickKits, paintBoards, updateCamera, offsideLine, model: () => MODEL, crest: () => CREST });
@@ -2020,16 +2015,30 @@ function resize() {
 const CREST = {};
 function loadImg(src) { return new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
 let last = 0, frame = 0;
+// Qualità automatica: se durante la partita i fotogrammi restano lenti (sotto i ~40 al secondo per qualche secondo) si
+// alleggerisce un passo alla volta: ombre più piccole e meno morbide, poi senza ombre del sole, poi prato senza normali
+// e rugosità e meno pixel. Non torna indietro da sola (niente su e giù durante la partita).
+const QUAL = { livello: 0, media: 1 / 60, attesa: 4 };
+function qualita(dt) {
+  if (G.state !== 'play' || G.paused || !(dt > 0)) return;
+  QUAL.media += (dt - QUAL.media) * .03; QUAL.attesa -= dt;
+  if (QUAL.attesa > 0 || QUAL.media < 1 / 40 || QUAL.livello >= 3) return;
+  QUAL.livello++; QUAL.attesa = 4; QUAL.media = 1 / 60;
+  if (QUAL.livello === 1) { if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } sun.shadow.mapSize.set(1024, 1024); renderer.shadowMap.type = T.PCFShadowMap; }
+  else if (QUAL.livello === 2) sun.castShadow = false;
+  else { scene.traverse((o) => { if (o.material && o.material.isMeshStandardMaterial) { o.material.normalMap = o.material.roughnessMap = null; } }); renderer.setPixelRatio(1); resize(); }
+  scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; });
+}
 function loop(ts) {
   requestAnimationFrame(loop);
-  const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts;
+  const vero = (ts - last) / 1000 || 0, dt = Math.min(.05, vero); last = ts; qualita(Math.min(vero, .5)); // la qualità guarda il tempo vero tra i fotogrammi
   if (!G.paused) { if (G.state === 'menu') G.t += dt; else { const n = dt > .022 ? 2 : 1; for (let i = 0; i < n; i++) step(dt / n); } }
   if (G.ball && G.state !== 'menu') { hud(); if (frame++ % 3 === 0) drawRadar(); }
   draw(G.paused ? 0 : dt);
 }
 async function boot() {
   resize(); window.addEventListener('resize', resize);
-  buildPitch(); await loadModel();
+  await Promise.all([buildPitch(), loadModel()]); // il campo carica le sue texture mentre arriva il modello
   try { await Promise.race([document.fonts.load('40px Anton'), new Promise((r) => setTimeout(r, 2500))]); } catch (e) { /* si disegna col font di sistema */ }
   const lock = await loadImg('img/corona-lime.png');
   buildStadium(lock); paintBoards(CLUBS[0], CLUBS[1], null);
@@ -2040,6 +2049,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, renderer, sun, scene, QUAL, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
