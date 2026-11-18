@@ -13,7 +13,7 @@
 
 export const RIS = { giu: 1 / 50, su: 1 / 57, passoGiu: 0.85, passoSu: 1.08, minimo: 0.55, attesaGiu: 1.5, attesaSu: 6, tettoPer: 25 };
 
-export function creaPrestazioni({ renderer, debug = false, livello = () => 0 }) {
+export function creaPrestazioni({ renderer, debug = false, livello = () => 0, rinuncia = () => false }) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const S = {
     max: dpr, min: Math.max(0.7, dpr * RIS.minimo), ora: dpr, media: 1 / 60, scarto: 0, cpu: 0, attesa: 3, stabile: 0, tetto: dpr, tettoT: 0,
@@ -47,6 +47,7 @@ export function creaPrestazioni({ renderer, debug = false, livello = () => 0 }) 
     if (S.media > RIS.giu && !fisso30) {
       const processore = S.cpu > S.media * 0.75; // il fotogramma è tutto logica e preparazione: meno pixel non aiutano
       S.attesa = RIS.attesaGiu; S.stabile = 0; const prima = S.ora;
+      if (rinuncia()) { S.media = 1 / 60; return false; } // prima gli effetti (l'alone delle luci), poi i pixel
       if (!processore && scala(S.ora * RIS.passoGiu)) { S.tetto = prima; S.tettoT = RIS.tettoPer; S.media = 1 / 60; return false; }
       if (S.media > 1 / 40 || processore) { S.attesa = 4; S.media = 1 / 60; return true; }
       return false;

@@ -2,7 +2,7 @@
    accese (pannelli luminosi, alone, fasci di luce visibili e quattro faretti che danno i riflessi su erba e linee), ombre
    corte e morbide che vengono dall'alto. Si sceglie prima della partita. */
 
-export function creaAtmosfera(T, { scene, hemi, sun, sole, fari, sfondo, campo, tribune = [] }) {
+export function creaAtmosfera(T, { scene, hemi, sun, sole, fari, sfondo, campo, tribune = [], resa = null }) {
   const notte = { fasci: [], aloni: [], faretti: [] };
   const alone = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,250,230,1)'); g.addColorStop(0.35, 'rgba(255,240,200,.45)'); g.addColorStop(1, 'rgba(255,240,200,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new T.CanvasTexture(c); })();
   // il fascio è più visibile vicino alla torre e sfuma verso il campo (alphaMap a gradiente lungo il cono)
@@ -31,6 +31,7 @@ export function creaAtmosfera(T, { scene, hemi, sun, sole, fari, sfondo, campo, 
     if (sfondo) sfondo.color.set(o.sfondo);
     for (const m of tribune) m.color.set(o.tribune); // di notte il pubblico resta in penombra, il campo sotto i fari
     if (campo && campo.material) campo.material.roughness = o.ruvido; // di notte l'erba (e le linee) luccicano un po' sotto i fari
+    if (resa) resa.imposta(ora); // riflessi dall'ambiente e alone delle luci (src/grafica/resa.js)
   }
   return { applica, get ora() { return ora; } };
 }

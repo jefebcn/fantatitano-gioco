@@ -16,7 +16,7 @@
     "@gltf-transform/functions": "^4.0.0",
     "esbuild": "^0.25.0",
     "meshoptimizer": "^0.22.0",
-    "three": "0.160.0"
+    "three": "0.187.0"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0"

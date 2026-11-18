@@ -143,8 +143,8 @@ export function creaSpalti(T, scene, { HL, HW, max = 7200, renderer = null }) {
     m.onBeforeCompile = (sh) => {
       Object.assign(sh.uniforms, U);
       // colori netti tra maglia, pantaloni e pelle: un colore per triangolo (flat), niente sfumature sui triangoli grandi
-      sh.fragmentShader = sh.fragmentShader.replace('#include <color_pars_fragment>', 'flat varying vec3 vColor;');
-      sh.vertexShader = sh.vertexShader.replace('#include <color_pars_vertex>', 'flat varying vec3 vColor;').replace('#include <common>', '#include <common>\nattribute float aParte; attribute vec4 aInfo; attribute vec3 aPelle, aCapo, aSciarpa; uniform float uT, uMossa; uniform vec2 uEsulta, uCoro;')
+      sh.fragmentShader = sh.fragmentShader.replace('#include <color_pars_fragment>', 'flat varying vec4 vColor;');
+      sh.vertexShader = sh.vertexShader.replace('#include <color_pars_vertex>', 'flat varying vec4 vColor;').replace('#include <common>', '#include <common>\nattribute float aParte; attribute vec4 aInfo; attribute vec3 aPelle, aCapo, aSciarpa; uniform float uT, uMossa; uniform vec2 uEsulta, uCoro;')
         .replace('#include <color_vertex>', `#include <color_vertex>
 // aInfo: x fase, y settore, z maniche lunghe, w = sciarpa + 2 * berretto
 float manica = aInfo.z, berretto = step(1.5, aInfo.w);
