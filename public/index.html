@@ -186,7 +186,7 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 .pl b{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-family:Anton;font-weight:400;font-size:13px;box-shadow:0 0 0 2px rgba(255,255,255,.9),0 3px 6px rgba(0,0,0,.5)}
 .pl span{font:900 9.5px Lato;margin-top:3px;max-width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000,0 0 2px #000}
 .pl i{font:900 8px Lato;color:var(--lime);letter-spacing:.04em;text-shadow:0 1px 3px #000}
-.tatt{display:flex;flex-direction:column;gap:6px;align-items:center}.seg{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+.tatt{display:flex;flex-direction:column;gap:6px;align-items:center}.tatt .riga{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center}.seg.ora{padding-left:12px;border-left:1px solid rgba(255,255,255,.2)}.seg{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
 .seg button{background:rgba(255,255,255,.08);border-radius:99px;padding:7px 13px;font-size:12px;font-weight:900;letter-spacing:.05em;text-transform:uppercase}.seg button.on{background:var(--viola);box-shadow:0 0 0 2px var(--lime) inset}
 
 .basso #pre{gap:5px;padding:8px 16px}.basso #pre .campi{margin-top:12px}.basso .erba{height:calc(var(--vh)*55);min-height:170px}.basso .pl b{width:20px;height:20px;font-size:10px}.basso .pl span{margin-top:1px;font-size:9px}.basso .pl i{font-size:7.5px}.basso .tatt{flex-direction:row;gap:14px}.basso #pre .btn{min-width:0;padding:7px 46px;font-size:18px}.basso .testa{margin-bottom:3px}.basso .testa img{height:24px}.basso .testa b{font-size:14px}
@@ -329,7 +329,7 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
   <button class="indietro" id="preInd">‹ Squadre</button>
   <div class="passo" id="preT">Amichevole</div>
   <div class="campi"><div class="campo" id="campoH"></div><div class="campo" id="campoA"></div></div>
-  <div class="tatt"><div class="seg" id="segForm"></div><div class="seg" id="segMent"></div></div>
+  <div class="tatt"><div class="seg" id="segForm"></div><div class="riga"><div class="seg" id="segMent"></div><div class="seg ora" id="segOra"></div></div></div>
   <button class="btn" id="gioca">Gioca</button>
 </div>
 
