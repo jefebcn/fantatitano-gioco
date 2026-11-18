@@ -186,7 +186,7 @@ export function controlla(b, p, q = 0.5, caso = Math.random, verso = null) {
  *  ritmo:   col passo (p.ritmo, vedi corpo.js) il tocco parte quando un piede sta per scendere, anche un po' prima (fino a
  *           vicino + ritmo); tra un passo e l'altro aspetta, a meno che la palla non sia già sotto i piedi (forza)
  */
-export const COND = { stretto: 0.9, forza: 0.3, ritmo: 0.35, vicino: 0.75, passo: 1.12, passoScatto: 1.2, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6 };
+export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.35, vicino: 0.75, passo: 1.12, passoScatto: 1.2, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6 };
 
 /**
  * Un passo di conduzione per il giocatore p (x, z, vx, vz, dir, sprint) con tecnica q da 0 a 1. Cambia solo la velocità del
@@ -212,10 +212,16 @@ export function conduci(b, p, dt, q = 0.5, caso = Math.random, verso = null) {
   // p.ritmo: assente senza passo (nelle prove), vero se un piede sta per scendere, falso tra un passo e l'altro
   const rit = p.ritmo;
   const raggiunta = avanti < (rit === true ? COND.vicino + COND.ritmo : COND.vicino) || (storta && d < 1.15);
+  // la palla è rimasta un po' indietro o di lato (il giocatore ha accelerato o girato): la riprende con la suola e se la
+  // rimette davanti, invece di lasciarla lì e tornare a prenderla
+  if ((avanti < -0.1 || lato > 0.9) && d < COND.riprendi) {
+    const tx = p.x + ux * COND.suola * 1.2, tz = p.z + uz * COND.suola * 1.2, k = 1 - Math.exp(-10 * dt);
+    b.vx += ((tx - b.x) * 7 + p.vx - b.vx) * k; b.vz += ((tz - b.z) * 7 + p.vz - b.vz) * k; return null;
+  }
   if (!raggiunta || p.tocco > 0 || d > 1.3 || lato > 0.9) return null;
   if (rit === false && !storta && avanti > COND.forza) return null; // aspetta il passo giusto
   const e = (caso() * 2 - 1) * COND.errore * (1.15 - q), c = Math.cos(e), s = Math.sin(e);
-  const vc = Math.max(v * Math.max(0, (p.vx * ux + p.vz * uz) / v), Math.min(3.5, v + 1)); // se sta girando, il tocco è corto: deve ancora prendere velocità
+  const vc = Math.max(v * Math.max(0, (p.vx * ux + p.vz * uz) / v), Math.min(3.5, v + 1), Math.min(p.vVoluta || 0, v + 2.2)); // se sta girando, il tocco è corto: deve ancora prendere velocità; se accelera, la palla va dove arriverà lui
   const sp = vc * (p.sprint ? COND.passoScatto : COND.passo) * (p.pressato ? COND.stretto : 1) * (1.08 - 0.16 * q), dx = ux * c - uz * s, dz = ux * s + uz * c;
   b.vx = dx * sp; b.vz = dz * sp; b.vy = p.sprint ? 0.6 : 0; p.tocco = COND.pausa;
   return 'tocco';
