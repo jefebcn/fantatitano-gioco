@@ -119,6 +119,7 @@ export function creaRegia(X) {
   /* ---------------------------------------------------------------- arbitro */
   const SQ_ARB = { club: {}, idx: -1 };
   function kitArbitro() {
+    if (G.arbKit) return G.arbKit; // scelta insieme alle divise delle squadre (pickKits), lontana da tutte
     const [kh, ka, g1, g2] = X.pickKits(G.teams[0].club, G.teams[1].club), altri = [kh.shirt, kh.c2, ka.shirt, ka.c2, g1.shirt, g2.shirt];
     const lontano = (c) => Math.min(...altri.map((o) => X.cdist(c, o)));
     const shirt = ['#FF5A1F', '#F2E21B', '#E91E8C', '#19D3B1', '#3FA9F5', '#9B5DE5', '#16161a'].sort((a, b) => lontano(b) - lontano(a))[0];
