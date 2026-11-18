@@ -122,7 +122,7 @@ const PART = new Particelle(T, scene); // ciuffi d'erba e polvere: scivolate, fr
 let boards = [], standMat = null, titoSprite = null;
 function buildStadium(lockup) {
   // spalti in cemento con scale, ringhiere, tunnel, striscioni, bandiere e la folla (src/grafica/spalti.js)
-  SPALTI = creaSpalti(T, scene, { HL, HW }); BORDO = creaBordoCampo(T, scene, { HL, HW }); // e steward e fotografi a bordo campo (src/grafica/bordocampo.js)
+  SPALTI = creaSpalti(T, scene, { HL, HW, renderer }); BORDO = creaBordoCampo(T, scene, { HL, HW }); // e steward e fotografi a bordo campo (src/grafica/bordocampo.js)
   // cartelloni
   const [bc, bx] = cv(2048, 64);
   const tex = ctex(bc); boards.tex = tex; boards.cv = bc; boards.ctx = bx; boards.lockup = lockup;

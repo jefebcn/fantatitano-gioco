@@ -1,10 +1,12 @@
 /* Gli spalti: gradoni in cemento (texture CC0 di ambientCG in public/textures/stadium, o cemento disegnato al momento),
    scale di accesso, muretti, ringhiere, tunnel d'ingresso, striscioni e bandiere coi colori delle due squadre, e la folla.
 
-   La folla sono migliaia di tifosi disegnati con una InstancedMesh per tribuna: quattro chiamate grafiche in tutto, e la
-   tribuna alle spalle della telecamera viene scartata intera.
+   La folla sono migliaia di persone (il modello dei calciatori, in piedi e semplificato): due InstancedMesh per tribuna,
+   prime file dettagliate e il resto leggero, e la tribuna alle spalle della telecamera viene scartata intera.
    Ogni tifoso ha un colore (della sua squadra, o un po' di neutri) e una fase sua; ondeggia e salta alzando le braccia
    nello shader, senza calcoli per tifoso sul processore: da qui si cambiano solo due numeri (quanto esulta ogni settore). */
+
+import { TIFOSO } from './tifoso-dati.js';
 
 const RIS = 'textures/stadium/';
 const hyp = Math.hypot;
@@ -44,7 +46,7 @@ function geometriaGradoni(T, len) {
 // colori a caso ma sempre uguali (dal seme)
 function casuale(seme) { let s = seme >>> 0 || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
-export function creaSpalti(T, scene, { HL, HW, max = 7200 }) {
+export function creaSpalti(T, scene, { HL, HW, max = 7200, renderer = null }) {
   const loader = new T.TextureLoader(), materiali = [];
   const cemento = new T.MeshStandardMaterial({ color: 0xc9c5bd, roughness: 0.95, metalness: 0, map: cementoDiRiserva(T) });
   const scaleM = new T.MeshStandardMaterial({ color: 0xe9e1cf, roughness: 0.9, metalness: 0 });
@@ -90,7 +92,7 @@ export function creaSpalti(T, scene, { HL, HW, max = 7200 }) {
     for (let r = 0; r < G.file; r++) for (let x = -tr.len / 2 + 0.8; x < tr.len / 2 - 0.8; x += G.posto) {
       if (scaleX.some((sx) => Math.abs(x - sx) < 1.1) || (tr.tunnel && r < 6 && Math.abs(x) < 3.4)) continue;
       const p = new T.Vector3(x, G.muro + r * G.alt, -r * G.prof - G.prof * 0.45).applyMatrix4(g.matrixWorld.compose(g.position, g.quaternion, g.scale));
-      posti.push({ p, ry: tr.ry, settore: tr.settore, tr });
+      posti.push({ p, ry: tr.ry, settore: tr.settore, tr, fila: r });
     }
     // striscioni sul muretto e bandiere sui gradoni
     for (let k = 0; k < 3; k++) {
@@ -110,49 +112,50 @@ export function creaSpalti(T, scene, { HL, HW, max = 7200 }) {
   // Una folla per tribuna (una InstancedMesh), ognuna con la sua sfera d'ingombro: quella alle
   // spalle della telecamera non si disegna affatto. I posti sono in ordine sparso, così i primi n sono sparsi su tutto lo spalto.
   const rand = casuale(20261118), totale = Math.min(max, posti.length);
-  // Un tifoso è una sola geometria fatta di scatole (senza le facce che non si vedono mai), con un attributo che dice a
-  // quale parte appartiene ogni vertice: 0 busto, 1 testa, 2 braccio, 3 avambraccio, 4 capelli o berretto, 5 visiera,
-  // 6 sciarpa. Due versioni: dettagliata (braccia snodate al gomito, capelli o berretto, sciarpa) e semplice (busto, testa
-  // e braccia intere): lo scaler della qualità passa alla semplice per prima cosa.
-  const tifoso = (dettagli) => {
-    const pos = [], nor = [], parte = [], idx = [];
-    const scatola = (w, h, d, cx, cy, cz, pt, senza) => {
-      const b = new T.BoxGeometry(w, h, d); b.translate(cx, cy, cz);
-      for (let f = 0; f < 6; f++) {
-        if (senza.includes(f)) continue; // facce: 0 +x, 1 -x, 2 sopra, 3 sotto, 4 davanti, 5 dietro
-        const o = pos.length / 3;
-        for (let v = f * 4; v < f * 4 + 4; v++) { pos.push(b.attributes.position.getX(v), b.attributes.position.getY(v), b.attributes.position.getZ(v)); nor.push(b.attributes.normal.getX(v), b.attributes.normal.getY(v), b.attributes.normal.getZ(v)); parte.push(pt); }
-        idx.push(o, o + 2, o + 1, o + 2, o + 3, o + 1);
-      }
-    };
-    scatola(0.42, 0.56, 0.26, 0, 0.55, 0, 0, [3]); // busto
-    scatola(0.2, 0.24, 0.22, 0, 0.98, 0, 1, [3]); // testa
-    if (dettagli) {
-      scatola(0.22, 0.07, 0.24, 0, 1.12, -0.005, 4, [3]); // capelli o berretto
-      scatola(0.19, 0.015, 0.1, 0, 1.09, 0.15, 5, [0, 1, 4, 5]); // visiera (solo chi ha il berretto)
-      for (const sx of [-0.27, 0.27]) { scatola(0.095, 0.22, 0.095, sx, 0.67, 0, 2, [2, 3]); scatola(0.08, 0.22, 0.08, sx, 0.45, 0, 3, [2]); } // braccio e avambraccio
-      scatola(0.78, 0.13, 0.02, 0, 1.24, 0.06, 6, [0, 1, 2, 3]); // sciarpa tesa sopra la testa (solo durante i cori)
-    } else for (const sx of [-0.27, 0.27]) scatola(0.09, 0.44, 0.09, sx, 0.56, 0, 2, [2, 3]); // braccia intere
-    const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(nor, 3)); g.setAttribute('aParte', new T.Float32BufferAttribute(parte, 1)); g.setIndex(idx); return g;
+  // Il tifoso è una persona vera: il modello dei calciatori messo in piedi e semplificato (scripts/tifoso.mjs, circa 170
+  // vertici). In 3D nelle prime tre file, dietro è una sagoma (vedi sagome più sotto), cioè la stessa persona fotografata in
+  // tre pose e colorata coi suoi colori, due triangoli. Ogni vertice del 3D sa che cos'è: 0 maglia, 1 pelle, 2 braccio,
+  // 3 avambraccio, 4 capelli o berretto, 5 visiera, 6 sciarpa, 7 pantaloni, 8 scarpe. Visiera e sciarpa sono due pannelli.
+  const H = 1.72, FILE_VICINE = 3, SP = TIFOSO.spalla.map((v) => v * H), GOM = TIFOSO.gomito[1] * H;
+  const MANI_SU = SP[1] + Math.hypot(...TIFOSO.mano.map((v, i) => (v - TIFOSO.spalla[i]) * H)); // dove arrivano le mani con le braccia alzate
+  const tifoso = () => {
+    const L = TIFOSO.lod[0], pos = L.p.map((v) => v / 1000 * H), parte = L.c.slice(), idx = L.i.slice();
+    // pannelli piatti di due triangoli: quadro(larghezza, altezza, centro, orizzontale o verticale verso il campo)
+    const quadro = (w, h, cx, cy, cz, pt, piano) => { const o = pos.length / 3; for (const [a, c] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { pos.push(cx + a * w / 2, piano ? cy : cy + c * h / 2, piano ? cz - c * h / 2 : cz); parte.push(pt); } idx.push(o, o + 1, o + 2, o, o + 2, o + 3); };
+    const t = TIFOSO.testa, tw = (t.max[0] - t.min[0]) * H, th = (t.max[1] - t.min[1]) * H;
+    quadro(tw * 0.85, 0.11, 0, t.min[1] * H + th * 0.3, t.max[2] * H + 0.04, 5, true); // visiera (solo chi ha il berretto)
+    quadro(0.8, 0.13, 0, MANI_SU + 0.02, 0.07, 6, false); // sciarpa tesa sopra la testa (solo durante i cori)
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('aParte', new T.Float32BufferAttribute(parte, 1)); g.setIndex(idx); g.computeVertexNormals(); return g;
   };
-  const DETT = tifoso(true), SEMP = tifoso(false);
+  const DETT = tifoso();
+  // il movimento delle braccia (spalla e gomito veri del modello), uguale nel 3D e nelle foto delle sagome
+  const BRACCIA = `if (aParte > 1.5 && aParte < 3.5) {
+    vec3 q = transformed;
+    if (aParte > 2.5) { q.y -= ${GOM.toFixed(3)}; q = vec3(q.x, q.y * cos(a2) - q.z * sin(a2), q.y * sin(a2) + q.z * cos(a2)); q.y += ${GOM.toFixed(3)}; } // gomito
+    q.y -= ${SP[1].toFixed(3)}; transformed = vec3(q.x, q.y * cos(a1) - q.z * sin(a1) + ${SP[1].toFixed(3)}, q.y * sin(a1) + q.z * cos(a1)); // spalla
+  }`;
   const U = { uT: { value: 0 }, uEsulta: { value: new T.Vector2() }, uCoro: { value: new T.Vector2() }, uMossa: { value: 0.5 } };
   const MAT = (() => {
     const m = new T.MeshLambertMaterial({ color: 0xffffff });
     m.customProgramCacheKey = () => 'folla';
     m.onBeforeCompile = (sh) => {
       Object.assign(sh.uniforms, U);
-      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aParte; attribute vec4 aInfo; attribute vec3 aPelle, aCapo, aSciarpa; uniform float uT, uMossa; uniform vec2 uEsulta, uCoro;')
+      // colori netti tra maglia, pantaloni e pelle: un colore per triangolo (flat), niente sfumature sui triangoli grandi
+      sh.fragmentShader = sh.fragmentShader.replace('#include <color_pars_fragment>', 'flat varying vec3 vColor;');
+      sh.vertexShader = sh.vertexShader.replace('#include <color_pars_vertex>', 'flat varying vec3 vColor;').replace('#include <common>', '#include <common>\nattribute float aParte; attribute vec4 aInfo; attribute vec3 aPelle, aCapo, aSciarpa; uniform float uT, uMossa; uniform vec2 uEsulta, uCoro;')
         .replace('#include <color_vertex>', `#include <color_vertex>
 // aInfo: x fase, y settore, z maniche lunghe, w = sciarpa + 2 * berretto
 float manica = aInfo.z, berretto = step(1.5, aInfo.w);
+float hp = fract(aInfo.x * 13.7), hs = fract(aInfo.x * 29.3);
 if (aParte < 0.5) vColor.xyz = instanceColor.xyz;
 else if (aParte < 1.5) vColor.xyz = aPelle;
-else if (aParte < 2.5) vColor.xyz = mix(instanceColor.xyz, aPelle, 0.0);
+else if (aParte < 2.5) vColor.xyz = instanceColor.xyz; // la manica
 else if (aParte < 3.5) vColor.xyz = mix(aPelle, instanceColor.xyz, manica);
 else if (aParte < 4.5) vColor.xyz = aCapo;
 else if (aParte < 5.5) vColor.xyz = aCapo * 0.75;
-else vColor.xyz = mod(floor((position.x + 0.39) / 0.13), 2.0) < 0.5 ? instanceColor.xyz : aSciarpa; // sciarpa a strisce coi due colori`)
+else if (aParte < 6.5) vColor.xyz = mod(floor((position.x + 0.4) / 0.13), 2.0) < 0.5 ? instanceColor.xyz : aSciarpa; // sciarpa a strisce coi due colori
+else if (aParte < 7.5) vColor.xyz = hp < 0.45 ? vec3(0.04, 0.07, 0.16) : hp < 0.8 ? vec3(0.02, 0.02, 0.025) : vec3(0.18, 0.18, 0.2); // jeans, neri o grigi
+else vColor.xyz = hs < 0.6 ? vec3(0.02) : vec3(0.7);`)
         .replace('#include <begin_vertex>', `#include <begin_vertex>
 {
   float f = aInfo.x * 6.2831, settore = aInfo.y, e = settore < 0.5 ? uEsulta.x : uEsulta.y, varia = 0.7 + 0.6 * fract(aInfo.x * 7.31);
@@ -160,37 +163,91 @@ else vColor.xyz = mod(floor((position.x + 0.39) / 0.13), 2.0) < 0.5 ? instanceCo
   // braccia: ognuna con la sua fase (agitano asincrone) e il gomito che si piega, nei cori su dritte a tenere la sciarpa
   float a1 = mix(-e * (2.35 + 0.45 * sin(uT * 7.0 + f + lato * 1.7)) * varia, -3.0, c);
   float a2 = mix(-e * (0.3 + 0.35 * sin(uT * 5.0 + f * 1.3 + lato)) * varia, 0.0, c);
-  if (aParte > 1.5 && aParte < 3.5) {
-    vec3 q = transformed;
-    if (aParte > 2.5) { q.y -= 0.56; q = vec3(q.x, q.y * cos(a2) - q.z * sin(a2), q.y * sin(a2) + q.z * cos(a2)); q.y += 0.56; } // gomito
-    q.y -= 0.78; transformed = vec3(q.x, q.y * cos(a1) - q.z * sin(a1) + 0.78, q.y * sin(a1) + q.z * cos(a1)); // spalla
-  }
-  if (aParte > 4.5 && aParte < 5.5 && berretto < 0.5) transformed = vec3(0.0, 0.98, 0.0); // niente berretto: niente visiera
-  if (aParte > 5.5) { if (c < 0.02) transformed = vec3(0.0, 0.55, 0.0); else { transformed.x *= c; transformed.x += sin(uT * 3.2 + f) * 0.06 * c; } } // la sciarpa si apre col coro
+  ${BRACCIA}
+  if (aParte > 4.5 && aParte < 5.5 && berretto < 0.5) transformed = vec3(0.0, ${(TIFOSO.testa.min[1] * H).toFixed(3)}, 0.0); // niente berretto: niente visiera
+  if (aParte > 5.5 && aParte < 6.5) { if (c < 0.02) transformed = vec3(0.0, ${(SP[1] - 0.1).toFixed(3)}, 0.0); else { transformed.x *= c; transformed.x += sin(uT * 3.2 + f) * 0.06 * c; } } // la sciarpa si apre col coro
   transformed.y += e * max(0.0, sin(uT * 9.0 + f)) * 0.34 * varia + sin(uT * 1.7 + f) * 0.015 * uMossa + c * max(0.0, sin(uT * 4.4 + f * 0.2)) * 0.06; // salta quando esulta, nei cori a tempo
   transformed.x += sin(uT * 1.3 + f * 1.7) * 0.035 * uMossa; // ondeggia
 }`);
     };
     materiali.push(m); return m;
   })();
+  /*
+   * Le sagome per le file lontane. All'avvio si fotografa il tifoso 3D in tre pose (fermo, braccia al cielo, sciarpa tesa)
+   * in una texture piccola che non porta colori ma tre maschere già illuminate: R maglia (e sciarpa), G pelle, B il resto
+   * scuro (capelli, pantaloni, scarpe). Ogni sagoma è un rettangolo girato verso il campo che prende la posa giusta e si
+   * colora coi colori suoi (maglia, pelle, pantaloni): da lontano non si distingue dal 3D e costa due triangoli.
+   */
+  const CELLA = { w: 0.95, h: MANI_SU + 0.3, px: [96, 192] };
+  const sagome = (() => {
+    if (!renderer) return null;
+    const rt = new T.WebGLRenderTarget(CELLA.px[0] * 3, CELLA.px[1], { generateMipmaps: true, minFilter: T.LinearMipmapLinearFilter, magFilter: T.LinearFilter });
+    const sc2 = new T.Scene(), cam = new T.OrthographicCamera(0, CELLA.w * 3, CELLA.h - 0.05, -0.05, -5, 5);
+    [[0, 0, 0], [-2.5, -0.45, 0], [-3, 0, 1]].forEach(([a1, a2, sciarpa], k) => {
+      const m = new T.ShaderMaterial({ uniforms: { a1: { value: a1 }, a2: { value: a2 }, sciarpa: { value: sciarpa } },
+        vertexShader: `attribute float aParte; uniform float a1, a2, sciarpa; flat varying vec3 vMasc; varying float vLuce;
+void main() { vec3 transformed = position; ${BRACCIA}
+  if (aParte > 4.5 && aParte < 5.5) transformed = vec3(0.0, -9.0, 0.0); // la visiera no: nelle sagome nessuno ha il berretto
+  if (aParte > 5.5 && aParte < 6.5 && sciarpa < 0.5) transformed = vec3(0.0, -9.0, 0.0);
+  vMasc = (aParte < 0.5 || (aParte > 1.5 && aParte < 2.5) || (aParte > 5.5 && aParte < 6.5)) ? vec3(1.0, 0.0, 0.0) : (aParte < 1.5 || aParte < 3.5) ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
+  vLuce = 0.5 + 0.55 * max(dot(normalize(normal), normalize(vec3(0.35, 0.8, 0.6))), 0.0);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0); }`,
+        fragmentShader: 'flat varying vec3 vMasc; varying float vLuce; void main() { gl_FragColor = vec4(vMasc * min(vLuce, 1.0), 1.0); }' });
+      const mesh = new T.Mesh(DETT, m); mesh.position.x = CELLA.w * (k + 0.5); sc2.add(mesh);
+    });
+    const prima = renderer.getRenderTarget(), colore = renderer.getClearColor(new T.Color()), alfa = renderer.getClearAlpha();
+    renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(sc2, cam);
+    renderer.setRenderTarget(prima); renderer.setClearColor(colore, alfa);
+    return rt.texture;
+  })();
+  const MATS = sagome && (() => {
+    const m = new T.MeshBasicMaterial({ map: sagome, color: 0xffffff, alphaTest: 0.45 });
+    m.customProgramCacheKey = () => 'sagome';
+    m.onBeforeCompile = (sh) => {
+      Object.assign(sh.uniforms, U);
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aInfo; attribute vec3 aPelle; uniform float uT, uMossa; uniform vec2 uEsulta, uCoro; flat varying vec3 vMaglia, vPelle, vScuro;')
+        .replace('#include <uv_vertex>', `#include <uv_vertex>
+float f = aInfo.x * 6.2831, settore = aInfo.y, e = settore < 0.5 ? uEsulta.x : uEsulta.y, varia = 0.7 + 0.6 * fract(aInfo.x * 7.31);
+float c = (settore < 0.5 ? uCoro.x : uCoro.y) * mod(aInfo.w, 2.0);
+float posa = c > 0.4 ? 2.0 : (e > 0.3 && sin(uT * 6.0 + f) > -0.3 ? 1.0 : 0.0); // ferma, braccia al cielo (a scatti, come chi le agita) o sciarpa
+vMapUv = vec2((uv.x + posa) / 3.0, uv.y);
+float hp = fract(aInfo.x * 13.7); vMaglia = instanceColor.xyz; vPelle = aPelle; vScuro = hp < 0.45 ? vec3(0.04, 0.07, 0.16) : hp < 0.8 ? vec3(0.02, 0.02, 0.025) : vec3(0.18, 0.18, 0.2);`)
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+transformed.y += e * max(0.0, sin(uT * 9.0 + f)) * 0.34 * varia + sin(uT * 1.7 + f) * 0.015 * uMossa + c * max(0.0, sin(uT * 4.4 + f * 0.2)) * 0.06;
+transformed.x += sin(uT * 1.3 + f * 1.7) * 0.035 * uMossa;`);
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nflat varying vec3 vMaglia, vPelle, vScuro;')
+        .replace('#include <map_fragment>', `vec4 masc = texture2D(map, vMapUv);
+diffuseColor = vec4((vMaglia * masc.r + vPelle * masc.g + vScuro * masc.b) / max(masc.a, 0.001) * diffuse, masc.a); // le maschere già illuminate, coi colori del tifoso`)
+        .replace('#include <color_fragment>', '');
+    };
+    materiali.push(m); return m;
+  })();
+  const QUAD = (() => { const g = new T.PlaneGeometry(CELLA.w, CELLA.h); g.translate(0, CELLA.h / 2 - 0.05, 0); return g; })();
+
   const m4 = new T.Matrix4(), q = new T.Quaternion(), sc = new T.Vector3(), asse = new T.Vector3(0, 1, 0), pelle = [0xf1c9a5, 0xe0ac7e, 0xc68642, 0x8d5524, 0x5c3a1e, 0xf6d7bd].map((c) => new T.Color(c));
   const folle = []; let N = 0;
-  for (const tr of tribune) {
-    const suoi = posti.filter((s) => s.tr === tr);
-    for (let i = suoi.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [suoi[i], suoi[j]] = [suoi[j], suoi[i]]; }
-    const n = Math.min(suoi.length, Math.round(totale * suoi.length / posti.length)); if (!n) continue;
-    const info = new Float32Array(n * 4), cute = new Float32Array(n * 3), capo = new Float32Array(n * 3), sciarpa = new Float32Array(n * 3);
-    const gD = DETT.clone(), gS = SEMP.clone(), m = new T.InstancedMesh(gD, MAT, n);
+  const gruppo = (suoi, geo, mat, visibile) => { // una InstancedMesh per un gruppo di posti, con i suoi attributi
+    const n = suoi.length; if (!n) return null;
+    const info = new Float32Array(n * 4), cute = new Float32Array(n * 3), capo = new Float32Array(n * 3), sciarpa = new Float32Array(n * 3), m = new T.InstancedMesh(geo.clone(), mat, n);
     for (let i = 0; i < n; i++) {
-      const s = suoi[i], k = 0.88 + rand() * 0.24; q.setFromAxisAngle(asse, s.ry + (rand() - 0.5) * 0.5); sc.set(k, k, k); m4.compose(s.p, q, sc);
+      const s = suoi[i], k = 0.9 + rand() * 0.2; q.setFromAxisAngle(asse, s.ry + (rand() - 0.5) * (mat === MATS ? 0.2 : 0.5)); sc.set(k, k, k); m4.compose(s.p, q, sc);
       m.setMatrixAt(i, m4); m.setColorAt(i, pelle[0]); pelle[Math.floor(rand() * pelle.length)].toArray(cute, i * 3);
       info[i * 4] = rand(); info[i * 4 + 1] = s.settore;
     }
     // l'ingombro deve tenere conto dei salti, delle braccia e delle sciarpe alzate (lo shader sposta i vertici)
-    m.computeBoundingSphere(); m.boundingSphere.radius += 1.5;
+    m.computeBoundingSphere(); m.boundingSphere.radius += 2;
     const A = { aInfo: new T.InstancedBufferAttribute(info, 4), aPelle: new T.InstancedBufferAttribute(cute, 3), aCapo: new T.InstancedBufferAttribute(capo, 3), aSciarpa: new T.InstancedBufferAttribute(sciarpa, 3) };
-    for (const g of [gD, gS]) for (const k in A) g.setAttribute(k, A[k]); // le due geometrie condividono gli attributi dei tifosi
-    scene.add(m); folle.push({ m, info, A, n, gD, gS, capo, sciarpa }); N += n;
+    for (const k in A) m.geometry.setAttribute(k, A[k]);
+    m.visible = visibile; scene.add(m); const f = { m, info, A, n, capo, sciarpa }; folle.push(f); return f;
+  };
+  for (const tr of tribune) {
+    const tutti = posti.filter((s) => s.tr === tr);
+    for (let i = tutti.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [tutti[i], tutti[j]] = [tutti[j], tutti[i]]; }
+    const presi = tutti.slice(0, Math.min(tutti.length, Math.round(totale * tutti.length / posti.length)));
+    const vicini = presi.filter((s) => s.fila < FILE_VICINE), lontani = presi.filter((s) => s.fila >= FILE_VICINE);
+    const v3d = gruppo(vicini, DETT, MAT, true);
+    if (MATS) { tr.sagomeVicine = gruppo(vicini, QUAD, MATS, false); gruppo(lontani, QUAD, MATS, true); } else gruppo(lontani, DETT, MAT, true);
+    tr.folla3d = v3d; N += presi.length;
   }
 
   // colori: maglie della squadra di casa negli spalti di casa, degli ospiti nella curva ospiti (più un po' di neutri)
@@ -225,8 +282,8 @@ else vColor.xyz = mod(floor((position.x + 0.39) / 0.13), 2.0) < 0.5 ? instanceCo
   function canta(settore, durata = 9) { cantaFino[settore] = Math.max(cantaFino[settore], durata); }
   function esulta(settore, forza = 1, durata = 5) { es[settore] = Math.max(es[settore], forza); fino[settore] = Math.max(fino[settore], durata); if (forza >= 1) canta(settore, durata + 4); }
   function densita(d) { const k = Math.max(0.1, Math.min(1, d)); for (const f of folle) f.m.count = Math.round(f.n * k); }
-  /** Dettagli della folla sì o no (lo scaler della qualità li toglie per primi): cambia solo la geometria. */
-  function dettaglio(on) { for (const f of folle) f.m.geometry = on ? f.gD : f.gS; }
+  /** Dettagli della folla sì o no (lo scaler della qualità li toglie per primi): anche le prime file diventano sagome. */
+  function dettaglio(on) { for (const tr of tribune) if (tr.folla3d && tr.sagomeVicine) { tr.folla3d.m.visible = on; tr.sagomeVicine.m.visible = !on; } }
   function muovi(dt, t) {
     U.uT.value = t;
     for (let k = 0; k < 2; k++) { fino[k] -= dt; if (fino[k] <= 0) es[k] = Math.max(0, es[k] - dt * 1.5); }
