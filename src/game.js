@@ -12,6 +12,7 @@ import * as URTO from './fisica/contatti.js';
 import { creaCampo, texturaOmbra } from './grafica/campo.js';
 import { Porta, Bandierine, panchine, torriFaro, Particelle } from './grafica/stadio.js';
 import { creaAtmosfera } from './grafica/luce.js';
+import { creaSpalti } from './grafica/spalti.js';
 
 (() => {
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
@@ -113,31 +114,13 @@ async function buildPitch() {
   PORTE = [-1, 1].map((d) => new Porta(T, scene, { d, gx: d * HL, GH, GT }));
   BANDIERINE = new Bandierine(T, scene, { HL, HW });
 }
-let PORTE = [], BANDIERINE = null, FARI = null, CAMPO = null, SFONDO = null, ATMO = null;
+let PORTE = [], BANDIERINE = null, FARI = null, CAMPO = null, SFONDO = null, ATMO = null, SPALTI = null;
 const PART = new Particelle(T, scene); // ciuffi d'erba e polvere: scivolate, frenate, tiri forti
 
 let boards = [], standMat = null, titoSprite = null;
 function buildStadium(lockup) {
-  // tribune: pubblico disegnato a puntini
-  const [c, x] = cv(512, 256); x.fillStyle = '#1a2038'; x.fillRect(0, 0, 512, 256);
-  const pal = ['#f2f2f2', '#d8d8e0', '#ffcf4d', '#4B06FC', '#D9F51F', '#e3577a', '#3d7bd9', '#2a2f45', '#c98f5a', '#7a4a2e'];
-  for (let r = 0; r < 20; r++) for (let k = 0; k < 64; k++) {
-    if (Math.random() < .12) continue;
-    const px = k * 8 + (r % 2) * 4 + rnd(-1, 1), py = r * 12.8 + 4;
-    x.fillStyle = pal[(Math.random() * pal.length) | 0]; x.fillRect(px, py + 3, 5.5, 7);
-    x.fillStyle = ['#e8b98f', '#c98f5a', '#8a5a3a', '#f0cba8'][(Math.random() * 4) | 0]; x.beginPath(); x.arc(px + 2.7, py + 1.5, 2.3, 0, 7); x.fill();
-  }
-  const stand = (len, cx, cz, ry) => {
-    const g = new T.Group(); g.position.set(cx, 0, cz); g.rotation.y = ry;
-    const h = 30, a = .95, m = new T.Mesh(new T.PlaneGeometry(len, h), new T.MeshLambertMaterial({ map: ctex(c, len / 26, 1) }));
-    m.rotation.x = -a; m.position.set(0, h / 2 * Math.cos(a) + 1.2, -h / 2 * Math.sin(a)); g.add(m);
-    (boards.stands || (boards.stands = [])).push({ m, x: cx, z: cz }); // la regia le ridipinge coi colori delle squadre
-    const w = new T.Mesh(new T.BoxGeometry(len, 1.2, .5), mat(0x0d1733)); w.position.set(0, .6, .2); g.add(w);
-    if (len > 100) { const tetto = new T.Mesh(new T.BoxGeometry(len, .7, 15), new T.MeshStandardMaterial({ color: 0x2b3245, roughness: .6, metalness: .3 })); tetto.position.set(0, 21, -19); tetto.rotation.x = -.08; g.add(tetto); for (let k = -2; k <= 2; k++) { const pil = new T.Mesh(new T.CylinderGeometry(.35, .35, 21, 8), mat(0x2b3245)); pil.position.set(k * len / 5, 10.5, -25.5); g.add(pil); } } // copertura sulle tribune lunghe
-    scene.add(g);
-  };
-  stand(HL * 2 + 30, 0, -(HW + 7.5), 0); stand(HL * 2 + 30, 0, HW + 7.5, Math.PI);
-  stand(HW * 2 + 15, HL + 9, 0, -Math.PI / 2); stand(HW * 2 + 15, -(HL + 9), 0, Math.PI / 2);
+  // spalti in cemento con scale, ringhiere, tunnel, striscioni, bandiere e la folla (src/grafica/spalti.js)
+  SPALTI = creaSpalti(T, scene, { HL, HW });
   // cartelloni
   const [bc, bx] = cv(2048, 64);
   const tex = ctex(bc); boards.tex = tex; boards.cv = bc; boards.ctx = bx; boards.lockup = lockup;
@@ -1469,6 +1452,22 @@ function updateCamera(dt) {
   cam.position.copy(camPos); cam.lookAt(camLook.x, 1, camLook.z);
   if (Math.abs(cam.fov - fov) > .01) { cam.fov += (fov - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); }
 }
+// La folla: alla nuova partita prende i colori delle due squadre e si riempie secondo l'importanza (amichevole meno gente,
+// carriera secondo il livello dello stadio, coppe a eliminazione e finali piene); esulta sui tiri pericolosi e sui gol.
+const TIFO = { partita: null, tiro: -1, gol: 0, base: .55 };
+// quanta gente si disegna: l'importanza della partita per la qualità grafica (meno tifosi se il dispositivo arranca)
+function pienone() { if (SPALTI) SPALTI.densita(TIFO.base * [1, .8, .6, .4][QUAL.livello || 0]); }
+function folla(dt) {
+  const [h, a] = G.teams;
+  if (h && TIFO.partita !== h.club.id + a.club.id) {
+    TIFO.partita = h.club.id + a.club.id; SPALTI.colora(h.club, a.club); TIFO.tiro = G.shotId; TIFO.gol = G.goals.length;
+    const c = G.comp, liv = K ? K.stadio || 1 : 1, ko = c && (c.tipo === 'coppa' || (c.tipo === 'castelli' && /final|semi|quart/i.test(c.titolo || '')));
+    TIFO.base = !c ? .55 : ko ? (/finale/i.test(c.titolo || '') ? 1 : .85) : .55 + .09 * (liv - 1); pienone();
+  }
+  if (h && G.shotId !== TIFO.tiro) { TIFO.tiro = G.shotId; if (G.shooter && G.state === 'play') SPALTI.esulta(G.shooter.team.idx, .55, 1); } // tiro: un sussulto
+  if (h && G.goals.length !== TIFO.gol) { TIFO.gol = G.goals.length; if (G.scorer) SPALTI.esulta(G.scorer.team.idx, 1, 6); } // gol: salti e braccia al cielo
+  SPALTI.muovi(dt, G.t);
+}
 function draw(dt) {
   const b = G.ball;
   if (b) {
@@ -1484,7 +1483,7 @@ function draw(dt) {
     for (const p of PORTE) p.muovi(dt, G.ball);
     if (G.state !== 'goal' && G.state !== 'menu' && !REGIA.figure()) { const k = Math.floor(G.t / 7) * .25; for (const bo of boards) bo.material.map.offset.x = k; } // tabelloni LED: un pannello nuovo ogni 7 secondi
     if (BANDIERINE && G.ball) BANDIERINE.muovi(dt, [{ x: G.ball.x, z: G.ball.z, vx: G.ball.vx, vz: G.ball.vz, alto: G.ball.y }, ...all().map((p) => ({ x: p.x, z: p.z, vx: p.vx, vz: p.vz, alto: 0 }))]);
-    PART.muovi(dt);
+    PART.muovi(dt); if (SPALTI) folla(dt);
   }
   updateCamera(dt); REGIA.dopo(dt); seguiOmbre(); renderer.render(scene, cam);
 }
@@ -2045,6 +2044,7 @@ function qualita(dt) {
   else if (QUAL.livello === 2) sun.castShadow = false;
   else { scene.traverse((o) => { if (o.material && o.material.isMeshStandardMaterial) { o.material.normalMap = o.material.roughnessMap = null; } if (o.isSpotLight) o.visible = false; }); renderer.setPixelRatio(1); resize(); } // di notte restano i fasci e la luce dall'alto, non i faretti
   scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; });
+  pienone();
 }
 function loop(ts) {
   requestAnimationFrame(loop);
@@ -2059,7 +2059,7 @@ async function boot() {
   try { await Promise.race([document.fonts.load('40px Anton'), new Promise((r) => setTimeout(r, 2500))]); } catch (e) { /* si disegna col font di sistema */ }
   const lock = await loadImg('img/corona-lime.png');
   buildStadium(lock); paintBoards(CLUBS[0], CLUBS[1], null);
-  ATMO = creaAtmosfera(T, { scene, hemi, sun, sole: SOLE, fari: FARI, sfondo: SFONDO, campo: CAMPO, tribune: (boards.stands || []).map((s) => s.m.material) }); ATMO.applica(sel.ora); // giorno o notte, scelto prima della partita
+  ATMO = creaAtmosfera(T, { scene, hemi, sun, sole: SOLE, fari: FARI, sfondo: SFONDO, campo: CAMPO, tribune: SPALTI.materiali }); ATMO.applica(sel.ora); // giorno o notte, scelto prima della partita
   buildMenu(); bindInput();
   K = CAR.carica(); if (K && !club(K.club)) K = null;
   CAR.applica(K, CLUBS); applicaMio(); // le rose cambiate col mercato e il club dell'utente, prima di caricare gli stemmi
@@ -2067,6 +2067,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
