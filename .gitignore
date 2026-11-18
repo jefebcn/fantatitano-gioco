@@ -2,3 +2,5 @@ node_modules/
 public/app.js
 .vercel/
 *.log
+public/index.html
+public/sw.js
