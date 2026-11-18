@@ -10,6 +10,7 @@ import * as FIS from './fisica/pallone.js';
 import * as MOTO from './fisica/corpo.js';
 import * as URTO from './fisica/contatti.js';
 import { creaCampo, texturaOmbra } from './grafica/campo.js';
+import { Porta, Bandierine, panchine, torriFaro, Particelle } from './grafica/stadio.js';
 
 (() => {
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
@@ -107,26 +108,12 @@ function cv(w, h) { const c = document.createElement('canvas'); c.width = w; c.h
 
 async function buildPitch() {
   const { campo, fuori } = await creaCampo(T, { HL, HW, anisotropia: renderer.capabilities.getMaxAnisotropy() }); scene.add(campo, fuori); // prato PBR, strisce, usura e linee: src/grafica/campo.js
-  // porte
-  const [nc, nx] = cv(64, 64); nx.strokeStyle = 'rgba(255,255,255,.75)'; nx.lineWidth = 3; nx.strokeRect(0, 0, 64, 64);
-  const post = mat(0xffffff);
-  for (const d of [-1, 1]) {
-    const gx = d * HL, dep = 2.2;
-    for (const e of [-1, 1]) { const p = new T.Mesh(new T.CylinderGeometry(.09, .09, GT, 8), post); p.position.set(gx, GT / 2, e * GH); p.castShadow = true; scene.add(p); }
-    const bar = new T.Mesh(new T.CylinderGeometry(.09, .09, GH * 2 + .18, 8), post); bar.rotation.x = Math.PI / 2; bar.position.set(gx, GT, 0); bar.castShadow = true; scene.add(bar);
-    const net = (w, h, px, py, pz, ry, rx) => {
-      const n = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ map: ctex(nc, w / .45, h / .45), transparent: true, side: T.DoubleSide, depthWrite: false }));
-      n.position.set(px, py, pz); n.rotation.set(rx || 0, ry || 0, 0); scene.add(n);
-    };
-    net(GH * 2, GT, gx + d * dep, GT / 2, 0, Math.PI / 2);
-    net(dep, GT, gx + d * dep / 2, GT / 2, GH, 0); net(dep, GT, gx + d * dep / 2, GT / 2, -GH, 0);
-    net(dep, GH * 2, gx + d * dep / 2, GT, 0, 0, Math.PI / 2);
-    for (const e of [-1, 1]) {
-      const f = new T.Mesh(new T.CylinderGeometry(.04, .04, 1.6, 6), post); f.position.set(gx, .8, e * HW); scene.add(f);
-      const fl = new T.Mesh(new T.PlaneGeometry(.5, .32), new T.MeshBasicMaterial({ color: 0xD9F51F, side: T.DoubleSide })); fl.position.set(gx - d * .26, 1.42, e * HW); scene.add(fl);
-    }
-  }
+  // porte con la rete che si deforma e bandierine che si flettono (src/grafica/stadio.js)
+  PORTE = [-1, 1].map((d) => new Porta(T, scene, { d, gx: d * HL, GH, GT }));
+  BANDIERINE = new Bandierine(T, scene, { HL, HW });
 }
+let PORTE = [], BANDIERINE = null, FARI = null;
+const PART = new Particelle(T, scene); // ciuffi d'erba e polvere: scivolate, frenate, tiri forti
 
 let boards = [], standMat = null, titoSprite = null;
 function buildStadium(lockup) {
@@ -145,6 +132,7 @@ function buildStadium(lockup) {
     m.rotation.x = -a; m.position.set(0, h / 2 * Math.cos(a) + 1.2, -h / 2 * Math.sin(a)); g.add(m);
     (boards.stands || (boards.stands = [])).push({ m, x: cx, z: cz }); // la regia le ridipinge coi colori delle squadre
     const w = new T.Mesh(new T.BoxGeometry(len, 1.2, .5), mat(0x0d1733)); w.position.set(0, .6, .2); g.add(w);
+    if (len > 100) { const tetto = new T.Mesh(new T.BoxGeometry(len, .7, 15), new T.MeshStandardMaterial({ color: 0x2b3245, roughness: .6, metalness: .3 })); tetto.position.set(0, 21, -19); tetto.rotation.x = -.08; g.add(tetto); for (let k = -2; k <= 2; k++) { const pil = new T.Mesh(new T.CylinderGeometry(.35, .35, 21, 8), mat(0x2b3245)); pil.position.set(k * len / 5, 10.5, -25.5); g.add(pil); } } // copertura sulle tribune lunghe
     scene.add(g);
   };
   stand(HL * 2 + 30, 0, -(HW + 7.5), 0); stand(HL * 2 + 30, 0, HW + 7.5, Math.PI);
@@ -160,6 +148,7 @@ function buildStadium(lockup) {
   };
   board(HL * 2 + 8, 0, -(HW + 4.2), 0); board(HL * 2 + 8, 0, HW + 4.2, Math.PI);
   board(HW * 2 + 8, HL + 5.2, 0, -Math.PI / 2); board(HW * 2 + 8, -(HL + 5.2), 0, Math.PI / 2);
+  panchine(T, scene, { HW }); FARI = torriFaro(T, scene, { HL, HW }); // panchine tecniche e torri faro agli angoli
   // Monte Titano con le tre torri, sullo sfondo
   const sh = new T.Shape(); const pts = [[-130, 0], [-110, 8], [-84, 20], [-62, 34], [-52, 44], [-47, 44], [-47, 52], [-41, 52], [-41, 45], [-24, 40], [-8, 48], [-3, 56], [-3, 66], [3, 66], [3, 57], [12, 50], [30, 38], [44, 41], [50, 46], [50, 53], [55, 53], [55, 45], [70, 30], [92, 16], [112, 7], [130, 0]];
   sh.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) sh.lineTo(p[0], p[1]);
@@ -174,8 +163,10 @@ function paintBoards(home, away, imgs) {
   for (let i = 0; i < 4; i++) {
     const o = i * seg;
     x.fillStyle = i % 2 ? '#4B06FC' : '#0A0A0C'; x.fillRect(o, 0, seg, 64);
-    x.fillStyle = i % 2 ? '#fff' : '#D9F51F'; x.font = '44px Anton'; x.textBaseline = 'middle'; x.textAlign = 'left';
-    x.fillText(i % 2 ? 'FANTATITANO.SITE' : 'FANTATITANO', o + 96, 35);
+    const msg = ['FANTATITANO', 'FANTATITANO.SITE', 'CALCIO SAMMARINESE', 'SAN MARINO · MONTE TITANO'][i];
+    x.fillStyle = i % 2 ? '#fff' : '#D9F51F'; x.textBaseline = 'middle'; x.textAlign = 'center';
+    let fs = 44; do { x.font = `${fs}px Anton`; fs -= 2; } while (x.measureText(msg).width > seg - 200 && fs > 20); // il testo sta tra i due stemmi
+    x.fillText(msg, o + seg / 2, 35);
     const cr = imgs && imgs[i < 2 ? home.id : away.id]; if (cr) x.drawImage(cr, o + 24, 5, 54 * cr.width / cr.height, 54);
     const cr2 = imgs && imgs[i < 2 ? away.id : home.id]; if (cr2) x.drawImage(cr2, o + seg - 78, 5, 54 * cr2.width / cr2.height, 54);
   }
@@ -457,7 +448,9 @@ function piede(p) {
 }
 function kick(p, vx, vy, vz, anim = 'passaggio', c = 0, tp = 0) {
   const b = G.ball, o = piede(p); b.owner = null; b.x = o.x; b.z = o.z; b.y = BR;
-  b.vx = vx; b.vy = vy; b.vz = vz; b.c = c; b.t = tp; b.resto = 0; G.calcioT = G.t; p.cool = .45; p.st = 'kick'; p.stT = 0; G.lastTouch = G.lastKicker = p; AU.kick(hyp(vx, vz));
+  b.vx = vx; b.vy = vy; b.vz = vz; b.c = c; b.t = tp; b.resto = 0; G.calcioT = G.t; p.cool = .45;
+  // tiro forte: si alza un po' d'erba
+  if (hyp(vx, vz) > 23) { const v = hyp(vx, vz); PART.emetti('erba', o.x, .05, o.z, 6, 3, vx / v * .6, vz / v * .6); PART.emetti('polvere', o.x, .1, o.z, 3, 1.5, 0, 0); } p.st = 'kick'; p.stT = 0; G.lastTouch = G.lastKicker = p; AU.kick(hyp(vx, vz));
   if (p.i === 0 && p.fx === 'rinvio') { b.y = 2.3; b.vy = Math.max(b.vy, 1.2); } // rinvio con le mani: la palla parte dall'alto
   else azione(p, anim);
   const a = Math.atan2(vx, vz); p.dir = a;
@@ -1073,7 +1066,7 @@ function userThink(p) {
 function movePlayer(p, dt) {
   const b = G.ball; p.stT += dt; p.ritmo = false;
   if (p.st === 'kick' && p.stT > .32) p.st = 'run';
-  if (p.st === 'slide') { const k = URTO.velScivolata(p.slideV0 || URTO.SCIVOLATA.v0, p.stT); p.vx = Math.sin(p.dir) * k; p.vz = Math.cos(p.dir) * k; if (p.stT > URTO.SCIVOLATA.durata) { p.st = 'down'; p.stT = 0; } }
+  if (p.st === 'slide') { const k = URTO.velScivolata(p.slideV0 || URTO.SCIVOLATA.v0, p.stT); if (p.stT < .55 && rnd() < dt * 30) { const fx = Math.sin(p.dir), fz = Math.cos(p.dir); PART.emetti('erba', p.x + fx * .9, .05, p.z + fz * .9, 2, k * .35, fx, fz); if (rnd() < .5) PART.emetti('polvere', p.x + fx * .6, .1, p.z + fz * .6, 1, 1.2, fx, fz); } p.vx = Math.sin(p.dir) * k; p.vz = Math.cos(p.dir) * k; if (p.stT > URTO.SCIVOLATA.durata) { p.st = 'down'; p.stT = 0; } }
   else if (p.st === 'dive') { const k = Math.max(0, 1 - p.stT / .5) * (p.diveV || 8); p.vx *= Math.pow(.8, dt * 60); p.vz = p.diveS * k; if (p.stT > .5) { p.st = 'down'; p.stT = 0; } }
   else if (p.st === 'down') { const f = Math.pow(.7, dt * 60); p.vx *= f; p.vz *= f; if (p.stT > (p.i === 0 ? DOWN.gk : DOWN.pl)) { p.st = 'run'; p.stT = 0; } }
   else return corri(p, dt);
@@ -1105,7 +1098,7 @@ function corri(p, dt) {
   if (d > .15) { const k = (insegue ? sp : Math.min(sp, Math.sqrt(2 * MOTO.CORPO.frena * .55 * d), d * 4)) / d; wx = dx * k; wz = dz * k; } // inseguendo la propria palla non si frena all'arrivo
   const scatto = p.sprint && hyp(p.vx, p.vz) > 5, aiuto = guida ? 1.12 : 1; // chi guida l'utente risponde un filo prima
   const o = { acc: fm.acc * aiuto * (p.i === 0 ? 1.15 : 1) * (sb ? .7 : 1), frena: (.85 + .15 * fm.acc) * aiuto, lat: fm.lat * aiuto * (scatto ? MOTO.CORPO.latScatto : 1) * (sb ? .75 : 1) }; // sbilanciato da una spallata: per un attimo meno spunto e meno curva
-  const h = MOTO.CORPO.passoMax; p.restoC = (p.restoC || 0) + dt;
+  const vPrima = hyp(p.vx, p.vz), h = MOTO.CORPO.passoMax; p.restoC = (p.restoC || 0) + dt;
   while (p.restoC >= h - 1e-9) {
     p.restoC -= h;
     MOTO.spingi(p, wx, wz, h, sp, o);
@@ -1117,6 +1110,7 @@ function corri(p, dt) {
     if (MOTO.cammina(p, h, v)) p.ritmo = true; // un piede sta per toccare terra: il momento del tocco di palla (lo consuma moveBall)
     p.x = clamp(p.x + p.vx * h, -HL - 3.5, HL + 3.5); p.z = clamp(p.z + p.vz * h, -HW - 3, HW + 3);
   }
+  if (dt > 0 && vPrima > 5.5 && (vPrima - hyp(p.vx, p.vz)) / dt > 10 && (p.frenataT || 0) < G.t) { p.frenataT = G.t + .5; PART.emetti('polvere', p.x, .08, p.z, 3, 1.4, p.vx / vPrima, p.vz / vPrima); PART.emetti('erba', p.x, .05, p.z, 3, 2, p.vx / vPrima, p.vz / vPrima); } // frenata brusca: zolle e polvere
 }
 const tecnica = (p) => clamp(.5 + (p.q - 20) / 30, 0, 1);
 function moveBall(dt) {
@@ -1140,9 +1134,8 @@ function moveBall(dt) {
   if (G.state === 'kickoff' || G.state === 'restart') return;
   FIS.passo(b, dt); // gravità, aria, effetto, rimbalzi e attrito dell'erba (src/fisica/pallone.js)
   if (G.state !== 'play') { // dentro la rete
-    if (Math.abs(b.x) > HL + 1.9) { b.x = sgn(b.x) * (HL + 1.9); b.vx *= -.1; b.vz *= .5; }
-    if (Math.abs(b.x) > HL && Math.abs(b.z) > GH - .3) { b.z = sgn(b.z) * (GH - .3); b.vz *= -.1; }
-    if (Math.abs(b.x) > HL && b.y > GT - .3) { b.y = GT - .3; b.vy = 0; }
+    for (const p of PORTE) p.urta(b, BR); // la rete cede e frena il pallone
+    if (Math.abs(b.x) > HL + 3) { b.x = sgn(b.x) * (HL + 3); b.vx = 0; } // sicurezza: oltre la sacca della rete non si va
   }
 }
 function contacts(dt) {
@@ -1228,6 +1221,7 @@ function bounds() {
   const b = G.ball; if (b.owner && b.owner.i === 0) return;
   if (Math.abs(b.x) > HL) {
     const e = sgn(b.x), az = Math.abs(b.z);
+    if (az > GH && az < GH + 1.4 && b.y < GT + .4) for (const p of PORTE) if (p.d === e) p.colpoFuori(b); // sfiora l'esterno della rete uscendo sul fondo
     if (az < GH + .28 && b.y < GT + .3 && (az > GH - .05 || b.y > GT - .05) && Math.abs(b.x) < HL + .8 && !b.owner) { // palo o traversa
       b.x = e * (HL - .15); b.vx *= -.55; b.vz += sgn(b.z) * 2; b.vy *= .6; AU.post(); return;
     }
@@ -1469,6 +1463,12 @@ function draw(dt) {
     ballShadow.position.set(b.x, .04, b.z); ballShadow.scale.setScalar(1.25 + b.y * .16); ballShadow.material.opacity = .62 / (1 + Math.max(0, b.y - BR) * .32); // a terra scura e stretta, in aria larga e chiara: si capisce dove scende un cross
     const c = G.ctrl; ring.visible = arrow.visible = !!c && !G.auto && G.state !== 'full';
     if (c) { ring.position.set(c.x, .05, c.z); arrow.position.set(c.x, 3.35 + Math.sin(G.t * 6) * .08, c.z); }
+  }
+  if (dt > 0) { // rete, bandierine e particelle
+    for (const p of PORTE) p.muovi(dt, G.ball);
+    if (G.state !== 'goal' && G.state !== 'menu' && !REGIA.figure()) { const k = Math.floor(G.t / 7) * .25; for (const bo of boards) bo.material.map.offset.x = k; } // tabelloni LED: un pannello nuovo ogni 7 secondi
+    if (BANDIERINE && G.ball) BANDIERINE.muovi(dt, [{ x: G.ball.x, z: G.ball.z, vx: G.ball.vx, vz: G.ball.vz, alto: G.ball.y }, ...all().map((p) => ({ x: p.x, z: p.z, vx: p.vx, vz: p.vz, alto: 0 }))]);
+    PART.muovi(dt);
   }
   updateCamera(dt); REGIA.dopo(dt); seguiOmbre(); renderer.render(scene, cam);
 }
@@ -2049,6 +2049,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, renderer, sun, scene, QUAL, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
