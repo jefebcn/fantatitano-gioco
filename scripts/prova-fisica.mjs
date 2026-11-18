@@ -1,5 +1,6 @@
 // Prove della fisica del pallone e della conduzione (src/fisica/pallone.js): node scripts/prova-fisica.mjs
 import assert from 'node:assert/strict';
+import { CORPO, FATICA, spingi, ruota, stanca, forma, cammina, cadenza } from '../src/fisica/corpo.js';
 import { FIS, passo, copia, percorso, atterraggio, attraversa, mira, rasoterra, rotolaFino, gittata, conduci, COND } from '../src/fisica/pallone.js';
 
 const R = FIS.r, hyp = Math.hypot, palla = (o = {}) => ({ x: 0, y: R, z: 0, vx: 0, vy: 0, vz: 0, c: 0, t: 0, ...o });
@@ -86,5 +87,51 @@ function corsa(sprint, giro = false, q = .6) {
   for (let i = 0; i < 120; i++) { conduci(b, p, 1 / 60); passo(b, 1 / 60); }
   assert.ok(hyp(b.x - COND.suola, b.z) < .1, `suola ${b.x},${b.z}`);
   out.push('da fermo: la palla torna sotto la suola');
+}
+
+// ------------------------------------------------------------------ corpo (src/fisica/corpo.js)
+const H = CORPO.passoMax, gioc = (o = {}) => ({ x: 0, z: 0, vx: 0, vz: 0, dir: 0, wy: 0, en: 1, fondo: 1, ...o });
+function muovi(p, wx, wz, T, dt = 1 / 60, vMax = 7.3, o = {}) { // come in partita: accumulo e passi fissi
+  for (let t = 0; t < T - 1e-9; t += dt) { p.resto = (p.resto || 0) + Math.min(dt, T - t); while (p.resto >= H - 1e-9) { p.resto -= H; spingi(p, wx, wz, H, vMax, o); p.x += p.vx * H; p.z += p.vz * H; } }
+  return p;
+}
+const tempoFino = (p, cond, wx, wz, max = 5, o) => { let t = 0; while (t < max && !cond(p)) { spingi(p, wx, wz, H, 7.3, o); p.x += p.vx * H; p.z += p.vz * H; t += H; } return t; };
+{
+  const a = tempoFino(gioc(), (p) => p.vx >= 6.6, 7.3, 0); // da fermo al 90% di 7,3 m/s
+  const f = gioc({ vx: 7.3 }), tf = tempoFino(f, (p) => p.vx <= 0.01, 0, 0);
+  const u = gioc({ vx: 7.3 }), tu = tempoFino(u, (p) => p.vx <= -6.6, -7.3, 0); // inversione a 180°
+  assert.ok(a > .7 && a < 1.6, `partenza ${a}`); assert.ok(tf > .3 && tf < .7 && f.x < 2.6, `frenata ${tf} ${f.x}`); assert.ok(tu > a && tu < a + .8, `inversione ${tu}`);
+  out.push(`corpo: da fermo a 6,6 m/s in ${a.toFixed(2)} s; frena da 7,3 in ${tf.toFixed(2)} s (${f.x.toFixed(1)} m); inversione completa in ${tu.toFixed(2)} s`);
+}
+{ // curva: raggio a velocità normale e in scatto (con la curva più larga)
+  const raggio = (v, o) => { const p = gioc({ vx: v }); let maxZ = 0; for (let t = 0; t < 3; t += H) { const ang = Math.atan2(p.vz, p.vx); if (ang > Math.PI / 2) break; spingi(p, 0, v, H, v, o); p.x += p.vx * H; p.z += p.vz * H; maxZ = Math.max(maxZ, p.x); } return maxZ; };
+  const r7 = raggio(7), r9 = raggio(9, { lat: CORPO.latScatto }), r4 = raggio(4);
+  assert.ok(r4 < r7 && r7 < r9, `raggi ${r4} ${r7} ${r9}`);
+  out.push(`curva a 90°: avanza ${r4.toFixed(1)} m a 4 m/s, ${r7.toFixed(1)} m a 7 m/s, ${r9.toFixed(1)} m in scatto a 9 m/s`);
+}
+{ // rotazione del busto: niente scatti, niente oscillazioni
+  const p = gioc(); let t = 0, max = 0; while (t < 1) { ruota(p, Math.PI - .01, H, 0); max = Math.max(max, p.dir); t += H; if (Math.abs(p.dir - (Math.PI - .01)) < .05 && !p.t) p.t = t; }
+  const c = gioc(); for (let i = 0; i < 120; i++) ruota(c, Math.PI - .01, H, 8);
+  assert.ok(p.t > .2 && p.t < .5, `giro ${p.t}`); assert.ok(max < Math.PI - .01 + .09, `oscilla ${max}`);
+  out.push(`busto: mezzo giro in ${p.t.toFixed(2)} s da fermo (velocità massima ${CORPO.giro} rad/s, in corsa ${CORPO.giroCorsa})`);
+}
+{ // frame rate: stessa corsa (con curva) a 30, 60 e 144 fps
+  const fine = [1 / 30, 1 / 60, 1 / 144].map((dt) => { const p = gioc(); muovi(p, 7, 0, 1, dt); muovi(p, 0, 7, 1.2, dt); return p; });
+  for (const f of fine) assert.ok(hyp(f.x - fine[0].x, f.z - fine[0].z) < .05, `fps ${f.x},${f.z} vs ${fine[0].x},${fine[0].z}`);
+  out.push(`corpo e frame rate: stessa corsa a 30/60/144 fps (scarto ${hyp(fine[2].x - fine[0].x, fine[2].z - fine[0].z).toFixed(3)} m)`);
+}
+{ // fatica: lo scatto consuma, la corsetta poco, il passo recupera; il fondo cala piano
+  const p = gioc(); for (let t = 0; t < 10; t += H) stanca(p, H, 9, 7.3, true); const dopoScatto = p.en;
+  for (let t = 0; t < 10; t += H) stanca(p, H, 2, 7.3, false); const dopoPasso = p.en;
+  const q = gioc(); for (let t = 0; t < 240; t += H) stanca(q, H, 5.5, 7.3, false);
+  assert.ok(dopoScatto < .6 && dopoScatto > .45, `scatto ${dopoScatto}`); assert.ok(dopoPasso > dopoScatto + .1, 'recupera'); assert.ok(p.fondo < 1 && q.fondo > .7, `fondo ${p.fondo} ${q.fondo}`);
+  assert.ok(forma(.2).v < forma(1).v && forma(.2).acc < forma(1).acc);
+  out.push(`fatica: 10 s di scatto ${dopoScatto.toFixed(2)}, poi 10 s al passo ${dopoPasso.toFixed(2)}; una partita di corsa continua lascia il fondo a ${q.fondo.toFixed(2)}`);
+}
+{ // passo: tre o quattro appoggi al secondo in corsa, nessuno da fermo
+  const p = gioc(); let n = 0; for (let t = 0; t < 2; t += H) if (cammina(p, H, 7)) n++;
+  const f = gioc(); let m = 0; for (let t = 0; t < 2; t += H) if (cammina(f, H, 0)) m++;
+  assert.ok(n >= 5 && n <= 8, `appoggi ${n}`); assert.equal(m, 0);
+  out.push(`passo: a 7 m/s ${n / 2} appoggi al secondo (${cadenza(7).toFixed(2)} passi completi), da fermo nessuno`);
 }
 console.log('Fisica del pallone: tutte le prove passate\n - ' + out.join('\n - '));
