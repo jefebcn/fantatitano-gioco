@@ -6,6 +6,7 @@
    Ogni tifoso ha un colore (della sua squadra, o un po' di neutri) e una fase sua; ondeggia e salta alzando le braccia
    nello shader, senza calcoli per tifoso sul processore: da qui si cambiano solo due numeri (quanto esulta ogni settore). */
 
+import { unisci } from './unisci.js';
 import { TIFOSO } from './tifoso-dati.js';
 
 const RIS = 'textures/stadium/';
@@ -107,6 +108,7 @@ export function creaSpalti(T, scene, { HL, HW, max = 7200, renderer = null }) {
       asta.position.set(x, G.muro + r * G.alt + 1.6, -r * G.prof); f.position.set(x + 1.1, G.muro + r * G.alt + 2.5, -r * G.prof); g.add(asta, f);
       bandiere.push({ f, pg, settore: tr.settore, fase: Math.random() * 6 });
     }
+    unisci(T, g, [cemento, ferro, tetto]); // gradoni e muri, corrimano e aste, tetto e piloni: una mesh per materiale
   }
   // ---------------------------------------------------------------- la folla
   // Una folla per tribuna (una InstancedMesh), ognuna con la sua sfera d'ingombro: quella alle
