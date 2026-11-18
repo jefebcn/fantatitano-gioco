@@ -1401,8 +1401,12 @@ function dosa(p) {
 }
 function userThink(p) {
   const b = G.ball, [ix, iz] = inputWorld(), l = hyp(ix, iz); p.sprint = G.in.sprint;
-  if (l > .15) { const k = 1 / l; p.tx = p.x + ix * k * 6; p.tz = p.z + iz * k * 6; p.user = Math.min(1, l); } // la direzione dalla levetta, la velocità da quanto è inclinata (vedi andatura)
-  else if (!b.owner && (p === G.intended || hyp(p.x - b.x, p.z - b.z) < 9)) { const [x, z] = intercept(p); p.tx = x; p.tz = z; p.user = 1; p.sprint = true; }
+  // la palla arriva a lui (passaggio, o palla libera a pochi metri che gli viene incontro): ci va incontro da solo, a tempo;
+  // la levetta sposta solo un po' il punto d'incontro (per ricevere in corsa nella direzione voluta)
+  const arriva = !b.owner && G.state === 'play' && (p === G.intended || (hyp(p.x - b.x, p.z - b.z) < 4.5 && ((p.x - b.x) * b.vx + (p.z - b.z) * b.vz > 0 || hyp(b.vx, b.vz) < 3)));
+  if (arriva) { const [x, z] = intercept(p), k = l > .15 ? 1.4 / l : 0; p.tx = x + ix * k; p.tz = z + iz * k; p.user = 1; p.sprint = true; }
+  else if (l > .15) { const k = 1 / l; p.tx = p.x + ix * k * 6; p.tz = p.z + iz * k * 6; p.user = Math.min(1, l); } // la direzione dalla levetta, la velocità da quanto è inclinata (vedi andatura)
+  else if (!b.owner && hyp(p.x - b.x, p.z - b.z) < 9) { const [x, z] = intercept(p); p.tx = x; p.tz = z; p.user = 1; p.sprint = true; }
   else { p.tx = p.x; p.tz = p.z; p.user = 0; }
 }
 function movePlayer(p, dt) {
@@ -1430,6 +1434,7 @@ function corri(p, dt) {
   let sp = base * (p.sprint ? 1 + .27 * (.3 + .7 * p.en / Math.max(p.fondo || 1, .01)) : 1);
   if (G.state === 'goal' && !p.sprint) sp *= .5;
   if (guida) sp = Math.min(sp, base * andatura(p.user)) + (p.sprint && p.user > .8 ? sp - base : 0); // la levetta decide l'andatura; lo scatto solo a levetta piena
+  p.vVoluta = sp; // a che velocità vuole andare: il tocco di palla in conduzione la mette dove arriverà
   let gx = p.tx, gz = p.tz, insegue = false;
   if (owner && p.i && G.state === 'play') { // conduzione: se la palla non è sulla strada verso dove vuole andare, prima ci va sopra
     const bx = b.x - p.x, bz = b.z - p.z, bd = hyp(bx, bz), wx0 = gx - p.x, wz0 = gz - p.z, wd = hyp(wx0, wz0);
