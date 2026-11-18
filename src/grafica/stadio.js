@@ -1,6 +1,7 @@
 /* Porte con rete che si deforma, bandierine che si flettono, panchine, torri faro e particelle (erba e polvere).
    Tutto qui è grafica o fisica "di contorno": non cambia le regole né i risultati delle partite, tranne la rete, che frena
    il pallone dentro la porta invece di fermarlo di colpo. */
+import { unisci } from './unisci.js';
 
 /* ---------------------------------------------------------------- rete */
 
@@ -61,7 +62,7 @@ export class Porta {
     this.d = d; this.gx = gx; this.GH = GH; this.GT = GT; this.dep = dep; this.resto = 0; this.attiva = 0;
     const metallo = new T.MeshStandardMaterial({ color: 0xffffff, metalness: 0.35, roughness: 0.22 });
     const palo = new T.CylinderGeometry(r, r, GT, 20), giunto = new T.SphereGeometry(r, 16, 12);
-    for (const e of [-1, 1]) { const p = new T.Mesh(palo, metallo); p.position.set(gx, GT / 2, e * GH); p.castShadow = true; scene.add(p); const g = new T.Mesh(giunto, metallo); g.position.set(gx, GT, e * GH); scene.add(g); }
+    for (const e of [-1, 1]) { const p = new T.Mesh(palo, metallo); p.position.set(gx, GT / 2, e * GH); p.castShadow = true; scene.add(p); const g = new T.Mesh(giunto, metallo); g.position.set(gx, GT, e * GH); g.castShadow = true; scene.add(g); }
     const bar = new T.Mesh(new T.CylinderGeometry(r, r, GH * 2, 20), metallo); bar.rotation.x = Math.PI / 2; bar.position.set(gx, GT, 0); bar.castShadow = true; scene.add(bar);
     // telaio di dietro, sottile, che tiene la rete
     const ferro = new T.MeshStandardMaterial({ color: 0xd8d8d8, metalness: 0.5, roughness: 0.4 }), tubo = (l) => new T.CylinderGeometry(0.025, 0.025, l, 8);
@@ -75,6 +76,7 @@ export class Porta {
     ];
     const filo = new T.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.72 });
     for (const p of this.pannelli) scene.add(new T.LineSegments(p.geo, filo));
+    unisci(T, scene, [metallo, ferro]); // pali, giunti e traversa in una mesh, i tubi di dietro in un'altra (la rete resta a parte)
   }
   dentro(b, m = 0) { const ax = (b.x - this.gx) * this.d; return ax > -0.3 - m && ax < this.dep + 0.5 + m && Math.abs(b.z) < this.GH + 0.5 + m && b.y < this.GT + 0.6 + m; }
   /**
@@ -155,6 +157,7 @@ export function panchine(T, scene, { HW, colore = 0x4B06FC }) {
     const base = new T.Mesh(new T.BoxGeometry(7, 0.12, 2.4), telaio); base.position.y = 0.06; g.add(base);
     for (let i = 0; i < 7; i++) { const s = new T.Mesh(new T.BoxGeometry(0.75, 0.5, 0.55), sedile); s.position.set(-3 + i, 0.37, -0.45); s.castShadow = true; g.add(s); }
     for (const e of [-1, 1]) { const f = new T.Mesh(new T.BoxGeometry(0.08, 2.3, 2.4), telaio); f.position.set(e * 3.5, 1.15, 0); g.add(f); }
+    unisci(T, g, [telaio, sedile]);
   }
 }
 
