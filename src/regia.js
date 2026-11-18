@@ -109,10 +109,11 @@ export function creaRegia(X) {
     px.clearRect(0, 0, 256, 128);
     px.font = '900 34px Lato, system-ui, sans-serif'; px.textAlign = 'center'; px.textBaseline = 'middle'; px.lineJoin = 'round';
     let n = p.name.length <= 13 ? p.name : p.name.split(' ').slice(-1)[0]; if (n.length > 13) n = n.slice(0, 12) + '.';
-    px.lineWidth = 7; px.strokeStyle = 'rgba(10,10,12,.8)'; px.strokeText(n, 128, 34); px.fillStyle = '#fff'; px.fillText(n, 128, 34);
-    px.beginPath(); px.arc(128, 84, 17, Math.PI * .85, Math.PI * 2.15); px.lineTo(128, 124); px.closePath();
-    px.fillStyle = '#D9F51F'; px.strokeStyle = '#0A0A0C'; px.lineWidth = 5; px.stroke(); px.fill();
-    px.beginPath(); px.arc(128, 84, 6.5, 0, 7); px.fillStyle = '#0A0A0C'; px.fill();
+    px.shadowColor = 'rgba(0,0,0,.65)'; px.shadowBlur = 6; px.shadowOffsetY = 1; px.fillStyle = '#fff'; px.fillText(n, 128, 30); px.shadowColor = 'transparent';
+    // la goccia: tonda in alto, a punta in basso, verde con il bordo chiaro e un foro bianco
+    px.beginPath(); px.arc(128, 78, 18, Math.PI * .78, Math.PI * 2.22); px.quadraticCurveTo(136, 104, 128, 124); px.quadraticCurveTo(120, 104, 113.6, 89.6); px.closePath();
+    px.fillStyle = '#2fd66b'; px.strokeStyle = 'rgba(235,255,240,.95)'; px.lineWidth = 4; px.stroke(); px.fill();
+    px.beginPath(); px.arc(128, 78, 7, 0, 7); px.fillStyle = '#ffffff'; px.fill();
     ptex.needsUpdate = true;
   }
 
@@ -306,7 +307,7 @@ export function creaRegia(X) {
       if (cine) ring.visible = false;
       if (pin.visible) {
         if (S.pinDi !== c) { S.pinDi = c; pinNome(c); }
-        const h = 2 * Math.tan(cam.fov * Math.PI / 360) * (cam.aspect < 1 ? .055 : .1); pin.scale.set(h * 2, h, 1); pin.position.set(c.x, 2.05 + Math.sin(G.t * 6) * .05, c.z);
+        const h = 2 * Math.tan(cam.fov * Math.PI / 360) * (cam.aspect < 1 ? .055 : .1); pin.scale.set(h * 2, h, 1); pin.position.set(c.x, 2.72 * ((c.fig && c.fig.alt) || 1) + .3 + Math.sin(G.t * 6) * .05, c.z); // la punta sopra la testa (il giocatore è alto 2,72)
       }
 
       if (S.scatto) { S.scatto = false; X.updateCamera(9); } // dopo la sequenza la telecamera torna al suo posto di colpo, sotto la transizione

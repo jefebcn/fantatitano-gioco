@@ -475,10 +475,10 @@ function pickKits(h, a) {
 }
 
 const ring = new T.Mesh(GEO.ring, new T.MeshBasicMaterial({ color: 0xD9F51F, transparent: true, opacity: .95, depthWrite: false }));
-ring.rotation.x = -Math.PI / 2; ring.position.y = .05; ring.visible = false; scene.add(ring);
+ring.rotation.x = -Math.PI / 2; ring.position.y = .05; ring.visible = false; ring.material.visible = false; scene.add(ring); // l'anello non si disegna: ai piedi c'è la freccia, sopra la testa il segnaposto
 // la freccia sull'erba davanti al giocatore comandato: punta dove porta la levetta (sparisce a levetta ferma)
 const freccia = (() => {
-  const sh = new T.Shape(); sh.moveTo(0, .9); sh.lineTo(.62, -.1); sh.lineTo(.22, -.1); sh.lineTo(.22, -.7); sh.lineTo(-.22, -.7); sh.lineTo(-.22, -.1); sh.lineTo(-.62, -.1); sh.closePath();
+  const sh = new T.Shape(); sh.moveTo(0, .6); sh.lineTo(.46, -.45); sh.lineTo(0, -.2); sh.lineTo(-.46, -.45); sh.closePath(); // a punta, con la tacca dietro
   const g = new T.ShapeGeometry(sh); g.rotateX(-Math.PI / 2); g.rotateY(Math.PI); // in piano sull'erba, la punta verso +z
   const m = new T.Mesh(g, new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .8, depthWrite: false })); m.visible = false; m.renderOrder = 2; scene.add(m); return m;
 })();
@@ -1813,7 +1813,7 @@ function draw(dt) {
     const c = G.ctrl; ring.visible = arrow.visible = !!c && !G.auto && G.state !== 'full';
     if (c) { ring.position.set(c.x, .05, c.z); arrow.position.set(c.x, 3.35 + Math.sin(G.t * 6) * .08, c.z); }
     const [fx, fz] = c && !G.auto ? inputWorld() : [0, 0], fl = hyp(fx, fz); freccia.visible = ring.visible && fl > .2 && G.state === 'play';
-    if (freccia.visible) { const a = Math.atan2(fx, fz); freccia.position.set(c.x + fx / fl * 2.1, .06, c.z + fz / fl * 2.1); freccia.rotation.y = a; freccia.scale.setScalar(.75 + .35 * Math.min(1, fl)); freccia.material.opacity = .55 + .35 * Math.min(1, fl); }
+    if (freccia.visible) { const a = Math.atan2(fx, fz); freccia.position.set(c.x + fx / fl * 1.9, .06, c.z + fz / fl * 1.9); freccia.rotation.y = a; freccia.scale.setScalar(1.3 + .45 * Math.min(1, fl)); freccia.material.opacity = .6 + .3 * Math.min(1, fl); }
   }
   if (dt > 0) { // rete, bandierine e particelle
     for (const p of PORTE) p.muovi(dt, G.ball);
@@ -1876,9 +1876,9 @@ const AU = creaAudio();
 
 /* ------------------------------------------------------------------ comandi */
 function bindInput() {
-  const zona = $('#stickZona'), stick = $('#stick'), knob = stick.firstElementChild; let sid = null, ox = 0, oy = 0; const R = 50;
+  const zona = $('#stickZona'), stick = $('#stick'), knob = stick.firstElementChild; let sid = null, ox = 0, oy = 0; const R = 46;
   const loc = (e) => (G.rot ? [e.clientY, window.innerWidth - e.clientX] : [e.clientX, e.clientY]); // dal tocco sullo schermo al punto nel gioco
-  const place = (x, y) => { stick.style.left = `${x - zona.offsetLeft - 56}px`; stick.style.top = `${y - zona.offsetTop - 56}px`; stick.style.bottom = 'auto'; };
+  const place = (x, y) => { const m = stick.offsetWidth / 2; stick.style.left = `${x - zona.offsetLeft - m}px`; stick.style.top = `${y - zona.offsetTop - m}px`; stick.style.bottom = 'auto'; };
   zona.addEventListener('pointerdown', (e) => { if (sid !== null) return; sid = e.pointerId; zona.setPointerCapture(sid); [ox, oy] = loc(e); place(ox, oy); e.preventDefault(); });
   zona.addEventListener('pointermove', (e) => {
     if (e.pointerId !== sid) return; const q = loc(e); let dx = q[0] - ox, dy = q[1] - oy; const l = hyp(dx, dy);
