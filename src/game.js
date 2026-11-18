@@ -15,6 +15,7 @@ import { creaAtmosfera } from './grafica/luce.js';
 import { creaSpalti } from './grafica/spalti.js';
 import { creaBordoCampo } from './grafica/bordocampo.js';
 import { creaAudio } from './audio.js';
+import { creaPrestazioni } from './prestazioni.js';
 
 (() => {
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
@@ -81,7 +82,8 @@ const G = {
 /* ------------------------------------------------------------------ scena */
 const canvas = $('#c');
 const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+// risoluzione che si adatta ai fotogrammi e indicatore ?debug (src/prestazioni.js)
+const PERF = creaPrestazioni({ renderer, debug: /[?&]debug\b/.test(location.search), livello: () => QUAL.livello });
 const scene = new T.Scene();
 scene.background = new T.Color(0x86b9ea);
 scene.fog = new T.Fog(0xa9cdee, 130, 330);
@@ -405,25 +407,44 @@ function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
   const fascia = cdist(kit.shirt, '#D9F51F') > .3 ? '#D9F51F' : '#16161a';
   const u = { uTono: { value: new T.Vector3(...TONI[tono].map((c) => lineare(c * varia))) }, uScarpe: { value: new T.Color(sc[0]) }, uSuola: { value: new T.Color(sc[1]) },
     uFascia: { value: new T.Color(fascia) }, uCap: { value: opz.capitano ? 1 : 0 }, uGuanti: { value: kit.gloves ? 1 : 0 }, uSporco: { value: new T.Vector2() } };
-  const corpo = corpoMat(kit, u), bones = {};
+  const corpo = corpoMat(kit, u), bones = {}, vicini = []; // vicini: i dettagli che si vedono solo da vicino (vedi dettagliFigure)
   obj.traverse((o) => {
     if (o.isBone) bones[o.name] = o;
-    if (o.isSkinnedMesh) { o.frustumCulled = false; o.material = o.material.name === CORPO ? corpo : o.material.name === OCCHI ? MODEL.occhi : pelo; }
+    if (o.isSkinnedMesh) { o.frustumCulled = false; o.material = o.material.name === CORPO ? corpo : o.material.name === OCCHI ? MODEL.occhi : pelo; if (o.material !== corpo) { o.castShadow = false; vicini.push(o); } } // occhi e sopracciglia
   });
   const stile = ACCONCIATURE[(seed >>> 8) % ACCONCIATURE.length];
   if (stile && MODEL.stili[stile]) for (const g of MODEL.stili[stile]) bones.Head.add(new T.Mesh(g, pelo));
   if ((seed >>> 12) % 4 === 0 && MODEL.hair.Hair_Beard) bones.Head.add(new T.Mesh(MODEL.hair.Hair_Beard, pelo));
   const bordo = kit.ink === '#fff' ? 'rgba(0,0,0,.45)' : 'rgba(255,255,255,.55)';
   if (MODEL.numM && num !== '') { const n = new T.Mesh(GEO.num, numMat(num, kit.ink, nome, bordo)); n.applyMatrix4(MODEL.numM); bones.spine_03.add(n); }
-  if (MODEL.cortiM && num !== '' && bones.thigh_l) { const n = new T.Mesh(GEO.num, numMat(num, kit.ink, null, bordo)); n.applyMatrix4(MODEL.cortiM); bones.thigh_l.add(n); }
-  if (MODEL.sponsorM && clubId) { const c = new T.Mesh(GEO1, sponsorMat(kit.ink)); c.scale.set(4, 1, 1); c.applyMatrix4(MODEL.sponsorM); bones.spine_03.add(c); }
+  if (MODEL.cortiM && num !== '' && bones.thigh_l) { const n = new T.Mesh(GEO.num, numMat(num, kit.ink, null, bordo)); n.applyMatrix4(MODEL.cortiM); bones.thigh_l.add(n); vicini.push(n); }
+  if (MODEL.sponsorM && clubId) { const c = new T.Mesh(GEO1, sponsorMat(kit.ink)); c.scale.set(4, 1, 1); c.applyMatrix4(MODEL.sponsorM); bones.spine_03.add(c); vicini.push(c); }
   const sm = clubId && MODEL.stemmaM ? stemmaMat(clubId) : null;
-  if (sm) { const c = new T.Mesh(GEO1, sm); c.scale.set(sm.userData.ratio, 1, 1); c.applyMatrix4(MODEL.stemmaM); bones.spine_03.add(c); }
+  if (sm) { const c = new T.Mesh(GEO1, sm); c.scale.set(sm.userData.ratio, 1, 1); c.applyMatrix4(MODEL.stemmaM); bones.spine_03.add(c); vicini.push(c); }
   const sh = new T.Mesh(GEO.shadow, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; sh.scale.setScalar(1.5); root.add(sh);
   const mixer = new T.AnimationMixer(obj), A = {}, w = {};
   const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, aereo: kit.gloves ? null : MODEL.fx.aereo, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null, passoS: kit.gloves ? MODEL.fx.passoS : null, passoD: kit.gloves ? MODEL.fx.passoD : null };
   for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = rnd(base[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; w[n] = n === 'idle' ? 1 : 0; }
-  return { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true, sporco: u.uSporco.value, alt };
+  const fig = { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true, sporco: u.uSporco.value, alt, vicini, ombra: sh, dettagli: true };
+  FIGURE.add(fig); return fig;
+}
+/* Meno chiamate di disegno per ogni persona in campo. Le ombre di contatto sotto i piedi di tutti sono un'unica InstancedMesh
+   (una chiamata invece di una a testa), e i dettagli piccoli (occhi, sopracciglia, numero sui pantaloncini, sponsor e
+   stemma) si disegnano solo quando la telecamera è a meno di ~15 m: dall'inquadratura di gioco sono pochi pixel. */
+const FIGURE = new Set(), DETT = { vicino: 14 * 14, lontano: 16 * 16 }, OMBRE = { max: 64 };
+const ombreTutte = new T.InstancedMesh(GEO.shadow, shadowMat, OMBRE.max); ombreTutte.frustumCulled = false; ombreTutte.count = 0; scene.add(ombreTutte);
+const _m4 = new T.Matrix4(), _q = new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), -Math.PI / 2), _s = new T.Vector3(1.5, 1.5, 1.5), _p = new T.Vector3();
+function dettagliFigure() {
+  let n = 0;
+  if (FIGURE.size > 120) for (const f of FIGURE) if (!f.root.parent) FIGURE.delete(f); // giocatori di partite finite
+  for (const f of FIGURE) {
+    if (!f.root.parent) continue;
+    const r = f.root, d2 = cam.position.distanceToSquared(r.position), su = f.dettagli ? d2 < DETT.lontano : d2 < DETT.vicino;
+    if (su !== f.dettagli) { f.dettagli = su; for (const o of f.vicini) o.visible = su; }
+    if (n < OMBRE.max && r.parent === scene) { f.ombra.visible = false; if (r.visible) { _p.set(r.position.x, .03, r.position.z); _m4.compose(_p, _q, _s); ombreTutte.setMatrixAt(n++, _m4); } }
+    else f.ombra.visible = true; // dentro un altro gruppo o oltre il massimo: tiene la sua
+  }
+  ombreTutte.count = n; ombreTutte.instanceMatrix.needsUpdate = true;
 }
 /** Fango ed erba dopo una scivolata, una caduta o un tuffo: restano fino alla fine della partita. */
 const SPORCA = { scivolata: [.22, .3], caduta: [.16, .14], tuffoS: [.2, .26], tuffoD: [.2, .26] };
@@ -506,7 +527,7 @@ function capitanoDi(club, mia) {
 }
 function creaGiocatore(t, i, [name, role, num, q]) {
   const club = t.club, fig = (MODEL ? makeSkinned : makeFigure)(i === 0 ? t.gkit : t.kit, hash(club.id + name), num, i === 0 ? null : club.id, name, { capitano: name === t.capitano }); scene.add(fig.root);
-  fig.root.traverse((o) => { if (o.isMesh && !(o.material && o.material.transparent)) o.castShadow = true; }); // ombra vera del sole (l'ombra di contatto resta)
+  fig.root.traverse((o) => { if (o.isMesh && !(o.material && o.material.transparent) && !(fig.vicini && fig.vicini.includes(o))) o.castShadow = true; }); // ombra vera del sole (l'ombra di contatto resta)
   const base = 7.3 + clamp((q - 20) / 40, -.5, .6) + (club.str - 3) * .07;
   return { team: t, i, role, nat: role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: t.side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? 6.6 : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1, run: null, mark: null, jock: false, slideCd: 0, inj: false, yel: 0, red: false, fkShot: false, en: 1, by: null, s: { g: 0, a: 0, kp: 0, sh: 0, sot: 0, pa: 0, pc: 0, tk: 0, int: 0, sv: 0, fl: 0, og: 0 }, massa: 72 + ({ P: 6, D: 5, C: -1, A: 2 }[role] || 0) + (hash(name + club.id) % 9) - 4, sbil: 0 }; // la massa conta nei duelli spalla a spalla
 }
@@ -1881,7 +1902,7 @@ function draw(dt) {
     if (BANDIERINE && G.ball) BANDIERINE.muovi(dt, [{ x: G.ball.x, z: G.ball.z, vx: G.ball.vx, vz: G.ball.vz, alto: G.ball.y }, ...all().map((p) => ({ x: p.x, z: p.z, vx: p.vx, vz: p.vz, alto: 0 }))]);
     PART.muovi(dt); if (SPALTI) folla(dt); if (BORDO && G.ball) BORDO.muovi(dt, G.ball.x, G.ball.z); rilievoDivise();
   }
-  updateCamera(dt); REGIA.dopo(dt); seguiOmbre(); renderer.render(scene, cam);
+  updateCamera(dt); REGIA.dopo(dt); seguiOmbre(); dettagliFigure(); renderer.render(scene, cam);
 }
 const REGIA = creaRegia({ scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, ring, arrow, camPos, camLook, boards, img, cdist, lum,
   makeSkinned, pickKits, paintBoards, updateCamera, offsideLine, model: () => MODEL, crest: () => CREST });
@@ -2430,18 +2451,16 @@ function resize() {
 const CREST = {};
 function loadImg(src) { return new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
 let last = 0, frame = 0;
-// Qualità automatica: se durante la partita i fotogrammi restano lenti (sotto i ~40 al secondo per qualche secondo) si
-// alleggerisce un passo alla volta: ombre più piccole e meno morbide, poi senza ombre del sole, poi prato senza normali
-// e rugosità e meno pixel. Non torna indietro da sola (niente su e giù durante la partita).
-const QUAL = { livello: 0, media: 1 / 60, attesa: 4 };
+// Qualità automatica: durante la partita prima scende la risoluzione (src/prestazioni.js), se non basta, o se a pesare è il
+// processore, si alleggerisce un passo alla volta: ombre più piccole e meno morbide, poi senza ombre del sole, poi prato
+// senza normali e rugosità. I dettagli tolti non tornano da soli (niente su e giù durante la partita), la risoluzione sì.
+const QUAL = { livello: 0 };
 function qualita(dt) {
-  if (G.state !== 'play' || G.paused || !(dt > 0)) return;
-  QUAL.media += (dt - QUAL.media) * .03; QUAL.attesa -= dt;
-  if (QUAL.attesa > 0 || QUAL.media < 1 / 40 || QUAL.livello >= 3) return;
-  QUAL.livello++; QUAL.attesa = 4; QUAL.media = 1 / 60;
+  if (!PERF.aggiorna(dt, G.state === 'play' && !G.paused) || QUAL.livello >= 3) return;
+  QUAL.livello++;
   if (QUAL.livello === 1) { if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } sun.shadow.mapSize.set(1024, 1024); renderer.shadowMap.type = T.PCFShadowMap; }
   else if (QUAL.livello === 2) sun.castShadow = false;
-  else { scene.traverse((o) => { if (o.material && o.material.isMeshStandardMaterial) { o.material.normalMap = o.material.roughnessMap = null; } if (o.isSpotLight) o.visible = false; }); renderer.setPixelRatio(1); resize(); } // di notte restano i fasci e la luce dall'alto, non i faretti
+  else scene.traverse((o) => { if (o.material && o.material.isMeshStandardMaterial) { o.material.normalMap = o.material.roughnessMap = null; } if (o.isSpotLight) o.visible = false; }); // di notte restano i fasci e la luce dall'alto, non i faretti
   // per primi se ne vanno i dettagli della folla e le ombre del bordo campo, poi (al livello 3) steward e fotografi
   if (SPALTI) SPALTI.dettaglio(QUAL.livello < 1); if (BORDO) BORDO.qualita(QUAL.livello);
   scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; });
@@ -2450,9 +2469,11 @@ function qualita(dt) {
 function loop(ts) {
   requestAnimationFrame(loop);
   const vero = (ts - last) / 1000 || 0, dt = Math.min(.05, vero); last = ts; qualita(Math.min(vero, .5)); // la qualità guarda il tempo vero tra i fotogrammi
+  PERF.inizio();
   if (!G.paused) { if (G.state === 'menu') G.t += dt; else { const n = dt > .022 ? 2 : 1; for (let i = 0; i < n; i++) step(dt / n); } }
   if (G.ball && G.state !== 'menu') { hud(); if (frame++ % 3 === 0) drawRadar(); }
   draw(G.paused ? 0 : dt);
+  PERF.fine();
 }
 async function boot() {
   resize(); window.addEventListener('resize', resize);
@@ -2468,6 +2489,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, cam, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, cam, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
