@@ -110,9 +110,11 @@ export function creaSpalti(T, scene, { HL, HW, max = 7200 }) {
   // Una folla per tribuna (una InstancedMesh), ognuna con la sua sfera d'ingombro: quella alle
   // spalle della telecamera non si disegna affatto. I posti sono in ordine sparso, così i primi n sono sparsi su tutto lo spalto.
   const rand = casuale(20261118), totale = Math.min(max, posti.length);
-  // un tifoso è una sola geometria: busto, testa e due braccia (scatole senza le facce che non si vedono mai), con un
-  // attributo che dice a quale parte appartiene ogni vertice; così è un solo disegno per tribuna e pochi vertici
-  const tifoso = (() => {
+  // Un tifoso è una sola geometria fatta di scatole (senza le facce che non si vedono mai), con un attributo che dice a
+  // quale parte appartiene ogni vertice: 0 busto, 1 testa, 2 braccio, 3 avambraccio, 4 capelli o berretto, 5 visiera,
+  // 6 sciarpa. Due versioni: dettagliata (braccia snodate al gomito, capelli o berretto, sciarpa) e semplice (busto, testa
+  // e braccia intere): lo scaler della qualità passa alla semplice per prima cosa.
+  const tifoso = (dettagli) => {
     const pos = [], nor = [], parte = [], idx = [];
     const scatola = (w, h, d, cx, cy, cz, pt, senza) => {
       const b = new T.BoxGeometry(w, h, d); b.translate(cx, cy, cz);
@@ -125,24 +127,47 @@ export function creaSpalti(T, scene, { HL, HW, max = 7200 }) {
     };
     scatola(0.42, 0.56, 0.26, 0, 0.55, 0, 0, [3]); // busto
     scatola(0.2, 0.24, 0.22, 0, 0.98, 0, 1, [3]); // testa
-    for (const sx of [-0.27, 0.27]) scatola(0.09, 0.44, 0.09, sx, 0.56, 0, 2, [2, 3]); // braccia
+    if (dettagli) {
+      scatola(0.22, 0.07, 0.24, 0, 1.12, -0.005, 4, [3]); // capelli o berretto
+      scatola(0.19, 0.015, 0.1, 0, 1.09, 0.15, 5, [0, 1, 4, 5]); // visiera (solo chi ha il berretto)
+      for (const sx of [-0.27, 0.27]) { scatola(0.095, 0.22, 0.095, sx, 0.67, 0, 2, [2, 3]); scatola(0.08, 0.22, 0.08, sx, 0.45, 0, 3, [2]); } // braccio e avambraccio
+      scatola(0.78, 0.13, 0.02, 0, 1.24, 0.06, 6, [0, 1, 2, 3]); // sciarpa tesa sopra la testa (solo durante i cori)
+    } else for (const sx of [-0.27, 0.27]) scatola(0.09, 0.44, 0.09, sx, 0.56, 0, 2, [2, 3]); // braccia intere
     const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(nor, 3)); g.setAttribute('aParte', new T.Float32BufferAttribute(parte, 1)); g.setIndex(idx); return g;
-  })();
-  const U = { uT: { value: 0 }, uEsulta: { value: new T.Vector2() }, uMossa: { value: 0.5 } };
+  };
+  const DETT = tifoso(true), SEMP = tifoso(false);
+  const U = { uT: { value: 0 }, uEsulta: { value: new T.Vector2() }, uCoro: { value: new T.Vector2() }, uMossa: { value: 0.5 } };
   const MAT = (() => {
     const m = new T.MeshLambertMaterial({ color: 0xffffff });
     m.customProgramCacheKey = () => 'folla';
     m.onBeforeCompile = (sh) => {
       Object.assign(sh.uniforms, U);
-      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aParte; attribute vec3 aInfo; attribute vec3 aPelle; uniform float uT; uniform vec2 uEsulta; uniform float uMossa;')
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aParte; attribute vec4 aInfo; attribute vec3 aPelle, aCapo, aSciarpa; uniform float uT, uMossa; uniform vec2 uEsulta, uCoro;')
         .replace('#include <color_vertex>', `#include <color_vertex>
-// maglia per il busto, pelle per la testa, braccia con le maniche o scoperte (aInfo.z)
-vColor.xyz = aParte < 0.5 ? instanceColor.xyz : aParte < 1.5 ? aPelle : mix(instanceColor.xyz, aPelle, aInfo.z);`)
+// aInfo: x fase, y settore, z maniche lunghe, w = sciarpa + 2 * berretto
+float manica = aInfo.z, berretto = step(1.5, aInfo.w);
+if (aParte < 0.5) vColor.xyz = instanceColor.xyz;
+else if (aParte < 1.5) vColor.xyz = aPelle;
+else if (aParte < 2.5) vColor.xyz = mix(instanceColor.xyz, aPelle, 0.0);
+else if (aParte < 3.5) vColor.xyz = mix(aPelle, instanceColor.xyz, manica);
+else if (aParte < 4.5) vColor.xyz = aCapo;
+else if (aParte < 5.5) vColor.xyz = aCapo * 0.75;
+else vColor.xyz = mod(floor((position.x + 0.39) / 0.13), 2.0) < 0.5 ? instanceColor.xyz : aSciarpa; // sciarpa a strisce coi due colori`)
         .replace('#include <begin_vertex>', `#include <begin_vertex>
 {
-  float f = aInfo.x * 6.2831, e = aInfo.y < 0.5 ? uEsulta.x : uEsulta.y, varia = 0.7 + 0.6 * fract(aInfo.x * 7.31);
-  if (aParte > 1.5) { float a = -e * (2.5 + 0.35 * sin(f * 3.0)) * varia; vec3 q = transformed; q.y -= 0.78; transformed.y = q.y * cos(a) - q.z * sin(a) + 0.78; transformed.z = q.y * sin(a) + q.z * cos(a); }
-  transformed.y += e * max(0.0, sin(uT * 9.0 + f)) * 0.34 * varia + sin(uT * 1.7 + f) * 0.015 * uMossa; // salta quando esulta, respira sempre un po'
+  float f = aInfo.x * 6.2831, settore = aInfo.y, e = settore < 0.5 ? uEsulta.x : uEsulta.y, varia = 0.7 + 0.6 * fract(aInfo.x * 7.31);
+  float sciarpa = mod(aInfo.w, 2.0), c = (settore < 0.5 ? uCoro.x : uCoro.y) * sciarpa, lato = sign(position.x);
+  // braccia: ognuna con la sua fase (agitano asincrone) e il gomito che si piega, nei cori su dritte a tenere la sciarpa
+  float a1 = mix(-e * (2.35 + 0.45 * sin(uT * 7.0 + f + lato * 1.7)) * varia, -3.0, c);
+  float a2 = mix(-e * (0.3 + 0.35 * sin(uT * 5.0 + f * 1.3 + lato)) * varia, 0.0, c);
+  if (aParte > 1.5 && aParte < 3.5) {
+    vec3 q = transformed;
+    if (aParte > 2.5) { q.y -= 0.56; q = vec3(q.x, q.y * cos(a2) - q.z * sin(a2), q.y * sin(a2) + q.z * cos(a2)); q.y += 0.56; } // gomito
+    q.y -= 0.78; transformed = vec3(q.x, q.y * cos(a1) - q.z * sin(a1) + 0.78, q.y * sin(a1) + q.z * cos(a1)); // spalla
+  }
+  if (aParte > 4.5 && aParte < 5.5 && berretto < 0.5) transformed = vec3(0.0, 0.98, 0.0); // niente berretto: niente visiera
+  if (aParte > 5.5) { if (c < 0.02) transformed = vec3(0.0, 0.55, 0.0); else { transformed.x *= c; transformed.x += sin(uT * 3.2 + f) * 0.06 * c; } } // la sciarpa si apre col coro
+  transformed.y += e * max(0.0, sin(uT * 9.0 + f)) * 0.34 * varia + sin(uT * 1.7 + f) * 0.015 * uMossa + c * max(0.0, sin(uT * 4.4 + f * 0.2)) * 0.06; // salta quando esulta, nei cori a tempo
   transformed.x += sin(uT * 1.3 + f * 1.7) * 0.035 * uMossa; // ondeggia
 }`);
     };
@@ -154,29 +179,35 @@ vColor.xyz = aParte < 0.5 ? instanceColor.xyz : aParte < 1.5 ? aPelle : mix(inst
     const suoi = posti.filter((s) => s.tr === tr);
     for (let i = suoi.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [suoi[i], suoi[j]] = [suoi[j], suoi[i]]; }
     const n = Math.min(suoi.length, Math.round(totale * suoi.length / posti.length)); if (!n) continue;
-    const info = new Float32Array(n * 3), cute = new Float32Array(n * 3), m = new T.InstancedMesh(tifoso.clone(), MAT, n);
+    const info = new Float32Array(n * 4), cute = new Float32Array(n * 3), capo = new Float32Array(n * 3), sciarpa = new Float32Array(n * 3);
+    const gD = DETT.clone(), gS = SEMP.clone(), m = new T.InstancedMesh(gD, MAT, n);
     for (let i = 0; i < n; i++) {
       const s = suoi[i], k = 0.88 + rand() * 0.24; q.setFromAxisAngle(asse, s.ry + (rand() - 0.5) * 0.5); sc.set(k, k, k); m4.compose(s.p, q, sc);
       m.setMatrixAt(i, m4); m.setColorAt(i, pelle[0]); pelle[Math.floor(rand() * pelle.length)].toArray(cute, i * 3);
-      info[i * 3] = rand(); info[i * 3 + 1] = s.settore;
+      info[i * 4] = rand(); info[i * 4 + 1] = s.settore;
     }
-    // l'ingombro deve tenere conto dei salti e delle braccia alzate (lo shader sposta i vertici)
+    // l'ingombro deve tenere conto dei salti, delle braccia e delle sciarpe alzate (lo shader sposta i vertici)
     m.computeBoundingSphere(); m.boundingSphere.radius += 1.5;
-    const aInfo = new T.InstancedBufferAttribute(info, 3); m.geometry.setAttribute('aInfo', aInfo); m.geometry.setAttribute('aPelle', new T.InstancedBufferAttribute(cute, 3));
-    scene.add(m); folle.push({ m, info, aInfo, n }); N += n;
+    const A = { aInfo: new T.InstancedBufferAttribute(info, 4), aPelle: new T.InstancedBufferAttribute(cute, 3), aCapo: new T.InstancedBufferAttribute(capo, 3), aSciarpa: new T.InstancedBufferAttribute(sciarpa, 3) };
+    for (const g of [gD, gS]) for (const k in A) g.setAttribute(k, A[k]); // le due geometrie condividono gli attributi dei tifosi
+    scene.add(m); folle.push({ m, info, A, n, gD, gS, capo, sciarpa }); N += n;
   }
 
   // colori: maglie della squadra di casa negli spalti di casa, degli ospiti nella curva ospiti (più un po' di neutri)
   let squadre = null;
   function colora(casa, ospiti) {
     squadre = [casa, ospiti]; const r = casuale(hashStr((casa.name || '') + (ospiti.name || ''))), neutri = [0x2a2f45, 0xd8d8e0, 0x3b3f4f].map((c) => new T.Color(c)), col = new T.Color();
-    for (const { m, info, aInfo, n } of folle) {
+    const capelli = [0x1c1410, 0x2e2018, 0x5a3a20, 0x8a6a3a, 0x111111, 0xc9a25a, 0x9c9a96].map((c) => new T.Color(c)), c2 = new T.Color();
+    for (const { m, info, A, n, capo, sciarpa } of folle) {
       for (let i = 0; i < n; i++) {
-        const sq = squadre[info[i * 3 + 1] > 0.5 ? 1 : 0], u = r();
-        col.set(u < 0.55 ? sq.c1 : u < 0.85 ? sq.c2 : 0); if (u >= 0.85) col.copy(neutri[Math.floor(r() * neutri.length)]);
-        m.setColorAt(i, col); info[i * 3 + 2] = r() < 0.3 ? 1 : 0; // maniche lunghe o braccia scoperte
+        const sq = squadre[info[i * 4 + 1] > 0.5 ? 1 : 0], u = r(), tifa = u < 0.85;
+        col.set(u < 0.55 ? sq.c1 : u < 0.85 ? sq.c2 : 0); if (!tifa) col.copy(neutri[Math.floor(r() * neutri.length)]);
+        m.setColorAt(i, col); info[i * 4 + 2] = r() < 0.3 ? 1 : 0; // maniche lunghe o braccia scoperte
+        const conSciarpa = tifa && r() < 0.55, berretto = r() < 0.22; info[i * 4 + 3] = (conSciarpa ? 1 : 0) + (berretto ? 2 : 0);
+        (berretto ? (r() < 0.6 ? c2.set(sq.c1) : c2.set(sq.c2)) : c2.copy(capelli[Math.floor(r() * capelli.length)])).toArray(capo, i * 3);
+        c2.set(u < 0.55 ? sq.c2 : sq.c1).toArray(sciarpa, i * 3); // la sciarpa ha l'altro colore della squadra, a strisce con quello della maglia
       }
-      m.instanceColor.needsUpdate = aInfo.needsUpdate = true;
+      m.instanceColor.needsUpdate = A.aInfo.needsUpdate = A.aCapo.needsUpdate = A.aSciarpa.needsUpdate = true;
     }
     for (const s of striscioni) disegnaStriscione(s, squadre[s.settore]);
     for (const b of bandiere) { const sq = squadre[b.settore], a = new T.Color(sq.c1), c2 = new T.Color(sq.c2), col3 = b.pg.attributes.color; for (let i = 0; i < col3.count; i++) { const x = b.pg.attributes.position.getX(i), c = Math.floor((x + 1.1) / 0.44) % 2 ? a : c2; col3.setXYZ(i, c.r, c.g, c.b); } col3.needsUpdate = true; }
@@ -189,15 +220,22 @@ vColor.xyz = aParte < 0.5 ? instanceColor.xyz : aParte < 1.5 ? aPelle : mix(inst
     x.fillText(testo, 256, 50); s.tex.needsUpdate = true;
   }
   // ---------------------------------------------------------------- esultanza e animazione
-  const es = [0, 0], fino = [0, 0];
-  function esulta(settore, forza = 1, durata = 5) { es[settore] = Math.max(es[settore], forza); fino[settore] = Math.max(fino[settore], durata); }
+  const es = [0, 0], fino = [0, 0], coro = [0, 0], cantaFino = [0, 0]; let prossimoCoro = 12 + Math.random() * 15;
+  /** I cori: il settore alza le sciarpe tese sopra la testa e salta a tempo per `durata` secondi. */
+  function canta(settore, durata = 9) { cantaFino[settore] = Math.max(cantaFino[settore], durata); }
+  function esulta(settore, forza = 1, durata = 5) { es[settore] = Math.max(es[settore], forza); fino[settore] = Math.max(fino[settore], durata); if (forza >= 1) canta(settore, durata + 4); }
   function densita(d) { const k = Math.max(0.1, Math.min(1, d)); for (const f of folle) f.m.count = Math.round(f.n * k); }
+  /** Dettagli della folla sì o no (lo scaler della qualità li toglie per primi): cambia solo la geometria. */
+  function dettaglio(on) { for (const f of folle) f.m.geometry = on ? f.gD : f.gS; }
   function muovi(dt, t) {
     U.uT.value = t;
     for (let k = 0; k < 2; k++) { fino[k] -= dt; if (fino[k] <= 0) es[k] = Math.max(0, es[k] - dt * 1.5); }
-    U.uEsulta.value.set(es[0], es[1]); U.uMossa.value = 0.5 + Math.max(es[0], es[1]);
+    // ogni tanto un coro spontaneo, più spesso dalla parte dei tifosi di casa
+    prossimoCoro -= dt; if (prossimoCoro <= 0) { canta(Math.random() < 0.7 ? 0 : 1, 7 + Math.random() * 5); prossimoCoro = 25 + Math.random() * 25; }
+    for (let k = 0; k < 2; k++) { cantaFino[k] -= dt; coro[k] += ((cantaFino[k] > 0 ? 1 : 0) - coro[k]) * Math.min(1, dt * 2.2); }
+    U.uEsulta.value.set(es[0], es[1]); U.uCoro.value.set(coro[0], coro[1]); U.uMossa.value = 0.5 + Math.max(es[0], es[1]);
     for (const b of bandiere) { b.fase += dt * (2 + es[b.settore] * 4); const p = b.pg.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setZ(i, Math.sin(b.fase + x * 2.2) * 0.16 * (x + 1.1) / 2.2); } p.needsUpdate = true; }
   }
-  return { colora, esulta, densita, muovi, materiali, get squadre() { return squadre; }, N };
+  return { colora, esulta, canta, densita, dettaglio, muovi, materiali, get squadre() { return squadre; }, N };
 }
 function hashStr(s) { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }

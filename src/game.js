@@ -3,7 +3,7 @@ import * as T from 'three';
 import { creaRegia } from './regia.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { creaDivisa, creaZone, TONI } from './divisa.js';
+import { creaDivisa, creaZone, creaRilievo, TONI } from './divisa.js';
 import * as CLOUD from './cloud.js';
 import * as CAR from './carriera.js';
 import * as FIS from './fisica/pallone.js';
@@ -13,6 +13,7 @@ import { creaCampo, texturaOmbra } from './grafica/campo.js';
 import { Porta, Bandierine, panchine, torriFaro, Particelle } from './grafica/stadio.js';
 import { creaAtmosfera } from './grafica/luce.js';
 import { creaSpalti } from './grafica/spalti.js';
+import { creaBordoCampo } from './grafica/bordocampo.js';
 import { creaAudio } from './audio.js';
 
 (() => {
@@ -115,13 +116,13 @@ async function buildPitch() {
   PORTE = [-1, 1].map((d) => new Porta(T, scene, { d, gx: d * HL, GH, GT }));
   BANDIERINE = new Bandierine(T, scene, { HL, HW });
 }
-let PORTE = [], BANDIERINE = null, FARI = null, CAMPO = null, SFONDO = null, ATMO = null, SPALTI = null;
+let PORTE = [], BANDIERINE = null, FARI = null, CAMPO = null, SFONDO = null, ATMO = null, SPALTI = null, BORDO = null;
 const PART = new Particelle(T, scene); // ciuffi d'erba e polvere: scivolate, frenate, tiri forti
 
 let boards = [], standMat = null, titoSprite = null;
 function buildStadium(lockup) {
   // spalti in cemento con scale, ringhiere, tunnel, striscioni, bandiere e la folla (src/grafica/spalti.js)
-  SPALTI = creaSpalti(T, scene, { HL, HW });
+  SPALTI = creaSpalti(T, scene, { HL, HW }); BORDO = creaBordoCampo(T, scene, { HL, HW }); // e steward e fotografi a bordo campo (src/grafica/bordocampo.js)
   // cartelloni
   const [bc, bx] = cv(2048, 64);
   const tex = ctex(bc); boards.tex = tex; boards.cv = bc; boards.ctx = bx; boards.lockup = lockup;
@@ -174,7 +175,7 @@ function numMat(n, ink, nome, bordo) {
   if (nome) { const t = String(nome).toUpperCase(); x.font = '46px Anton'; const w = x.measureText(t).width; if (w > 236) x.font = `${Math.floor(46 * 236 / w)}px Anton`; scrivi(t, 40, 6); }
   x.font = `${nome ? 172 : 200}px Anton`; scrivi(String(n), nome ? 162 : 140, 10);
   const tx = ctex(c); tx.anisotropy = 4;
-  return new T.MeshLambertMaterial({ map: tx, transparent: true, alphaTest: .35 });
+  return new T.MeshStandardMaterial({ map: tx, transparent: true, alphaTest: .35, roughness: .3, metalness: 0 }); // stampa gommata: lucida sotto i fari
 }
 function makeFigure(kit, seed, num) {
   const root = new T.Group(), body = new T.Group(); root.add(body);
@@ -245,6 +246,9 @@ async function loadModel() {
       cortiM: coscia ? appoggio(.095, box.min.y + alto * .405, true, .1 / .3, new T.Matrix4().copy(coscia.matrixWorld).invert(), .03) : null,
       zone: (() => { const z = creaZone(pixel(im)), t = new T.DataTexture(z.data, z.size, z.size); t.flipY = false; t.magFilter = t.minFilter = T.LinearFilter; t.needsUpdate = true; return t; })(),
       stili: stiliCapelli(hair, scene, hInv), corpi: [],
+      // rilievo della stoffa (normal map) e lucidità per zona (roughness), dalla stessa maschera
+      ...(() => { const r = creaRilievo(pixel(im)), dt = (d) => { const t = new T.DataTexture(d, r.size, r.size); t.flipY = false; t.magFilter = T.LinearFilter; t.minFilter = T.LinearMipmapLinearFilter; t.generateMipmaps = true; t.anisotropy = 4; t.needsUpdate = true; return t; }; return { rilievo: dt(r.normali), ruvido: dt(r.ruvido) }; })(),
+      sponsorM: appoggio(0, box.min.y + alto * .72, true, .048),
       occhi: io ? new T.MeshLambertMaterial({ map: Object.assign(new T.Texture(io), { flipY: false, colorSpace: T.SRGBColorSpace, needsUpdate: true }) }) : mat(0xffffff) };
     const A = window.ANIMS; if (!A) throw new Error('mancano le animazioni');
     for (const [nome, c] of Object.entries(A.clip)) {
@@ -329,13 +333,14 @@ function divisaTex(kit) {
  * stoffa che cade, non una tuta attillata. Lo shader è uno solo per tutti i giocatori.
  */
 function corpoMat(kit, u) {
-  const m = new T.MeshLambertMaterial({ map: divisaTex(kit) });
+  // materiale fisico: la stoffa ha il suo rilievo (cuciture, costine, pieghe) e resta opaca, pelle e scarpini un po' lucidi
+  const m = new T.MeshStandardMaterial({ map: divisaTex(kit), normalMap: rilievoOn ? MODEL.rilievo : null, normalScale: new T.Vector2(.9, -.9), roughnessMap: rilievoOn ? MODEL.ruvido : null, roughness: rilievoOn ? 1 : .8, metalness: 0 });
   m.customProgramCacheKey = () => 'calciatore';
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, u, { uZone: { value: MODEL.zone } });
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform sampler2D uZone;')
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform sampler2D uZone; uniform float uCap;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>
-{ vec4 zv = texture2D(uZone, vMapUv); transformed += objectNormal * (zv.b * zv.b * 0.017 + clamp(zv.a * 2.55, 0.0, 1.0) * 0.007); }`);
+{ vec4 zv = texture2D(uZone, vMapUv); transformed += objectNormal * (zv.b * zv.b * 0.017 + clamp(zv.a * 2.55, 0.0, 1.0) * 0.007 + smoothstep(0.6, 0.95, zv.a) * uCap * 0.006); } // la fascia del capitano sporge un po'`);
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
 uniform sampler2D uZone; uniform vec3 uTono, uScarpe, uSuola, uFascia; uniform float uCap, uGuanti; uniform vec2 uSporco;
 float rumoreC(vec2 p) { return fract(sin(dot(floor(p), vec2(12.9898, 78.233))) * 43758.5453); }
@@ -361,13 +366,33 @@ float macchieC(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0
   };
   MODEL.corpi.push(m); return m;
 }
+/**
+ * Il rilievo della stoffa si vede solo da vicino: con la telecamera di gioco i giocatori sono piccoli e la normal map costa
+ * senza dare niente. Si accende quando un giocatore è a meno di 16 metri dalla telecamera (primi piani, replay, esultanze)
+ * e se la qualità è al massimo; i programmi dei due casi restano in memoria, il cambio è immediato.
+ */
+let rilievoOn = true;
+function rilievoDivise() {
+  if (!MODEL || !MODEL.corpi.length) return; let vicino = false;
+  if (QUAL.livello < 1) for (const t of G.teams) for (const p of t.players) if (cam.position.distanceToSquared(p.fig.root.position) < 256) { vicino = true; break; }
+  if (vicino === rilievoOn) return; rilievoOn = vicino;
+  for (const m of MODEL.corpi) { m.normalMap = vicino ? MODEL.rilievo : null; m.roughnessMap = vicino ? MODEL.ruvido : null; m.roughness = vicino ? 1 : .8; m.needsUpdate = true; }
+}
 const stemmi3d = new Map();
 function stemmaMat(id) {
   let m = stemmi3d.get(id); if (m || !CREST[id]) return m || null;
   const tx = new T.Texture(CREST[id]); tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = 8; tx.needsUpdate = true;
-  m = new T.MeshLambertMaterial({ map: tx, transparent: true, alphaTest: .4 }); m.userData.ratio = CREST[id].width / CREST[id].height; stemmi3d.set(id, m); return m;
+  // ricamato: rilievo dai contorni del disegno e un filo un po' metallico che prende la luce
+  m = new T.MeshStandardMaterial({ map: tx, bumpMap: tx, bumpScale: 1.2, transparent: true, alphaTest: .4, roughness: .45, metalness: .3 }); m.userData.ratio = CREST[id].width / CREST[id].height; stemmi3d.set(id, m); return m;
 }
 const GEO1 = new T.PlaneGeometry(1, 1);
+/** Lo sponsor sul petto: la scritta Fantatitano stampata lucida, nel colore dei numeri. Una per colore. */
+const sponsor = new Map();
+function sponsorMat(ink) {
+  let m = sponsor.get(ink); if (m) return m;
+  const [c, x] = cv(512, 128); x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = ink; x.font = '96px Anton'; const w = x.measureText('FANTATITANO').width; if (w > 496) x.font = `${Math.floor(96 * 496 / w)}px Anton`; x.fillText('FANTATITANO', 256, 66);
+  const tx = ctex(c); tx.anisotropy = 4; m = new T.MeshStandardMaterial({ map: tx, transparent: true, alphaTest: .35, roughness: .3, metalness: 0 }); sponsor.set(ink, m); return m;
+}
 const lineare = (c) => Math.pow(c, 2.2);
 /**
  * Un calciatore col modello vero. Dal seme (nome e club) vengono, sempre uguali: tono di pelle, capelli e loro colore,
@@ -393,6 +418,7 @@ function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
   const bordo = kit.ink === '#fff' ? 'rgba(0,0,0,.45)' : 'rgba(255,255,255,.55)';
   if (MODEL.numM && num !== '') { const n = new T.Mesh(GEO.num, numMat(num, kit.ink, nome, bordo)); n.applyMatrix4(MODEL.numM); bones.spine_03.add(n); }
   if (MODEL.cortiM && num !== '' && bones.thigh_l) { const n = new T.Mesh(GEO.num, numMat(num, kit.ink, null, bordo)); n.applyMatrix4(MODEL.cortiM); bones.thigh_l.add(n); }
+  if (MODEL.sponsorM && clubId) { const c = new T.Mesh(GEO1, sponsorMat(kit.ink)); c.scale.set(4, 1, 1); c.applyMatrix4(MODEL.sponsorM); bones.spine_03.add(c); }
   const sm = clubId && MODEL.stemmaM ? stemmaMat(clubId) : null;
   if (sm) { const c = new T.Mesh(GEO1, sm); c.scale.set(sm.userData.ratio, 1, 1); c.applyMatrix4(MODEL.stemmaM); bones.spine_03.add(c); }
   const sh = new T.Mesh(GEO.shadow, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; sh.scale.setScalar(1.5); root.add(sh);
@@ -1659,7 +1685,7 @@ function draw(dt) {
     for (const p of PORTE) p.muovi(dt, G.ball);
     if (G.state !== 'goal' && G.state !== 'menu' && !REGIA.figure()) { const k = Math.floor(G.t / 7) * .25; for (const bo of boards) bo.material.map.offset.x = k; } // tabelloni LED: un pannello nuovo ogni 7 secondi
     if (BANDIERINE && G.ball) BANDIERINE.muovi(dt, [{ x: G.ball.x, z: G.ball.z, vx: G.ball.vx, vz: G.ball.vz, alto: G.ball.y }, ...all().map((p) => ({ x: p.x, z: p.z, vx: p.vx, vz: p.vz, alto: 0 }))]);
-    PART.muovi(dt); if (SPALTI) folla(dt);
+    PART.muovi(dt); if (SPALTI) folla(dt); if (BORDO && G.ball) BORDO.muovi(dt, G.ball.x, G.ball.z); rilievoDivise();
   }
   updateCamera(dt); REGIA.dopo(dt); seguiOmbre(); renderer.render(scene, cam);
 }
@@ -2203,6 +2229,8 @@ function qualita(dt) {
   if (QUAL.livello === 1) { if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } sun.shadow.mapSize.set(1024, 1024); renderer.shadowMap.type = T.PCFShadowMap; }
   else if (QUAL.livello === 2) sun.castShadow = false;
   else { scene.traverse((o) => { if (o.material && o.material.isMeshStandardMaterial) { o.material.normalMap = o.material.roughnessMap = null; } if (o.isSpotLight) o.visible = false; }); renderer.setPixelRatio(1); resize(); } // di notte restano i fasci e la luce dall'alto, non i faretti
+  // per primi se ne vanno i dettagli della folla e le ombre del bordo campo, poi (al livello 3) steward e fotografi
+  if (SPALTI) SPALTI.dettaglio(QUAL.livello < 1); if (BORDO) BORDO.qualita(QUAL.livello);
   scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; });
   pienone();
 }
@@ -2227,6 +2255,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, cam, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, cam, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
