@@ -88,16 +88,18 @@ export function stanca(p, h, v, vMax, scatto) {
 
 /* ---------------------------------------------------------------- passo della corsa */
 
-// Le clip di camminata, corsetta e corsa del modello: durata, velocità a cui girano normali (come in poseSkinned) e in che
-// punto della clip il piede destro è in appoggio (misurato sulle ossa del modello: il sinistro è mezzo giro dopo).
+// Le clip di camminata, corsetta e corsa del modello: durata, velocità a cui il piede in appoggio resta fermo sull'erba
+// (misurata sulle ossa: quanto scorre all'indietro il piede a terra, per un giocatore di altezza normale) e in che punto
+// della clip il piede destro è in appoggio (il sinistro è mezzo giro dopo). min e max: quanto si può rallentare o
+// accelerare la clip prima che sembri un'altra andatura.
 export const ANDATURE = {
-  walk: { D: 0.967, v: 1.9, min: 0.7, max: 1.7, dx: 0.995 },
-  jog: { D: 0.833, v: 4.1, min: 0.8, max: 1.5, dx: 0.86 },
-  run: { D: 0.7, v: 6.6, min: 0.8, max: 1.5, dx: 0.94 },
+  walk: { D: 0.967, v: 2.31, min: 0.12, max: 1.45, dx: 0.995 },
+  jog: { D: 0.833, v: 3.53, min: 0.55, max: 1.75, dx: 0.86 },
+  run: { D: 0.7, v: 5.48, min: 0.6, max: 1.8, dx: 0.94 },
 };
-/** I pesi di camminata, corsetta e corsa a velocità v (gli stessi che usa l'animazione). */
+/** I pesi di camminata, corsetta e corsa a velocità v (gli stessi che usa l'animazione), centrati sulle velocità delle clip. */
 export function pesi(v) {
-  const m = clamp(v / 1.2, 0, 1), r = clamp((v - 6.4) / 1.8, 0, 1), j = clamp((v - 2) / 1.8, 0, 1) * (1 - r);
+  const m = clamp(v / 0.5, 0, 1), r = clamp((v - 4.6) / 1.4, 0, 1), j = clamp((v - 2) / 1.2, 0, 1) * (1 - r);
   return { walk: m * (1 - r - j), jog: m * j, run: m * r };
 }
 /** A che ritmo gira la clip k a velocità v (moltiplicatore della velocità normale). */
