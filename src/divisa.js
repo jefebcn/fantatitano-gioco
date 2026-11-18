@@ -83,3 +83,47 @@ export function creaZone(maschera) {
   }
   return { data: d, size: N };
 }
+
+/**
+ * Il rilievo della stoffa e quanto è lucida ogni zona, calcolati una volta sola dalla maschera.
+ * Altezza (in "punti" della texture): costine di colletto, polsini e risvolto dei calzettoni, costine verticali dei
+ * calzettoni, cucitura della spalla, orlo della maglia e dei pantaloncini, pieghe del tessuto in vita, sotto le ascelle
+ * e sui pantaloncini, e una trama fine. Dall'altezza si ricava la normal map (spazio tangente), saltando i bordi tra
+ * pezzi diversi della texture (lì due pixel vicini non sono vicini sul corpo).
+ * Ruvidezza (canale G, come la legge three.js): pelle 0,6, stoffa 0,82, bordi a costine 0,74, scarpini 0,35.
+ * @param {ImageData} maschera
+ * @returns {{ normali: Uint8Array, ruvido: Uint8Array, size: number }}
+ */
+export function creaRilievo(maschera) {
+  const N = maschera.width, m = maschera.data, H = new Float32Array(N * N), X = new Float32Array(N * N), Y = new Float32Array(N * N), Z = new Uint8Array(N * N), M = MISURE;
+  const ruvido = new Uint8Array(N * N * 4), finestra = (v, a, b, s) => piu((v - a) / s) * piu((b - v) / s);
+  for (let p = 0; p < N * N; p++) {
+    const i = p * 4, z = Math.round(m[i] / 28), x = m[i + 1] / 255 - 0.5, h = m[i + 2] / 255 * 1.9, ax = Math.abs(x), u = p % N, v = (p / N) | 0;
+    X[p] = x; Y[p] = h; Z[p] = z; let a = 0, r = 0.82;
+    const trama = (((u >> 1) + (v >> 1)) & 1) * 0.12; // la maglia fine del tessuto tecnico
+    if (z === ZONA.MAGLIA) {
+      a = trama;
+      if (h > M.braccio && Math.abs(ax - 0.19) < 0.006) a -= 0.9; // cucitura della spalla, dove la manica si attacca
+      if (h < M.orloMaglia && ax < 0.19) a += 0.35 - (Math.abs(h - M.orloMaglia) < 0.005 ? 0.9 : 0); // orlo, con la cucitura sopra
+      a += 0.55 * Math.sin(h * 46 + Math.sin(x * 18) * 1.6) * finestra(h, 0.93, 1.16, 0.05) * (ax < 0.19 ? 1 : 0); // pieghe in vita
+      a += 0.45 * Math.sin((ax - 0.19) * 140 + h * 20) * finestra(ax, 0.19, 0.26, 0.02) * finestra(h, 1.3, 1.45, 0.03); // pieghe sotto le ascelle
+    } else if (z === ZONA.COLLETTO || z === ZONA.BORDO) { a = 0.5 + 0.3 * Math.sin(u * 1.9); r = 0.74; } // costine a rilievo
+    else if (z === ZONA.PANTALONCINI) {
+      a = trama + (h < M.orloCorti ? 0.35 - (Math.abs(h - M.orloCorti) < 0.005 ? 0.9 : 0) : 0);
+      a += 0.5 * Math.sin(h * 38 + x * 30) * finestra(h, 0.72, 0.88, 0.04) * finestra(ax, 0.02, 0.15, 0.03); // pieghe sulla coscia
+    } else if (z === ZONA.CALZETTONI) { a = 0.3 * Math.sin(x * 520) + (h > M.risvolto ? 0.5 : 0); r = h > M.risvolto ? 0.74 : 0.85; } // costine verticali e risvolto
+    else if (z === ZONA.SCARPE) { r = 0.35; a = h < M.suola ? 0.4 : 0; }
+    else if ((z === ZONA.MANO || z === ZONA.AVAMBRACCIO)) r = 0.62;
+    else r = 0.6;
+    H[p] = a; ruvido[i] = 255; ruvido[i + 1] = Math.round(r * 255); ruvido[i + 2] = 255; ruvido[i + 3] = 255;
+  }
+  const normali = new Uint8Array(N * N * 4), k = 0.9;
+  for (let v = 0; v < N; v++) for (let u = 0; u < N; u++) {
+    const p = v * N + u, vicino = (q) => q >= 0 && q < N * N && Z[q] === Z[p] && Math.abs(X[q] - X[p]) + Math.abs(Y[q] - Y[p]) < 0.03;
+    const d = (a, b) => (vicino(a) && vicino(b) ? H[a] - H[b] : 0) * 0.5;
+    const dx = u > 0 && u < N - 1 ? d(p + 1, p - 1) : 0, dy = v > 0 && v < N - 1 ? d(p + N, p - N) : 0;
+    let nx = -dx * k, ny = -dy * k, nz = 1; const l = Math.hypot(nx, ny, nz); nx /= l; ny /= l; nz /= l;
+    const i = p * 4; normali[i] = Math.round((nx * 0.5 + 0.5) * 255); normali[i + 1] = Math.round((ny * 0.5 + 0.5) * 255); normali[i + 2] = Math.round((nz * 0.5 + 0.5) * 255); normali[i + 3] = 255;
+  }
+  return { normali, ruvido, size: N };
+}
