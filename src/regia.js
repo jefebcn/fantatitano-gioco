@@ -311,7 +311,8 @@ export function creaRegia(X) {
       if (S.scatto) { S.scatto = false; X.updateCamera(9); } // dopo la sequenza la telecamera torna al suo posto di colpo, sotto la transizione
       if (!S.on) {
         // vicino alle porte la telecamera guarda in diagonale, così la porta si vede
-        if (!G.dbgCam && st !== 'menu' && !G.portrait) { cam.position.x -= camLook.x * DIAG; cam.lookAt(camLook.x, 1, camLook.z); }
+        // (non sui piazzati, che hanno la loro inquadratura)
+        if (!G.dbgCam && st !== 'menu' && !G.portrait && !G.inquadra) { cam.position.x -= camLook.x * DIAG; cam.lookAt(camLook.x, 1, camLook.z); }
         return;
       }
 
@@ -337,7 +338,7 @@ export function creaRegia(X) {
         // parte stretta sul marcatore e si allarga mentre arrivano i compagni
         const sc = G.scorer, u = t - S.c0, w = Math.min(u, 2.2), a = S.a0 + u * .18, R = 6.2 + w * .7;
         cam.position.set(sc.x + Math.sin(a) * R, 2 + w * .35, sc.z + Math.cos(a) * R); cam.fov = stretto ? 52 : 34;
-        cam.lookAt(sc.x, 1.75, sc.z); // si guarda un po' sopra la testa: così il marcatore resta sotto il tabellino e sopra la scheda cam.updateProjectionMatrix();
+        cam.lookAt(sc.x, 1.75, sc.z); cam.updateProjectionMatrix(); // si guarda un po' sopra la testa: così il marcatore resta sotto il tabellino e sopra la scheda
       }
     },
   };

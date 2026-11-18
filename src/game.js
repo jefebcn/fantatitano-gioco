@@ -11,6 +11,7 @@ import * as MOTO from './fisica/corpo.js';
 import * as URTO from './fisica/contatti.js';
 import { creaCampo, texturaOmbra } from './grafica/campo.js';
 import { Porta, Bandierine, panchine, torriFaro, Particelle } from './grafica/stadio.js';
+import { creaAtmosfera } from './grafica/luce.js';
 
 (() => {
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
@@ -107,12 +108,12 @@ function ctex(c, repX = 1, repY = 1) {
 function cv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
 
 async function buildPitch() {
-  const { campo, fuori } = await creaCampo(T, { HL, HW, anisotropia: renderer.capabilities.getMaxAnisotropy() }); scene.add(campo, fuori); // prato PBR, strisce, usura e linee: src/grafica/campo.js
+  const { campo, fuori } = await creaCampo(T, { HL, HW, anisotropia: renderer.capabilities.getMaxAnisotropy() }); scene.add(campo, fuori); CAMPO = campo; // prato PBR, strisce, usura e linee: src/grafica/campo.js
   // porte con la rete che si deforma e bandierine che si flettono (src/grafica/stadio.js)
   PORTE = [-1, 1].map((d) => new Porta(T, scene, { d, gx: d * HL, GH, GT }));
   BANDIERINE = new Bandierine(T, scene, { HL, HW });
 }
-let PORTE = [], BANDIERINE = null, FARI = null;
+let PORTE = [], BANDIERINE = null, FARI = null, CAMPO = null, SFONDO = null, ATMO = null;
 const PART = new Particelle(T, scene); // ciuffi d'erba e polvere: scivolate, frenate, tiri forti
 
 let boards = [], standMat = null, titoSprite = null;
@@ -152,7 +153,7 @@ function buildStadium(lockup) {
   // Monte Titano con le tre torri, sullo sfondo
   const sh = new T.Shape(); const pts = [[-130, 0], [-110, 8], [-84, 20], [-62, 34], [-52, 44], [-47, 44], [-47, 52], [-41, 52], [-41, 45], [-24, 40], [-8, 48], [-3, 56], [-3, 66], [3, 66], [3, 57], [12, 50], [30, 38], [44, 41], [50, 46], [50, 53], [55, 53], [55, 45], [70, 30], [92, 16], [112, 7], [130, 0]];
   sh.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) sh.lineTo(p[0], p[1]);
-  const tg = new T.ShapeGeometry(sh), tm = new T.MeshBasicMaterial({ color: 0x4d6f9c });
+  const tg = new T.ShapeGeometry(sh), tm = new T.MeshBasicMaterial({ color: 0x4d6f9c }); SFONDO = tm;
   const t1 = new T.Mesh(tg, tm); t1.position.set(0, 0, -190); t1.scale.set(1.5, 1.25, 1); scene.add(t1);
   const t2 = new T.Mesh(tg, tm); t2.position.set(215, 0, 0); t2.rotation.y = -Math.PI / 2; t2.scale.set(1.5, 1.25, 1); scene.add(t2);
 }
@@ -1437,19 +1438,34 @@ function inclina(p, dt) {
 }
 
 /* ------------------------------------------------------------------ camera e disegno */
+// Inquadrature dei piazzati, finché non si calcia: angolo dall'alto alle spalle della bandierina verso l'area, punizione da
+// dietro il pallone verso la porta, rigore alle spalle di chi tira. null quando si gioca.
+function inquadratura() {
+  const b = G.ball, fk = G.fk; if (!b || !fk || !(G.state === 'restart' || G.penWait > 0) || REGIA.figure()) return null;
+  if (fk.corner) { const sx = sgn(b.x), sz = sgn(b.z); return { p: [b.x + sx * 5, 12, b.z + sz * 8], l: [sx * (HL - 9), 0, sz * 2], fov: 44 }; }
+  if (fk.pen) { const s = sgn(b.x); return { p: [b.x - s * 10, 4.2, b.z * .3], l: [s * HL, 0, 0], fov: 30 }; }
+  if (fk.wall || fk.direct) { const t = G.next, gx = t ? t.side * HL : sgn(b.x) * HL, dx = b.x - gx, dz = b.z, d = hyp(dx, dz) || 1; return { p: [b.x + dx / d * 10, 5, b.z + dz / d * 10], l: [gx, 0, 0], fov: 34 }; }
+  return null;
+}
 function updateCamera(dt) {
   const b = G.ball; let fx = 0, fz = 0;
   if (b) { fx = b.x; fz = b.z; if (G.state === 'goal' && G.scorer && G.stateT > .9) { fx = G.scorer.x; fz = G.scorer.z; } }
   let px, py, pz, lx, lz, fov;
   if (G.dbgCam) { cam.position.set(G.dbgCam[0], G.dbgCam[1], G.dbgCam[2]); cam.lookAt(G.dbgCam[3], G.dbgCam[4], G.dbgCam[5]); cam.fov = G.dbgCam[6] || 30; cam.updateProjectionMatrix(); return; }
   if (G.state === 'menu') { const a = G.t * .07; px = Math.sin(a) * 74; pz = Math.cos(a) * 62; py = 30; lx = 0; lz = 0; fov = 40; }
+  else if ((G.inquadra = inquadratura())) { const q = G.inquadra; [px, py, pz] = q.p; [lx, , lz] = q.l; fov = q.fov; } // piazzati: inquadratura dedicata
   else {
-    const close = G.state === 'goal' && G.stateT > .9; lx = clamp(fx, -39, 39); lz = fz * .55; px = lx * .96; pz = lz + (close ? 26 : 39); py = close ? 13 : 25; fov = 36;
+    // telecamera di gioco: segue la palla guardando un po' avanti dove va; negli ultimi 25 metri e in area si avvicina
+    const close = G.state === 'goal' && G.stateT > .9, ax = fx + (b && !close ? clamp(b.vx * .3, -6, 6) : 0), az = fz + (b && !close ? clamp(b.vz * .25, -4, 4) : 0);
+    const vicino = clamp((Math.abs(fx) - (HL - 25)) / 12, 0, 1), area = Math.abs(fx) > HL - 16.5 && Math.abs(fz) < 20 ? 1 : 0, zoom = close ? 0 : Math.max(vicino * .7, area);
+    lx = clamp(ax, -39, 39); lz = az * .55; px = lx * .96; pz = lz + (close ? 26 : 39 - 6 * zoom); py = close ? 13 : 25 - 5 * zoom; fov = 36 - 6 * zoom;
     if (cam.aspect < 1.5) { py += 8; pz += 10; }
   }
-  const k = 1 - Math.exp(-(G.state === 'menu' ? 2 : 4.2) * dt);
-  camPos.x += (px - camPos.x) * k; camPos.y += (py - camPos.y) * k; camPos.z += (pz - camPos.z) * k;
-  camLook.x += (lx - camLook.x) * k; camLook.z += (lz - camLook.z) * k;
+  // movimento morbido: una molla smorzata al punto giusto (niente scatti né oscillazioni), più lenta nel menu
+  const kk = G.state === 'menu' ? 1.6 : 3.2, v = G.camV || (G.camV = { px: 0, py: 0, pz: 0, lx: 0, lz: 0 }), h = Math.min(dt, .05);
+  const molla = (val, mira, nome) => { v[nome] += (kk * kk * (mira - val) - 2 * kk * v[nome]) * h; return val + v[nome] * h; };
+  camPos.x = molla(camPos.x, px, 'px'); camPos.y = molla(camPos.y, py, 'py'); camPos.z = molla(camPos.z, pz, 'pz');
+  camLook.x = molla(camLook.x, lx, 'lx'); camLook.z = molla(camLook.z, lz, 'lz');
   cam.position.copy(camPos); cam.lookAt(camLook.x, 1, camLook.z);
   if (Math.abs(cam.fov - fov) > .01) { cam.fov += (fov - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); }
 }
@@ -1560,10 +1576,10 @@ function bindInput() {
 
 /* ------------------------------------------------------------------ schermate */
 const show = (id) => { for (const s of ['#home', '#nuovo', '#hub', '#pan', '#scelta', '#pre', '#vs', '#stop', '#cambi', '#fine']) $(s).classList.toggle('nas', s !== id); };
-const sel = { mia: null, loro: null, diff: 'normale', form: '4-3-3', ment: 0 };
+const sel = { mia: null, loro: null, diff: 'normale', form: '4-3-3', ment: 0, ora: 'giorno' };
 const SAVE = 'fantatitano-partita';
-try { const v = JSON.parse(localStorage.getItem(SAVE) || '{}'); if (FORMS[v.form]) sel.form = v.form; if ([-1, 0, 1].includes(v.ment)) sel.ment = v.ment; if (DIFF[v.diff]) sel.diff = v.diff; } catch (e) { /* si parte dai valori di base */ }
-const save = () => { try { localStorage.setItem(SAVE, JSON.stringify({ form: sel.form, ment: sel.ment, diff: sel.diff })); } catch (e) { /* senza memoria si gioca lo stesso */ } };
+try { const v = JSON.parse(localStorage.getItem(SAVE) || '{}'); if (FORMS[v.form]) sel.form = v.form; if ([-1, 0, 1].includes(v.ment)) sel.ment = v.ment; if (DIFF[v.diff]) sel.diff = v.diff; if (v.ora === 'notte' || v.ora === 'giorno') sel.ora = v.ora; } catch (e) { /* si parte dai valori di base */ }
+const save = () => { try { localStorage.setItem(SAVE, JSON.stringify({ form: sel.form, ment: sel.ment, diff: sel.diff, ora: sel.ora })); } catch (e) { /* senza memoria si gioca lo stesso */ } };
 const esc = (n) => String(n).replace(/[<>&"]/g, '');
 // Valore del giocatore da 55 a 88, confrontato con quelli del suo ruolo
 const RANGE = {}; for (const c of CLUBS) for (const [, r, , q] of c.xi) { const v = RANGE[r] || (RANGE[r] = [q, q]); v[0] = Math.min(v[0], q); v[1] = Math.max(v[1], q); }
@@ -1868,6 +1884,7 @@ function tactics() {
   const forms = Object.keys(FORMS).map((n) => `<button data-f="${n}" class="${n === sel.form ? 'on' : ''}">${n}</button>`).join('');
   const ments = MENT.names.map((n, k) => `<button data-m="${k - 1}" class="${k - 1 === sel.ment ? 'on' : ''}">${n}</button>`).join('');
   for (const id of ['#segForm', '#segFormP']) $(id).innerHTML = forms; for (const id of ['#segMent', '#segMentP']) $(id).innerHTML = ments;
+  $('#segOra').innerHTML = [['giorno', '☀ Giorno'], ['notte', '☾ Notte']].map(([k, n]) => `<button data-o="${k}" class="${k === sel.ora ? 'on' : ''}">${n}</button>`).join(''); if (ATMO) ATMO.applica(sel.ora);
   $('#ment').textContent = MENT.names[sel.ment + 1]; save();
   const t = G.teams[0]; if (t && t.human) setTactics(t, sel.form, sel.ment);
   if (!$('#pre').classList.contains('nas')) showPre();
@@ -1929,7 +1946,7 @@ function buildMenu() {
     panImp();
   });
   $('#gioca').onclick = () => startMatch(sel.mia, sel.loro, sel.diff);
-  for (const id of ['#segForm', '#segFormP', '#segMent', '#segMentP']) $(id).addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.f) sel.form = b.dataset.f; else sel.ment = +b.dataset.m; tactics(); });
+  for (const id of ['#segForm', '#segFormP', '#segMent', '#segMentP', '#segOra']) $(id).addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.f) sel.form = b.dataset.f; else if (b.dataset.o) sel.ora = b.dataset.o; else sel.ment = +b.dataset.m; tactics(); });
   $('#ment').addEventListener('pointerdown', (e) => { e.preventDefault(); sel.ment = sel.ment === 1 ? -1 : sel.ment + 1; tactics(); }); // in campo: un tocco cambia mentalità
   for (const x of $('#diff').children) x.classList.toggle('on', x.dataset.d === sel.diff);
   tactics();
@@ -2026,7 +2043,7 @@ function qualita(dt) {
   QUAL.livello++; QUAL.attesa = 4; QUAL.media = 1 / 60;
   if (QUAL.livello === 1) { if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } sun.shadow.mapSize.set(1024, 1024); renderer.shadowMap.type = T.PCFShadowMap; }
   else if (QUAL.livello === 2) sun.castShadow = false;
-  else { scene.traverse((o) => { if (o.material && o.material.isMeshStandardMaterial) { o.material.normalMap = o.material.roughnessMap = null; } }); renderer.setPixelRatio(1); resize(); }
+  else { scene.traverse((o) => { if (o.material && o.material.isMeshStandardMaterial) { o.material.normalMap = o.material.roughnessMap = null; } if (o.isSpotLight) o.visible = false; }); renderer.setPixelRatio(1); resize(); } // di notte restano i fasci e la luce dall'alto, non i faretti
   scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; });
 }
 function loop(ts) {
@@ -2042,6 +2059,7 @@ async function boot() {
   try { await Promise.race([document.fonts.load('40px Anton'), new Promise((r) => setTimeout(r, 2500))]); } catch (e) { /* si disegna col font di sistema */ }
   const lock = await loadImg('img/corona-lime.png');
   buildStadium(lock); paintBoards(CLUBS[0], CLUBS[1], null);
+  ATMO = creaAtmosfera(T, { scene, hemi, sun, sole: SOLE, fari: FARI, sfondo: SFONDO, campo: CAMPO, tribune: (boards.stands || []).map((s) => s.m.material) }); ATMO.applica(sel.ora); // giorno o notte, scelto prima della partita
   buildMenu(); bindInput();
   K = CAR.carica(); if (K && !club(K.club)) K = null;
   CAR.applica(K, CLUBS); applicaMio(); // le rose cambiate col mercato e il club dell'utente, prima di caricare gli stemmi
@@ -2049,6 +2067,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
