@@ -8,6 +8,7 @@ import * as CLOUD from './cloud.js';
 import * as CAR from './carriera.js';
 import * as FIS from './fisica/pallone.js';
 import * as MOTO from './fisica/corpo.js';
+import * as URTO from './fisica/contatti.js';
 
 (() => {
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
@@ -25,12 +26,12 @@ const MATE = { spd: 1, steal: .95, save: .72, err: 1, think: .4, wait: .9, slide
 const RUN = { every: 1.2, max: 2, life: 2.8, min: 8.5, depth: 13, oneTwo: .35, thru: .3 };
 // Difesa a tre distanze dal portatore: oltre `far` ci si avvicina, fino a `near` si temporeggia, sotto si va sul pallone.
 // `danger` è la distanza dalla propria porta sotto cui non si aspetta più; `slide` l'intervallo utile per la scivolata
-const DEF = { far: 8.5, near: 2.4, hold: 2.3, danger: 24, slide: [1.2, 3.2] };
-// Falli: probabilità che un contrasto riuscito sia fallo [di fronte, da dietro], in piedi e in scivolata; falli al secondo mentre si sta addosso
+const DEF = { far: 8.5, near: 2.4, hold: 2.3, danger: 24, slide: [1.6, 3.4] };
+// Falli: probabilità che un contrasto riuscito in piedi sia fallo [di fronte, da dietro], in scivolata lo decide la gamba tesa. Falli al secondo mentre si sta addosso
 // al portatore [di fronte, da dietro]; probabilità del giallo [in piedi, in scivolata];
 // distanza della barriera; quanto para il portiere su rigore rispetto a un tiro normale; quante volte l'arbitro lascia correre
 // quando chi subisce il fallo resta in piedi con campo davanti; probabilità di infortunio [in piedi, in scivolata] e quanto va piano chi si fa male
-const FOUL = { stand: [.08, .3], slide: [.2, .65], rate: [.45, 1.2], yellow: [.1, .4], wall: 9.15, penSave: .42, adv: .75, inj: [.03, .12], limp: .72 };
+const FOUL = { stand: [.08, .3], rate: [.45, 1.2], yellow: [.1, .4], wall: 9.15, penSave: .42, adv: .75, inj: [.03, .12], limp: .72 };
 // Peso di ogni evento nel voto in pagella (si parte da 6)
 const VOTE = { g: 1.1, a: .7, kp: .12, sot: .15, tk: .2, int: .08, sv: .4, pass: 1.2, fl: -.15, og: -1, yel: -.4, red: -1.5, clean: .6, concGk: -.35, concD: -.22, win: .25 };
 // Gioco aereo: fin dove si arriva di testa, quanto si deve essere vicini, da dove si crossa (larghezza e profondità),
@@ -229,7 +230,7 @@ let MODEL = null;
 /** Quanto si resta a terra dopo una scivolata, un tuffo o un contrasto subito: si allunga se ci sono le clip registrate. */
 const DOWN = { pl: .38, gk: .5, fall: .7 };
 /** Le azioni registrate: velocità, da che secondo cominciano a sfumare (se manca: alla fine), cosa viene dopo. */
-const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.3 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 }, rinvio: { sp: 1.15 }, testa: { sp: 1.3, cut: .45 }, bandiera: { sp: 1 } };
+const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.55 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 }, rinvio: { sp: 1.15 }, testa: { sp: 1.3, cut: .45 }, bandiera: { sp: 1 } };
 /** Il portiere tiene la palla in mano per HOLD secondi; il rinvio con le mani parte prima, così la palla esce quando il braccio arriva in alto. */
 const HOLD = 1, LANCIO = HOLD - .73 / 1.15;
 const hasFx = (n) => !!(MODEL && MODEL.fx && MODEL.fx[n]);
@@ -359,7 +360,7 @@ const SUB = { max: 5, ai: 3, from: .55, every: .12 };
 function creaGiocatore(t, i, [name, role, num, q]) {
   const club = t.club, fig = (MODEL ? makeSkinned : makeFigure)(i === 0 ? t.gkit : t.kit, hash(club.id + name), num, i === 0 ? null : club.id, name); scene.add(fig.root);
   const base = 7.3 + clamp((q - 20) / 40, -.5, .6) + (club.str - 3) * .07;
-  return { team: t, i, role, nat: role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: t.side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? 6.6 : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1, run: null, mark: null, jock: false, slideCd: 0, inj: false, yel: 0, red: false, fkShot: false, en: 1, by: null, s: { g: 0, a: 0, kp: 0, sh: 0, sot: 0, pa: 0, pc: 0, tk: 0, int: 0, sv: 0, fl: 0, og: 0 } };
+  return { team: t, i, role, nat: role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: t.side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? 6.6 : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1, run: null, mark: null, jock: false, slideCd: 0, inj: false, yel: 0, red: false, fkShot: false, en: 1, by: null, s: { g: 0, a: 0, kp: 0, sh: 0, sot: 0, pa: 0, pc: 0, tk: 0, int: 0, sv: 0, fl: 0, og: 0 }, massa: 72 + ({ P: 6, D: 5, C: -1, A: 2 }[role] || 0) + (hash(name + club.id) % 9) - 4, sbil: 0 }; // la massa conta nei duelli spalla a spalla
 }
 /** Sostituzione: esce `out`, entra il k-esimo della panchina e ne prende posto e compito. Il portiere si cambia solo con un portiere. */
 function sostituisci(t, out, k) {
@@ -448,7 +449,7 @@ function gain(p) {
     const [jx, jz] = userDrives(p) ? inputWorld() : [0, 0], s = p.team.side;
     FIS.controlla(b, p, tecnica(p), Math.random, hyp(jx, jz) > .3 ? { x: jx, z: jz } : userDrives(p) ? null : { x: s * (HL - 11) - p.x, z: -p.z * .5 }); // verso il dischetto: dentro al campo anche vicino alla linea di fondo
   }
-  if (p.team.human) { if (p.i !== 0) setCtrl(p); } else if (prev !== p.team || !G.ctrl) setCtrl(nearestTo(G.teams[0], b.x, b.z));
+  if (p.team.human) { if (p.i !== 0) setCtrl(p); } else if (prev !== p.team || !G.ctrl) { const m = migliorDifensore(G.teams[0]); setCtrl(m ? m.p : nearestTo(G.teams[0], b.x, b.z)); }
 }
 // Da dove parte il calcio: il pallone è dove l'ha lasciato l'ultimo tocco (non incollato al piede). Se per qualche motivo è
 // troppo lontano (rimesse, palla appena data), lo si mette davanti al piede.
@@ -513,36 +514,74 @@ function header(p) {
   }
   b.vx = vx; b.vy = vy; b.vz = vz; b.c = b.t = 0; p.cool = .5; p.dir = Math.atan2(vx, vz); G.lastTouch = G.lastKicker = p; G.poss = t; AU.kick(11); azione(p, 'testa'); markOffside(p);
 }
+// Passaggi rasoterra: velocità d'arrivo (tesi, che non si fermano a metà) e, per ogni distanza, con che forza partire e quanto
+// ci mettono. La tabella si fa una volta sola con la fisica del pallone: così il punto d'incontro si cerca in fretta.
+const vArr = (d) => clamp(8 + d * .2, 8.5, 14);
+const RASO = (() => { const v = [], t = []; for (let d = 0; d <= 70; d++) { const s = FIS.rasoterra(Math.max(d, .5), vArr(d), 30); v.push(s); t.push(FIS.rotolaFino(s, Math.max(d, .5)).t); } return { v, t }; })();
+const daTabella = (arr, d) => { const k = clamp(d, 0, 69.999), i = Math.floor(k); return arr[i] + (arr[i + 1] - arr[i]) * (k - i); };
+const tempoPalla = (o, x, z) => daTabella(RASO.t, hyp(x - o.x, z - o.z));
+// Quanta strada fa p in t secondi correndo nella direzione (ux, uz): parte dalla velocità che ha in quel verso e accelera
+function corsaIn(p, ux, uz, t, scatto) {
+  const v0 = Math.max(0, p.vx * ux + p.vz * uz), vm = p.maxV * (scatto ? 1.2 : 1) * MOTO.forma(p.en).v, a = MOTO.CORPO.acc * .62;
+  const tm = Math.max(0, (vm - v0) / a); return t < tm ? v0 * t + .5 * a * t * t : v0 * tm + .5 * a * tm * tm + vm * (t - tm);
+}
+/**
+ * Dove e quando il compagno m può ricevere un rasoterra di p. Fermo (o quasi): sui piedi. In corsa, in scatto o con un
+ * inserimento: nello spazio davanti a lui, nel punto in cui lui e il pallone arrivano insieme (lui con la sua accelerazione).
+ */
+function puntoIncontro(p, m) {
+  const o = piede(p), vm = hyp(m.vx, m.vz); let dx, dz, lim;
+  if (m.run) { dx = m.run.x - m.x; dz = m.run.z - m.z; lim = hyp(dx, dz) + 5; }
+  else if (vm > 2.5) { dx = m.vx; dz = m.vz; lim = 4 + vm * 1.4; }
+  if (!dx && !dz) return { x: m.x, z: m.z, t: tempoPalla(o, m.x, m.z), spazio: false };
+  const L = hyp(dx, dz) || 1, ux = dx / L, uz = dz / L, scatto = !!(m.run || m.sprint);
+  for (let t = .25; t <= 2.8; t += .05) {
+    const s = Math.min(lim, corsaIn(m, ux, uz, t, scatto)), x = clamp(m.x + ux * s, -HL + 1, HL - 1), z = clamp(m.z + uz * s, -HW + 1, HW - 1);
+    if (tempoPalla(o, x, z) <= t + .04) return { x, z, t, spazio: s > 2 };
+    if (s >= lim) return { x, z, t: tempoPalla(o, x, z), spazio: true };
+  }
+  return { x: m.x, z: m.z, t: tempoPalla(o, m.x, m.z), spazio: false };
+}
 function openness(m) { let d = 99; for (const o of m.team.opp.players) d = Math.min(d, hyp(o.x - m.x, o.z - m.z)); return d; }
-function laneBlocked(p, m) {
-  const dx = m.x - p.x, dz = m.z - p.z, L = hyp(dx, dz) || 1;
-  for (const o of p.team.opp.players) { const t = clamp(((o.x - p.x) * dx + (o.z - p.z) * dz) / (L * L), 0, 1); if (t > .08 && t < .95 && hyp(p.x + dx * t - o.x, p.z + dz * t - o.z) < 1.7) return true; }
+// Quanto è libero un punto per la squadra t (distanza dall'avversario più vicino)
+function liberoIn(t, x, z) { let d = 99; for (const o of t.opp.players) d = Math.min(d, hyp(o.x - x, o.z - z)); return d; }
+function laneBlocked(p, m, tx = m.x, tz = m.z) {
+  const o0 = piede(p), dx = tx - o0.x, dz = tz - o0.z, L = hyp(dx, dz) || 1;
+  for (const o of p.team.opp.players) { const t = clamp(((o.x - o0.x) * dx + (o.z - o0.z) * dz) / (L * L), 0, 1); if (t > .08 && t < .95 && hyp(o0.x + dx * t - o.x, o0.z + dz * t - o.z) < 1.7) return true; }
   return false;
 }
+/**
+ * Il compagno a cui passare. Con la levetta: chi sta nel cono della levetta (guardando sia dove è sia dove riceverebbe),
+ * preferendo i più centrati nel cono, liberi e con la linea di passaggio pulita. Senza levetta (l'IA): chi fa avanzare
+ * la squadra senza rischi. Il punto d'incontro è quello di puntoIncontro (piedi o spazio).
+ */
 function bestPass(p, ix, iz) {
-  const s = p.team.side; let best = null, bs = -1e9; const dirGiven = ix !== undefined;
+  const s = p.team.side, dirGiven = ix !== undefined; let best = null, bs = -1e9;
   for (const m of p.team.players) {
-    if (m === p || (m.i === 0 && !(dirGiven && false))) continue;
-    const dx = m.x - p.x, dz = m.z - p.z, d = hyp(dx, dz); if (d < 4 || d > 44) continue;
-    const over = m.x * s - offsideLine(p.team, p.x), off = over > .35; if (over > 1.2 && !dirGiven) continue; // chi passa non vede il fuorigioco di poco
+    if (m === p || m.i === 0 || m.stun > 0) continue;
+    const pt = puntoIncontro(p, m), dx = pt.x - p.x, dz = pt.z - p.z, d = hyp(dx, dz); if (d < 4 || d > 46) continue;
+    const over = pt.x * s - offsideLine(p.team, p.x), off = over > .35 && m.x * s > offsideLine(p.team, p.x) - .2; if (over > 1.2 && !dirGiven && !m.run) continue; // chi passa non vede il fuorigioco di poco
+    const chiusa = laneBlocked(p, m, pt.x, pt.z), lib = Math.min(liberoIn(p.team, pt.x, pt.z), 7);
     let sc;
-    if (dirGiven) { const dot = (dx * ix + dz * iz) / d; if (dot < .45) continue; sc = dot * 34 - d * .22 + Math.min(openness(m), 6) * .6 - (laneBlocked(p, m) ? 5 : 0) + (m.run ? 3 : 0) - (off ? 9 : 0); }
-    else sc = dx * s * .55 + Math.min(openness(m), 8) * 1.3 - (laneBlocked(p, m) ? 13 : 0) - d * .08 + rnd(3) - (m.x * s < -30 ? 6 : 0) + (m.run ? 6 : 0);
+    if (dirGiven) {
+      const dm = hyp(m.x - p.x, m.z - p.z) || 1, cono = Math.max((dx * ix + dz * iz) / d, ((m.x - p.x) * ix + (m.z - p.z) * iz) / dm); // il più centrato tra dove è e dove riceve
+      if (cono < .55) continue;
+      sc = (cono > .82 ? 40 : 18) * cono - d * .25 + lib * .8 - (chiusa ? 6 : 0) + (pt.spazio ? 3 : 0) + dx * s * .08 - (off ? 12 : 0);
+    } else sc = dx * s * .55 + lib * 1.3 - (chiusa ? 13 : 0) - d * .08 + rnd(3) - (pt.x * s < -30 ? 6 : 0) + (m.run ? 6 : 0) + (pt.spazio ? 2 : 0);
     if (sc > bs) { bs = sc; best = m; }
   }
   return best;
 }
 function pass(p, m) {
-  const d0 = hyp(m.x - p.x, m.z - p.z), vArr = (d) => clamp(8 + d * .2, 8.5, 14); // velocità d'arrivo: passaggi tesi, che non si fermano a metà
-  const lead = FIS.rotolaFino(FIS.rasoterra(d0, vArr(d0), 30), d0).t + .1; // anticipo: quanto ci mette davvero la palla ad arrivare
-  let tx = m.x + m.vx * lead, tz = m.z + m.vz * lead;
-  if (m.run) { const rx = m.run.x - m.x, rz = m.run.z - m.z, rl = hyp(rx, rz) || 1, k = Math.min(rl, m.maxV * 1.2 * (lead + .35)); tx = m.x + rx / rl * k; tz = m.z + rz / rl * k; }
-  const o = piede(p); let dx = tx - o.x, dz = tz - o.z; const d = hyp(dx, dz) || 1;
-  { const e = rnd(-1, 1) * .035 * qf(p) * (userDrives(p) ? .6 : diffOf(p).err), c = Math.cos(e), n = Math.sin(e), x = dx * c - dz * n; dz = dx * n + dz * c; dx = x; } // imprecisione
-  const lob = d > 20 && laneBlocked(p, m);
-  if (lob) { const T = clamp(d / 17, .85, 1.7), v = FIS.mira(o, { x: o.x + dx, y: 1, z: o.z + dz }, T, 0, -.35); kick(p, v.vx, v.vy, v.vz, 'tiro', 0, -.35); } // a scavalcare, con un po' di rotazione all'indietro
-  else { const sp = FIS.rasoterra(d, vArr(d), 30); kick(p, dx / d * sp, 0, dz / d * sp, d > 26 ? 'tiro' : 'passaggio'); } // forza dosata: arriva al compagno né troppo piano né troppo forte
-  G.intended = m; m.run = null; if (p.team.human) setCtrl(m);
+  const o = piede(p), pt = puntoIncontro(p, m); let dx = pt.x - o.x, dz = pt.z - o.z; const d = hyp(dx, dz) || 1;
+  { const e = rnd(-1, 1) * .035 * qf(p) * (userDrives(p) ? .6 : diffOf(p).err) * (pt.spazio ? 1.25 : 1), c = Math.cos(e), n = Math.sin(e), x = dx * c - dz * n; dz = dx * n + dz * c; dx = x; } // imprecisione (un po' di più sul filtrante)
+  const lob = d > 18 && laneBlocked(p, m, pt.x, pt.z);
+  if (lob) { // a scavalcare, con un po' di rotazione all'indietro; se lui corre, la palla scende dove arriverà
+    const T = clamp(d / 17, .85, 1.7), vm = hyp(m.vx, m.vz), run = m.run || vm > 2.5, L = run ? hyp(m.run ? m.run.x - m.x : m.vx, m.run ? m.run.z - m.z : m.vz) || 1 : 1;
+    const ux = run ? (m.run ? m.run.x - m.x : m.vx) / L : 0, uz = run ? (m.run ? m.run.z - m.z : m.vz) / L : 0, k = run ? corsaIn(m, ux, uz, T + .25, true) : 0;
+    const tx = clamp(m.x + ux * k, -HL + 1, HL - 1), tz = clamp(m.z + uz * k, -HW + 1, HW - 1), v = FIS.mira(o, { x: tx, y: 1, z: tz }, T, 0, -.35); kick(p, v.vx, v.vy, v.vz, 'tiro', 0, -.35);
+  } else { const sp = daTabella(RASO.v, d); kick(p, dx / d * sp, 0, dz / d * sp, d > 26 ? 'tiro' : 'passaggio'); } // forza dosata: arriva al compagno né troppo piano né troppo forte
+  G.intended = m; if (p.team.human) setCtrl(m);
   p.s.pa++; G.lastPass = p;
   // dai e vai: chi ha passato in avanti si butta nello spazio
   const s = p.team.side;
@@ -567,8 +606,71 @@ function effettoVerso(o, tx, tz, cx, cz) {
   const dx = tx - o.x, dz = tz - o.z, l = hyp(dx, dz) || 1, lato = (-dz * (cx - tx) + dx * (cz - tz)) / l;
   return Math.abs(lato) < .3 ? (rnd() < .5 ? 1 : -1) : sgn(lato);
 }
-function slide(p) { if (p.st !== 'run' || p.stun > 0) return; p.st = 'slide'; p.stT = 0; p.hit = false; azione(p, 'scivolata'); }
-function switchCtrl() { const b = G.ball; const n = nearestTo(G.teams[0], b.x + b.vx * .3, b.z + b.vz * .3, G.ctrl); if (n) setCtrl(n); }
+// Spalla a spalla: chi perde il duello è sbilanciato; se aveva palla e il duello è netto, la palla gli può sfuggire
+function spallata(r) {
+  const b = G.ball, p = r.perde;
+  if (b.owner === p && p.i && r.quanto > URTO.DUELLO.perde && (p.spallaT || 0) < G.t && rnd() < r.quanto * .5) {
+    p.spallaT = G.t + .6; b.owner = null; const k = 3 + rnd(2), nx = b.x - r.vince.x, nz = b.z - r.vince.z, n = hyp(nx, nz) || 1;
+    b.vx = p.vx * .6 + nx / n * k; b.vz = p.vz * .6 + nz / n * k; b.vy = rnd(.3); G.lastTouch = r.vince; G.lastPass = null; p.cool = .4; AU.kick(5);
+  }
+}
+// Scivolata: parte almeno a SCIVOLATA.v0 e la frena l'erba; chi la comanda l'utente viene aiutato a puntare il pallone se è
+// già più o meno nella sua direzione (entro 40°). Cosa colpisce lo decide scivolate(), con la gamba tesa del modello.
+function slide(p, mira = false) {
+  if (p.st !== 'run' || p.stun > 0) return;
+  const b = G.ball;
+  if (mira) { const tx = b.x + b.vx * .3, tz = b.z + b.vz * .3, d = hyp(tx - p.x, tz - p.z), a = Math.atan2(tx - p.x, tz - p.z); let da = a - p.dir; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; if (d < 6 && Math.abs(da) < .7) p.dir = a; }
+  p.st = 'slide'; p.stT = 0; p.slPalla = null; p.slColpiti = []; p.slideV0 = Math.max(hyp(p.vx, p.vz) * URTO.SCIVOLATA.spinta, URTO.SCIVOLATA.v0); azione(p, 'scivolata');
+}
+// Ogni fotogramma, per chi sta scivolando: se la gamba tocca prima il pallone è un intervento pulito (la palla schizza via
+// nella direzione della gamba, chi l'aveva può cadere); se prende prima l'avversario è fallo, più grave da dietro o in ritardo.
+function scivolate() {
+  const b = G.ball, S = URTO.SCIVOLATA;
+  for (const d of all()) {
+    if (d.st !== 'slide' || G.state !== 'play') continue;
+    const own = b.owner;
+    if (!d.slPalla && !(own && (own.team === d.team || own.i === 0)) && URTO.toccaPalla(d, b)) {
+      d.slPalla = G.t; const v = URTO.deviazione(d, b);
+      b.owner = null; b.vx = v.vx; b.vz = v.vz; b.vy = v.vy; b.c = b.t = 0; b.resto = 0; G.lastTouch = d; G.lastPass = null; G.offs = null; G.intended = null; d.cool = .25; AU.kick(9);
+      if (own) { own.cool = .5; d.s.tk++; }
+    }
+    for (const o of d.team.opp.players) {
+      if (o.st === 'down' || o.stun > 0 || d.slColpiti.includes(o) || !URTO.toccaUomo(d, o)) continue;
+      d.slColpiti.push(o);
+      const vicino = b.owner === o || hyp(b.x - o.x, b.z - o.z) < 2.2;
+      if (d.slPalla) { if (vicino) { o.stun = DOWN.fall; o.cool = Math.max(.8, DOWN.fall); o.fallen = true; azione(o, 'caduta'); } continue; } // prima la palla: pulito, l'avversario può cadere
+      const dietro = URTO.daDietro(d, o), ritardo = !vicino;
+      return foul(d, o, true, dietro || ritardo, dietro && ritardo);
+    }
+  }
+}
+// Quanto ci mette p ad arrivare in (x, z), con la sua accelerazione (vedi portata)
+function tempoA(p, x, z) { const d = hyp(x - p.x, z - p.z) - .6; if (d <= 0) return 0; for (let t = .05; t < 5; t += .05) if (portata(p, x, z, t) >= d) return t; return 5; }
+/**
+ * Il difensore giusto da comandare. Se l'avversario ha palla: chi arriva prima a chiudergli la strada, cioè in un punto
+ * tra lui e la porta un paio di metri davanti a dove sta andando; chi è già stato superato (dietro la palla) conta molto
+ * meno. Se la palla è libera o in volo: chi arriva prima sulla sua traiettoria. `salta` è chi si esclude (quello di adesso).
+ */
+function migliorDifensore(team, salta) {
+  const b = G.ball, own = b.owner, gx = -team.side * HL; let best = null, bs = 1e9;
+  const path = !own ? (G.path || FIS.percorso(b, 2.4, .1)) : null;
+  for (const p of team.players) {
+    if (p.i === 0 || p === salta || p.red) continue;
+    let sc;
+    if (own && own.team !== team) {
+      const ux = gx - own.x, uz = -own.z, ul = hyp(ux, uz) || 1, cx = own.x + own.vx * .45 + ux / ul * 2, cz = own.z + own.vz * .45 + uz / ul * 2;
+      const dietro = ((p.x - own.x) * ux + (p.z - own.z) * uz) / ul; // quanto è tra la palla e la porta (negativo: superato)
+      sc = tempoA(p, cx, cz) + (dietro < -1 ? .9 + Math.min(1.2, -dietro * .08) : 0);
+    } else if (path) {
+      sc = 5; for (const pt of path) if (pt.y < 2.2 && portata(p, pt.x, pt.z, pt.t) + .6 >= hyp(pt.x - p.x, pt.z - p.z)) { sc = pt.t; break; }
+      if (sc >= 5) sc = 4 + tempoA(p, b.x, b.z) * .2; // nessuno ci arriva prima: il più vicino al punto dove si ferma
+    } else sc = hyp(p.x - b.x, p.z - b.z) / 8;
+    if (p.stun > 0 || p.st === 'down' || p.st === 'slide') sc += 1;
+    if (sc < bs) { bs = sc; best = p; }
+  }
+  return best ? { p: best, t: bs } : null;
+}
+function switchCtrl() { const m = migliorDifensore(G.teams[0], G.ctrl); if (m) setCtrl(m.p); }
 
 /* comandi dell'utente */
 function inputWorld() { return [G.in.jx, G.in.jy]; }
@@ -592,7 +694,7 @@ function pressD() {
 }
 function pressB(down) {
   if (G.state !== 'play' || G.auto) { G.charge = -1; return; } const c = G.ctrl, b = G.ball; if (!c) return;
-  if (down) { if (b.owner === c) G.charge = 0; else slide(c); }
+  if (down) { if (b.owner === c) G.charge = 0; else slide(c, true); }
   else if (G.charge >= 0) { if (b.owner === c) userShoot(clamp(G.charge / .8, .18, 1)); G.charge = -1; }
 }
 function userShoot(pow) {
@@ -687,8 +789,9 @@ function chase(p, own, dt) {
   if (t.jWho !== p || t.jOwn !== own) { t.jWho = p; t.jOwn = own; t.jT = 0; }
   const beaten = (p.x - own.x) * ux + (p.z - own.z) * uz < -.4;
   if (p.slideCd <= 0 && own.shield <= 0 && own.i !== 0 && hyp(own.vx, own.vz) > 4.5 && (beaten || threat < 20)) {
-    const px = b.x + own.vx * .25, pz = b.z + own.vz * .25, pd = hyp(px - p.x, pz - p.z);
-    if (pd > DEF.slide[0] && pd < DEF.slide[1] && rnd() < D.slide * dt) { p.dir = Math.atan2(px - p.x, pz - p.z); p.slideCd = 3.5; G.stats.slides[t.idx]++; return slide(p); }
+    const px = b.x + own.vx * .35, pz = b.z + own.vz * .35, pd = hyp(px - p.x, pz - p.z); // dove sarà il pallone quando la gamba è tesa
+    const dietro = URTO.daDietro(p, own) && threat > DEF.danger * .6; // da dietro rischia il fallo: lo tenta di rado, se non è un'emergenza
+    if (pd > DEF.slide[0] && pd < DEF.slide[1] && rnd() < D.slide * dt * (dietro ? .25 : 1)) { p.dir = Math.atan2(px - p.x, pz - p.z); p.slideCd = 3.5; G.stats.slides[t.idx]++; return slide(p); }
   }
   if (d > DEF.far) t.jT = 0;
   else if (d > DEF.near && !beaten) {
@@ -837,21 +940,22 @@ function step(dt) {
   roles(); runs(dt); G.land = airborne() ? landing() : null; G.path = G.ball && !G.ball.owner ? FIS.percorso(G.ball, 2.4, .1) : null;
   const ps = all();
   for (const p of ps) {
-    p.cool -= dt; p.stun -= dt; p.shield -= dt; p.slideCd -= dt; p.jock = false;
+    p.cool -= dt; p.stun -= dt; p.shield -= dt; p.slideCd -= dt; p.sbil -= dt; p.jock = false;
     if (G.penWait > 0 || (G.so && G.state === 'play' && !(p === G.so.gk && G.so.fase === 'tiro'))) { p.tx = p.x; p.tz = p.z; p.sprint = false; } // ai rigori si muove solo il portiere
     else if (!userDrives(p) || G.state !== 'play') think(p, dt); else userThink(p);
   }
   for (const p of ps) movePlayer(p, dt);
-  for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) { // non si attraversano
+  for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) { // non si attraversano; tra avversari in corsa è un duello spalla a spalla
     const a = ps[i], c = ps[j], dx = c.x - a.x, dz = c.z - a.z, d = hyp(dx, dz);
+    if (a.team !== c.team && G.state === 'play' && a.st !== 'down' && c.st !== 'down' && a.st !== 'slide' && c.st !== 'slide') { const r = URTO.duello(a, c, dt); if (r && r.perde) spallata(r); continue; }
     if (d < .8 && d > .001) { const k = (.8 - d) / 2 / d; a.x -= dx * k; a.z -= dz * k; c.x += dx * k; c.z += dz * k; }
   }
   moveBall(dt);
-  if (G.state === 'play') { contacts(dt); bounds(); }
+  if (G.state === 'play') { scivolate(); if (G.state === 'play') contacts(dt); if (G.state === 'play') bounds(); }
   // cambio automatico se il giocatore scelto resta lontano e fermo
   if (G.state === 'play' && G.ctrl && !G.auto && b.owner !== G.ctrl) {
     const c = G.ctrl, l = hyp(G.in.jx, G.in.jy); G.idle = l > .2 ? 0 : G.idle + dt;
-    if (G.idle > 1.2 && hyp(c.x - b.x, c.z - b.z) > 22 && G.intended !== c) switchCtrl();
+    if (G.idle > 1.2 && hyp(c.x - b.x, c.z - b.z) > 22 && G.intended !== c) { const m = migliorDifensore(G.teams[0]); if (m && m.p !== c) setCtrl(m.p); }
   }
 }
 function userThink(p) {
@@ -863,7 +967,7 @@ function userThink(p) {
 function movePlayer(p, dt) {
   const b = G.ball; p.stT += dt; p.ritmo = false;
   if (p.st === 'kick' && p.stT > .32) p.st = 'run';
-  if (p.st === 'slide') { const k = Math.max(0, 1 - p.stT / .55) * 11.5; p.vx = Math.sin(p.dir) * k; p.vz = Math.cos(p.dir) * k; if (p.stT > .55) { p.st = 'down'; p.stT = 0; } }
+  if (p.st === 'slide') { const k = URTO.velScivolata(p.slideV0 || URTO.SCIVOLATA.v0, p.stT); p.vx = Math.sin(p.dir) * k; p.vz = Math.cos(p.dir) * k; if (p.stT > URTO.SCIVOLATA.durata) { p.st = 'down'; p.stT = 0; } }
   else if (p.st === 'dive') { const k = Math.max(0, 1 - p.stT / .5) * (p.diveV || 8); p.vx *= Math.pow(.8, dt * 60); p.vz = p.diveS * k; if (p.stT > .5) { p.st = 'down'; p.stT = 0; } }
   else if (p.st === 'down') { const f = Math.pow(.7, dt * 60); p.vx *= f; p.vz *= f; if (p.stT > (p.i === 0 ? DOWN.gk : DOWN.pl)) { p.st = 'run'; p.stT = 0; } }
   else return corri(p, dt);
@@ -881,7 +985,7 @@ function andatura(l) {
 // rotazione del busto e passo li fa il corpo, a passi fissi di 1/120 s.
 function corri(p, dt) {
   const b = G.ball, guida = userDrives(p), owner = b.owner === p; if (p.fallen && p.stun <= 0) p.fallen = false;
-  const fm = MOTO.forma(p.en), base = p.maxV * (p.team.human ? 1 : G.diff.spd) * fm.v * (owner ? .97 : 1) * (p.stun > 0 ? (p.fallen ? 0 : .25) : 1) * (p.jock ? .85 : 1) * (p.inj ? FOUL.limp : 1);
+  const fm = MOTO.forma(p.en), sb = p.sbil > 0, base = (sb ? .85 : 1) * p.maxV * (p.team.human ? 1 : G.diff.spd) * fm.v * (owner ? .97 : 1) * (p.stun > 0 ? (p.fallen ? 0 : .25) : 1) * (p.jock ? .85 : 1) * (p.inj ? FOUL.limp : 1);
   let sp = base * (p.sprint ? 1 + .27 * (.3 + .7 * p.en / Math.max(p.fondo || 1, .01)) : 1);
   if (G.state === 'goal' && !p.sprint) sp *= .5;
   if (guida) sp = Math.min(sp, base * andatura(p.user)) + (p.sprint && p.user > .8 ? sp - base : 0); // la levetta decide l'andatura; lo scatto solo a levetta piena
@@ -894,7 +998,7 @@ function corri(p, dt) {
   const dx = gx - p.x, dz = gz - p.z, d = hyp(dx, dz); let wx = 0, wz = 0;
   if (d > .15) { const k = (insegue ? sp : Math.min(sp, Math.sqrt(2 * MOTO.CORPO.frena * .55 * d), d * 4)) / d; wx = dx * k; wz = dz * k; } // inseguendo la propria palla non si frena all'arrivo
   const scatto = p.sprint && hyp(p.vx, p.vz) > 5, aiuto = guida ? 1.12 : 1; // chi guida l'utente risponde un filo prima
-  const o = { acc: fm.acc * aiuto * (p.i === 0 ? 1.15 : 1), frena: (.85 + .15 * fm.acc) * aiuto, lat: fm.lat * aiuto * (scatto ? MOTO.CORPO.latScatto : 1) };
+  const o = { acc: fm.acc * aiuto * (p.i === 0 ? 1.15 : 1) * (sb ? .7 : 1), frena: (.85 + .15 * fm.acc) * aiuto, lat: fm.lat * aiuto * (scatto ? MOTO.CORPO.latScatto : 1) * (sb ? .75 : 1) }; // sbilanciato da una spallata: per un attimo meno spunto e meno curva
   const h = MOTO.CORPO.passoMax; p.restoC = (p.restoC || 0) + dt;
   while (p.restoC >= h - 1e-9) {
     p.restoC -= h;
@@ -912,7 +1016,8 @@ const tecnica = (p) => clamp(.5 + (p.q - 20) / 30, 0, 1);
 function moveBall(dt) {
   const b = G.ball, o = b.owner;
   if (o && o.i !== 0 && G.state === 'play') { // dribbling: tocchi in avanti, la palla è libera tra un tocco e l'altro
-    const r = FIS.conduci(b, o, dt, tecnica(o), Math.random, { x: o.tx - o.x, z: o.tz - o.z });
+    { let dm = 9; for (const q of o.team.opp.players) dm = Math.min(dm, hyp(q.x - o.x, q.z - o.z)); o.pressato = dm < 1.8; } // con un avversario addosso i tocchi si accorciano
+    const r = FIS.conduci(b, o, dt, tecnica(o) * (o.sbil > 0 ? .4 : 1), Math.random, { x: o.tx - o.x, z: o.tz - o.z });
     if (r === 'perso') { b.owner = null; G.lastTouch = o; }
     else if (r === 'tocco') { // vicino alle linee il tocco si accorcia: la palla resta in campo (si esce solo correndoci sopra)
       const k = .45, ez = b.z + b.vz * k, ex = b.x + b.vx * k, mz = HW - .8, mx = HL - .8;
@@ -939,7 +1044,7 @@ function contacts(dt) {
   if (!own) {
     const sp = hyp(b.vx, b.vz); let best = null, bd = 9;
     for (const p of all()) {
-      if (p.cool > 0 || p.stun > 0 || p.st === 'down' || (G.so && p !== G.so.gk)) continue; // ai rigori il pallone lo può toccare solo il portiere
+      if (p.cool > 0 || p.stun > 0 || p.st === 'down' || p.st === 'slide' || (G.so && p !== G.so.gk)) continue; // ai rigori il pallone lo può toccare solo il portiere
       const d = hyp(p.x - b.x, p.z - b.z), gk = p.i === 0, inBox = Math.abs(p.x) > HL - 17 && Math.abs(p.z) < 20.5;
       if (sp > 8 && !gk && p !== G.intended && (p.x - b.x) * b.vx + (p.z - b.z) * b.vz < -.3 * sp) continue; // un pallone veloce che si allontana non lo tocca chi gli sta dietro o di fianco
       const reach = gk && inBox ? (p.st === 'dive' ? 2.0 : 1.3) : (p.st === 'slide' ? 1.3 : 1.05), top = gk && inBox ? 2.7 : 1.55;
@@ -975,7 +1080,8 @@ function contacts(dt) {
   if (own.i !== 0 && lontana > .95 && b.y < 1) for (const d of own.team.opp.players) { // tra un tocco e l'altro: chi arriva prima sul pallone
     if (d.stun > 0 || d.st === 'down' || d.cool > 0 || d.st === 'slide') continue;
     const db = hyp(d.x - b.x, d.z - b.z); if (db > .9 || db > lontana - .15) continue;
-    const forza = userDrives(d) ? 1.3 : (d.team.human ? MATE.steal : G.diff.steal) / 1.25;
+    const forza = userDrives(d) ? 1.3 : (d.team.human ? MATE.steal : G.diff.steal) / 1.25, rapporto = clamp(URTO.forza(d) / URTO.forza(own), .4, 1.6); // chi è più forte copre la palla col corpo
+    if (rnd() > rapporto * rapporto * .8) { d.cool = .5; continue; } // il portatore lo tiene lontano col corpo
     if (rnd() < .5 * forza) { own.cool = .5; G.lastPass = null; gain(d); d.s.tk++; AU.kick(7); return; } // la prende lui
     b.owner = null; const k = 4 + rnd(3); b.vx = (b.x - d.x) / (db || 1) * k + rnd(-1.5, 1.5); b.vz = (b.z - d.z) / (db || 1) * k + rnd(-1.5, 1.5); b.vy = rnd(.5); // la tocca via: palla contesa
     d.cool = .3; own.cool = .3; G.lastTouch = d; G.lastPass = null; G.offs = null; AU.kick(6); return;
@@ -984,20 +1090,15 @@ function contacts(dt) {
     if (d.stun > 0 || d.st === 'down' || d.cool > 0) continue;
     const dist = hyp(d.x - b.x, d.z - b.z), dBody = hyp(d.x - own.x, d.z - own.z);
     if (own.i === 0) continue;
-    if (d.st === 'slide') {
-      if (!d.hit && dist < 1.35) {
-        d.hit = true; const back = ((d.x - own.x) * fx + (d.z - own.z) * fz) / (dBody || 1) < -.1;
-        if (rnd() < FOUL.slide[back ? 1 : 0]) return foul(d, own, true, back);
-        if (rnd() < .85) { b.owner = null; b.vx = Math.sin(d.dir) * 7 + rnd(-2, 2); b.vz = Math.cos(d.dir) * 7 + rnd(-2, 2); b.vy = 1.5; own.stun = DOWN.fall; own.cool = Math.max(.8, DOWN.fall); own.fallen = true; azione(own, 'caduta'); d.cool = .1; G.lastTouch = d; G.poss = d.team; G.offs = null; G.lastPass = null; d.s.tk++; AU.kick(9); return; }
-      }
-      continue;
-    }
+    if (d.st === 'slide') continue; // la scivolata la decide scivolate()
     if (dist < 1.15 || dBody < .95) {
-      let r = userDrives(d) ? 2.6 : (d.team.human ? MATE.steal : G.diff.steal) * (d.i === 0 ? 1.6 : 1);
-      const rel = ((d.x - own.x) * fx + (d.z - own.z) * fz) / (dBody || 1); if (rel < .2) r *= .3;
-      if (d.i !== 0 && rnd() < FOUL.rate[rel < .2 ? 1 : 0] * dt) return foul(d, own, false, rel < .2); // spinta o trattenuta
+      let r = (userDrives(d) ? 2.6 : (d.team.human ? MATE.steal : G.diff.steal) * (d.i === 0 ? 1.6 : 1)) * clamp(URTO.forza(d) / URTO.forza(own), .6, 1.7); // chi è più forte e fresco vince più contrasti
+      const rel = ((d.x - own.x) * fx + (d.z - own.z) * fz) / (dBody || 1), vo = hyp(own.vx, own.vz), vd = hyp(d.vx, d.vz);
+      const affiancati = rel > -.6 && rel < .5 && vo > 3 && vd > 3 && (own.vx * d.vx + own.vz * d.vz) / (vo * vd) > .5; // corrono fianco a fianco: la spallata è regolare
+      const dietro = rel < (affiancati ? -.6 : .2); if (dietro) r *= .3;
+      if (d.i !== 0 && rnd() < FOUL.rate[dietro ? 1 : 0] * (affiancati ? .2 : 1) * dt) return foul(d, own, false, dietro); // spinta o trattenuta
       if (rnd() < r * dt) {
-        if (rnd() < FOUL.stand[rel < .2 ? 1 : 0] * (d.i === 0 ? .5 : 1)) return foul(d, own, false, rel < .2);
+        if (rnd() < FOUL.stand[dietro ? 1 : 0] * (d.i === 0 ? .5 : 1) * (affiancati ? .5 : 1)) return foul(d, own, false, dietro);
         own.stun = .5; own.cool = .8; G.lastPass = null; gain(d); d.s.tk++; AU.kick(8); return;
       }
     }
@@ -1068,14 +1169,14 @@ function card(p, red) {
   if (G.intended === p) G.intended = null;
 }
 // d ha commesso fallo su own: cartellino, poi punizione o rigore
-function foul(d, own, sliding, behind) {
+function foul(d, own, sliding, behind, grave = false) {
   const t = own.team, s = t.side, b = G.ball, x = own.x, z = own.z, dGoal = hyp(s * HL - x, z);
   G.stats.fouls[d.team.idx]++; d.s.fl++;
   // chiara occasione da gol: nessun compagno di chi ha fatto fallo tra l'avversario e la porta
   const chance = dGoal < 32 && !d.team.players.some((o) => o.i && o !== d && (o.x - x) * s > 1 && Math.abs(o.z - z) < 14);
   let c = null;
   if (d.i !== 0 && d.team.players.length > 7) {
-    if (chance && (sliding || behind)) c = 'r';
+    if ((chance && (sliding || behind)) || (grave && rnd() < .25)) c = 'r'; // da dietro e in ritardo: anche rosso diretto
     else if (chance || rnd() < FOUL.yellow[sliding ? 1 : 0] * (behind ? 1.3 : 1)) c = d.yel ? 'r' : 'g';
   }
   const inBox = x * s > HL - 16.5 && Math.abs(z) < 20.2;
@@ -1814,6 +1915,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();

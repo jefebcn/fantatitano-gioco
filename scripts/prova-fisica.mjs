@@ -1,6 +1,7 @@
 // Prove della fisica del pallone e della conduzione (src/fisica/pallone.js): node scripts/prova-fisica.mjs
 import assert from 'node:assert/strict';
 import { CORPO, FATICA, spingi, ruota, stanca, forma, cammina, cadenza } from '../src/fisica/corpo.js';
+import { DUELLO, forza, duello, SCIVOLATA, gamba, velScivolata, toccaPalla, toccaUomo, daDietro, deviazione } from '../src/fisica/contatti.js';
 import { FIS, passo, copia, percorso, atterraggio, attraversa, mira, rasoterra, rotolaFino, gittata, conduci, COND } from '../src/fisica/pallone.js';
 
 const R = FIS.r, hyp = Math.hypot, palla = (o = {}) => ({ x: 0, y: R, z: 0, vx: 0, vy: 0, vz: 0, c: 0, t: 0, ...o });
@@ -133,5 +134,32 @@ const tempoFino = (p, cond, wx, wz, max = 5, o) => { let t = 0; while (t < max &
   const f = gioc(); let m = 0; for (let t = 0; t < 2; t += H) if (cammina(f, H, 0)) m++;
   assert.ok(n >= 5 && n <= 8, `appoggi ${n}`); assert.equal(m, 0);
   out.push(`passo: a 7 m/s ${n / 2} appoggi al secondo (${cadenza(7).toFixed(2)} passi completi), da fermo nessuno`);
+}
+
+// ------------------------------------------------------------------ contrasti (src/fisica/contatti.js)
+{ // spalla a spalla: chi è più pesante, lanciato e fresco vince e sbilancia l'altro
+  const un = (o) => ({ x: 0, z: 0, vx: 7, vz: 0, dir: Math.PI / 2, massa: 75, en: 1, sbil: 0, ...o });
+  const a = un({ massa: 84 }), c = un({ z: .7, massa: 70, en: .5 }); let r = null;
+  for (let t = 0; t < .2; t += 1 / 60) { r = duello(a, c, 1 / 60) || r; a.x += a.vx / 60; a.z += a.vz / 60; c.x += c.vx / 60; c.z += c.vz / 60; }
+  assert.ok(r && r.vince === a && r.perde === c, 'vince il più forte'); assert.ok(c.sbil > 0 && a.sbil === 0, 'sbilancia'); assert.ok(c.vz > 0, 'spinto via');
+  const p1 = un(), p2 = un({ z: .7 }), r2 = duello(p1, p2, 1 / 60); assert.ok(r2 && !r2.perde, 'alla pari nessuno sbilanciato');
+  const fermo = un({ vx: 0 }), lanciato = un({ z: .7, vx: 8.5 }); assert.ok(forza(lanciato) > forza(fermo));
+  // la spinta non dipende dal frame rate
+  const spinta = (dt) => { const x = un({ massa: 84 }), y = un({ z: .7, massa: 70 }); for (let t = 0; t < .1 - 1e-9; t += dt) duello(x, y, dt); return y.vz; };
+  assert.ok(Math.abs(spinta(1 / 30) - spinta(1 / 120)) < .25, `spinta ${spinta(1 / 30)} ${spinta(1 / 120)}`);
+  out.push(`spalla a spalla: 84 kg fresco contro 70 kg stanco → vince il primo, l'altro sbilanciato per ${c.sbil.toFixed(2)} s e spinto di lato; alla pari nessuno`);
+}
+{ // scivolata: la gamba colpisce solo quando è tesa, davanti, a terra; l'erba frena
+  const p = { x: 0, z: 0, vx: 8.5, vz: 0, dir: Math.PI / 2, stT: .3 }, palla = (x, z, y = .26) => ({ x, z, y, vx: 0, vz: 0 });
+  assert.ok(toccaPalla(p, palla(1, .1)) && toccaPalla(p, palla(1.5, 0)), 'palla davanti');
+  assert.ok(!toccaPalla(p, palla(2.2, 0)) && !toccaPalla(p, palla(1, 1.1)) && !toccaPalla(p, palla(1, 0, 1.2)) && !toccaPalla(p, palla(-.6, 0)), 'lontana, di lato, alta o dietro');
+  assert.ok(!toccaPalla({ ...p, stT: .05 }, palla(1, 0)) && !toccaPalla({ ...p, stT: .7 }, palla(1, 0)), 'solo con la gamba tesa');
+  assert.ok(toccaUomo(p, { x: 1, z: .3 }) && !toccaUomo(p, { x: 1, z: 1 }));
+  const dietro = daDietro({ x: -1, z: 0 }, { x: 0, z: 0, vx: 6, vz: 0, dir: Math.PI / 2 }), davanti = daDietro({ x: 1.2, z: 0 }, { x: 0, z: 0, vx: 6, vz: 0, dir: Math.PI / 2 });
+  assert.ok(dietro && !davanti, 'da dietro');
+  const v = deviazione(p, { vx: -5, vz: 0 }, () => .5); assert.ok(v.vx > 5 && Math.abs(v.vz) < .5, `deviazione ${v.vx} ${v.vz}`);
+  let strada = 0; for (let t = 0; t < SCIVOLATA.durata; t += 1 / 120) strada += velScivolata(8.5, t) / 120;
+  assert.ok(strada > 2.5 && strada < 4.5 && velScivolata(8.5, SCIVOLATA.durata) < 2.5, `scivola ${strada}`);
+  out.push(`scivolata: scivola ${strada.toFixed(1)} m, la gamba colpisce da ${SCIVOLATA.anca} a ${SCIVOLATA.piede} m davanti tra ${SCIVOLATA.attiva} e ${SCIVOLATA.fine} s; da dietro riconosciuto`);
 }
 console.log('Fisica del pallone: tutte le prove passate\n - ' + out.join('\n - '));
