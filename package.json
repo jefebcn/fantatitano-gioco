@@ -3,7 +3,7 @@
   "version": "0.4.0",
   "private": true,
   "license": "UNLICENSED",
-  "description": "Fantatitano \u2014 La Partita: gioco di calcio 3D nel browser (prototipo)",
+  "description": "Fantatitano — La Partita: gioco di calcio 3D nel browser (prototipo)",
   "scripts": {
     "build": "esbuild src/game.js --bundle --minify --format=iife --outfile=public/app.js",
     "dev": "esbuild src/game.js --bundle --format=iife --outfile=public/app.js --servedir=public --watch",
@@ -17,5 +17,8 @@
     "esbuild": "^0.25.0",
     "meshoptimizer": "^0.22.0",
     "three": "0.160.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.58.0"
   }
 }
