@@ -625,21 +625,23 @@ function landing() {
 }
 const airborne = () => { const b = G.ball; return !b.owner && (b.y > 1.2 || b.vy > 4); };
 // Il compagno in area a cui crossare: libero, vicino alla porta, non troppo vicino a chi crossa
-function crossTarget(p) {
+function crossTarget(p, voglio) {
   const s = p.team.side; let best = null, bs = -1e9;
   for (const m of p.team.players) {
     if (m === p || m.i === 0 || m.x * s < HL - 19 || Math.abs(m.z) > 13 || hyp(m.x - p.x, m.z - p.z) < 9) continue;
-    const sc = Math.min(openness(m), 5) * 1.2 - hyp(s * HL - m.x, m.z) * .15 + rnd(2); if (sc > bs) { bs = sc; best = m; }
+    const sc = Math.min(openness(m), 5) * 1.2 - hyp(s * HL - m.x, m.z) * .15 + (voglio ? -Math.abs(hyp(m.x - p.x, m.z - p.z) - voglio) * .5 : rnd(2)); if (sc > bs) { bs = sc; best = m; }
   }
   return best;
 }
 const canCross = (p) => Math.abs(p.z) > AIR.wide && p.x * p.team.side > HL - AIR.deep;
 // Traversone: pallone alto che scende ad altezza di testa davanti al compagno
-function cross(p, m) {
+function cross(p, m, pow = null, tipo = 'cross') {
   const s = p.team.side, e = 1.5 * qf(p) * (userDrives(p) ? .7 : diffOf(p).err);
   const tx = clamp((m.x + m.vx * .5) * s + 1, -HL, HL - 2.5) * s + rnd(-1, 1) * e, tz = m.z + m.vz * .5 + rnd(-1, 1) * e;
-  const o = piede(p), d = hyp(tx - o.x, tz - o.z) || 1, T = clamp(d / 18, .75, 1.35);
-  const c = effettoVerso(o, tx, tz, s * HL, 0) * rnd(.4, .7) * (rnd() < .7 ? 1 : -1), v = FIS.mira(o, { x: tx, y: 1.95, z: tz }, T, c, .15); // a rientrare verso la porta, ogni tanto a uscire
+  let ttx = tx, ttz = tz; const o = piede(p);
+  if (pow !== null) { const d0 = hyp(tx - o.x, tz - o.z) || 1, extra = (pow - powPer(tipo, d0)) * 10; ttx = clamp(tx + (tx - o.x) / d0 * extra, -HL + 1, HL - 1); ttz = clamp(tz + (tz - o.z) / d0 * extra, -HW + 1, HW - 1); } // con la barra: troppa potenza va oltre, poca resta corta
+  const d = hyp(ttx - o.x, ttz - o.z) || 1, T = clamp(d / 18, .75, 1.35);
+  const c = effettoVerso(o, ttx, ttz, s * HL, 0) * rnd(.4, .7) * (rnd() < .7 ? 1 : -1), v = FIS.mira(o, { x: ttx, y: 1.95, z: ttz }, T, c, .15); // a rientrare verso la porta, ogni tanto a uscire
   kick(p, v.vx, v.vy, v.vz, 'tiro', c, .15);
   G.intended = m; m.run = null; p.s.pa++; G.lastPass = p; if (m.x * s > HL - 19) G.stats.crosses[p.team.idx]++; if (p.team.human) setCtrl(m);
 }
@@ -702,7 +704,7 @@ function laneBlocked(p, m, tx = m.x, tz = m.z) {
  * preferendo i più centrati nel cono, liberi e con la linea di passaggio pulita. Senza levetta (l'IA): chi fa avanzare
  * la squadra senza rischi. Il punto d'incontro è quello di puntoIncontro (piedi o spazio).
  */
-function bestPass(p, ix, iz) {
+function bestPass(p, ix, iz, voglio) {
   const s = p.team.side, dirGiven = ix !== undefined; let best = null, bs = -1e9;
   for (const m of p.team.players) {
     if (m === p || m.i === 0 || m.stun > 0) continue;
@@ -713,13 +715,13 @@ function bestPass(p, ix, iz) {
     if (dirGiven) {
       const dm = hyp(m.x - p.x, m.z - p.z) || 1, cono = Math.max((dx * ix + dz * iz) / d, ((m.x - p.x) * ix + (m.z - p.z) * iz) / dm); // il più centrato tra dove è e dove riceve
       if (cono < .55) continue;
-      sc = (cono > .82 ? 40 : 18) * cono - d * .25 + lib * .8 - (chiusa ? 6 : 0) + (pt.spazio ? 3 : 0) + dx * s * .08 - (off ? 12 : 0);
+      sc = (cono > .82 ? 40 : 18) * cono - d * .25 + lib * .8 - (chiusa ? 6 : 0) + (pt.spazio ? 3 : 0) + dx * s * .08 - (off ? 12 : 0) - (voglio ? Math.abs(d - voglio) * .9 : 0); // con la barra: il compagno alla distanza scelta
     } else sc = dx * s * .55 + lib * 1.3 - (chiusa ? 13 : 0) - d * .08 + rnd(3) - (pt.x * s < -30 ? 6 : 0) + (m.run ? 6 : 0) + (pt.spazio ? 2 : 0);
     if (sc > bs) { bs = sc; best = m; }
   }
   return best;
 }
-function pass(p, m) {
+function pass(p, m, pow = null) {
   const o = piede(p), pt = puntoIncontro(p, m); let dx = pt.x - o.x, dz = pt.z - o.z; const d = hyp(dx, dz) || 1;
   { const e = rnd(-1, 1) * .035 * qf(p) * (userDrives(p) ? .6 : diffOf(p).err) * (pt.spazio ? 1.25 : 1), c = Math.cos(e), n = Math.sin(e), x = dx * c - dz * n; dz = dx * n + dz * c; dx = x; } // imprecisione (un po' di più sul filtrante)
   const lob = d > 18 && laneBlocked(p, m, pt.x, pt.z);
@@ -727,7 +729,7 @@ function pass(p, m) {
     const T = clamp(d / 17, .85, 1.7), vm = hyp(m.vx, m.vz), run = m.run || vm > 2.5, L = run ? hyp(m.run ? m.run.x - m.x : m.vx, m.run ? m.run.z - m.z : m.vz) || 1 : 1;
     const ux = run ? (m.run ? m.run.x - m.x : m.vx) / L : 0, uz = run ? (m.run ? m.run.z - m.z : m.vz) / L : 0, k = run ? corsaIn(m, ux, uz, T + .25, true) : 0;
     const tx = clamp(m.x + ux * k, -HL + 1, HL - 1), tz = clamp(m.z + uz * k, -HW + 1, HW - 1), v = FIS.mira(o, { x: tx, y: 1, z: tz }, T, 0, -.35); kick(p, v.vx, v.vy, v.vz, 'tiro', 0, -.35);
-  } else { const sp = daTabella(RASO.v, d); kick(p, dx / d * sp, 0, dz / d * sp, d > 26 ? 'tiro' : 'passaggio'); } // forza dosata: arriva al compagno né troppo piano né troppo forte
+  } else { const f = pow === null ? 1 : clamp(1 + (pow - powPer('pass', d)) * .8, .7, 1.4), sp = daTabella(RASO.v, d) * f; kick(p, dx / d * sp, 0, dz / d * sp, d > 26 ? 'tiro' : 'passaggio'); } // forza dosata (con la barra: più o meno forte di quella giusta)
   G.intended = m; if (p.team.human) setCtrl(m);
   p.s.pa++; G.lastPass = p;
   // dai e vai: chi ha passato in avanti si butta nello spazio
@@ -821,29 +823,48 @@ function switchCtrl() { const m = migliorDifensore(G.teams[0], G.ctrl); if (m) s
 
 /* comandi dell'utente */
 function inputWorld() { return [G.in.jx, G.in.jy]; }
-function pressA() {
-  if (G.state !== 'play' || G.auto || G.penWait > 0) return; const c = G.ctrl, b = G.ball; if (!c) return;
-  if (b.owner === c) {
-    const [ix, iz] = inputWorld(), l = hyp(ix, iz);
-    const m = l > .3 ? bestPass(c, ix / l, iz / l) || bestPass(c, Math.sin(c.dir), Math.cos(c.dir)) : bestPass(c, Math.sin(c.dir), Math.cos(c.dir)) || bestPass(c); if (m) pass(c, m);
-  } else switchCtrl();
+// Passa, Cross e Tira si tengono premuti: la barra sotto il giocatore si riempie (in 0,8 s) e al rilascio parte il colpo
+// con quella potenza. Un tocco veloce su Passa o Cross fa il passaggio dosato da solo, come prima.
+const CARICA = { piena: .8, tocco: .12, max: .95 };
+const potenza = () => clamp(G.charge / CARICA.piena, 0, 1);
+function caricaInizio(tipo) { G.charge = 0; G.caricaTipo = tipo; G.caricaIdeale = -1; }
+function direzioneUtente(c) { const [jx, jz] = inputWorld(), l = hyp(jx, jz); return l > .3 ? [jx / l, jz / l] : [Math.sin(c.dir), Math.cos(c.dir)]; }
+// distanza a cui si vuole arrivare con una certa potenza (passaggio e lancio), e potenza giusta per una distanza
+const DIST = { pass: [5, 45], cross: [12, 30], lancio: [15, 40] };
+const distDa = (tipo, pow) => DIST[tipo][0] + pow * DIST[tipo][1];
+const powPer = (tipo, d) => clamp((d - DIST[tipo][0]) / DIST[tipo][1], 0, 1);
+function pressA(down = true) {
+  if (G.state !== 'play' || G.auto || G.penWait > 0) { G.charge = -1; return; } const c = G.ctrl, b = G.ball; if (!c) return;
+  if (down) { if (b.owner === c) caricaInizio('pass'); else switchCtrl(); return; }
+  if (G.charge < 0 || G.caricaTipo !== 'pass') return; const t = G.charge; G.charge = -1; if (b.owner !== c) return;
+  const [ix, iz] = direzioneUtente(c), pow = t < CARICA.tocco ? null : potenza();
+  const dd = pow === null ? undefined : distDa('pass', pow), m = bestPass(c, ix, iz, dd) || bestPass(c, Math.sin(c.dir), Math.cos(c.dir), dd) || bestPass(c); // nessuno nella direzione: chi è davanti, poi il migliore
+  if (m) pass(c, m, pow);
 }
-// Tasto Cross: traversone se c'è un compagno in area, altrimenti lancio lungo nella direzione della levetta
-function pressD() {
-  if (G.state !== 'play' || G.auto || G.penWait > 0) return; const c = G.ctrl, b = G.ball; if (!c || b.owner !== c) return;
-  const s = c.team.side, [jx, jz] = inputWorld(), l = hyp(jx, jz), ix = l > .3 ? jx / l : Math.sin(c.dir), iz = l > .3 ? jz / l : Math.cos(c.dir);
-  let m = c.x * s > HL - 34 ? crossTarget(c) : null, bs = -1e9;
-  if (!m) for (const o of c.team.players) {
-    if (o === c || o.i === 0) continue; const dx = o.x - c.x, dz = o.z - c.z, d = hyp(dx, dz), dot = (dx * ix + dz * iz) / (d || 1); if (d < 13 || d > 52 || dot < .5) continue;
-    const sc = dot * 30 + Math.min(openness(o), 6) - Math.abs(d - 28) * .2; if (sc > bs) { bs = sc; m = o; }
-  }
-  if (m) cross(c, m);
+// Cross: traversone se c'è un compagno in area, altrimenti lancio lungo nella direzione della levetta. La potenza decide
+// quanto lontano: poca sul primo palo, tanta sul secondo (o un lancio più lungo)
+function bersaglioCross(c, pow) {
+  const s = c.team.side, [ix, iz] = direzioneUtente(c);
+  let m = c.x * s > HL - 34 ? crossTarget(c, pow === null ? undefined : distDa('cross', pow)) : null, bs = -1e9, tipo = 'cross';
+  if (!m) { tipo = 'lancio'; for (const o of c.team.players) {
+    if (o === c || o.i === 0) continue; const dx = o.x - c.x, dz = o.z - c.z, d = hyp(dx, dz), dot = (dx * ix + dz * iz) / (d || 1); if (d < 13 || d > 58 || dot < .5) continue;
+    const sc = dot * 30 + Math.min(openness(o), 6) - Math.abs(d - (pow === null ? 28 : distDa('lancio', pow))) * .35; if (sc > bs) { bs = sc; m = o; }
+  } }
+  return { m, tipo };
+}
+function pressD(down = true) {
+  if (G.state !== 'play' || G.auto || G.penWait > 0) { G.charge = -1; return; } const c = G.ctrl, b = G.ball; if (!c || b.owner !== c) return;
+  if (down) return caricaInizio('cross');
+  if (G.charge < 0 || G.caricaTipo !== 'cross') return; const t = G.charge; G.charge = -1;
+  const pow = t < CARICA.tocco ? null : potenza(), { m, tipo } = bersaglioCross(c, pow); if (m) cross(c, m, pow, tipo);
 }
 function pressB(down) {
   if (G.state !== 'play' || G.auto) { G.charge = -1; return; } const c = G.ctrl, b = G.ball; if (!c) return;
-  if (down) { if (b.owner === c) G.charge = 0; else slide(c, true); }
-  else if (G.charge >= 0) { if (b.owner === c) userShoot(clamp(G.charge / .8, .18, 1)); G.charge = -1; }
+  if (down) { if (b.owner === c) caricaInizio('tiro'); else slide(c, true); }
+  else if (G.charge >= 0 && G.caricaTipo === 'tiro') { if (b.owner === c) userShoot(clamp(potenza(), .18, 1)); G.charge = -1; }
 }
+// la carica arriva in fondo: parte da sola
+function rilascia() { if (G.caricaTipo === 'pass') pressA(false); else if (G.caricaTipo === 'cross') pressD(false); else pressB(false); }
 function userShoot(pow) {
   const c = G.ctrl, [, iz] = inputWorld(); const gk = c.team.opp.players[0];
   const tz = Math.abs(iz) > .25 ? iz * GH * 1.06 : (gk.z > 0 ? -1 : 1) * GH * .68;
@@ -1154,7 +1175,7 @@ function gkThink(p, dt) {
 function step(dt) {
   G.t += dt; G.stateT += dt; const b = G.ball; if (!b) return;
   if (G.state === 'play') {
-    if (G.charge >= 0) { G.charge += dt; if (G.charge > .95) pressB(false); }
+    if (G.charge >= 0) { if (G.ball.owner !== G.ctrl) G.charge = -1; else { G.charge += dt; if (G.charge > CARICA.max) rilascia(); } } // persa la palla, la carica si annulla
     if (G.so) soStep(dt);
     else {
       G.clock += dt; if (G.poss) G.stats.poss[G.poss.idx] += dt;
@@ -1697,6 +1718,25 @@ window.__regia = REGIA;
 let bannerT = 0;
 function banner(t, s, ms, c) { const el = $('#banner'); el.dataset.c = c || ''; el.querySelector('.t').textContent = t; el.querySelector('.s').textContent = s || ''; el.classList.add('su'); clearTimeout(bannerT); bannerT = setTimeout(() => el.classList.remove('su'), ms); }
 let lastClock = '', lastChi = null, lastAtt = null;
+// La barra della potenza sotto i piedi del giocatore: si riempie mentre si tiene premuto. La tacca bianca è la potenza giusta
+// per il compagno che si sta puntando (passaggio e cross), nel tiro la parte rossa è troppa e la palla va alta.
+const _sopra = new T.Vector3();
+function barraForza() {
+  const el = $('#forza'), c = G.ctrl, on = G.charge >= 0 && c && G.ball && G.ball.owner === c;
+  el.classList.toggle('su', !!on); if (!on) return;
+  const pow = potenza(), tipo = G.caricaTipo;
+  if (G.charge > CARICA.tocco * .5 && (G.caricaIdeale < 0 || Math.round(G.charge * 60) % 6 === 0)) { // la tacca: ricalcolata ogni tanto, la levetta può cambiare bersaglio
+    if (tipo === 'pass') { const [ix, iz] = direzioneUtente(c), m = bestPass(c, ix, iz); G.caricaIdeale = m ? powPer('pass', hyp(m.x - c.x, m.z - c.z)) : -1; }
+    else if (tipo === 'cross') { const { m, tipo: k } = bersaglioCross(c, null); G.caricaIdeale = m ? powPer(k, hyp(m.x - c.x, m.z - c.z)) : -1; }
+    else G.caricaIdeale = .82;
+  }
+  el.dataset.tipo = tipo; el.querySelector('b').textContent = tipo === 'tiro' ? 'Tiro' : tipo === 'cross' ? 'Cross' : 'Passaggio';
+  el.querySelector('i').style.width = `${pow * 100}%`; const u = el.querySelector('u'); u.style.display = G.caricaIdeale >= 0 ? 'block' : 'none'; u.style.left = `${G.caricaIdeale * 100}%`;
+  el.classList.toggle('troppo', tipo === 'tiro' && pow > .86);
+  // sotto i piedi: sopra la testa c'è già il nome
+  _sopra.set(c.x, 0, c.z).project(cam); const W = document.body.clientWidth || innerWidth, H = document.body.clientHeight || innerHeight;
+  el.style.left = `${clamp((_sopra.x + 1) / 2 * W, 70, W - 70)}px`; el.style.top = `${clamp((1 - _sopra.y) / 2 * H + 22, 40, H - 40)}px`;
+}
 function hud() {
   if (!G.teams.length) return;
   $('#sbS').textContent = `${G.teams[0].score} - ${G.teams[1].score}`;
@@ -1706,7 +1746,7 @@ function hud() {
   const att = !!(G.ball && G.ctrl && G.ball.owner === G.ctrl);
   if (att !== lastAtt) { lastAtt = att; $('#bA').textContent = att ? 'Passa' : 'Cambia'; $('#bB').textContent = att ? 'Tira' : 'Scivolata'; $('#bB').style.fontSize = att ? '' : '12px'; $('#bD').classList.toggle('nas', !att); }
   if (G.ctrl) $('#en').firstElementChild.style.width = `${G.ctrl.en * 100}%`;
-  const pw = $('#pow'); pw.style.opacity = G.charge >= 0 ? 1 : 0; if (G.charge >= 0) pw.firstElementChild.style.width = `${clamp(G.charge / .8, 0, 1) * 100}%`;
+  barraForza();
 }
 const radar = $('#radar'), rx = radar.getContext('2d');
 function drawRadar() {
@@ -1738,16 +1778,16 @@ function bindInput() {
     el.addEventListener('pointerdown', (e) => { e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('giu'); down(); });
     const u = () => { el.classList.remove('giu'); up && up(); }; el.addEventListener('pointerup', u); el.addEventListener('pointercancel', u);
   };
-  btn('#bA', pressA); btn('#bD', pressD); btn('#bB', () => pressB(true), () => pressB(false)); btn('#bC', () => { G.in.sprint = true; }, () => { G.in.sprint = false; });
+  btn('#bA', () => pressA(true), () => pressA(false)); btn('#bD', () => pressD(true), () => pressD(false)); btn('#bB', () => pressB(true), () => pressB(false)); btn('#bC', () => { G.in.sprint = true; }, () => { G.in.sprint = false; });
   const keys = new Set();
   const axis = () => { G.in.jx = (keys.has('ArrowRight') || keys.has('d') ? 1 : 0) - (keys.has('ArrowLeft') || keys.has('a') ? 1 : 0); G.in.jy = (keys.has('ArrowDown') || keys.has('s') ? 1 : 0) - (keys.has('ArrowUp') || keys.has('w') ? 1 : 0); };
   window.addEventListener('keydown', (e) => {
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; if (e.repeat) return;
     if (k.startsWith('Arrow') || k === ' ') e.preventDefault();
     keys.add(k); axis();
-    if (k === 'x' || k === 'k') pressA(); else if (k === 'c' || k === 'i') pressD(); else if (k === ' ' || k === 'j') pressB(true); else if (k === 'Shift' || k === 'l') G.in.sprint = true; else if (k === 'p' || k === 'Escape') pause(!G.paused);
+    if (k === 'x' || k === 'k') pressA(true); else if (k === 'c' || k === 'i') pressD(true); else if (k === ' ' || k === 'j') pressB(true); else if (k === 'Shift' || k === 'l') G.in.sprint = true; else if (k === 'p' || k === 'Escape') pause(!G.paused);
   });
-  window.addEventListener('keyup', (e) => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; keys.delete(k); axis(); if (k === ' ' || k === 'j') pressB(false); else if (k === 'Shift' || k === 'l') G.in.sprint = false; });
+  window.addEventListener('keyup', (e) => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; keys.delete(k); axis(); if (k === ' ' || k === 'j') pressB(false); else if (k === 'x' || k === 'k') pressA(false); else if (k === 'c' || k === 'i') pressD(false); else if (k === 'Shift' || k === 'l') G.in.sprint = false; });
   window.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
@@ -1973,7 +2013,7 @@ function panClubMio(tab, msg) {
   pan(me.name, `${borsa}${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}`);
 }
 function panInfo() {
-  pan('Come si gioca', `<div class="info"><div><div class="sez">In campo</div><p>Levetta a sinistra per muovere il giocatore. <b>Passa</b>, <b>Tira</b> (tieni premuto per la potenza), <b>Cross</b> e <b>Scatto</b>. Senza palla: <b>Cambia</b> giocatore e <b>Scivolata</b> (da dietro è fallo). La scritta sopra la mappa cambia la mentalità; dalla pausa si fanno le sostituzioni.</p>
+  pan('Come si gioca', `<div class="info"><div><div class="sez">In campo</div><p>Levetta a sinistra per muovere il giocatore. <b>Passa</b>, <b>Cross</b> e <b>Tira</b>: tieni premuto e la barra sotto il giocatore mostra la potenza (la tacca bianca è quella giusta per il compagno che punti, il rosso nel tiro manda la palla alta); un tocco veloce su Passa o Cross fa il passaggio dosato da solo. <b>Scatto</b> per correre. Senza palla: <b>Cambia</b> giocatore e <b>Scivolata</b> (da dietro è fallo). La scritta sopra la mappa cambia la mentalità; dalla pausa si fanno le sostituzioni.</p>
     <div class="sez">La carriera</div><p>Campionato a 16 squadre, Coppa Titano a eliminazione diretta e Trofeo dei Castelli a gironi. Le partite danno monete; le sfide danno monete e gemme. Con le monete si fanno scambi al mercato e sedute di allenamento; con monete e gemme si amplia lo stadio, che rende di più a ogni partita in casa.</p></div>
     <div><div class="sez">Il salvataggio</div><p>La carriera resta su questo dispositivo. Con l'accesso all'account Fantatitano si salva anche sull'account e si ritrova su un altro telefono: dentro l'app è automatico, qui si accede dal profilo in alto a destra.</p>
     <div class="sez">Tastiera</div><p>Frecce per muoversi, X passa, C cross, Spazio tira, Shift scatto, P pausa.</p></div></div>`);
