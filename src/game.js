@@ -476,6 +476,12 @@ function pickKits(h, a) {
 
 const ring = new T.Mesh(GEO.ring, new T.MeshBasicMaterial({ color: 0xD9F51F, transparent: true, opacity: .95, depthWrite: false }));
 ring.rotation.x = -Math.PI / 2; ring.position.y = .05; ring.visible = false; scene.add(ring);
+// la freccia sull'erba davanti al giocatore comandato: punta dove porta la levetta (sparisce a levetta ferma)
+const freccia = (() => {
+  const sh = new T.Shape(); sh.moveTo(0, .9); sh.lineTo(.62, -.1); sh.lineTo(.22, -.1); sh.lineTo(.22, -.7); sh.lineTo(-.22, -.7); sh.lineTo(-.22, -.1); sh.lineTo(-.62, -.1); sh.closePath();
+  const g = new T.ShapeGeometry(sh); g.rotateX(-Math.PI / 2); g.rotateY(Math.PI); // in piano sull'erba, la punta verso +z
+  const m = new T.Mesh(g, new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .8, depthWrite: false })); m.visible = false; m.renderOrder = 2; scene.add(m); return m;
+})();
 const arrow = new T.Mesh(GEO.tri, new T.MeshBasicMaterial({ color: 0xD9F51F })); arrow.rotation.x = Math.PI; arrow.visible = false; scene.add(arrow);
 const ballMesh = (() => {
   const [c, x] = cv(256, 128); x.fillStyle = '#fafafa'; x.fillRect(0, 0, 256, 128);
@@ -1766,8 +1772,9 @@ function updateCamera(dt) {
     // non fa più pompare l'inquadratura avanti e indietro
     const vicino = clamp((Math.abs(fx) - (HL - 25)) / 12, 0, 1), area = clamp((Math.abs(fx) - (HL - 19)) / 4, 0, 1) * clamp((23 - Math.abs(fz)) / 4, 0, 1);
     const voluto = close ? 0 : Math.max(vicino * .7, area); G.zoomS = (G.zoomS ?? voluto) + (voluto - (G.zoomS ?? voluto)) * Math.min(1, dt * 1.1); const zoom = close ? 0 : G.zoomS;
-    lx = clamp(ax, -39, 39); lz = az * .55; px = lx * .96; pz = lz + (close ? 26 : 39 - 6 * zoom); py = close ? 13 : 25 - 5 * zoom; fov = 36 - 6 * zoom;
-    if (cam.aspect < 1.5) { py += 8; pz += 10; }
+    // inquadratura di gioco: dal lato del campo, alta circa 30°, a una distanza da vedere bene i giocatori e una sessantina di metri di campo
+    lx = clamp(ax, -42, 42); lz = az * .8; px = lx * .97; pz = lz + (close ? 24 : 32 - 5 * zoom); py = close ? 12 : 19 - 3 * zoom; fov = 36 - 4 * zoom;
+    if (cam.aspect < 1.5) { py += 5; pz += 7; }
   }
   // movimento morbido: una molla smorzata al punto giusto (niente scatti né oscillazioni), più lenta nel menu
   const kk = G.state === 'menu' ? 1.6 : 3.2, v = G.camV || (G.camV = { px: 0, py: 0, pz: 0, lx: 0, lz: 0 }), h = Math.min(dt, .05);
@@ -1805,6 +1812,8 @@ function draw(dt) {
     ballShadow.position.set(b.x, .04, b.z); ballShadow.scale.setScalar(1.25 + b.y * .16); ballShadow.material.opacity = .62 / (1 + Math.max(0, b.y - BR) * .32); // a terra scura e stretta, in aria larga e chiara: si capisce dove scende un cross
     const c = G.ctrl; ring.visible = arrow.visible = !!c && !G.auto && G.state !== 'full';
     if (c) { ring.position.set(c.x, .05, c.z); arrow.position.set(c.x, 3.35 + Math.sin(G.t * 6) * .08, c.z); }
+    const [fx, fz] = c && !G.auto ? inputWorld() : [0, 0], fl = hyp(fx, fz); freccia.visible = ring.visible && fl > .2 && G.state === 'play';
+    if (freccia.visible) { const a = Math.atan2(fx, fz); freccia.position.set(c.x + fx / fl * 2.1, .06, c.z + fz / fl * 2.1); freccia.rotation.y = a; freccia.scale.setScalar(.75 + .35 * Math.min(1, fl)); freccia.material.opacity = .55 + .35 * Math.min(1, fl); }
   }
   if (dt > 0) { // rete, bandierine e particelle
     for (const p of PORTE) p.muovi(dt, G.ball);
@@ -2310,7 +2319,7 @@ function tapCambi(e) {
   drawCambi(p ? `Entra ${p.name}, esce ${esce.name}` : ruoli ? 'Il portiere si cambia solo con un portiere' : 'Cambio non possibile'); hud();
 }
 function pause(v) { if (G.state === 'menu' || G.state === 'full') return; G.paused = v; show(v ? '#stop' : null); AU.pausa(v); $('#apriCambi').classList.toggle('nas', !(G.teams[0] && G.teams[0].bench.length) || !!G.so); }
-function toMenu() { G.state = 'menu'; clearMatch(); G.ball = null; G.ctrl = null; ballMesh.visible = ballShadow.visible = ring.visible = arrow.visible = false; $('#hud').classList.add('nas'); casa(); AU.amb(0); AU.pausa(false); AU.musica(true); }
+function toMenu() { G.state = 'menu'; clearMatch(); G.ball = null; G.ctrl = null; ballMesh.visible = ballShadow.visible = ring.visible = arrow.visible = freccia.visible = false; $('#hud').classList.add('nas'); casa(); AU.amb(0); AU.pausa(false); AU.musica(true); }
 function vote(p) {
   const t = p.team, s = p.s, V = VOTE, conc = t.opp.score;
   let v = 6 + s.g * V.g + s.a * V.a + s.kp * V.kp + (s.sot - s.g) * V.sot + s.tk * V.tk + s.int * V.int + s.sv * V.sv + (s.pa > 3 ? (s.pc / s.pa - .7) * V.pass : 0)
