@@ -3,7 +3,7 @@ import * as T from 'three';
 import { creaRegia } from './regia.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { creaDivisa, TONI } from './divisa.js';
+import { creaDivisa, creaZone, TONI } from './divisa.js';
 import * as CLOUD from './cloud.js';
 import * as CAR from './carriera.js';
 import * as FIS from './fisica/pallone.js';
@@ -165,12 +165,15 @@ const GEO = {
   num: new T.PlaneGeometry(.3, .3), shadow: new T.CircleGeometry(.5, 14), ring: new T.RingGeometry(.72, .95, 28), tri: new T.ConeGeometry(.22, .4, 3),
 };
 const shadowMat = new T.MeshBasicMaterial({ map: texturaOmbra(T), transparent: true, opacity: .32, depthWrite: false }); // ombra di contatto morbida sotto i piedi
-const SKIN = [0xf1c9a5, 0xe0ac7e, 0xc68b5e, 0x9a6441, 0x6e452c], HAIR = [0x1c1410, 0x2e2018, 0x5a3a20, 0x8a6a3a, 0x111111, 0xc9a25a];
-function numMat(n, ink, nome) {
-  const [c, x] = cv(128, 128); x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = ink;
-  if (nome) { const t = String(nome).toUpperCase(); x.font = '24px Anton'; const w = x.measureText(t).width; if (w > 120) x.font = `${Math.floor(24 * 120 / w)}px Anton`; x.fillText(t, 64, 20); }
-  x.font = `${nome ? 88 : 100}px Anton`; x.fillText(String(n), 64, nome ? 82 : 70);
-  return new T.MeshBasicMaterial({ map: ctex(c), transparent: true, depthWrite: false });
+const SKIN = [0xf1c9a5, 0xe0ac7e, 0xc68b5e, 0x9a6441, 0x6e452c], HAIR = [0x1c1410, 0x2e2018, 0x5a3a20, 0x8a6a3a, 0x111111, 0xc9a25a, 0xd8bd7a, 0x8e3b1c, 0x9c9a96, 0xe8e0c8];
+/** Numero (e nome) sulla schiena, o il numero piccolo sui pantaloncini: 256 px, col bordo che lo stacca da righe e disegni. */
+function numMat(n, ink, nome, bordo) {
+  const [c, x] = cv(256, 256); x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
+  const scrivi = (t, y, lw) => { if (bordo) { x.strokeStyle = bordo; x.lineWidth = lw; x.strokeText(t, 128, y); } x.fillStyle = ink; x.fillText(t, 128, y); };
+  if (nome) { const t = String(nome).toUpperCase(); x.font = '46px Anton'; const w = x.measureText(t).width; if (w > 236) x.font = `${Math.floor(46 * 236 / w)}px Anton`; scrivi(t, 40, 6); }
+  x.font = `${nome ? 172 : 200}px Anton`; scrivi(String(n), nome ? 162 : 140, 10);
+  const tx = ctex(c); tx.anisotropy = 4;
+  return new T.MeshLambertMaterial({ map: tx, transparent: true, alphaTest: .35 });
 }
 function makeFigure(kit, seed, num) {
   const root = new T.Group(), body = new T.Group(); root.add(body);
@@ -180,7 +183,7 @@ function makeFigure(kit, seed, num) {
   add(GEO.head, skin, 0, 1.7, 0); add(GEO.hair, hair, 0, 1.715, -.012);
   const leg = (sx) => {
     const hip = new T.Group(); hip.position.set(sx * .115, .86, 0); body.add(hip); add(GEO.thigh, skin, 0, -.21, 0, hip);
-    const knee = new T.Group(); knee.position.set(0, -.42, 0); hip.add(knee); add(GEO.shin, mat(kit.socks), 0, -.2, 0, knee); add(GEO.boot, mat(kit.boots), 0, -.42, .065, knee);
+    const knee = new T.Group(); knee.position.set(0, -.42, 0); hip.add(knee); add(GEO.shin, mat(kit.socks), 0, -.2, 0, knee); add(GEO.boot, mat(kit.boots || '#16161a'), 0, -.42, .065, knee);
     return [hip, knee];
   };
   const arm = (sx) => {
@@ -203,7 +206,7 @@ const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivo
 /** Il portiere tiene la palla in mano per HOLD secondi; il rinvio con le mani parte prima, così la palla esce quando il braccio arriva in alto. */
 const HOLD = 1, LANCIO = HOLD - .73 / 1.15;
 const hasFx = (n) => !!(MODEL && MODEL.fx && MODEL.fx[n]);
-function azione(p, name) { if (hasFx(name) && p.fig.skinned) { p.fx = name; p.fxT = 0; p.fxNew = true; } }
+function azione(p, name) { if (hasFx(name) && p.fig.skinned) { p.fx = name; p.fxT = 0; p.fxNew = true; } sporca(p, name); }
 const b64 = (t) => Uint8Array.from(atob(t), (c) => c.charCodeAt(0)).buffer;
 const pixel = (im) => { const [c, x] = cv(im.naturalWidth || im.width, im.naturalHeight || im.height); x.drawImage(im, 0, 0); return x.getImageData(0, 0, c.width, c.height); };
 /**
@@ -219,6 +222,7 @@ async function loadModel() {
     let head = null, spine = null, body = null;
     scene.traverse((o) => { if (o.isBone && o.name === 'Head') head = o; if (o.isBone && o.name === 'spine_03') spine = o; if (o.isSkinnedMesh && o.material.name === CORPO) body = o; });
     if (!head || !spine || !body) throw new Error('modello non riconosciuto');
+    snellisci(body); // proporzioni da calciatore, non da supereroe: prima del resto, così numero e stemma si appoggiano al corpo nuovo
     const box = new T.Box3().setFromObject(scene), k = 2.72 / (box.max.y - box.min.y);
     // capelli: portati nello spazio dell'osso della testa, così basta appenderli
     const hair = {}, hInv = new T.Matrix4().copy(head.matrixWorld).invert(); h.scene.updateMatrixWorld(true);
@@ -226,14 +230,20 @@ async function loadModel() {
     // dove stanno numero (schiena) e stemma (petto): un raggio contro il corpo nella posa a riposo, poi tutto riferito all'osso del torace
     const fermo = new T.Mesh(body.geometry, new T.MeshBasicMaterial({ side: T.DoubleSide })); fermo.matrixWorld.copy(body.matrixWorld);
     const sInv = new T.Matrix4().copy(spine.matrixWorld).invert(), rc = new T.Raycaster();
-    const appoggio = (x, y, davanti, lato) => {
+    // stacco: quanto sta sopra la stoffa (maglia e pantaloncini sono gonfiati un po' dallo shader del calciatore)
+    const appoggio = (x, y, davanti, lato, inv = sInv, stacco = davanti ? .02 : .03) => {
       rc.set(new T.Vector3(x, y, davanti ? 2 : -2), new T.Vector3(0, 0, davanti ? -1 : 1)); const hit = rc.intersectObject(fermo, false)[0]; if (!hit) return null;
-      const m = new T.Matrix4().compose(new T.Vector3(x, y, hit.point.z + (davanti ? .012 : -.03)), new T.Quaternion().setFromEuler(new T.Euler(0, davanti ? 0 : Math.PI, 0)), new T.Vector3(lato, lato, lato));
-      return m.premultiply(sInv);
+      const m = new T.Matrix4().compose(new T.Vector3(x, y, hit.point.z + (davanti ? stacco : -stacco)), new T.Quaternion().setFromEuler(new T.Euler(0, davanti ? 0 : Math.PI, 0)), new T.Vector3(lato, lato, lato));
+      return m.premultiply(inv);
     };
+    let coscia = null; scene.traverse((o) => { if (o.isBone && o.name === 'thigh_l') coscia = o; });
     const alto = box.max.y - box.min.y;
     MODEL = { scene, k, hair, clips: {}, fx: {}, maschera: pixel(im), pelle: pixel(ip), divise: new Map(),
       numM: appoggio(0, box.min.y + alto * .745, false, .27 / .3), stemmaM: appoggio(.075, box.min.y + alto * .775, true, .085),
+      // il numerino sulla gamba sinistra dei pantaloncini, appeso alla coscia
+      cortiM: coscia ? appoggio(.095, box.min.y + alto * .405, true, .1 / .3, new T.Matrix4().copy(coscia.matrixWorld).invert(), .03) : null,
+      zone: (() => { const z = creaZone(pixel(im)), t = new T.DataTexture(z.data, z.size, z.size); t.flipY = false; t.magFilter = t.minFilter = T.LinearFilter; t.needsUpdate = true; return t; })(),
+      stili: stiliCapelli(hair, scene, hInv), corpi: [],
       occhi: io ? new T.MeshLambertMaterial({ map: Object.assign(new T.Texture(io), { flipY: false, colorSpace: T.SRGBColorSpace, needsUpdate: true }) }) : mat(0xffffff) };
     const A = window.ANIMS; if (!A) throw new Error('mancano le animazioni');
     for (const [nome, c] of Object.entries(A.clip)) {
@@ -248,62 +258,183 @@ async function loadModel() {
   } catch (e) { console.warn('modello 3D non caricato', e); MODEL = null; }
 }
 const CORPO = 'MI_Superhero_Male', OCCHI = 'MI_Eyes';
-const ACCONCIATURE = [null, 'Hair_Buzzed', 'Hair_SimpleParted', 'Hair_Buzzed', 'Hair_SimpleParted', 'Hair_SimpleParted'];
-/** Il materiale del corpo per una divisa e un tono di pelle: si disegna una volta e si riusa per tutti quelli uguali. */
-function divisaMat(kit, tono) {
-  const key = [kit.shirt, kit.shorts, kit.socks, kit.boots, kit.c2, kit.stile, kit.gloves, tono].join('|'); let m = MODEL.divise.get(key);
-  if (!m) { const tx = new T.CanvasTexture(creaDivisa(MODEL.maschera, MODEL.pelle, kit, tono)); tx.flipY = false; tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = 4; m = new T.MeshLambertMaterial({ map: tx }); MODEL.divise.set(key, m); }
-  return m;
+/**
+ * Il modello originale è un supereroe: braccia, cosce e torace enormi. Una volta sola, sulla geometria a riposo, si avvicina
+ * ogni vertice all'osso che lo muove (braccia, avambracci, cosce, polpacci, clavicole, torace, collo): restano le stesse
+ * animazioni, con un fisico da calciatore.
+ */
+function snellisci(body) {
+  const sk = body.skeleton, idx = {}; sk.bones.forEach((b, i) => { idx[b.name] = i; });
+  const dove = (n) => new T.Vector3().setFromMatrixPosition(new T.Matrix4().copy(sk.boneInverses[idx[n]]).invert()).applyMatrix4(body.bindMatrixInverse);
+  const SEG = [['upperarm', 'lowerarm', .84], ['lowerarm', 'hand', .9], ['thigh', 'calf', .92], ['calf', 'foot', .94], ['clavicle', 'upperarm', .9]], seg = {};
+  for (const [a, b, f] of SEG) for (const l of ['_l', '_r']) if (idx[a + l] !== undefined && idx[b + l] !== undefined) seg[idx[a + l]] = [dove(a + l), dove(b + l), f];
+  for (const [a, b, f] of [['spine_03', 'neck_01', .93], ['spine_02', 'spine_03', .96], ['neck_01', 'head', .9]]) if (idx[a] !== undefined && idx[b] !== undefined) seg[idx[a]] = [dove(a), dove(b), f];
+  const COMP = ['getX', 'getY', 'getZ', 'getW'], g = body.geometry, P = g.attributes.position, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight, v = new T.Vector3(), d = new T.Vector3(), q = new T.Vector3(), ab = new T.Vector3();
+  for (let i = 0; i < P.count; i++) {
+    v.fromBufferAttribute(P, i); d.set(0, 0, 0);
+    for (let k = 0; k < 4; k++) {
+      const w = SW[COMP[k]](i), s = seg[SI[COMP[k]](i)]; if (!w || !s) continue;
+      ab.subVectors(s[1], s[0]); const t = clamp(q.subVectors(v, s[0]).dot(ab) / ab.lengthSq(), 0, 1);
+      q.copy(s[0]).addScaledVector(ab, t); d.addScaledVector(q.subVectors(v, q), w * (s[2] - 1)); // verso l'asse dell'osso
+    }
+    P.setXYZ(i, v.x + d.x, v.y + d.y, v.z + d.z);
+  }
+  P.needsUpdate = true; g.computeBoundingBox(); g.computeBoundingSphere();
+}
+/**
+ * Le acconciature: le tre del modello (rasati, riga, barba) più alcune costruite qui nello spazio dell'osso della testa:
+ * ricci, cresta, codino, capelli folti. Servono il centro della testa, l'alto e il davanti (dagli occhi).
+ */
+function stiliCapelli(hair, scene, hInv) {
+  const S = {}; for (const k in hair) S[k] = [hair[k]];
+  const base = hair.Hair_Buzzed, riga = hair.Hair_SimpleParted; if (!base) return S;
+  base.computeBoundingBox(); const C = base.boundingBox.getCenter(new T.Vector3()), dim = base.boundingBox.getSize(new T.Vector3()), r = Math.max(dim.x, dim.y, dim.z) / 2;
+  let E = null; scene.traverse((o) => { if (o.isMesh && o.material && o.material.name === OCCHI) { const g = o.geometry.clone(); g.applyMatrix4(o.matrixWorld).applyMatrix4(hInv); g.computeBoundingBox(); E = g.boundingBox.getCenter(new T.Vector3()); } });
+  if (!E) return S;
+  const davanti = E.clone().sub(C).normalize(), su = C.clone().addScaledVector(davanti, -C.dot(davanti)).normalize(), lato = new T.Vector3().crossVectors(su, davanti).normalize();
+  const orienta = (g, pos) => { g.applyMatrix4(new T.Matrix4().makeBasis(lato, su, davanti)); g.translate(pos.x, pos.y, pos.z); return g; };
+  const gonfia = (geo, k, mosso) => { const g = geo.clone(), P = g.attributes.position, v = new T.Vector3();
+    for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).sub(C); const j = mosso ? 1 + mosso * Math.sin(v.x * 97 + v.y * 61) * Math.sin(v.z * 83 + v.y * 47) : 1; v.multiplyScalar(k * j).add(C); P.setXYZ(i, v.x, v.y, v.z); }
+    g.computeVertexNormals(); return g; };
+  S.ricci = [gonfia(base, 1.13, .05)];
+  S.folti = riga ? [gonfia(riga, 1.06, 0)] : [gonfia(base, 1.06, 0)];
+  S.cresta = [gonfia(base, .99, 0), orienta(new T.BoxGeometry(r * .32, r * .5, r * 1.7), C.clone().addScaledVector(su, r * .78))];
+  S.codino = [riga || base, orienta(new T.SphereGeometry(r * .3, 10, 8), C.clone().addScaledVector(su, r * .55).addScaledVector(davanti, -r * .85))];
+  return S;
+}
+const ACCONCIATURE = [null, 'Hair_Buzzed', 'Hair_SimpleParted', 'Hair_Buzzed', 'Hair_SimpleParted', 'ricci', 'cresta', 'codino', 'folti', 'ricci', 'folti'];
+// scarpini: tomaia e suola
+const SCARPINI = [['#16161a', '#F3F3F3'], ['#F3F3F3', '#16161a'], ['#D9F51F', '#16161a'], ['#FF5A1F', '#F3F3F3'], ['#1E6FB5', '#F3F3F3'], ['#E91E8C', '#16161a'], ['#16161a', '#D9F51F'], ['#C9CDD6', '#E8542A']];
+/** La texture di una divisa: si disegna una volta per partita e la usano tutti quelli con la stessa maglia. */
+function divisaTex(kit) {
+  const key = [kit.shirt, kit.shorts, kit.socks, kit.c2, kit.stile, kit.gloves, kit.banda].join('|'); let t = MODEL.divise.get(key);
+  if (!t) { t = new T.CanvasTexture(creaDivisa(MODEL.maschera, MODEL.pelle, kit)); t.flipY = false; t.colorSpace = T.SRGBColorSpace; t.anisotropy = 8; MODEL.divise.set(key, t); }
+  return t;
+}
+/**
+ * Il materiale del corpo di un giocatore: la texture della divisa (condivisa) più quello che è solo suo, calcolato nello
+ * shader dalla mappa delle zone: tono di pelle, colore degli scarpini e della suola, fascia da capitano, sporco di fango
+ * ed erba su pantaloncini e calzettoni. I pantaloncini (e un po' maglia e calzettoni) sono gonfiati lungo la normale:
+ * stoffa che cade, non una tuta attillata. Lo shader è uno solo per tutti i giocatori.
+ */
+function corpoMat(kit, u) {
+  const m = new T.MeshLambertMaterial({ map: divisaTex(kit) });
+  m.customProgramCacheKey = () => 'calciatore';
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, u, { uZone: { value: MODEL.zone } });
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform sampler2D uZone;')
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+{ vec4 zv = texture2D(uZone, vMapUv); transformed += objectNormal * (zv.b * zv.b * 0.017 + clamp(zv.a * 2.55, 0.0, 1.0) * 0.007); }`);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+uniform sampler2D uZone; uniform vec3 uTono, uScarpe, uSuola, uFascia; uniform float uCap, uGuanti; uniform vec2 uSporco;
+float rumoreC(vec2 p) { return fract(sin(dot(floor(p), vec2(12.9898, 78.233))) * 43758.5453); }
+float macchieC(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(rumoreC(i), rumoreC(i + vec2(1, 0)), f.x), mix(rumoreC(i + vec2(0, 1)), rumoreC(i + vec2(1, 1)), f.x), f.y); }`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+{
+  vec4 zz = texture2D(uZone, vMapUv);
+  // pelle: il tono del giocatore (il portiere ha avambracci e mani coperti)
+  float pel = uGuanti > 0.5 ? clamp(zz.r * 2.0 - 1.0, 0.0, 1.0) : clamp(zz.r * 2.0, 0.0, 1.0);
+  diffuseColor.rgb *= mix(vec3(1.0), uTono, pel);
+  // scarpini: il grigio della texture porta i dettagli, il colore è del giocatore; la suola di un altro colore
+  float sc = clamp(zz.g * 2.0, 0.0, 1.0), suola = 1.0 - clamp(zz.g * 2.0 - 1.0, 0.0, 1.0);
+  diffuseColor.rgb = mix(diffuseColor.rgb, mix(uScarpe, uSuola, suola) * clamp(diffuseColor.g / 0.55, 0.7, 1.25), sc);
+  // fascia da capitano sul braccio sinistro
+  diffuseColor.rgb = mix(diffuseColor.rgb, uFascia, smoothstep(0.6, 0.95, zz.a) * uCap);
+  // sporco: fango ed erba a chiazze, solo su pantaloncini e calzettoni, cresce con scivolate, cadute e tuffi
+  // due campi di macchie diversi per fango ed erba; al massimo ne coprono meno di metà, mai tutta la stoffa
+  float stoffa = smoothstep(0.3, 0.55, zz.b), n = macchieC(vMapUv * 36.0) * 0.65 + macchieC(vMapUv * 95.0) * 0.35, n2 = macchieC(vMapUv * 31.0 + 17.3) * 0.7 + macchieC(vMapUv * 88.0 + 5.1) * 0.3;
+  float sf = 1.0 - uSporco.x * 0.42, se = 1.0 - uSporco.y * 0.4;
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.2, 0.13, 0.07), smoothstep(sf, sf + 0.07, n) * stoffa * 0.85);
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.1, 0.2, 0.04), smoothstep(se, se + 0.07, n2) * stoffa * 0.7);
+}`);
+  };
+  MODEL.corpi.push(m); return m;
 }
 const stemmi3d = new Map();
 function stemmaMat(id) {
   let m = stemmi3d.get(id); if (m || !CREST[id]) return m || null;
-  const tx = new T.Texture(CREST[id]); tx.colorSpace = T.SRGBColorSpace; tx.needsUpdate = true;
-  m = new T.MeshBasicMaterial({ map: tx, transparent: true, alphaTest: .4 }); m.userData.ratio = CREST[id].width / CREST[id].height; stemmi3d.set(id, m); return m;
+  const tx = new T.Texture(CREST[id]); tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = 8; tx.needsUpdate = true;
+  m = new T.MeshLambertMaterial({ map: tx, transparent: true, alphaTest: .4 }); m.userData.ratio = CREST[id].width / CREST[id].height; stemmi3d.set(id, m); return m;
 }
 const GEO1 = new T.PlaneGeometry(1, 1);
-function makeSkinned(kit, seed, num, clubId, nome) {
+const lineare = (c) => Math.pow(c, 2.2);
+/**
+ * Un calciatore col modello vero. Dal seme (nome e club) vengono, sempre uguali: tono di pelle, capelli e loro colore,
+ * barba, scarpini, altezza. opz.capitano mette la fascia.
+ */
+function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
   const root = new T.Group(), body = new T.Group(); root.add(body);
-  const obj = SkeletonUtils.clone(MODEL.scene); obj.scale.multiplyScalar(MODEL.k); body.add(obj);
-  const tono = seed % TONI.length, pelo = mat(HAIR[(seed >>> 4) % HAIR.length]), bones = {};
+  const obj = SkeletonUtils.clone(MODEL.scene); obj.scale.multiplyScalar(MODEL.k * (.95 + ((seed >>> 16) % 11) * .01)); body.add(obj); // altezze diverse, ±5%
+  const tono = seed % TONI.length, scuri = tono >= 4, varia = .97 + ((seed >>> 20) % 7) * .01;
+  const pelo = mat(scuri ? [0x1c1410, 0x111111, 0x2e2018, 0x1c1410][(seed >>> 4) % 4] : HAIR[(seed >>> 4) % HAIR.length]);
+  const sc = kit.boots ? [kit.boots, kit.suola || '#16161a'] : SCARPINI[(seed >>> 24) % SCARPINI.length];
+  const fascia = cdist(kit.shirt, '#D9F51F') > .3 ? '#D9F51F' : '#16161a';
+  const u = { uTono: { value: new T.Vector3(...TONI[tono].map((c) => lineare(c * varia))) }, uScarpe: { value: new T.Color(sc[0]) }, uSuola: { value: new T.Color(sc[1]) },
+    uFascia: { value: new T.Color(fascia) }, uCap: { value: opz.capitano ? 1 : 0 }, uGuanti: { value: kit.gloves ? 1 : 0 }, uSporco: { value: new T.Vector2() } };
+  const corpo = corpoMat(kit, u), bones = {};
   obj.traverse((o) => {
     if (o.isBone) bones[o.name] = o;
-    if (o.isSkinnedMesh) { o.frustumCulled = false; o.material = o.material.name === CORPO ? divisaMat(kit, tono) : o.material.name === OCCHI ? MODEL.occhi : pelo; }
+    if (o.isSkinnedMesh) { o.frustumCulled = false; o.material = o.material.name === CORPO ? corpo : o.material.name === OCCHI ? MODEL.occhi : pelo; }
   });
   const stile = ACCONCIATURE[(seed >>> 8) % ACCONCIATURE.length];
-  if (stile && MODEL.hair[stile]) bones.Head.add(new T.Mesh(MODEL.hair[stile], pelo));
+  if (stile && MODEL.stili[stile]) for (const g of MODEL.stili[stile]) bones.Head.add(new T.Mesh(g, pelo));
   if ((seed >>> 12) % 4 === 0 && MODEL.hair.Hair_Beard) bones.Head.add(new T.Mesh(MODEL.hair.Hair_Beard, pelo));
-  if (MODEL.numM) { const n = new T.Mesh(GEO.num, numMat(num, kit.ink, nome)); n.applyMatrix4(MODEL.numM); bones.spine_03.add(n); }
+  const bordo = kit.ink === '#fff' ? 'rgba(0,0,0,.45)' : 'rgba(255,255,255,.55)';
+  if (MODEL.numM && num !== '') { const n = new T.Mesh(GEO.num, numMat(num, kit.ink, nome, bordo)); n.applyMatrix4(MODEL.numM); bones.spine_03.add(n); }
+  if (MODEL.cortiM && num !== '' && bones.thigh_l) { const n = new T.Mesh(GEO.num, numMat(num, kit.ink, null, bordo)); n.applyMatrix4(MODEL.cortiM); bones.thigh_l.add(n); }
   const sm = clubId && MODEL.stemmaM ? stemmaMat(clubId) : null;
   if (sm) { const c = new T.Mesh(GEO1, sm); c.scale.set(sm.userData.ratio, 1, 1); c.applyMatrix4(MODEL.stemmaM); bones.spine_03.add(c); }
   const sh = new T.Mesh(GEO.shadow, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; sh.scale.setScalar(1.5); root.add(sh);
   const mixer = new T.AnimationMixer(obj), A = {}, w = {};
   const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, aereo: kit.gloves ? null : MODEL.fx.aereo, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null, passoS: kit.gloves ? MODEL.fx.passoS : null, passoD: kit.gloves ? MODEL.fx.passoD : null };
   for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = rnd(base[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; w[n] = n === 'idle' ? 1 : 0; }
-  return { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true };
+  return { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true, sporco: u.uSporco.value };
 }
+/** Fango ed erba dopo una scivolata, una caduta o un tuffo: restano fino alla fine della partita. */
+const SPORCA = { scivolata: [.22, .3], caduta: [.16, .14], tuffoS: [.2, .26], tuffoD: [.2, .26] };
+function sporca(p, nome) { const s = SPORCA[nome], v = p.fig && p.fig.sporco; if (!s || !v) return; v.x = Math.min(1, v.x + s[0]); v.y = Math.min(1, v.y + s[1]); }
+
+/* --- colori delle divise: distanza percepita (CIELAB, ΔE/100), non quella tra i numeri RGB: due blu diversi restano vicini --- */
+const lab = (h) => {
+  const c = new T.Color(h), f = (t) => (t > .008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+  const X = f((.4124 * c.r + .3576 * c.g + .1805 * c.b) / .95047), Y = f(.2126 * c.r + .7152 * c.g + .0722 * c.b), Z = f((.0193 * c.r + .1192 * c.g + .9505 * c.b) / 1.08883);
+  return [116 * Y - 16, 500 * (X - Y), 200 * (Y - Z)];
+};
 const lum = (h) => { const c = new T.Color(h); return .299 * c.r + .587 * c.g + .114 * c.b; };
-const cdist = (a, b) => { const x = new T.Color(a), y = new T.Color(b); return hyp(x.r - y.r, x.g - y.g, x.b - y.b); };
+const cdist = (a, b) => { const x = lab(a), y = lab(b); return hyp(x[0] - y[0], x[1] - y[1], x[2] - y[2]) / 100; };
+// quanto pesa il secondo colore di un disegno visto da lontano
+const PESO_DISEGNO = { righe: .5, righine: .15, fasce: .5, meta: .5, banda: .12, scacchi: .5, spalle: .2, fianchi: .25, v: .08, sfumata: .35 };
+const misto = (k) => '#' + new T.Color(k.shirt).lerp(new T.Color(k.c2 || k.shirt), PESO_DISEGNO[k.stile] || 0).getHexString();
+/** Quanto si distinguono due divise in campo: soprattutto la maglia (com'è vista da lontano), poi pantaloncini e calzettoni. */
+const kitDist = (p, q) => Math.min(cdist(misto(p), misto(q)), cdist(p.shirt, q.shirt) + .1) * .65 + cdist(p.shorts, q.shorts) * .2 + cdist(p.socks, q.socks) * .15;
+const hashStr = (s) => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+/**
+ * Le divise della partita: [casa, ospiti, portiere di casa, portiere ospite, arbitro]. Gli ospiti provano la prima maglia,
+ * poi la seconda (secondo colore), poi bianca, scura e alcune terze maglie: tengono la prima che si distingue bene da
+ * quella di casa (o la più lontana). Poi l'arbitro, lontano da tutte e due, e i portieri, lontani da tutti.
+ */
 function pickKits(h, a) {
-  const BIANCO = '#F3F3F3', NERO = '#16161a';
-  const kit = (c, away) => {
-    const due = cdist(c.c1, c.c2) < .25 ? '#FFFFFF' : c.c2; // il secondo colore, se si distingue dal primo
-    // la seconda maglia: il secondo colore della squadra se non somiglia alla maglia di casa, se no bianca o nera
-    const shirt = away ? [due, BIANCO, NERO].find((x) => cdist(x, h.c1) >= .45 && cdist(x, c.c1) >= .2) || BIANCO : c.c1;
-    const shorts = away ? c.c1 : due, c2 = away ? c.c1 : due;
-    return { shirt, shorts, socks: shirt, sleeve: shirt, boots: NERO, ink: lum(shirt) > .55 ? '#111' : '#fff', c2, stile: away ? null : c.st || null };
+  const BIANCO = '#F3F3F3', NERO = '#16161a', SOGLIA = .42;
+  const ink = (c) => (lum(c) > .5 ? '#111' : '#fff');
+  const prima = (c) => { const due = cdist(c.c1, c.c2) < .2 ? (lum(c.c1) > .5 ? NERO : '#FFFFFF') : c.c2; return { shirt: c.c1, shorts: due, socks: c.c1, sleeve: c.c1, ink: ink(c.c1), c2: due, stile: c.st || null }; };
+  const kh0 = prima(h), da = prima(a), sa = ['fianchi', 'v', 'spalle', null][hashStr(a.id || a.name) % 4];
+  const seconde = [da, { ...da, shirt: da.c2, sleeve: da.c2, socks: da.c2, shorts: a.c1, c2: a.c1, stile: sa }];
+  for (const [col, c2] of [[BIANCO, a.c1], [NERO, a.c1], ['#8A1538', BIANCO], ['#F2C230', NERO], ['#0E7C66', BIANCO], ['#1D2A5C', BIANCO]]) seconde.push({ shirt: col, sleeve: col, socks: col, shorts: cdist(c2, col) > .3 ? c2 : col, c2: cdist(c2, col) > .3 ? c2 : (lum(col) > .5 ? NERO : BIANCO), stile: col === BIANCO || col === NERO ? sa : null });
+  for (const k of seconde) k.ink = ink(k.shirt);
+  // ogni prova con i pantaloncini già sistemati (quelli dell'una non devono sembrare la maglia dell'altra), poi la distanza
+  const prova = (k) => { const a2 = { ...k }, h2 = { ...kh0 }; if (cdist(a2.shorts, h2.shirt) < .25) a2.shorts = a2.shirt; if (cdist(h2.shorts, a2.shirt) < .25) h2.shorts = h2.shirt; return [h2, a2, kitDist(h2, a2)]; };
+  const prove = seconde.map(prova), [kh, ka] = prove.find((x) => x[2] >= SOGLIA) || prove.sort((x, y) => y[2] - x[2])[0];
+  // l'arbitro: maglia lontana dalle due squadre, pantaloncini e calzettoni neri
+  const vicino = (c, ks) => Math.min(...ks.map((k) => Math.min(cdist(c, k.shirt), cdist(c, misto(k)))));
+  const arbC = ['#F2E21B', '#FF5A1F', '#E91E8C', '#16161a', '#19D3B1', '#3FA9F5', '#9B5DE5', '#2E7D32'].sort((p, q) => vicino(q, [kh, ka]) - vicino(p, [kh, ka]))[0];
+  const arb = { shirt: arbC, shorts: NERO, socks: NERO, sleeve: arbC, boots: NERO, suola: NERO, ink: '#111', c2: NERO, stile: null, banda: arbC };
+  // i portieri: colori accesi lontani da tutte le maglie in campo, compreso l'altro portiere; maniche lunghe e guanti
+  const gk = (altri) => {
+    const c = ['#FF7A1A', '#19D3B1', '#E91E8C', '#111111', '#F2E21B', '#7B2FF7', '#3FD45A', '#F3F3F3'].sort((p, q) => vicino(q, altri) - vicino(p, altri))[0], scura = '#' + new T.Color(c).multiplyScalar(.55).getHexString();
+    return { shirt: c, shorts: c, socks: c, sleeve: c, ink: ink(c), gloves: lum(c) > .6 ? '#16161a' : '#F3F3F3', c2: scura, stile: 'fianchi' };
   };
-  const kh = kit(h, false), ka = kit(a, cdist(h.c1, a.c1) < .45);
-  // i pantaloncini dell'una non devono sembrare la maglia dell'altra
-  if (cdist(ka.shorts, kh.shirt) < .4) ka.shorts = ka.shirt === BIANCO ? NERO : ka.shirt;
-  if (cdist(kh.shorts, ka.shirt) < .4) kh.shorts = kh.shirt;
-  const gk = (other) => {
-    const opts = ['#FF7A1A', '#19D3B1', '#E91E8C', '#111111'];
-    const best = opts.sort((p, q) => Math.min(cdist(q, kh.shirt), cdist(q, ka.shirt), cdist(q, other || '#000') + .2) - Math.min(cdist(p, kh.shirt), cdist(p, ka.shirt), cdist(p, other || '#000') + .2))[0];
-    return { shirt: best, shorts: best, socks: best, sleeve: best, boots: '#16161a', ink: lum(best) > .55 ? '#111' : '#fff', gloves: '#F3F3F3', c2: best, stile: null };
-  };
-  const g1 = gk(null), g2 = gk(g1.shirt);
-  return [kh, ka, g1, g2];
+  const g1 = gk([kh, ka, arb]), g2 = gk([kh, ka, arb, g1]);
+  return [kh, ka, g1, g2, arb];
 }
 
 const ring = new T.Mesh(GEO.ring, new T.MeshBasicMaterial({ color: 0xD9F51F, transparent: true, opacity: .95, depthWrite: false }));
@@ -322,13 +453,18 @@ const ballShadow = new T.Mesh(new T.CircleGeometry(.3, 16), new T.MeshBasicMater
 /* ------------------------------------------------------------------ partita */
 function clearMatch() {
   for (const t of G.teams) for (const p of t.players.concat(t.off, t.out)) scene.remove(p.fig.root);
-  if (MODEL) { for (const m of MODEL.divise.values()) { m.map.dispose(); m.dispose(); } MODEL.divise.clear(); }
+  if (MODEL) { for (const t of MODEL.divise.values()) t.dispose(); MODEL.divise.clear(); for (const m of MODEL.corpi) m.dispose(); MODEL.corpi.length = 0; }
   G.teams = [];
 }
 // Panchina: quante sostituzioni a partita, quante ne fa l'IA, da che punto della partita comincia e ogni quanto ne fa un'altra
 const SUB = { max: 5, ai: 3, from: .55, every: .12 };
+// il capitano: per la mia squadra quello scelto in carriera, per le altre il migliore in campo (portiere escluso)
+function capitanoDi(club, mia) {
+  if (mia && K && K.mio && K.mio.capitano && club.xi.some((x) => x[0] === K.mio.capitano)) return K.mio.capitano;
+  const c = club.xi.slice(1).sort((a, b) => b[3] - a[3])[0]; return c ? c[0] : null;
+}
 function creaGiocatore(t, i, [name, role, num, q]) {
-  const club = t.club, fig = (MODEL ? makeSkinned : makeFigure)(i === 0 ? t.gkit : t.kit, hash(club.id + name), num, i === 0 ? null : club.id, name); scene.add(fig.root);
+  const club = t.club, fig = (MODEL ? makeSkinned : makeFigure)(i === 0 ? t.gkit : t.kit, hash(club.id + name), num, i === 0 ? null : club.id, name, { capitano: name === t.capitano }); scene.add(fig.root);
   fig.root.traverse((o) => { if (o.isMesh && !(o.material && o.material.transparent)) o.castShadow = true; }); // ombra vera del sole (l'ombra di contatto resta)
   const base = 7.3 + clamp((q - 20) / 40, -.5, .6) + (club.str - 3) * .07;
   return { team: t, i, role, nat: role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: t.side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? 6.6 : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1, run: null, mark: null, jock: false, slideCd: 0, inj: false, yel: 0, red: false, fkShot: false, en: 1, by: null, s: { g: 0, a: 0, kp: 0, sh: 0, sot: 0, pa: 0, pc: 0, tk: 0, int: 0, sv: 0, fl: 0, og: 0 }, massa: 72 + ({ P: 6, D: 5, C: -1, A: 2 }[role] || 0) + (hash(name + club.id) % 9) - 4, sbil: 0 }; // la massa conta nei duelli spalla a spalla
@@ -356,13 +492,13 @@ function aiSubs() {
   }
 }
 // In trasferta la prima maglia è dell'avversaria: le divise si scelgono a parti invertite
-const kitsFor = (mia, loro, fuori) => { if (!fuori) return pickKits(mia, loro); const [a, b, c, d] = pickKits(loro, mia); return [b, a, d, c]; };
+const kitsFor = (mia, loro, fuori) => { if (!fuori) return pickKits(mia, loro); const [a, b, c, d, e] = pickKits(loro, mia); return [b, a, d, c, e]; };
 function newMatch(home, away) {
   clearMatch();
-  const fuori = !!(G.comp && G.comp.fuori), [kh, ka, g1, g2] = kitsFor(home, away, fuori);
+  const fuori = !!(G.comp && G.comp.fuori), [kh, ka, g1, g2, arb] = kitsFor(home, away, fuori); G.arbKit = arb;
   const mk = (club, side, human, kit, gkit) => {
     const t = { club, side, human, score: 0, players: [], off: [], idx: side > 0 ? 0 : 1, chaser: null, cover: null, ment: 0 };
-    t.kit = kit; t.gkit = gkit; t.bench = (club.pan || []).map(([name, role, num, q]) => ({ name, role, num, q, used: false })); t.subs = 0; t.out = [];
+    t.kit = kit; t.gkit = gkit; t.capitano = capitanoDi(club, human); t.bench = (club.pan || []).map(([name, role, num, q]) => ({ name, role, num, q, used: false })); t.subs = 0; t.out = [];
     club.xi.forEach((rec, i) => t.players.push(creaGiocatore(t, i, rec)));
     setTactics(t, human ? sel.form : aiForm(club), human ? sel.ment : 0);
     return t;
@@ -1623,7 +1759,7 @@ function avviso(t) { const el = $('#avviso'); el.textContent = t; el.classList.a
    più il capitano ingaggiato: così le altre quindici squadre restano quelle vere. */
 const POSTO = 'academy';
 const COLORI = [['#4B06FC', '#D9F51F'], ['#C0392B', '#FFFFFF'], ['#111111', '#D9F51F'], ['#1D4F8A', '#FFFFFF'], ['#2E8B57', '#F2B822'], ['#E0B400', '#111111'], ['#7A1F3D', '#E8C77A'], ['#FF7A1A', '#1B2A5C']];
-const STILI = [['', 'Tinta unita'], ['righe', 'Righe'], ['banda', 'Banda'], ['meta', 'Metà']];
+const STILI = [['', 'Tinta unita'], ['righe', 'Righe'], ['fasce', 'Fasce'], ['banda', 'Banda'], ['meta', 'Metà'], ['scacchi', 'Scacchi'], ['v', 'V']];
 const NOMI = ['Titani FC', 'Real Montale', 'Atletico Borgo', 'Sporting Serravalle', 'Libera Acquaviva', 'Rocca United', 'Guaita Calcio', 'Cesta FC', 'Dogana Stars', 'Chiesanuova FC', 'Torri Unite', 'Olimpia Titano'];
 const sigla = (n) => (String(n).replace(/[^A-Za-zÀ-ÿ ]/g, '').split(/\s+/).filter((w) => w.length > 2 && !/^(fc|real|united|calcio)$/i.test(w))[0] || String(n) || 'MIO').slice(0, 3).toUpperCase();
 // Lo stemma del club: uno scudo coi colori e il disegno scelti, la sigla e la corona di Fantatitano
@@ -1633,6 +1769,9 @@ function disegnaStemma(m, w) {
   if (m.stile === 'righe') for (let i = 0; i < 4; i++) x.fillRect((44 + i * 48) * k, 0, 24 * k, h);
   else if (m.stile === 'banda') { x.beginPath(); x.moveTo(0, 80 * k); x.lineTo(w, 180 * k); x.lineTo(w, 240 * k); x.lineTo(0, 140 * k); x.fill(); }
   else if (m.stile === 'meta') x.fillRect(120 * k, 0, w, h);
+  else if (m.stile === 'fasce') for (let i = 0; i < 5; i++) x.fillRect(0, (40 + i * 56) * k, w, 28 * k);
+  else if (m.stile === 'scacchi') for (let i = 0; i < 6; i++) for (let j = 0; j < 7; j++) if ((i + j) & 1) x.fillRect(i * 40 * k, j * 40 * k, 40 * k, 40 * k);
+  else if (m.stile === 'v') { x.beginPath(); x.moveTo(0, 60 * k); x.lineTo(120 * k, 150 * k); x.lineTo(w, 60 * k); x.lineTo(w, 100 * k); x.lineTo(120 * k, 190 * k); x.lineTo(0, 100 * k); x.fill(); }
   x.restore(); sh(); x.lineWidth = 12 * k; x.strokeStyle = m.stile ? '#FFFFFF' : m.c2; x.stroke();
   x.fillStyle = '#D9F51F'; x.strokeStyle = '#0A0A0C'; x.lineWidth = 4 * k; x.beginPath(); // corona
   for (const [px, py] of [[78, 30], [86, 4], [104, 20], [120, 0], [136, 20], [154, 4], [162, 30]]) x.lineTo(px * k, py * k);
@@ -1657,7 +1796,7 @@ const attributi = (x) => DOTI[x[1]].map(([k, d]) => [k, clamp(ovr(x[1], x[3]) + 
 // Maglia e icone disegnate, per le carte della dashboard
 function maglia(c1, c2, st) {
   const id = 'mg' + hash(c1 + c2 + st), f = 'M30 5 L42 2 Q50 9 58 2 L70 5 L95 22 L84 40 L74 34 L74 88 L26 88 L26 34 L16 40 L5 22 Z';
-  const dis = st === 'righe' ? [0, 1, 2, 3, 4].map((k) => `<rect x="${14 + k * 16}" width="8" height="90" fill="${c2}"/>`).join('') : st === 'banda' ? `<path d="M0 26 L100 66 L100 86 L0 46Z" fill="${c2}"/>` : st === 'meta' ? `<rect x="50" width="50" height="90" fill="${c2}"/>` : '';
+  const dis = st === 'righe' ? [0, 1, 2, 3, 4].map((k) => `<rect x="${14 + k * 16}" width="8" height="90" fill="${c2}"/>`).join('') : st === 'banda' ? `<path d="M0 26 L100 66 L100 86 L0 46Z" fill="${c2}"/>` : st === 'meta' ? `<rect x="50" width="50" height="90" fill="${c2}"/>` : st === 'fasce' ? [0, 1, 2, 3].map((k) => `<rect y="${14 + k * 20}" width="100" height="10" fill="${c2}"/>`).join('') : st === 'scacchi' ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].filter((k) => ((k % 5) + Math.floor(k / 5)) & 1).map((k) => `<rect x="${(k % 5) * 20}" y="${Math.floor(k / 5) * 18}" width="20" height="18" fill="${c2}"/>`).join('') : st === 'v' ? `<path d="M0 20 L50 52 L100 20 L100 34 L50 66 L0 34Z" fill="${c2}"/>` : '';
   return `<svg viewBox="0 0 100 90" class="maglia"><defs><clipPath id="${id}"><path d="${f}"/></clipPath></defs><g clip-path="url(#${id})"><rect width="100" height="90" fill="${c1}"/>${dis}<path d="M42 2 Q50 13 58 2" fill="none" stroke="${c2}" stroke-width="5"/><rect x="0" y="0" width="16" height="40" fill="${c2}" opacity=".9" transform="rotate(-34 5 22)"/><rect x="84" y="0" width="16" height="40" fill="${c2}" opacity=".9" transform="rotate(34 95 22)"/></g><path d="${f}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/></svg>`;
 }
 const COPPA = '<svg viewBox="0 0 64 64" class="icona"><path d="M18 8h28v10a14 14 0 0 1-28 0z" fill="currentColor"/><path d="M18 12H9a9 9 0 0 0 11 13M46 12h9a9 9 0 0 1-11 13" fill="none" stroke="currentColor" stroke-width="4"/><rect x="29" y="31" width="6" height="12" fill="currentColor"/><path d="M20 56h24l-3-12H23z" fill="currentColor"/></svg>';
@@ -2067,6 +2206,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, cam, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
