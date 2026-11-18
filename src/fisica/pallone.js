@@ -182,8 +182,10 @@ export function controlla(b, p, q = 0.5, caso = Math.random, verso = null) {
  *  fermo:   sotto questa velocità si tiene la palla sotto la suola
  *  errore:  di quanto (radianti) può andare storto un tocco per chi ha la tecnica più bassa
  *  pausa:   tempo minimo tra due tocchi
+ *  ritmo:   col passo (p.ritmo, vedi corpo.js) il tocco parte quando un piede sta per scendere, anche un po' prima (fino a
+ *           vicino + ritmo); tra un passo e l'altro aspetta, a meno che la palla non sia già sotto i piedi (forza)
  */
-export const COND = { vicino: 0.75, passo: 1.15, passoScatto: 1.28, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6 };
+export const COND = { forza: 0.3, ritmo: 0.35, vicino: 0.75, passo: 1.12, passoScatto: 1.2, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6 };
 
 /**
  * Un passo di conduzione per il giocatore p (x, z, vx, vz, dir, sprint) con tecnica q da 0 a 1. Cambia solo la velocità del
@@ -204,12 +206,15 @@ export function conduci(b, p, dt, q = 0.5, caso = Math.random, verso = null) {
     return null;
   }
   const vl = verso ? hyp(verso.x, verso.z) : 0, ux = vl > 0.2 ? verso.x / vl : p.vx / v, uz = vl > 0.2 ? verso.z / vl : p.vz / v;
-  const avanti = rx * ux + rz * uz, lato = Math.abs(rx * uz - rz * ux);
+  const avanti = rx * ux + rz * uz, cx = p.vx / v, cz = p.vz / v, lato = Math.abs(rx * cz - rz * cx); // di lato rispetto a dove sta correndo davvero (in curva è diverso da dove vuole andare)
   const bv = hyp(b.vx, b.vz), storta = bv > 0.5 ? (b.vx * ux + b.vz * uz) / bv < Math.cos(COND.girata) : true;
-  const raggiunta = avanti < COND.vicino || (storta && d < 1.15);
+  // p.ritmo: assente senza passo (nelle prove), vero se un piede sta per scendere, falso tra un passo e l'altro
+  const rit = p.ritmo;
+  const raggiunta = avanti < (rit === true ? COND.vicino + COND.ritmo : COND.vicino) || (storta && d < 1.15);
   if (!raggiunta || p.tocco > 0 || d > 1.3 || lato > 0.9) return null;
+  if (rit === false && !storta && avanti > COND.forza) return null; // aspetta il passo giusto
   const e = (caso() * 2 - 1) * COND.errore * (1.15 - q), c = Math.cos(e), s = Math.sin(e);
-  const vc = Math.max(v * Math.max(0, (p.vx * ux + p.vz * uz) / v), 3.5); // se sta girando, il tocco è corto: deve ancora prendere velocità
+  const vc = Math.max(v * Math.max(0, (p.vx * ux + p.vz * uz) / v), Math.min(3.5, v + 1)); // se sta girando, il tocco è corto: deve ancora prendere velocità
   const sp = vc * (p.sprint ? COND.passoScatto : COND.passo) * (1.08 - 0.16 * q), dx = ux * c - uz * s, dz = ux * s + uz * c;
   b.vx = dx * sp; b.vz = dz * sp; b.vy = p.sprint ? 0.6 : 0; p.tocco = COND.pausa;
   return 'tocco';

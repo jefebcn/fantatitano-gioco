@@ -7,6 +7,7 @@ import { creaDivisa, TONI } from './divisa.js';
 import * as CLOUD from './cloud.js';
 import * as CAR from './carriera.js';
 import * as FIS from './fisica/pallone.js';
+import * as MOTO from './fisica/corpo.js';
 
 (() => {
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
@@ -30,8 +31,6 @@ const DEF = { far: 8.5, near: 2.4, hold: 2.3, danger: 24, slide: [1.2, 3.2] };
 // distanza della barriera; quanto para il portiere su rigore rispetto a un tiro normale; quante volte l'arbitro lascia correre
 // quando chi subisce il fallo resta in piedi con campo davanti; probabilità di infortunio [in piedi, in scivolata] e quanto va piano chi si fa male
 const FOUL = { stand: [.08, .3], slide: [.2, .65], rate: [.45, 1.2], yellow: [.1, .4], wall: 9.15, penSave: .42, adv: .75, inj: [.03, .12], limp: .72 };
-// Fatica: quanta energia si perde al secondo in scatto e quanta se ne recupera, quanta ne torna all'intervallo
-const TIRE = { use: .045, rest: .02, half: .4 };
 // Peso di ogni evento nel voto in pagella (si parte da 6)
 const VOTE = { g: 1.1, a: .7, kp: .12, sot: .15, tk: .2, int: .08, sv: .4, pass: 1.2, fl: -.15, og: -1, yel: -.4, red: -1.5, clean: .6, concGk: -.35, concD: -.22, win: .25 };
 // Gioco aereo: fin dove si arriva di testa, quanto si deve essere vicini, da dove si crossa (larghezza e profondità),
@@ -612,11 +611,16 @@ function homeOf(p) {
   hx += Math.sin(G.t * .7 + p.i * 2.1) * 1.6; hz += Math.cos(G.t * .5 + p.i * 1.3) * 1.6;
   return [hx * s, clamp(hz, -HW + 3, HW - 3) * s];
 }
+// Quanta strada fa p verso (x, z) in t secondi: parte dalla velocità che ha in quella direzione e accelera fino alla massima
+function portata(p, x, z, t) {
+  const dx = x - p.x, dz = z - p.z, d = hyp(dx, dz) || 1, v0 = Math.max(-2, (p.vx * dx + p.vz * dz) / d), vm = p.maxV * 1.12, a = MOTO.CORPO.acc * .62;
+  const tm = Math.max(0, (vm - v0) / a); return t < tm ? v0 * t + .5 * a * t * t : v0 * tm + .5 * a * tm * tm + vm * (t - tm);
+}
 function intercept(p) {
   if (airborne()) return landing();
   // il primo punto del percorso previsto (calcolato una volta per fotogramma in step) dove si arriva prima del pallone
   const b = G.ball, path = G.path || FIS.percorso(b, 2.4, .1); let q = path[path.length - 1];
-  for (const pt of path) if (pt.y < 1.7 && hyp(pt.x - p.x, pt.z - p.z) <= p.maxV * 1.15 * pt.t + .6) { q = pt; break; }
+  for (const pt of path) if (pt.y < 1.7 && hyp(pt.x - p.x, pt.z - p.z) <= portata(p, pt.x, pt.z, pt.t) + .6) { q = pt; break; }
   return [clamp(q.x, -HL - 2, HL + 2), clamp(q.z, -HW - 2, HW + 2)];
 }
 function roles() {
@@ -822,7 +826,7 @@ function step(dt) {
       }
       G.fk = null;
     }
-  } else if (G.state === 'half') { if (G.stateT > 2.6) { G.half = 2; G.clock = 0; for (const p of all()) p.en = Math.min(1, p.en + TIRE.half); for (const t of G.teams) t.side = -t.side; kickoff(G.teams[1]); } } // cambio di campo
+  } else if (G.state === 'half') { if (G.stateT > 2.6) { G.half = 2; G.clock = 0; for (const p of all()) { p.fondo = Math.min(1, (p.fondo || 1) + .08); p.en = Math.min(p.fondo, p.en + MOTO.FATICA.intervallo); } for (const t of G.teams) t.side = -t.side; kickoff(G.teams[1]); } } // cambio di campo
   else if (G.state === 'full') { if (G.stateT > 2 && !G.shown) { G.shown = true; showEnd(); } }
 
   if (G.penWait > 0) { // rigore dell'utente: tutti fermi finché non tira; se aspetta troppo parte da solo
@@ -852,34 +856,57 @@ function step(dt) {
 }
 function userThink(p) {
   const b = G.ball, [ix, iz] = inputWorld(), l = hyp(ix, iz); p.sprint = G.in.sprint;
-  if (l > .2) { const k = Math.min(1, l) / l; p.tx = p.x + ix * k * 6; p.tz = p.z + iz * k * 6; p.user = Math.min(1, l * 1.25); }
+  if (l > .15) { const k = 1 / l; p.tx = p.x + ix * k * 6; p.tz = p.z + iz * k * 6; p.user = Math.min(1, l); } // la direzione dalla levetta, la velocità da quanto è inclinata (vedi andatura)
   else if (!b.owner && (p === G.intended || hyp(p.x - b.x, p.z - b.z) < 9)) { const [x, z] = intercept(p); p.tx = x; p.tz = z; p.user = 1; p.sprint = true; }
   else { p.tx = p.x; p.tz = p.z; p.user = 0; }
 }
 function movePlayer(p, dt) {
-  const b = G.ball; p.stT += dt;
+  const b = G.ball; p.stT += dt; p.ritmo = false;
   if (p.st === 'kick' && p.stT > .32) p.st = 'run';
   if (p.st === 'slide') { const k = Math.max(0, 1 - p.stT / .55) * 11.5; p.vx = Math.sin(p.dir) * k; p.vz = Math.cos(p.dir) * k; if (p.stT > .55) { p.st = 'down'; p.stT = 0; } }
   else if (p.st === 'dive') { const k = Math.max(0, 1 - p.stT / .5) * (p.diveV || 8); p.vx *= Math.pow(.8, dt * 60); p.vz = p.diveS * k; if (p.stT > .5) { p.st = 'down'; p.stT = 0; } }
   else if (p.st === 'down') { const f = Math.pow(.7, dt * 60); p.vx *= f; p.vz *= f; if (p.stT > (p.i === 0 ? DOWN.gk : DOWN.pl)) { p.st = 'run'; p.stT = 0; } }
-  else {
-    const run = p.sprint && hyp(p.vx, p.vz) > 5; p.en = clamp(p.en + (run ? -TIRE.use : TIRE.rest) * dt, 0, 1); // fatica: lo scatto consuma
-    let sp = p.maxV * (p.team.human ? 1 : G.diff.spd) * (p.sprint ? 1 + .27 * (.3 + .7 * p.en) : 1) * (.95 + .05 * p.en) * (b.owner === p ? .97 : 1) * (p.stun > 0 ? (p.fallen ? 0 : .25) : 1) * (p.jock ? .85 : 1) * (p.inj ? FOUL.limp : 1); if (p.fallen && p.stun <= 0) p.fallen = false;
-    if (G.state === 'goal' && !p.sprint) sp *= .5;
-    let gx = p.tx, gz = p.tz;
-    if (b.owner === p && p.i && G.state === 'play') { // conduzione: se la palla non è sulla strada verso dove vuole andare, prima ci va sopra
-      const bx = b.x - p.x, bz = b.z - p.z, bd = hyp(bx, bz), wx0 = gx - p.x, wz0 = gz - p.z, wd = hyp(wx0, wz0);
-      if (bd > .6 && wd > .3 && (bx * wx0 + bz * wz0) / (bd * wd) < .88) { gx = b.x + wx0 / wd * .3; gz = b.z + wz0 / wd * .3; sp *= 1.12; } // e allunga il passo per riprenderla
-    }
-    const dx = gx - p.x, dz = gz - p.z, d = hyp(dx, dz); let wx = 0, wz = 0;
-    if (d > .2) { const k = Math.min(1, d / 1.3) * sp / d; wx = dx * k; wz = dz * k; }
-    const a = Math.min(1, dt * (userDrives(p) ? 11 : 8)); p.vx += (wx - p.vx) * a; p.vz += (wz - p.vz) * a;
-    const v = hyp(p.vx, p.vz); let want = p.dir;
-    if (p.i === 0 && b.owner !== p && G.state === 'play') want = Math.atan2(b.x - p.x, b.z - p.z); // il portiere guarda sempre la palla, anche quando si sposta di lato
-    else if (v > .7 && !p.jock) want = Math.atan2(p.vx, p.vz); else if (b.owner !== p) want = Math.atan2(b.x - p.x, b.z - p.z); // anche chi temporeggia guarda il pallone
-    let da = want - p.dir; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; p.dir += da * Math.min(1, dt * (v > .7 ? 13 : 6));
-  }
+  else return corri(p, dt);
   p.x = clamp(p.x + p.vx * dt, -HL - 3.5, HL + 3.5); p.z = clamp(p.z + p.vz * dt, -HW - 3, HW + 3);
+}
+// Come nei giochi di calcio col joystick: poco inclinata si cammina, a metà si corricchia, tutta si corre (lo scatto è un tasto).
+// Tra un'andatura e l'altra il passaggio è morbido, così si può dosare la velocità vicino all'avversario.
+const ANDATURA = { morta: .15, cammina: .3, corsetta: .62 };
+function andatura(l) {
+  const A = ANDATURA, liscio = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+  if (!(l > A.morta)) return 0;
+  return .28 + (A.corsetta - .28) * liscio(.38, .58, l) + (1 - A.corsetta) * liscio(.75, .92, l); // cammina, poi corsetta, poi corsa
+}
+// Corsa con inerzia, vedi src/fisica/corpo.js. Qui si decide solo la velocità voluta; accelerazione, frenata, curve, fatica,
+// rotazione del busto e passo li fa il corpo, a passi fissi di 1/120 s.
+function corri(p, dt) {
+  const b = G.ball, guida = userDrives(p), owner = b.owner === p; if (p.fallen && p.stun <= 0) p.fallen = false;
+  const fm = MOTO.forma(p.en), base = p.maxV * (p.team.human ? 1 : G.diff.spd) * fm.v * (owner ? .97 : 1) * (p.stun > 0 ? (p.fallen ? 0 : .25) : 1) * (p.jock ? .85 : 1) * (p.inj ? FOUL.limp : 1);
+  let sp = base * (p.sprint ? 1 + .27 * (.3 + .7 * p.en / Math.max(p.fondo || 1, .01)) : 1);
+  if (G.state === 'goal' && !p.sprint) sp *= .5;
+  if (guida) sp = Math.min(sp, base * andatura(p.user)) + (p.sprint && p.user > .8 ? sp - base : 0); // la levetta decide l'andatura; lo scatto solo a levetta piena
+  let gx = p.tx, gz = p.tz, insegue = false;
+  if (owner && p.i && G.state === 'play') { // conduzione: se la palla non è sulla strada verso dove vuole andare, prima ci va sopra
+    const bx = b.x - p.x, bz = b.z - p.z, bd = hyp(bx, bz), wx0 = gx - p.x, wz0 = gz - p.z, wd = hyp(wx0, wz0);
+    if (bd > .6 && wd > .3 && (bx * wx0 + bz * wz0) / (bd * wd) < .88) { gx = b.x + b.vx * .35 + wx0 / wd * .3; gz = b.z + b.vz * .35 + wz0 / wd * .3; insegue = true; sp = Math.max(sp * 1.12, base * (1.05 + .27 * (.3 + .7 * p.en))); } // e allunga il passo per riprenderla, anche senza scatto
+  }
+  // velocità voluta: piena finché si è lontani, poi quella che permette di fermarsi sul punto (niente frenate brusche all'ultimo)
+  const dx = gx - p.x, dz = gz - p.z, d = hyp(dx, dz); let wx = 0, wz = 0;
+  if (d > .15) { const k = (insegue ? sp : Math.min(sp, Math.sqrt(2 * MOTO.CORPO.frena * .55 * d), d * 4)) / d; wx = dx * k; wz = dz * k; } // inseguendo la propria palla non si frena all'arrivo
+  const scatto = p.sprint && hyp(p.vx, p.vz) > 5, aiuto = guida ? 1.12 : 1; // chi guida l'utente risponde un filo prima
+  const o = { acc: fm.acc * aiuto * (p.i === 0 ? 1.15 : 1), frena: (.85 + .15 * fm.acc) * aiuto, lat: fm.lat * aiuto * (scatto ? MOTO.CORPO.latScatto : 1) };
+  const h = MOTO.CORPO.passoMax; p.restoC = (p.restoC || 0) + dt;
+  while (p.restoC >= h - 1e-9) {
+    p.restoC -= h;
+    MOTO.spingi(p, wx, wz, h, sp, o);
+    const v = hyp(p.vx, p.vz); let want = p.dir;
+    if (p.i === 0 && !owner && G.state === 'play') want = Math.atan2(b.x - p.x, b.z - p.z); // il portiere guarda sempre la palla, anche quando si sposta di lato
+    else if (v > .7 && !p.jock) want = Math.atan2(p.vx, p.vz); else if (!owner) want = Math.atan2(b.x - p.x, b.z - p.z); // anche chi temporeggia guarda il pallone
+    MOTO.ruota(p, want, h, v, (.85 + .15 * fm.lat) * aiuto);
+    MOTO.stanca(p, h, v, p.maxV, scatto);
+    if (MOTO.cammina(p, h, v)) p.ritmo = true; // un piede sta per toccare terra: il momento del tocco di palla (lo consuma moveBall)
+    p.x = clamp(p.x + p.vx * h, -HL - 3.5, HL + 3.5); p.z = clamp(p.z + p.vz * h, -HW - 3, HW + 3);
+  }
 }
 const tecnica = (p) => clamp(.5 + (p.q - 20) / 30, 0, 1);
 function moveBall(dt) {
@@ -1173,6 +1200,27 @@ function pose(p, dt) {
   f.body.rotation.x = rx + lean; f.body.rotation.z = rz; f.body.position.y = by;
 }
 
+// Gambe al passo: camminata, corsetta e corsa girano tutte sulla fase p.passo del corpo (src/fisica/corpo.js), così il
+// piede scende proprio quando parte il tocco di palla e le tre clip si fondono senza piedi che scivolano. Si sistema il tempo
+// delle clip prima che l'animazione avanzi, tenendo conto di quanto avanzerà in questo fotogramma.
+function allinea(p, dt) {
+  const f = p.fig; if (!f.skinned || !f.A) return;
+  const v = hyp(p.vx, p.vz);
+  for (const k in MOTO.ANDATURE) {
+    const a = f.A[k]; if (!a) continue;
+    const D = a.getClip().duration, t = (((p.passo || 0) + MOTO.ANDATURE[k].dx) % 1) * D - dt * MOTO.ritmoClip(k, v);
+    a.time = ((t % D) + D) % D;
+  }
+}
+// Il corpo si piega nelle curve (verso l'interno, di più a velocità alta) e in avanti quando accelera, all'indietro quando frena.
+function inclina(p, dt) {
+  const r = p.fig.root, v = hyp(p.vx, p.vz), acc = dt > 0 ? (v - (p.vPrima || 0)) / dt : 0; p.vPrima = v;
+  if (r.rotation.order !== 'YXZ') r.rotation.order = 'YXZ';
+  const giu = p.st === 'run' || p.st === 'kick', k = Math.min(1, dt * 8);
+  const roll = giu ? clamp(-(p.wy || 0) * v * .016, -.24, .24) : 0, pitch = giu ? clamp(acc * .012 + v * .005, -.1, .14) : 0;
+  r.rotation.z += (roll - r.rotation.z) * k; r.rotation.x += (pitch - r.rotation.x) * k;
+}
+
 /* ------------------------------------------------------------------ camera e disegno */
 function updateCamera(dt) {
   const b = G.ball; let fx = 0, fz = 0;
@@ -1193,7 +1241,8 @@ function updateCamera(dt) {
 function draw(dt) {
   const b = G.ball;
   if (b) {
-    if (!REGIA.figure()) for (const p of all()) pose(p, dt); // durante il replay le figure le mette in posa la regia
+    if (!REGIA.figure()) for (const p of all()) { allinea(p, dt); pose(p, dt); inclina(p, dt); } // durante il replay le figure le mette in posa la regia
+    else for (const p of all()) p.fig.root.rotation.x = p.fig.root.rotation.z = 0;
     const sp = hyp(b.vx, b.vz);
     ballMesh.position.set(b.x, b.y, b.z); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; ballMesh.rotation.y += (b.c || 0) * dt * 25; }
     ballShadow.position.set(b.x, .04, b.z); ballShadow.scale.setScalar(1 + b.y * .18);
@@ -1765,6 +1814,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
