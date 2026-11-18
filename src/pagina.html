@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icona-192.png">
+<link rel="icon" href="icona-192.png">
+<meta name="theme-color" content="#0A0A0C">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
@@ -381,5 +384,10 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 <script src="anim.js"></script>
 <script src="app.js"></script>
 <script src="casa.js"></script>
+<script>
+// app installabile e gioco anche offline (src/sw.js); in locale solo con ?sw nell'indirizzo, per non tenere in memoria le prove
+if ('serviceWorker' in navigator && ((location.protocol === 'https:' && !/^(localhost|127\.)/.test(location.hostname)) || /[?&]sw\b/.test(location.search)))
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
 </body>
 </html>

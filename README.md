@@ -12,17 +12,19 @@ Vive in un repository e in un deploy suoi, ma è pensato per comparire sotto
 ```bash
 npm install
 npm run dev      # apre un server locale e ricompila a ogni modifica
-npm run build    # produce public/app.js (lo fa anche Vercel a ogni deploy)
+npm run build    # produce public/app.js, public/index.html e public/sw.js (lo fa anche Vercel a ogni deploy)
 ```
 
-`public/` è il sito: `index.html`, `data.js`, `modello.js`, `anim.js`, `app.js` (generato), `img/`, `font/`.
+`public/` è il sito: `index.html` e `sw.js` (generati da `scripts/pubblica.mjs`), `data.js`, `modello.js`, `anim.js`, `app.js` (generato), `img/`, `font/`, `manifest.webmanifest` e le icone dell'app.
 
 ## Struttura
 
 | Percorso | Contenuto |
 |---|---|
 | `src/game.js` | Tutto il gioco: scena, motore della partita, IA, comandi, schermate, audio |
-| `public/index.html` | Pagina, stile e schermate (home, scelta squadre, VS, pausa, fine partita) |
+| `src/pagina.html` | Pagina, stile e schermate (home, scelta squadre, VS, pausa, fine partita). La build la copia in `public/index.html` con la versione negli indirizzi degli script |
+| `src/sw.js` | Service worker: app installabile, avvio dalla memoria e gioco offline. La build lo copia in `public/sw.js` con la versione e i file da precaricare |
+| `src/prestazioni.js` | Risoluzione dinamica e indicatore delle prestazioni (`?debug` nell'indirizzo) |
 | `public/data.js` | 16 squadre con colori, undici titolari e riserve. **Generato**: `python3 scripts/genera-dati.py <cartella dell'app>` |
 | `src/regia.js` | Regia: sequenza del gol (primo piano, scheda del marcatore, replay, transizione), arbitro, segnaposto col nome, tabelloni che festeggiano. Crea da sola la sua grafica, senza toccare `index.html` |
 | `src/divisa.js` | Disegna la divisa come texture: una per divisa e tono di pelle, non per giocatore |

@@ -58,7 +58,7 @@ export function creaPrestazioni({ renderer, debug = false, livello = () => 0 }) 
     return false;
   }
 
-  // tempo della scheda grafica, dove il browser lo misura (Chrome su Android e desktop; non Safari)
+  // tempo della scheda grafica, dove il browser lo misura (Chrome su Android e desktop, non Safari)
   const G2 = debug ? tempoGpu(renderer.getContext()) : null;
   const HUD = debug ? indicatore(renderer, S, livello, G2) : null;
 
