@@ -79,7 +79,18 @@ export function prezzo(valore) { return Math.round(Math.pow(Math.max(0, valore -
 export function costoScambio(vIn, vOut) { return prezzo(vIn) - Math.round(prezzo(vOut) * PREMI.cessione / 10) * 10; }
 /** Mette nelle squadre le rose della carriera (o quelle di partenza se C è null). La rosa di partenza resta in xi0. */
 export function applica(C, clubs) {
-  for (const c of clubs) { if (!c.xi0) c.xi0 = c.xi; c.xi = (C && C.rose && C.rose[c.id]) || c.xi0; }
+  for (const c of clubs) {
+    if (!c.xi0) { c.xi0 = c.xi; c.pan0 = c.pan || []; }
+    c.xi = (C && C.rose && C.rose[c.id]) || c.xi0; c.pan = (C && C.panchine && C.panchine[c.id]) || c.pan0;
+  }
+}
+/** Un titolare e una riserva dello stesso ruolo della propria squadra si scambiano il posto. */
+export function cambiaTitolare(C, clubs, iXi, iPan) {
+  const mio = clubs.find((c) => c.id === C.club), a = mio && mio.xi[iXi], b = mio && (mio.pan || [])[iPan];
+  if (!a || !b || a[1] !== b[1]) return false;
+  const xi = mio.xi.map((x) => x.slice()), pan = mio.pan.map((x) => x.slice()); xi[iXi] = b.slice(); pan[iPan] = a.slice();
+  C.rose[mio.id] = xi; C.panchine = C.panchine || {}; C.panchine[mio.id] = pan; applica(C, clubs);
+  return true;
 }
 /** Scambia il giocatore iIn della squadra `da` col proprio giocatore iOut. `valore(ruolo, q)` dà il valore di un giocatore. */
 export function scambio(C, clubs, valore, da, iIn, iOut) {
@@ -118,8 +129,9 @@ export function coppaProssima(C) {
 // passa chi segna di più; in parità decidono i rigori, simulati tiro per tiro
 function rigori(rnd) { let a = 0, b = 0; for (let i = 0; i < 5; i++) { a += rnd() < .76; b += rnd() < .76; } while (a === b) { a += rnd() < .76; b += rnd() < .76; } return [a, b]; }
 
-/** Registra la partita di coppa dell'utente, simula le altre del turno e prepara il turno dopo. Se l'utente esce, la coppa va avanti da sola fino alla finale. */
-export function giocaCoppa(C, clubs, gf, gs, marcatori, rnd = Math.random) {
+/** Registra la partita di coppa dell'utente, simula le altre del turno e prepara il turno dopo. `rig` sono i rigori giocati dall'utente
+ * [segnati, subiti]; se manca e la partita è finita pari, vengono simulati. Se l'utente esce, la coppa va avanti da sola fino alla finale. */
+export function giocaCoppa(C, clubs, gf, gs, marcatori, rnd = Math.random, rig = null) {
   const k = C.coppa, pr = coppaProssima(C); if (!pr) return null;
   const premio = conta(C, gf, gs, marcatori);
   let esito = { passa: gf > gs, rigori: null, vinta: false, turno: pr.nome, monete: premio };
@@ -127,7 +139,7 @@ export function giocaCoppa(C, clubs, gf, gs, marcatori, rnd = Math.random) {
     const dopo = [], giocate = [];
     for (let i = 0; i < k.squadre.length; i += 2) {
       const a = k.squadre[i], b = k.squadre[i + 1]; let r, rg = null;
-      if (utente && (a === C.club || b === C.club)) { r = a === C.club ? [gf, gs] : [gs, gf]; if (gf === gs) { rg = rigori(rnd); if (b === C.club) rg = [rg[1], rg[0]]; const mio = a === C.club ? rg[0] > rg[1] : rg[1] > rg[0]; esito.rigori = a === C.club ? rg : [rg[1], rg[0]]; esito.passa = mio; } }
+      if (utente && (a === C.club || b === C.club)) { r = a === C.club ? [gf, gs] : [gs, gf]; if (gf === gs) { const miei = rig && rig[0] !== rig[1] ? rig.slice(0, 2) : rigori(rnd); rg = a === C.club ? miei : [miei[1], miei[0]]; esito.rigori = miei; esito.passa = miei[0] > miei[1]; } }
       else { r = simula(clubs, a, b, rnd); if (r[0] === r[1]) rg = rigori(rnd); }
       const vince = r[0] > r[1] || (r[0] === r[1] && rg[0] > rg[1]) ? a : b;
       dopo.push(vince); giocate.push({ a, b, r, rg });

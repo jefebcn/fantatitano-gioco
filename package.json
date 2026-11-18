@@ -8,7 +8,8 @@
     "build": "esbuild src/game.js --bundle --minify --format=iife --outfile=public/app.js",
     "dev": "esbuild src/game.js --bundle --format=iife --outfile=public/app.js --servedir=public --watch",
     "modello": "node scripts/calciatore.mjs 0.36 && python3 scripts/maschera-divisa.py 512 && node scripts/modello-js.mjs",
-    "prova": "node scripts/prova-carriera.mjs"
+    "prova": "node scripts/prova-carriera.mjs",
+    "controlla": "node scripts/controlla-commenti.mjs"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.0.0",

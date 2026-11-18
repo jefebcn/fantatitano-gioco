@@ -91,6 +91,12 @@ table.tab{width:100%;border-collapse:collapse;font-size:12.5px}table.tab th{font
 .gioc{display:flex;align-items:center;gap:8px;width:100%;text-align:left;color:#fff;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:7px 10px;margin-top:5px;min-width:0}
 .gioc img{height:20px;width:auto}.gioc b{font:900 13px Lato;white-space:nowrap}.gioc span{flex:1;min-width:0;font:700 10.5px Lato;color:rgba(255,255,255,.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gioc em{font:900 12px Lato;color:var(--lime);white-space:nowrap}
 .gioc[disabled]{opacity:.4}.gioc.sel{opacity:1;border-color:var(--lime);background:rgba(217,245,31,.1)}.avviso{margin:4px 0 6px;color:var(--lime);font-weight:900;font-size:13px}
+#cambi{background:rgba(10,10,12,.9);justify-content:flex-start;gap:6px;padding-top:10px}#cambi>*{flex-shrink:0}#cambi h2{margin:0;font-size:22px;color:var(--lime)}#cambi .passo{color:#fff;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+#cambiL{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;width:min(820px,100%)}#cambiL h4{margin:0 0 2px;font-family:Anton;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:var(--lime);font-size:13px}
+#cambiL .gioc{margin-top:3px;padding:4px 9px}#cambiL>div:first-child{display:grid;grid-template-columns:1fr 1fr;gap:0 6px;align-content:start}#cambiL>div:first-child h4{grid-column:1/-1}
+#cambiL i.g{display:inline-block;width:7px;height:10px;border-radius:2px;background:#FFD21F;vertical-align:-1px}#cambiL u.inf{text-decoration:none;color:#ff6b6b}#cambi .btn{min-width:0;padding:8px 40px;font-size:18px}
+.rosa{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left}.rosa h4{margin:0 0 2px;font-family:Anton;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:var(--lime);font-size:13px}
+.rosa .gioc{margin-top:3px;padding:3px 8px}.rosa .gioc b{font-size:12px}.rosa .nota{margin:7px 0 0;font:900 11px Lato;color:var(--lime)}
 #pan .seg{justify-content:flex-start}#esitoC{font:900 12px Lato;letter-spacing:.1em;text-transform:uppercase;color:var(--lime)}#esitoC:empty{display:none}
 .basso #home .btn.sec{margin-top:2px}
 /* ---------- prima della partita: le due formazioni ---------- */
@@ -147,6 +153,8 @@ table.tab{width:100%;border-collapse:collapse;font-size:12.5px}table.tab th{font
   background:rgba(10,10,12,.6);padding:3px 10px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
 #chi i{color:var(--lime);font-style:normal;margin-right:5px}
 #en{position:absolute;top:80px;left:50%;transform:translateX(-50%);width:62px;height:4px;border-radius:4px;background:rgba(10,10,12,.6);overflow:hidden;pointer-events:none}
+#rig{display:none;position:absolute;top:58px;left:50%;transform:translateX(-50%);font:900 14px Lato;letter-spacing:.06em;color:var(--lime);background:rgba(10,10,12,.78);padding:6px 14px;border-radius:99px;white-space:pre}
+#hud.rigori #rig{display:block}#hud.rigori #chi,#hud.rigori #en,#hud.rigori #ment,#hud.rigori #radar,#hud.rigori #bA,#hud.rigori #bC,#hud.rigori #bD{display:none!important}
 #en i{display:block;height:100%;width:100%;background:var(--lime)}
 #radar{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:128px;height:84px;border-radius:8px;opacity:.85}
 #pausa,#audio{position:absolute;top:10px;width:38px;height:38px;border-radius:10px;background:rgba(10,10,12,.6);pointer-events:auto;font-size:16px}
@@ -188,6 +196,7 @@ table.tab{width:100%;border-collapse:collapse;font-size:12.5px}table.tab th{font
 <div id="hud" class="nas">
   <div id="sb"><img id="sbH" alt=""><b id="sbHn"></b><span id="sbS">0 - 0</span><b id="sbAn"></b><img id="sbA" alt=""><i id="sbT">00:00</i></div>
   <button id="ment">Equilibrata</button>
+  <div id="rig"></div>
   <div id="chi"></div>
   <div id="en"><i></i></div>
   <button id="audio" aria-label="Audio">♪</button>
@@ -264,8 +273,16 @@ table.tab{width:100%;border-collapse:collapse;font-size:12.5px}table.tab th{font
   <p>Levetta: muovi il giocatore<br><b>Passa</b> · <b>Tira</b> (tieni premuto per la potenza) · <b>Scatto</b><br>
   <b>Cross</b>: traversone in area, o lancio lungo se in area non c'è nessuno<br>Senza palla: <b>Cambia</b> giocatore · <b>Scivolata</b> (da dietro è fallo)<br>Tastiera: frecce, X passa, C cross, Spazio tira, Shift scatto<br>In campo: tocca la mentalità sopra la mappa per cambiarla</p>
   <div class="tatt"><div class="seg" id="segFormP"></div><div class="seg" id="segMentP"></div></div>
+  <button class="btn sec nas" id="apriCambi">Sostituzioni</button>
   <button class="btn" id="riprendi">Riprendi</button>
   <button class="btn sec" id="esci">Esci dalla partita</button>
+</div>
+
+<div id="cambi" class="scr nas">
+  <h2 class="h" id="cambiT">Sostituzioni</h2>
+  <div class="passo" id="cambiM"></div>
+  <div id="cambiL"></div>
+  <button class="btn" id="cambiOk">Fatto</button>
 </div>
 
 <div id="fine" class="scr nas">
