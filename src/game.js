@@ -258,6 +258,16 @@ async function loadModel() {
   } catch (e) { console.warn('modello 3D non caricato', e); MODEL = null; }
 }
 const CORPO = 'MI_Superhero_Male', OCCHI = 'MI_Eyes';
+/** Le azioni a terra: le clip registrate portano il corpo sotto il livello dell'erba (fino a 20 cm), poseSkinned lo rialza. */
+const A_TERRA = new Set(['scivolata', 'caduta', 'tuffoS', 'tuffoD']);
+const _v = new T.Vector3();
+/** Il punto più basso del corpo di un giocatore nella posa attuale (un vertice ogni 6: basta e costa poco). */
+function puntoBasso(f) {
+  if (!f.corpo) f.root.traverse((o) => { if (o.isSkinnedMesh && o.geometry.attributes.position.count > 1000) f.corpo = o; });
+  const c = f.corpo; if (!c) return 0; const P = c.geometry.attributes.position; let basso = 9;
+  for (let j = 0; j < P.count; j += 6) { c.getVertexPosition(j, _v); _v.applyMatrix4(c.matrixWorld); if (_v.y < basso) basso = _v.y; }
+  return basso;
+}
 /**
  * Il modello originale è un supereroe: braccia, cosce e torace enormi. Una volta sola, sulla geometria a riposo, si avvicina
  * ogni vertice all'osso che lo muove (braccia, avambracci, cosce, polpacci, clavicole, torace, collo): restano le stesse
@@ -364,7 +374,7 @@ const lineare = (c) => Math.pow(c, 2.2);
  */
 function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
   const root = new T.Group(), body = new T.Group(); root.add(body);
-  const obj = SkeletonUtils.clone(MODEL.scene); obj.scale.multiplyScalar(MODEL.k * (.95 + ((seed >>> 16) % 11) * .01)); body.add(obj); // altezze diverse, ±5%
+  const alt = .95 + ((seed >>> 16) % 11) * .01, obj = SkeletonUtils.clone(MODEL.scene); obj.scale.multiplyScalar(MODEL.k * alt); body.add(obj); // altezze diverse, ±5%: il passo si allunga con l'altezza
   const tono = seed % TONI.length, scuri = tono >= 4, varia = .97 + ((seed >>> 20) % 7) * .01;
   const pelo = mat(scuri ? [0x1c1410, 0x111111, 0x2e2018, 0x1c1410][(seed >>> 4) % 4] : HAIR[(seed >>> 4) % HAIR.length]);
   const sc = kit.boots ? [kit.boots, kit.suola || '#16161a'] : SCARPINI[(seed >>> 24) % SCARPINI.length];
@@ -388,7 +398,7 @@ function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
   const mixer = new T.AnimationMixer(obj), A = {}, w = {};
   const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, aereo: kit.gloves ? null : MODEL.fx.aereo, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null, passoS: kit.gloves ? MODEL.fx.passoS : null, passoD: kit.gloves ? MODEL.fx.passoD : null };
   for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = rnd(base[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; w[n] = n === 'idle' ? 1 : 0; }
-  return { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true, sporco: u.uSporco.value };
+  return { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true, sporco: u.uSporco.value, alt };
 }
 /** Fango ed erba dopo una scivolata, una caduta o un tuffo: restano fino alla fine della partita. */
 const SPORCA = { scivolata: [.22, .3], caduta: [.16, .14], tuffoS: [.2, .26], tuffoD: [.2, .26] };
@@ -1161,7 +1171,7 @@ function step(dt) {
   for (const p of ps) {
     p.cool -= dt; p.stun -= dt; p.shield -= dt; p.slideCd -= dt; p.sbil -= dt; p.jock = false;
     if (G.penWait > 0 || (G.so && G.state === 'play' && !(p === G.so.gk && G.so.fase === 'tiro'))) { p.tx = p.x; p.tz = p.z; p.sprint = false; } // ai rigori si muove solo il portiere
-    else if (!userDrives(p) || G.state !== 'play') think(p, dt); else userThink(p);
+    else if (!userDrives(p) || G.state !== 'play') { think(p, dt); dosa(p); } else userThink(p);
   }
   for (const p of ps) movePlayer(p, dt);
   for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) { // non si attraversano; tra avversari in corsa è un duello spalla a spalla
@@ -1176,6 +1186,13 @@ function step(dt) {
     const c = G.ctrl, l = hyp(G.in.jx, G.in.jy); G.idle = l > .2 ? 0 : G.idle + dt;
     if (G.idle > 1.2 && hyp(c.x - b.x, c.z - b.z) > 22 && G.intended !== c) { const m = migliorDifensore(G.teams[0]); if (m && m.p !== c) setCtrl(m.p); }
   }
+}
+// L'IA dosa gli scatti: sotto un quarto di energia scatta solo quando conta davvero (palla da prendere, chi ha la palla, il
+// portiere) e riprende a scattare solo sopra il 40%. Così nel finale nessuno resta a secco e le squadre restano corte.
+const RISERVA = { soglia: .25, riparte: .4 };
+function dosa(p) {
+  if (!p.sprint || G.state !== 'play' || p.i === 0 || p === G.intended || p === p.team.chaser || (G.ball && p === G.ball.owner)) return;
+  if (p.en < RISERVA.soglia || (p.riserva && p.en < RISERVA.riparte)) { p.sprint = false; p.riserva = true; } else p.riserva = false;
 }
 function userThink(p) {
   const b = G.ball, [ix, iz] = inputWorld(), l = hyp(ix, iz); p.sprint = G.in.sprint;
@@ -1227,7 +1244,7 @@ function corri(p, dt) {
     else if (v > .7 && !p.jock) want = Math.atan2(p.vx, p.vz); else if (!owner) want = Math.atan2(b.x - p.x, b.z - p.z); // anche chi temporeggia guarda il pallone
     MOTO.ruota(p, want, h, v, (.85 + .15 * fm.lat) * aiuto);
     MOTO.stanca(p, h, v, p.maxV, scatto);
-    if (MOTO.cammina(p, h, v)) p.ritmo = true; // un piede sta per toccare terra: il momento del tocco di palla (lo consuma moveBall)
+    if (MOTO.cammina(p, h, v / (p.fig.alt || 1))) p.ritmo = true; // un piede sta per toccare terra: il momento del tocco di palla (lo consuma moveBall)
     p.x = clamp(p.x + p.vx * h, -HL - 3.5, HL + 3.5); p.z = clamp(p.z + p.vz * h, -HW - 3, HW + 3);
   }
   if (dt > 0 && vPrima > 5.5 && (vPrima - hyp(p.vx, p.vz)) / dt > 10 && (p.frenataT || 0) < G.t) { p.frenataT = G.t + .5; PART.emetti('polvere', p.x, .08, p.z, 3, 1.4, p.vx / vPrima, p.vz / vPrima); PART.emetti('erba', p.x, .05, p.z, 3, 2, p.vx / vPrima, p.vz / vPrima); } // frenata brusca: zolle e polvere
@@ -1405,6 +1422,8 @@ function card(p, red) {
 // d ha commesso fallo su own: cartellino, poi punizione o rigore
 function foul(d, own, sliding, behind, grave = false) {
   const t = own.team, s = t.side, b = G.ball, x = own.x, z = own.z, dGoal = hyp(s * HL - x, z);
+  // prima il fuorigioco: chi era in fuorigioco e stava ricevendo (o era già sul pallone) non può guadagnarsi fallo o rigore
+  if (G.offs && G.offs.includes(own) && (G.intended === own || hyp(b.x - x, b.z - z) < 3)) return offside(own);
   G.stats.fouls[d.team.idx]++; d.s.fl++;
   // chiara occasione da gol: nessun compagno di chi ha fatto fallo tra l'avversario e la porta
   const chance = dGoal < 32 && !d.team.players.some((o) => o.i && o !== d && (o.x - x) * s > 1 && Math.abs(o.z - z) < 14);
@@ -1481,7 +1500,11 @@ function startFx(f, name) {
   a.setLoop(T.LoopOnce, 1); a.clampWhenFinished = true; a.reset(); a.timeScale = FX[name].sp; a.play(); f.act = a;
 }
 function poseSkinned(p, dt) {
-  const f = p.fig, v = hyp(p.vx, p.vz); f.root.position.set(p.x, 0, p.z); f.root.rotation.y = p.dir;
+  const f = p.fig, v = hyp(p.vx, p.vz), alt = f.alt || 1; f.root.position.set(p.x, 0, p.z);
+  // il corpo segue la direzione con una molla rapida: tiri, passaggi e scivolate girano p.dir di colpo, il bacino no
+  // (oltre i 150° o dopo un salto di posizione, come a un calcio d'inizio, si gira subito)
+  const da = Math.atan2(Math.sin(p.dir - (f.vdir ?? p.dir)), Math.cos(p.dir - (f.vdir ?? p.dir)));
+  f.vdir = Math.abs(da) > 2.6 || dt <= 0 ? p.dir : (f.vdir ?? p.dir) + da * Math.min(1, dt * 20); f.root.rotation.y = f.vdir;
   if (G.dbgFx && hasFx(G.dbgFx.name)) { // per le prove: tutti fermi su un fotogramma di una clip
     for (const k in f.A) f.A[k].setEffectiveWeight(0); if (f.act) f.act.setEffectiveWeight(0);
     const a = f.mixer.clipAction(MODEL.fx[G.dbgFx.name]); if (f.dbg && f.dbg !== a) f.dbg.stop(); a.play(); a.paused = true; a.time = G.dbgFx.t; a.setEffectiveWeight(1); f.dbg = a; f.mixer.update(0); f.body.position.y = 0; return;
@@ -1501,20 +1524,29 @@ function poseSkinned(p, dt) {
   const tg = { idle: 0, walk: 0, run: 0, jog: 0, gkIdle: 0, esulta: 0, passoS: 0, passoD: 0, aereo: 0 }; let by = 0;
   const festa = G.state === 'goal' && G.scorer && p.team === G.scorer.team && p.i !== 0 && v < 5 && f.fxW < .25;
   if (festa && f.A.esulta) { tg.esulta = 1; by = Math.abs(Math.sin(G.t * 7 + p.i)) * .3; }
-  else if (f.A.jog) { const m = clamp(v / 1.2, 0, 1), r = clamp((v - 6.4) / 1.8, 0, 1), j = clamp((v - 2) / 1.8, 0, 1) * (1 - r); tg.run = m * r; tg.jog = m * j; tg.walk = m * (1 - r - j); tg.idle = 1 - m; }
+  else if (f.A.jog) { const w = MOTO.pesi(v / alt); tg.run = w.run; tg.jog = w.jog; tg.walk = w.walk; tg.idle = 1 - w.run - w.jog - w.walk; } // stesse soglie della fase del passo
   else { tg.run = clamp((v - 2.6) / 2.6, 0, 1); tg.walk = clamp(v / 2.2, 0, 1) * (1 - tg.run); tg.idle = 1 - tg.run - tg.walk; }
   if (f.A.gkIdle && G.state === 'play') { tg.gkIdle = tg.idle; tg.idle = 0; }
   if (f.A.passoS && G.state === 'play' && G.ball.owner !== p) { // il portiere guarda la palla: se si sposta di lato fa i passi laterali, non la corsa
     const lat = p.vx * Math.cos(p.dir) - p.vz * Math.sin(p.dir), av = Math.abs(p.vx * Math.sin(p.dir) + p.vz * Math.cos(p.dir));
-    if (Math.abs(lat) > av && Math.abs(lat) > .8) { const m = tg.walk + tg.jog + tg.run; tg.walk = tg.jog = tg.run = 0; tg[lat > 0 ? 'passoS' : 'passoD'] = m; f.A.passoS.timeScale = f.A.passoD.timeScale = clamp(Math.abs(lat) / 3.6, .7, 1.7); }
+    if (Math.abs(lat) > av && Math.abs(lat) > .8) { const m = tg.walk + tg.jog + tg.run; tg.walk = tg.jog = tg.run = 0; tg[lat > 0 ? 'passoS' : 'passoD'] = m; f.A.passoS.timeScale = f.A.passoD.timeScale = clamp(Math.abs(lat) / (3.5 * alt), .5, 1.7); }
   }
   if (f.A.aereo && G.state === 'goal' && p === G.scorer && v > 2.2) { // il marcatore corre verso la bandierina a braccia aperte
-    const m = tg.walk + tg.jog + tg.run; tg.walk = tg.jog = tg.run = 0; tg.aereo = m; f.A.aereo.timeScale = clamp(v / 6.6, .8, 1.4);
+    const m = tg.walk + tg.jog + tg.run; tg.walk = tg.jog = tg.run = 0; tg.aereo = m; f.A.aereo.timeScale = clamp(v / (5.3 * alt), .8, 1.5);
   }
-  const a = Math.min(1, dt * 10), rest = Math.max(0, 1 - f.fxW - f.oldW);
+  const a = Math.min(1, dt * 16), rest = Math.max(0, 1 - f.fxW - f.oldW); // le andature seguono presto la velocità: pesi in ritardo fanno scivolare i piedi
   for (const k in f.A) { f.w[k] += (tg[k] - f.w[k]) * a; f.A[k].setEffectiveWeight(f.w[k] * rest); }
-  f.A.run.timeScale = clamp(v / 6.6, .8, 1.5); f.A.walk.timeScale = clamp(v / 1.9, .7, 1.7); if (f.A.jog) f.A.jog.timeScale = clamp(v / 4.1, .8, 1.5);
-  f.mixer.update(dt); f.body.position.y = by;
+  for (const k in MOTO.ANDATURE) if (f.A[k]) f.A[k].timeScale = MOTO.ritmoClip(k, v / alt); // il piede in appoggio resta fermo sull'erba
+  f.mixer.update(dt);
+  // nelle azioni a terra (cadute, tuffi, scivolate, anche mentre sfumano e il giocatore si rialza) si misura la posa vera e
+  // si alza il corpo quanto basta perché nessun punto entri nell'erba; capita a pochi giocatori per volta
+  f.body.position.y = by;
+  const aTerra = (a, w) => a && w > .01 && A_TERRA.has(a.getClip().name);
+  if (aTerra(f.act, f.fxW) || aTerra(f.old, f.oldW)) {
+    f.root.updateMatrixWorld(true); const giu = Math.max(0, -puntoBasso(f) - .008);
+    f.alza = giu > (f.alza || 0) ? giu : (f.alza || 0) + (giu - (f.alza || 0)) * Math.min(1, dt * 20); // sale subito, scende morbido
+  } else f.alza = (f.alza || 0) * Math.max(0, 1 - dt * 12);
+  f.body.position.y = by + (f.alza || 0);
 }
 function pose(p, dt) {
   if (p.fig.skinned) return poseSkinned(p, dt);
@@ -1543,7 +1575,7 @@ function allinea(p, dt) {
   const v = hyp(p.vx, p.vz);
   for (const k in MOTO.ANDATURE) {
     const a = f.A[k]; if (!a) continue;
-    const D = a.getClip().duration, t = (((p.passo || 0) + MOTO.ANDATURE[k].dx) % 1) * D - dt * MOTO.ritmoClip(k, v);
+    const D = a.getClip().duration, t = (((p.passo || 0) + MOTO.ANDATURE[k].dx) % 1) * D - dt * MOTO.ritmoClip(k, v / (f.alt || 1));
     a.time = ((t % D) + D) % D;
   }
 }
@@ -1576,7 +1608,10 @@ function updateCamera(dt) {
   else {
     // telecamera di gioco: segue la palla guardando un po' avanti dove va; negli ultimi 25 metri e in area si avvicina
     const close = G.state === 'goal' && G.stateT > .9, ax = fx + (b && !close ? clamp(b.vx * .3, -6, 6) : 0), az = fz + (b && !close ? clamp(b.vz * .25, -4, 4) : 0);
-    const vicino = clamp((Math.abs(fx) - (HL - 25)) / 12, 0, 1), area = Math.abs(fx) > HL - 16.5 && Math.abs(fz) < 20 ? 1 : 0, zoom = close ? 0 : Math.max(vicino * .7, area);
+    // l'area conta a sfumare (non tutto o niente sulla linea) e lo zoom segue piano: un pallone che entra ed esce dall'area
+    // non fa più pompare l'inquadratura avanti e indietro
+    const vicino = clamp((Math.abs(fx) - (HL - 25)) / 12, 0, 1), area = clamp((Math.abs(fx) - (HL - 19)) / 4, 0, 1) * clamp((23 - Math.abs(fz)) / 4, 0, 1);
+    const voluto = close ? 0 : Math.max(vicino * .7, area); G.zoomS = (G.zoomS ?? voluto) + (voluto - (G.zoomS ?? voluto)) * Math.min(1, dt * 1.1); const zoom = close ? 0 : G.zoomS;
     lx = clamp(ax, -39, 39); lz = az * .55; px = lx * .96; pz = lz + (close ? 26 : 39 - 6 * zoom); py = close ? 13 : 25 - 5 * zoom; fov = 36 - 6 * zoom;
     if (cam.aspect < 1.5) { py += 8; pz += 10; }
   }
