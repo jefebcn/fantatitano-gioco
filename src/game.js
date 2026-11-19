@@ -3,7 +3,7 @@ import * as T from 'three';
 import { creaRegia } from './regia.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { creaDivisa, creaZone, creaRilievo, TONI } from './divisa.js';
+import { creaDivisa, creaZone, creaRilievo, TONI, DISEGNI } from './divisa.js';
 import * as CLOUD from './cloud.js';
 import * as CAR from './carriera.js';
 import * as FIS from './fisica/pallone.js';
@@ -551,7 +551,7 @@ const lab = (h) => {
 const lum = (h) => { const c = new T.Color(h); return .299 * c.r + .587 * c.g + .114 * c.b; };
 const cdist = (a, b) => { const x = lab(a), y = lab(b); return hyp(x[0] - y[0], x[1] - y[1], x[2] - y[2]) / 100; };
 // quanto pesa il secondo colore di un disegno visto da lontano
-const PESO_DISEGNO = { righe: .5, righine: .15, fasce: .5, meta: .5, banda: .12, scacchi: .5, spalle: .2, fianchi: .25, v: .08, sfumata: .35 };
+const PESO_DISEGNO = { righe: .5, righine: .15, fasce: .5, meta: .5, banda: .12, scacchi: .5, spalle: .2, fianchi: .25, v: .08, sfumata: .35, chevron: .12, diagonale: .5, quarti: .5, terzi: .3, maniche: .25, petto: .12, onde: .5, mimetica: .35, pennellata: .15 };
 const misto = (k) => '#' + new T.Color(k.shirt).lerp(new T.Color(k.c2 || k.shirt), PESO_DISEGNO[k.stile] || 0).getHexString();
 /** Quanto si distinguono due divise in campo: soprattutto la maglia (com'è vista da lontano), poi pantaloncini e calzettoni. */
 const kitDist = (p, q) => Math.min(cdist(misto(p), misto(q)), cdist(p.shirt, q.shirt) + .1) * .65 + cdist(p.shorts, q.shorts) * .2 + cdist(p.socks, q.socks) * .15;
@@ -565,7 +565,7 @@ function pickKits(h, a) {
   const BIANCO = '#F3F3F3', NERO = '#16161a', SOGLIA = .42;
   const ink = (c) => (lum(c) > .5 ? '#111' : '#fff');
   const prima = (c) => { const due = cdist(c.c1, c.c2) < .2 ? (lum(c.c1) > .5 ? NERO : '#FFFFFF') : c.c2; return { shirt: c.c1, shorts: due, socks: c.c1, sleeve: c.c1, ink: ink(c.c1), c2: due, stile: c.st || null }; };
-  const kh0 = prima(h), da = prima(a), sa = ['fianchi', 'v', 'spalle', null][hashStr(a.id || a.name) % 4];
+  const kh0 = prima(h), da = prima(a), sa = ['fianchi', 'v', 'spalle', 'chevron', 'maniche', 'petto', 'pennellata', null][hashStr(a.id || a.name) % 8]; // disegno della seconda maglia, sempre lo stesso per club
   const seconde = [da, { ...da, shirt: da.c2, sleeve: da.c2, socks: da.c2, shorts: a.c1, c2: a.c1, stile: sa }];
   for (const [col, c2] of [[BIANCO, a.c1], [NERO, a.c1], ['#8A1538', BIANCO], ['#F2C230', NERO], ['#0E7C66', BIANCO], ['#1D2A5C', BIANCO]]) seconde.push({ shirt: col, sleeve: col, socks: col, shorts: cdist(c2, col) > .3 ? c2 : col, c2: cdist(c2, col) > .3 ? c2 : (lum(col) > .5 ? NERO : BIANCO), stile: col === BIANCO || col === NERO ? sa : null });
   for (const k of seconde) k.ink = ink(k.shirt);
@@ -2131,7 +2131,7 @@ function avviso(t) { const el = $('#avviso'); el.textContent = t; el.classList.a
    più il capitano ingaggiato: così le altre quindici squadre restano quelle vere. */
 const POSTO = 'academy';
 const COLORI = [['#4B06FC', '#D9F51F'], ['#C0392B', '#FFFFFF'], ['#111111', '#D9F51F'], ['#1D4F8A', '#FFFFFF'], ['#2E8B57', '#F2B822'], ['#E0B400', '#111111'], ['#7A1F3D', '#E8C77A'], ['#FF7A1A', '#1B2A5C']];
-const STILI = [['', 'Tinta unita'], ['righe', 'Righe'], ['fasce', 'Fasce'], ['banda', 'Banda'], ['meta', 'Metà'], ['scacchi', 'Scacchi'], ['v', 'V']];
+const STILI = [['', 'Tinta unita'], ['righe', 'Righe'], ['righine', 'Righine'], ['fasce', 'Fasce'], ['onde', 'Onde'], ['banda', 'Banda'], ['diagonale', 'Diagonale'], ['meta', 'Metà'], ['quarti', 'Quarti'], ['terzi', 'Terzi'], ['scacchi', 'Scacchi'], ['v', 'V'], ['chevron', 'Chevron'], ['petto', 'Fascia sul petto'], ['spalle', 'Spalle'], ['maniche', 'Maniche'], ['fianchi', 'Fianchi'], ['sfumata', 'Sfumata'], ['mimetica', 'Mimetica'], ['pennellata', 'Pennellata']];
 const NOMI = ['Titani FC', 'Real Montale', 'Atletico Borgo', 'Sporting Serravalle', 'Libera Acquaviva', 'Rocca United', 'Guaita Calcio', 'Cesta FC', 'Dogana Stars', 'Chiesanuova FC', 'Torri Unite', 'Olimpia Titano'];
 const sigla = (n) => (String(n).replace(/[^A-Za-zÀ-ÿ ]/g, '').split(/\s+/).filter((w) => w.length > 2 && !/^(fc|real|united|calcio)$/i.test(w))[0] || String(n) || 'MIO').slice(0, 3).toUpperCase();
 // Lo stemma del club: uno scudo coi colori e il disegno scelti, la sigla e la corona di Fantatitano
@@ -2166,9 +2166,22 @@ function applicaMio() {
 const DOTI = { P: [['PAR', 5], ['RIF', 4], ['PRE', 3], ['POS', 2], ['RIN', -3], ['PAS', -10], ['VEL', -15], ['POT', -4]], D: [['VEL', 0], ['ACC', -3], ['RES', 4], ['POT', 5], ['CON', -2], ['PAS', -1], ['TIR', -14], ['DIF', 9]], C: [['VEL', -2], ['ACC', 1], ['RES', 4], ['POT', -2], ['CON', 4], ['PAS', 6], ['TIR', -4], ['DIF', -1]], A: [['VEL', 4], ['ACC', 4], ['RES', 0], ['POT', 1], ['CON', 3], ['PAS', -2], ['TIR', 7], ['DIF', -22]] };
 const attributi = (x) => DOTI[x[1]].map(([k, d]) => [k, clamp(ovr(x[1], x[3]) + d + (hash(x[0] + k) % 11) - 5, 30, 95)]);
 // Maglia e icone disegnate, per le carte della dashboard
+/** Il disegno della maglia come immagine, dalle stesse funzioni che colorano la divisa 3D (src/divisa.js): l'anteprima è
+ *  com'è in campo. Il corpo della maglia (26..74 sull'asse x) è largo come il busto, le maniche stanno fuori. */
+const _maglie = new Map();
+function tramaMaglia(c1, c2, st) {
+  const chiave = c1 + c2 + st; if (_maglie.has(chiave)) return _maglie.get(chiave);
+  const f = DISEGNI[st]; if (!f) { _maglie.set(chiave, ''); return ''; }
+  const W = 100, H = 90, [c, x] = cv(W, H), im = x.createImageData(W, H), a = new T.Color(c1), b = new T.Color(c2);
+  for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
+    const k = clamp(f((px - 50) / 24 * .19, 1.5 - (py - 2) / 86 * .555), 0, 1), i = (py * W + px) * 4;
+    im.data[i] = (a.r + (b.r - a.r) * k) * 255; im.data[i + 1] = (a.g + (b.g - a.g) * k) * 255; im.data[i + 2] = (a.b + (b.b - a.b) * k) * 255; im.data[i + 3] = 255;
+  }
+  x.putImageData(im, 0, 0); const u = c.toDataURL(); _maglie.set(chiave, u); return u;
+}
 function maglia(c1, c2, st) {
-  const id = 'mg' + hash(c1 + c2 + st), f = 'M30 5 L42 2 Q50 9 58 2 L70 5 L95 22 L84 40 L74 34 L74 88 L26 88 L26 34 L16 40 L5 22 Z';
-  const dis = st === 'righe' ? [0, 1, 2, 3, 4].map((k) => `<rect x="${14 + k * 16}" width="8" height="90" fill="${c2}"/>`).join('') : st === 'banda' ? `<path d="M0 26 L100 66 L100 86 L0 46Z" fill="${c2}"/>` : st === 'meta' ? `<rect x="50" width="50" height="90" fill="${c2}"/>` : st === 'fasce' ? [0, 1, 2, 3].map((k) => `<rect y="${14 + k * 20}" width="100" height="10" fill="${c2}"/>`).join('') : st === 'scacchi' ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].filter((k) => ((k % 5) + Math.floor(k / 5)) & 1).map((k) => `<rect x="${(k % 5) * 20}" y="${Math.floor(k / 5) * 18}" width="20" height="18" fill="${c2}"/>`).join('') : st === 'v' ? `<path d="M0 20 L50 52 L100 20 L100 34 L50 66 L0 34Z" fill="${c2}"/>` : '';
+  const id = 'mg' + hash(c1 + c2 + st), f = 'M30 5 L42 2 Q50 9 58 2 L70 5 L95 22 L84 40 L74 34 L74 88 L26 88 L26 34 L16 40 L5 22 Z', u = tramaMaglia(c1, c2, st);
+  const dis = u ? `<image href="${u}" width="100" height="90"/>` : '';
   return `<svg viewBox="0 0 100 90" class="maglia"><defs><clipPath id="${id}"><path d="${f}"/></clipPath></defs><g clip-path="url(#${id})"><rect width="100" height="90" fill="${c1}"/>${dis}<path d="M42 2 Q50 13 58 2" fill="none" stroke="${c2}" stroke-width="5"/><rect x="0" y="0" width="16" height="40" fill="${c2}" opacity=".9" transform="rotate(-34 5 22)"/><rect x="84" y="0" width="16" height="40" fill="${c2}" opacity=".9" transform="rotate(34 95 22)"/></g><path d="${f}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/></svg>`;
 }
 const COPPA = '<svg viewBox="0 0 64 64" class="icona"><path d="M18 8h28v10a14 14 0 0 1-28 0z" fill="currentColor"/><path d="M18 12H9a9 9 0 0 0 11 13M46 12h9a9 9 0 0 1-11 13" fill="none" stroke="currentColor" stroke-width="4"/><rect x="29" y="31" width="6" height="12" fill="currentColor"/><path d="M20 56h24l-3-12H23z" fill="currentColor"/></svg>';
