@@ -109,8 +109,11 @@ function partita([seme, diffi, casa, ospiti]) {
 srv.listen(0, async () => {
   const br = await chromium.launch(), pg = await br.newPage(), errori = [];
   pg.on('pageerror', (e) => errori.push(String(e)));
-  await pg.goto(`http://localhost:${srv.address().port}/`);
+  await pg.goto(`http://localhost:${srv.address().port}/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
   await pg.waitForFunction(() => window.__g && !document.querySelector('#carica'), null, { timeout: 90000 });
+  // il ciclo dei fotogrammi del gioco si ferma: tra una partita e l'altra disegnerebbe a tempo vero e le animazioni
+  // (che decidono anche alcuni tempi del gioco) partirebbero ogni volta da un punto diverso
+  await pg.evaluate(() => new Promise((ok) => { window.requestAnimationFrame = () => 0; setTimeout(ok, 100); }));
   const partite = [], t0 = Date.now();
   for (let k = 0; k < N; k++) {
     const r = await pg.evaluate(partita, [SEME + k, DIFFI, (k * 3) % 16, (k * 5 + 7) % 16]);
