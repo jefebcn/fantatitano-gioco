@@ -414,7 +414,7 @@ const ACCONCIATURE = [null, 'Hair_Buzzed', 'Hair_SimpleParted', 'Hair_Buzzed', '
 const SCARPINI = [['#16161a', '#F3F3F3'], ['#F3F3F3', '#16161a'], ['#D9F51F', '#16161a'], ['#FF5A1F', '#F3F3F3'], ['#1E6FB5', '#F3F3F3'], ['#E91E8C', '#16161a'], ['#16161a', '#D9F51F'], ['#C9CDD6', '#E8542A']];
 /** La texture di una divisa: si disegna una volta per partita e la usano tutti quelli con la stessa maglia. */
 function divisaTex(kit) {
-  const key = [kit.shirt, kit.shorts, kit.socks, kit.c2, kit.stile, kit.gloves, kit.banda].join('|'); let t = MODEL.divise.get(key);
+  const key = [kit.shirt, kit.shorts, kit.socks, kit.c2, kit.stile, kit.gloves, kit.banda, kit.colletto, kit.raglan].join('|'); let t = MODEL.divise.get(key);
   if (!t) { t = new T.CanvasTexture(creaDivisa(MODEL.maschera, MODEL.pelle, kit)); t.flipY = false; t.colorSpace = T.SRGBColorSpace; t.anisotropy = 8; MODEL.divise.set(key, t); }
   return t;
 }
@@ -561,12 +561,15 @@ const hashStr = (s) => { let h = 7; for (const c of String(s)) h = (h * 31 + c.c
  * poi la seconda (secondo colore), poi bianca, scura e alcune terze maglie: tengono la prima che si distingue bene da
  * quella di casa (o la più lontana). Poi l'arbitro, lontano da tutte e due, e i portieri, lontani da tutti.
  */
+/** Colletto e maniche di un club: quelli scelti, altrimenti sempre gli stessi per club (dal nome). */
+function formaMaglia(c) { return { colletto: c.col || ['giro', 'v', 'polo', 'giro', 'v'][hashStr(c.id || c.name) % 5], raglan: c.rag ?? hashStr((c.id || c.name) + 'r') % 4 === 0 }; }
 function pickKits(h, a) {
   const BIANCO = '#F3F3F3', NERO = '#16161a', SOGLIA = .42;
   const ink = (c) => (lum(c) > .5 ? '#111' : '#fff');
-  const prima = (c) => { const due = cdist(c.c1, c.c2) < .2 ? (lum(c.c1) > .5 ? NERO : '#FFFFFF') : c.c2; return { shirt: c.c1, shorts: due, socks: c.c1, sleeve: c.c1, ink: ink(c.c1), c2: due, stile: c.st || null }; };
+  const forma = formaMaglia;
+  const prima = (c) => { const due = cdist(c.c1, c.c2) < .2 ? (lum(c.c1) > .5 ? NERO : '#FFFFFF') : c.c2; return { shirt: c.c1, shorts: due, socks: c.c1, sleeve: c.c1, ink: ink(c.c1), c2: due, stile: c.st || null, ...forma(c) }; };
   const kh0 = prima(h), da = prima(a), sa = ['fianchi', 'v', 'spalle', 'chevron', 'maniche', 'petto', 'pennellata', null][hashStr(a.id || a.name) % 8]; // disegno della seconda maglia, sempre lo stesso per club
-  const seconde = [da, { ...da, shirt: da.c2, sleeve: da.c2, socks: da.c2, shorts: a.c1, c2: a.c1, stile: sa }];
+  const seconde = [da, { ...da, shirt: da.c2, sleeve: da.c2, socks: da.c2, shorts: a.c1, c2: a.c1, stile: sa, colletto: da.colletto === 'polo' ? 'v' : 'polo' }];
   for (const [col, c2] of [[BIANCO, a.c1], [NERO, a.c1], ['#8A1538', BIANCO], ['#F2C230', NERO], ['#0E7C66', BIANCO], ['#1D2A5C', BIANCO]]) seconde.push({ shirt: col, sleeve: col, socks: col, shorts: cdist(c2, col) > .3 ? c2 : col, c2: cdist(c2, col) > .3 ? c2 : (lum(col) > .5 ? NERO : BIANCO), stile: col === BIANCO || col === NERO ? sa : null });
   for (const k of seconde) k.ink = ink(k.shirt);
   // ogni prova con i pantaloncini già sistemati (quelli dell'una non devono sembrare la maglia dell'altra), poi la distanza
@@ -575,7 +578,7 @@ function pickKits(h, a) {
   // l'arbitro: maglia lontana dalle due squadre, pantaloncini e calzettoni neri
   const vicino = (c, ks) => Math.min(...ks.map((k) => Math.min(cdist(c, k.shirt), cdist(c, misto(k)))));
   const arbC = ['#F2E21B', '#FF5A1F', '#E91E8C', '#16161a', '#19D3B1', '#3FA9F5', '#9B5DE5', '#2E7D32'].sort((p, q) => vicino(q, [kh, ka]) - vicino(p, [kh, ka]))[0];
-  const arb = { shirt: arbC, shorts: NERO, socks: NERO, sleeve: arbC, boots: NERO, suola: NERO, ink: '#111', c2: NERO, stile: null, banda: arbC };
+  const arb = { shirt: arbC, shorts: NERO, socks: NERO, sleeve: arbC, boots: NERO, suola: NERO, ink: '#111', c2: NERO, stile: null, banda: arbC, colletto: 'polo' };
   // i portieri: colori accesi lontani da tutte le maglie in campo, compreso l'altro portiere; maniche lunghe e guanti
   const gk = (altri) => {
     const c = ['#FF7A1A', '#19D3B1', '#E91E8C', '#111111', '#F2E21B', '#7B2FF7', '#3FD45A', '#F3F3F3'].sort((p, q) => vicino(q, altri) - vicino(p, altri))[0], scura = '#' + new T.Color(c).multiplyScalar(.55).getHexString();
@@ -2156,9 +2159,9 @@ const forzaClub = (c) => clamp(Math.round((c.xi.reduce((s, x) => s + ovr(x[1], x
 /** Mette sul posto della SM Academy U22 il club dell'utente (nome, sigla, colori, stemma), o la rimette com'era se non c'è. */
 function applicaMio() {
   const c = club(POSTO); if (!c) return;
-  if (!c.orig) c.orig = { name: c.name, short: c.short, c1: c.c1, c2: c.c2, st: c.st, str: c.str };
+  if (!c.orig) c.orig = { name: c.name, short: c.short, c1: c.c1, c2: c.c2, st: c.st, col: c.col, rag: c.rag, str: c.str };
   const m = K && K.club === POSTO && K.mio && K.mio.nome ? K.mio : null;
-  if (m) { Object.assign(c, { name: m.nome, short: m.sigla, c1: m.c1, c2: m.c2, st: m.stile || undefined }); c.str = forzaClub(c); IMGX[POSTO] = disegnaStemma(m, 240); IMGX[POSTO + '-mini'] = disegnaStemma(m, 96); }
+  if (m) { Object.assign(c, { name: m.nome, short: m.sigla, c1: m.c1, c2: m.c2, st: m.stile || undefined, col: m.colletto || undefined, rag: m.colletto ? !!m.raglan : undefined }); c.str = forzaClub(c); IMGX[POSTO] = disegnaStemma(m, 240); IMGX[POSTO + '-mini'] = disegnaStemma(m, 96); }
   else { Object.assign(c, c.orig); delete IMGX[POSTO]; delete IMGX[POSTO + '-mini']; }
   stemmi3d.delete(POSTO); loadImg(img(POSTO + '-mini')).then((i) => { CREST[POSTO] = i; stemmi3d.delete(POSTO); });
 }
@@ -2179,16 +2182,24 @@ function tramaMaglia(c1, c2, st) {
   }
   x.putImageData(im, 0, 0); const u = c.toDataURL(); _maglie.set(chiave, u); return u;
 }
-function maglia(c1, c2, st) {
-  const id = 'mg' + hash(c1 + c2 + st), f = 'M30 5 L42 2 Q50 9 58 2 L70 5 L95 22 L84 40 L74 34 L74 88 L26 88 L26 34 L16 40 L5 22 Z', u = tramaMaglia(c1, c2, st);
+function maglia(c1, c2, st, colletto = 'giro', raglan = false) {
+  const id = 'mg' + hash(c1 + c2 + st + colletto + raglan), f = 'M30 5 L42 2 Q50 9 58 2 L70 5 L95 22 L84 40 L74 34 L74 88 L26 88 L26 34 L16 40 L5 22 Z', u = tramaMaglia(c1, c2, st);
   const dis = u ? `<image href="${u}" width="100" height="90"/>` : '';
-  return `<svg viewBox="0 0 100 90" class="maglia"><defs><clipPath id="${id}"><path d="${f}"/></clipPath></defs><g clip-path="url(#${id})"><rect width="100" height="90" fill="${c1}"/>${dis}<path d="M42 2 Q50 13 58 2" fill="none" stroke="${c2}" stroke-width="5"/><rect x="0" y="0" width="16" height="40" fill="${c2}" opacity=".9" transform="rotate(-34 5 22)"/><rect x="84" y="0" width="16" height="40" fill="${c2}" opacity=".9" transform="rotate(34 95 22)"/></g><path d="${f}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/></svg>`;
+  const rag = raglan ? `<path d="M42 2 L30 5 L5 22 L16 40 L26 34 Z M58 2 L70 5 L95 22 L84 40 L74 34 Z" fill="${c2}"/><path d="M42 3 L26 34 M58 3 L74 34" stroke="rgba(0,0,0,.25)" stroke-width="1"/>` : '';
+  const collo = colletto === 'v' ? `<path d="M41 2 L50 19 L59 2 Z" fill="rgba(0,0,0,.45)"/><path d="M40 1 L50 19 L60 1" fill="none" stroke="${c2}" stroke-width="4"/>`
+    : colletto === 'polo' ? `<path d="M40 1 L50 4 L60 1 L64 4 L54 14 L50 6 L46 14 L36 4 Z" fill="${c2}" stroke="rgba(0,0,0,.3)" stroke-width=".8"/><rect x="48.2" y="6" width="3.6" height="18" fill="${c2}" stroke="rgba(0,0,0,.25)" stroke-width=".6"/><circle cx="50" cy="13" r="1" fill="rgba(0,0,0,.45)"/><circle cx="50" cy="19" r="1" fill="rgba(0,0,0,.45)"/>`
+    : `<path d="M42 2 Q50 13 58 2" fill="none" stroke="${c2}" stroke-width="5"/>`;
+  // ombreggiatura: fianchi in ombra, luce al centro, qualche piega: sembra stoffa e non un disegno piatto
+  const luce = `<linearGradient id="${id}l" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".32"/><stop offset=".3" stop-color="#000" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".1"/><stop offset=".7" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".32"/></linearGradient>`;
+  const pieghe = '<path d="M33 48 Q40 56 36 70 M66 46 Q60 58 65 72 M44 80 Q50 76 57 81" fill="none" stroke="rgba(0,0,0,.12)" stroke-width="2.2" stroke-linecap="round"/>';
+  return `<svg viewBox="0 0 100 90" class="maglia"><defs><clipPath id="${id}"><path d="${f}"/></clipPath>${luce}</defs><g clip-path="url(#${id})"><rect width="100" height="90" fill="${c1}"/>${dis}${rag}<rect x="0" y="0" width="16" height="40" fill="${c2}" opacity=".9" transform="rotate(-34 5 22)"/><rect x="84" y="0" width="16" height="40" fill="${c2}" opacity=".9" transform="rotate(34 95 22)"/>${pieghe}<rect width="100" height="90" fill="url(#${id}l)"/>${collo}</g><path d="${f}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/></svg>`;
 }
 const COPPA = '<svg viewBox="0 0 64 64" class="icona"><path d="M18 8h28v10a14 14 0 0 1-28 0z" fill="currentColor"/><path d="M18 12H9a9 9 0 0 0 11 13M46 12h9a9 9 0 0 1-11 13" fill="none" stroke="currentColor" stroke-width="4"/><rect x="29" y="31" width="6" height="12" fill="currentColor"/><path d="M20 56h24l-3-12H23z" fill="currentColor"/></svg>';
 const TORRI = '<svg viewBox="0 0 64 64" class="icona"><path d="M2 60 L14 40 L22 46 L32 26 L42 46 L50 40 L62 60Z" fill="currentColor" opacity=".45"/><path d="M10 40v-14h2v-3h2v3h2v-3h2v3h2v14zM27 30V10h2V7h2v3h2V7h2v3h2v20zM44 40V26h2v-3h2v3h2v-3h2v3h2v14z" fill="currentColor"/></svg>';
 
 /* --- ingresso: il club (nome, colori, stemma) e poi il capitano. Lo stesso modulo serve a «Personalizza» dal mio club */
-const NV = { passo: 1, modifica: false, col: 0, stile: '', cap: null };
+const NV = { passo: 1, modifica: false, col: 0, stile: '', colletto: 'giro', raglan: false, cap: null };
+const COLLETTI = [['giro', 'Girocollo'], ['v', 'Scollo a V'], ['polo', 'Polo']];
 function candidatiCapitano() { // nove tra i migliori, uno per squadra: un portiere, due difensori, tre centrocampisti, tre attaccanti
   const tutti = []; for (const c of CLUBS) if (c.id !== POSTO) c.xi.forEach((x, i) => tutti.push({ c, x, i, v: ovr(x[1], x[3]) }));
   tutti.sort((a, b) => b.v - a.v || b.x[3] - a.x[3]);
@@ -2197,8 +2208,8 @@ function candidatiCapitano() { // nove tra i migliori, uno per squadra: un porti
   return out.sort((a, b) => 'PDCA'.indexOf(a.x[1]) - 'PDCA'.indexOf(b.x[1]) || b.v - a.v);
 }
 const cartaGiocatore = (t, scelto) => `<button class="cap${scelto ? ' sel' : ''}" data-cap="${t.c.id}:${t.i}"><div class="cn">${esc(t.x[0])}<small>${esc(t.c.name)}</small></div><div class="at">${attributi(t.x).map(([k, v]) => `<span><i>${k}</i><b class="${v >= 80 ? 'a' : v >= 60 ? 'b' : 'c'}">${v}</b></span>`).join('')}</div><div class="sc"><em>${t.v}</em>${mini(t.c.id)}<b>${t.x[2]}</b><u>${RUOLO[t.x[1]]}</u></div></button>`;
-function mioDaModulo() { const nome = ($('#nvClub').value.trim() || NOMI[0]).slice(0, 22), sg = ($('#nvSigla').value.trim() || sigla(nome)).slice(0, 3).toUpperCase(); return { nome, sigla: sg, c1: COLORI[NV.col][0], c2: COLORI[NV.col][1], stile: NV.stile }; }
-function anteprimaClub() { const m = mioDaModulo(); $('#nvStemma').src = disegnaStemma(m, 160); $('#nvMaglia').innerHTML = maglia(m.c1, m.c2, m.stile); for (const b of $('#nvCol').children) b.classList.toggle('on', +b.dataset.col === NV.col); for (const b of $('#nvStile').children) b.classList.toggle('on', b.dataset.stile === NV.stile); }
+function mioDaModulo() { const nome = ($('#nvClub').value.trim() || NOMI[0]).slice(0, 22), sg = ($('#nvSigla').value.trim() || sigla(nome)).slice(0, 3).toUpperCase(); return { nome, sigla: sg, c1: COLORI[NV.col][0], c2: COLORI[NV.col][1], stile: NV.stile, colletto: NV.colletto, raglan: NV.raglan }; }
+function anteprimaClub() { const m = mioDaModulo(); $('#nvStemma').src = disegnaStemma(m, 160); $('#nvMaglia').innerHTML = maglia(m.c1, m.c2, m.stile, m.colletto, m.raglan); for (const b of $('#nvCol').children) b.classList.toggle('on', +b.dataset.col === NV.col); for (const b of $('#nvStile').children) b.classList.toggle('on', b.dataset.stile === NV.stile); for (const b of $('#nvColletto').children) b.classList.toggle('on', b.dataset.colletto ? b.dataset.colletto === NV.colletto : NV.raglan); }
 function drawNuovo() {
   const el = $('#nuovo');
   if (NV.passo === 1) {
@@ -2208,10 +2219,11 @@ function drawNuovo() {
         <label>Nome del club<span class="riga"><input id="nvClub" maxlength="22" autocomplete="off" placeholder="${NOMI[0]}"><button id="nvDado" aria-label="Nome a caso">🎲</button></span></label>
         <label>Sigla<input id="nvSigla" maxlength="3" autocomplete="off" placeholder="TIT"></label>
         <div class="lbl">Colori</div><div class="col" id="nvCol">${COLORI.map(([a, b], i) => `<button data-col="${i}" style="background:linear-gradient(135deg,${a} 50%,${b} 50%)"></button>`).join('')}</div>
-        <div class="lbl">Disegno</div><div class="seg" id="nvStile">${STILI.map(([k, n]) => `<button data-stile="${k}">${n}</button>`).join('')}</div></div>
+        <div class="lbl">Disegno</div><div class="seg" id="nvStile">${STILI.map(([k, n]) => `<button data-stile="${k}">${n}</button>`).join('')}</div>
+        <div class="lbl">Colletto e maniche</div><div class="seg" id="nvColletto">${COLLETTI.map(([k, n]) => `<button data-colletto="${k}">${n}</button>`).join('')}<button data-raglan="1">Maniche raglan</button></div></div>
       <div class="ante"><img id="nvStemma" alt=""><div id="nvMaglia"></div></div></div>
       <button class="btn" id="nvAvanti">${NV.modifica ? 'Salva' : 'Avanti: il capitano'}</button>`;
-    if (m) { $('#nvClub').value = m.nome; $('#nvSigla').value = m.sigla; NV.col = Math.max(0, COLORI.findIndex(([a, b]) => a === m.c1 && b === m.c2)); NV.stile = m.stile || ''; }
+    if (m) { $('#nvClub').value = m.nome; $('#nvSigla').value = m.sigla; NV.col = Math.max(0, COLORI.findIndex(([a, b]) => a === m.c1 && b === m.c2)); NV.stile = m.stile || ''; NV.colletto = m.colletto || 'giro'; NV.raglan = !!m.raglan; }
     anteprimaClub();
   } else {
     const cand = candidatiCapitano();
@@ -2219,13 +2231,15 @@ function drawNuovo() {
       <button class="btn ingaggia" id="nvAvanti" ${NV.cap ? '' : 'disabled'}>${NV.cap ? `Ingaggia ${esc(club(NV.cap.split(':')[0]).xi[+NV.cap.split(':')[1]][0])}` : 'Tocca un giocatore'}</button>`;
   }
 }
-function apriNuovo(modifica = false) { Object.assign(NV, { passo: 1, modifica, cap: null }); if (!modifica) { NV.col = 0; NV.stile = ''; } drawNuovo(); show('#nuovo'); }
+function apriNuovo(modifica = false) { Object.assign(NV, { passo: 1, modifica, cap: null }); if (!modifica) { NV.col = 0; NV.stile = ''; NV.colletto = 'giro'; NV.raglan = false; } drawNuovo(); show('#nuovo'); }
 function tapNuovo(e) {
   const b = e.target.closest('button'); if (!b) return;
   if (b.id === 'nvInd') { if (NV.passo === 2) { NV.passo = 1; drawNuovo(); return $('#nvClub') && ($('#nvClub').value = NV.club || '', $('#nvSigla').value = NV.sigla || '', $('#nvNome') && ($('#nvNome').value = NV.nome || ''), anteprimaClub()); } return NV.modifica ? panClubMio() : show('#home'); }
   if (b.id === 'nvDado') { const n = NOMI[(NOMI.indexOf($('#nvClub').value) + 1 + Math.floor(rnd(NOMI.length - 1))) % NOMI.length]; $('#nvClub').value = n; $('#nvSigla').value = sigla(n); return anteprimaClub(); }
   if (b.dataset.col) { NV.col = +b.dataset.col; return anteprimaClub(); }
   if (b.dataset.stile !== undefined) { NV.stile = b.dataset.stile; return anteprimaClub(); }
+  if (b.dataset.colletto) { NV.colletto = b.dataset.colletto; return anteprimaClub(); }
+  if (b.dataset.raglan) { NV.raglan = !NV.raglan; return anteprimaClub(); }
   if (b.dataset.cap) { NV.cap = b.dataset.cap; return drawNuovo(); }
   if (b.id !== 'nvAvanti') return;
   if (NV.passo === 1) {
@@ -2241,7 +2255,7 @@ function tapNuovo(e) {
 /* --- la dashboard */
 function drawHub() {
   const me = club(K.club), p = CAR.prossima(K), tab = CAR.classifica(K, CLUBS), pos = tab.findIndex((r) => r.id === K.club), oggi = new Date(), st = CAR.statoSfide(K, oggi);
-  const kit = maglia(me.c1, me.c2, me.st);
+  const fm = formaMaglia(me), kit = maglia(me.c1, me.c2, me.st, fm.colletto, fm.raglan);
   $('#hGem').innerHTML = `<i>◆</i>${mon(K.gemme)}`; $('#hMon').innerHTML = `<i>●</i>${mon(K.monete)}`; $('#hNome').textContent = K.nome; $('#hClub').innerHTML = `${esc(me.name)} ${stelle(me.str)}`; $('#hStemma').src = img(me.id + '-mini');
   $('#hSettT').textContent = fmtTempo(CAR.fineSettimana(oggi) - oggi); $('#hSettP').textContent = `${st.conti.w[0]}/${st.conti.w[1]}`;
   $('#hPremiN').textContent = st.daRiscuotere || ''; $('#hPremi').classList.toggle('pieno', st.daRiscuotere > 0);

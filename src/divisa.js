@@ -48,7 +48,7 @@ const grana = (i, j) => { const s = Math.sin(i * 12.9898 + j * 78.233) * 43758.5
 /**
  * @param {ImageData} maschera  R = zona x 28, G = posizione sinistra-destra (-0,5..0,5 m), B = altezza (0..1,9 m)
  * @param {ImageData} pelle     la texture del corpo, stessa misura
- * @param {object} kit          { shirt, shorts, socks, c2, stile, gloves, banda }
+ * @param {object} kit          { shirt, shorts, socks, c2, stile, gloves, banda, colletto ('giro' | 'v' | 'polo'), raglan }
  * @returns {HTMLCanvasElement}
  */
 export function creaDivisa(maschera, pelle, kit) {
@@ -56,11 +56,21 @@ export function creaDivisa(maschera, pelle, kit) {
   const x = c.getContext('2d'), out = x.createImageData(N, N), o = out.data, m = maschera.data, s = pelle.data, M = MISURE;
   const maglia = rgb(kit.shirt), due = rgb(kit.c2 || kit.shorts), corti = rgb(kit.shorts), calze = rgb(kit.socks), guanti = kit.gloves ? rgb(kit.gloves) : null;
   const bandaCorti = kit.banda ? rgb(kit.banda) : due, orlo = scuro(maglia, 0.8), disegno = DISEGNI[kit.stile] || null;
+  const colletto = kit.colletto || 'giro', raglan = !!kit.raglan, dentro = scuro(maglia, 0.5), cucitura = scuro(due, 0.7), bottone = scuro(due, 0.55);
   for (let i = 0; i < o.length; i += 4) {
-    const z = Math.round(m[i] / 28), px = m[i + 1] / 255 - 0.5, h = m[i + 2] / 255 * 1.9, ax = Math.abs(px); let col = null, tessuto = true;
+    const z = Math.floor(m[i] / 28), davanti = m[i] % 28 >= 7, px = m[i + 1] / 255 - 0.5, h = m[i + 2] / 255 * 1.9, ax = Math.abs(px); let col = null, tessuto = true;
     if (z === ZONA.MAGLIA) {
       if (h < M.orloMaglia && ax < 0.19) col = orlo; // l'orlo in fondo alla maglia
       else { const k = disegno ? disegno(px, h) : 0; col = k <= 0 ? maglia : k >= 1 ? due : [maglia[0] + (due[0] - maglia[0]) * k, maglia[1] + (due[1] - maglia[1]) * k, maglia[2] + (due[2] - maglia[2]) * k]; }
+      // maniche raglan: il secondo colore parte dal colletto e scende in diagonale fino all'ascella, con la cucitura
+      if (raglan) { const lim = h > M.braccio ? 0.19 - (h - M.braccio) / 0.17 * 0.11 : 0.19; if (ax > lim + 0.004) col = due; else if (ax > lim - 0.004) col = cucitura; }
+      // scollo a V (solo davanti): il bordino nel secondo colore e, dentro, il rovescio della maglia in ombra
+      if (colletto === 'v' && davanti && ax < 0.085 && h > 1.33) { const l = 1.355 + 1.5 * ax; if (Math.abs(h - l) < 0.013) col = due; else if (h > l) col = dentro; }
+      // polo (solo davanti): l'abbottonatura con due bottoni e le punte del colletto che scendono sul petto
+      if (colletto === 'polo' && davanti && h > 1.34) {
+        if (ax < 0.017) col = (ax * ax + (h - 1.42) ** 2 < 4e-5 || ax * ax + (h - 1.38) ** 2 < 4e-5) ? bottone : ax > 0.013 ? cucitura : due;
+        else if (ax < 0.08 && h > 1.452 - ax * 0.55) col = due;
+      }
     } else if (z === ZONA.COLLETTO || z === ZONA.BORDO) col = due;
     else if (z === ZONA.PANTALONCINI) col = h < M.orloCorti ? scuro(corti, 0.78) : ax > M.bandaCorti && h > 0.75 ? bandaCorti : corti; // orlo e banda laterale
     else if (z === ZONA.CALZETTONI) col = h > M.risvolto ? due : h > M.risvolto - 0.02 ? scuro(calze, 0.75) : calze; // il risvolto in alto, con una cucitura
@@ -86,7 +96,7 @@ export function creaDivisa(maschera, pelle, kit) {
 export function creaZone(maschera) {
   const N = maschera.width, m = maschera.data, d = new Uint8Array(N * N * 4), M = MISURE;
   for (let i = 0; i < d.length; i += 4) {
-    const z = Math.round(m[i] / 28), px = m[i + 1] / 255 - 0.5, h = m[i + 2] / 255 * 1.9;
+    const z = Math.floor(m[i] / 28), px = m[i + 1] / 255 - 0.5, h = m[i + 2] / 255 * 1.9;
     d[i] = z === ZONA.PELLE ? 255 : z === ZONA.AVAMBRACCIO || z === ZONA.MANO ? 128 : 0;
     d[i + 1] = z === ZONA.SCARPE ? (h < M.suola ? 128 : 255) : 0;
     d[i + 2] = z === ZONA.PANTALONCINI ? 255 : z === ZONA.CALZETTONI ? 150 : 0;
@@ -109,7 +119,7 @@ export function creaRilievo(maschera) {
   const N = maschera.width, m = maschera.data, H = new Float32Array(N * N), X = new Float32Array(N * N), Y = new Float32Array(N * N), Z = new Uint8Array(N * N), M = MISURE;
   const ruvido = new Uint8Array(N * N * 4), finestra = (v, a, b, s) => piu((v - a) / s) * piu((b - v) / s);
   for (let p = 0; p < N * N; p++) {
-    const i = p * 4, z = Math.round(m[i] / 28), x = m[i + 1] / 255 - 0.5, h = m[i + 2] / 255 * 1.9, ax = Math.abs(x), u = p % N, v = (p / N) | 0;
+    const i = p * 4, z = Math.floor(m[i] / 28), x = m[i + 1] / 255 - 0.5, h = m[i + 2] / 255 * 1.9, ax = Math.abs(x), u = p % N, v = (p / N) | 0;
     X[p] = x; Y[p] = h; Z[p] = z; let a = 0, r = 0.82;
     const trama = (((u >> 1) + (v >> 1)) & 1) * 0.12; // la maglia fine del tessuto tecnico
     if (z === ZONA.MAGLIA) {

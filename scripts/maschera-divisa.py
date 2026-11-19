@@ -5,7 +5,8 @@ Per ogni punto della texture del corpo dice che cos'è: pelle, maglia, pantalonc
 avambraccio, mano. Lo decide dalla posizione 3D di quel punto nella posa a T (non triangolo per triangolo),
 così gli orli vengono dritti. Il gioco poi colora le zone coi colori della squadra (src/divisa.js).
 
-Uscite: public/img/divisa-maschera.png  (R = zona x 28, G = posizione sinistra-destra su 1 m, B = altezza su 1,9 m: servono per righe e fasce)
+Uscite: public/img/divisa-maschera.png  (R = zona x 28, +14 se il punto è sul davanti del corpo; G = posizione sinistra-destra su 1 m,
+        B = altezza su 1,9 m: servono per righe e fasce; il davanti serve per lo scollo a V e la polo)
         public/img/pelle.webp, public/img/occhi.webp
 Uso: python3 scripts/maschera-divisa.py [lato in pixel, 512]
 """
@@ -76,7 +77,8 @@ zona[gamba & (y > knee + (hip - knee) * .34)] = SHORTS
 zona[gamba & (y <= knee - (knee - ank) * .16) & (y > ank + .035)] = SOCKS
 zona[gamba & (y <= ank + .035)] = BOOTS
 zona[np.isnan(x)] = SKIN
-out = np.zeros((N, N, 3), np.uint8); out[..., 0] = zona * 28
+davanti = np.nan_to_num(z, nan=-9) > nz + .01  # davanti al collo (il collo sta più indietro del centro del busto)
+out = np.zeros((N, N, 3), np.uint8); out[..., 0] = zona * 28 + davanti * 14
 out[..., 1] = np.clip((np.nan_to_num(xyz[..., 0]) + .5) * 255, 0, 255); out[..., 2] = np.clip(np.nan_to_num(y) / 1.9 * 255, 0, 255)
 Image.fromarray(out).save('public/img/divisa-maschera.png', optimize=True)
 Image.open(f'{SRC}/T_Superhero_Male_Ligh.png').convert('RGB').resize((N, N), Image.LANCZOS).save('public/img/pelle.webp', quality=88)

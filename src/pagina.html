@@ -96,9 +96,10 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 .nv label,.nv .lbl{display:flex;flex-direction:column;gap:3px;font:900 10px Lato;letter-spacing:.1em;text-transform:uppercase;color:var(--lime)}
 .nv input{font:900 15px Lato;padding:7px 10px;border-radius:9px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#111;width:100%}
 .nv .riga{display:flex;gap:6px}.nv .riga button{flex:none;width:40px;border-radius:9px;background:rgba(255,255,255,.12);font-size:18px}
-.nv .lbl,.nv .col,.nv #nvStile{grid-column:1/-1}.nv .lbl{margin-top:2px}
+.nv .lbl,.nv .col,.nv #nvStile,.nv #nvColletto{grid-column:1/-1}.nv .lbl{margin-top:2px}
 .nv .col{display:flex;gap:7px;flex-wrap:wrap}.nv .col button{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.3)}.nv .col button.on{border-color:var(--lime);box-shadow:0 0 0 2px var(--lime)}
-.nv #nvStile{justify-content:flex-start}
+.nv #nvStile,.nv #nvColletto{justify-content:flex-start}
+.basso .nv #nvStile button,.basso .nv #nvColletto button{padding:5px 10px;font-size:11px}.basso .nv #nvStile,.basso .nv #nvColletto{gap:4px}.bassissimo .nv #nvStile button,.bassissimo .nv #nvColletto button{padding:4px 8px;font-size:10px}.bassissimo .nv .lbl{margin-top:0}
 .nv .ante{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none}.nv .ante img{height:min(calc(var(--vh)*36),160px);width:auto}.nv .ante .maglia{height:min(calc(var(--vh)*20),90px);width:auto}
 #nuovo .btn.ingaggia{position:fixed;top:5px;right:16px;margin:0;padding:6px 14px;font-size:13px;z-index:3;max-width:40%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#nuovo .btn.ingaggia:disabled{opacity:.55}
 .caps{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:min(980px,100%)}
