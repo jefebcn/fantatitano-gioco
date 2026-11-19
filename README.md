@@ -193,6 +193,12 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   `node scripts/simula.cjs 64` dopo `npm run build`. Con la squadra di casa che gioca da sola, oggi
   finisce in media 2,4-0,5 a facile, 1,0-0,8 a normale, 0,6-1,2 a difficile, con uno o due falli,
   due cross e meno di un angolo a partita, e un rigore ogni cinque partite circa.
+- **IA col pallone e pressing** (`TENUTA` e `PRESSING` in `src/game.js`). Il portatore passa solo se il compagno sta meglio di
+  lui di una soglia (regola presa da GameplayFootball, `elizacontroller.cpp`), altrimenti conduce. Dopo lo stop aspetta 1-2 s
+  e passa di prima solo verso chi è davvero libero; negli ultimi 28 metri decide in fretta. Senza palla si pressa fino a
+  18 m oltre la metà campo, e il secondo uomo raddoppia quando il primo è sul portatore (come Kickoff di Yuka). Su 8
+  partite a normale, prima e dopo: tenuta palla 0,43→0,94 s, contrasti vinti 0,25→6,8, falli 0→0,8, portatore libero
+  55→33%, tiri 8,9→8,8. Si misura con `npm run partite` (le misure fuori obiettivo sono segnate con ✗).
 - **Colori delle maglie** da `src/data.js` dell'app; il secondo colore è scelto a occhio dagli
   stemmi (`scripts/genera-dati.py`). Qualche divisa non combacia col suo stemma.
 - **Nomi dei calciatori**: sono quelli del listone dell'app. Verificare che l'accordo con
