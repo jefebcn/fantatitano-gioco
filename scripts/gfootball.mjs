@@ -98,7 +98,12 @@ const ELENCO = {
   tocco_scatto: 'ballcontrol/sprint/000.anim', tocco_scatto_sx: 'ballcontrol/sprint/000.anim:specchio',
   stop: 'trap/walk/000_D000_IB000_short.anim', stop_sx: 'trap/walk/000_D000_IB000_short.anim:specchio',
   stop_fermo: 'trap/idle/000_IB000.anim', stop_fermo_sx: 'trap/idle/000_IB000.anim:specchio',
+  passa_fermo: 'pass/idle/000.anim', passa: 'pass/walk/000.anim', passa_scatto: 'pass/sprint/000.anim',
+  calcia_fermo: 'shot/idle/020.anim', calcia: 'shot/sprint/010_short_bit_longer.anim',
+  lancia_fermo: 'highpass/idle/000_long.anim', lancia: 'highpass/walk/000_long.anim',
 };
+// passaggi, tiri e lanci anche col sinistro
+for (const k of ['passa_fermo', 'passa', 'passa_scatto', 'calcia_fermo', 'calcia', 'lancia_fermo', 'lancia']) ELENCO[`${k}_sx`] = `${ELENCO[k]}:specchio`;
 const SCAMBIO = Object.fromEntries(Object.keys(GF).map((n) => [n, n.startsWith('left_') ? n.replace('left_', 'right_') : n.startsWith('right_') ? n.replace('right_', 'left_') : n]));
 const specchia = (W) => { const M = {}; for (const n in W) { const q = W[SCAMBIO[n]]; M[n] = new T.Quaternion(q.x, -q.y, -q.z, q.w); } return M; };
 

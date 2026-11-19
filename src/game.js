@@ -243,6 +243,27 @@ function prevediTocco(o, b) {
   const anticipo = i.tocco / clamp(vr / i.v, .6, 1.5);
   if (fra <= anticipo && fra > anticipo - .05) gesto(o, nome, fra);
 }
+/**
+ * Passaggi, tiri e lanci col caricamento: parte il gesto e la palla parte quando il piede la colpisce (fra CARICO secondi,
+ * il tempo dell'ultimo tratto della calciata). Il piede è quello giusto per la direzione: verso sinistra il destro, verso
+ * destra il sinistro. Se nel frattempo il giocatore perde palla, il calcio non parte. Fuori dal gioco aperto, o se il gesto
+ * non si può fare, il calcio parte subito come prima.
+ */
+const CARICO = { passa: .1, calcia: .14, lancia: .14 };
+// il tiro potente resta quello di Mixamo, più ampio: il destro colpisce a 0,067 s dall'inizio della clip (misurato sul piede)
+GESTI.tiro = GESTI.tiro || { v: 0, tocco: .067, durata: .733 };
+function prepara(p, tipo, bx, bz, calcio, forte = false) {
+  if (G.state !== 'play' || G.ball.owner !== p || !p.fig.skinned || p.carica) return calcio();
+  const v = hyp(p.vx, p.vz) / (p.fig.alt || 1), sx = (bx - p.x) * Math.cos(p.dir) - (bz - p.z) * Math.sin(p.dir) < 0; // il bersaglio è alla sua destra
+  const variante = tipo === 'passa' ? (v < 1.5 ? '_fermo' : v > 4.8 ? '_scatto' : '') : v < (tipo === 'calcia' ? 1.2 : 1.5) ? '_fermo' : '';
+  const nome = tipo === 'calcia' && forte && hasFx('tiro') && v >= 1.2 ? 'tiro' : tipo + variante + (sx ? '_sx' : ''), carico = nome === 'tiro' ? GESTI.tiro.tocco : CARICO[tipo];
+  if (!gesto(p, nome, carico)) return calcio();
+  p.carica = { t: carico, calcio };
+}
+/** A ogni passo di fisica: il calcio caricato parte quando il piede arriva sulla palla. */
+function calciCaricati(dt) {
+  for (const p of all()) if (p.carica && (p.carica.t -= dt) <= 0) { const c = p.carica.calcio; p.carica = null; if (G.ball.owner === p && G.state === 'play') c(); }
+}
 /** Ricezione: il compagno a cui arriva il passaggio (o chi sta per prendere una palla vagante) fa lo stop, col piede dalla parte della palla. */
 function prevediStop(b) {
   const sp = hyp(b.vx, b.vz); if (b.owner || b.y > .6 || sp > 19 || G.state !== 'play') return;
@@ -683,7 +704,7 @@ function kick(p, vx, vy, vz, anim = 'passaggio', c = 0, tp = 0) {
   // tiro forte: si alza un po' d'erba
   if (hyp(vx, vz) > 23) { const v = hyp(vx, vz); PART.emetti('erba', o.x, .05, o.z, 6, 3, vx / v * .6, vz / v * .6); PART.emetti('polvere', o.x, .1, o.z, 3, 1.5, 0, 0); } p.st = 'kick'; p.stT = 0; G.lastTouch = G.lastKicker = p; AU.calcio(hyp(vx, vz), anim === 'tiro' || (p.fkShot && hyp(vx, vz) > 20) ? 'tiro' : anim);
   if (p.i === 0 && p.fx === 'rinvio') { b.y = 2.3; b.vy = Math.max(b.vy, 1.2); } // rinvio con le mani: la palla parte dall'alto
-  else azione(p, anim);
+  else if (!(GESTI[p.fx] && /^(passa|calcia|lancia|tiro)/.test(p.fx))) azione(p, anim); // col caricamento il gesto è già al punto del contatto
   const a = Math.atan2(vx, vz); p.dir = a;
   markOffside(p);
 }
@@ -984,10 +1005,10 @@ const powPer = (tipo, d) => clamp((d - DIST[tipo][0]) / DIST[tipo][1], 0, 1);
 function pressA(down = true) {
   if (G.state !== 'play' || G.auto || G.penWait > 0) { G.charge = -1; return; } const c = G.ctrl, b = G.ball; if (!c) return;
   if (down) { if (comandaPortiere('mano')) return; if (b.owner === c) caricaInizio('pass'); else switchCtrl(); return; }
-  if (G.charge < 0 || G.caricaTipo !== 'pass') return; const t = G.charge; G.charge = -1; if (b.owner !== c) return;
+  if (G.charge < 0 || G.caricaTipo !== 'pass') return; const t = G.charge; G.charge = -1; if (b.owner !== c || c.carica) return;
   const [ix, iz] = direzioneUtente(c), pow = t < CARICA.tocco ? null : potenza();
   const dd = pow === null ? undefined : distDa('pass', pow), m = bestPass(c, ix, iz, dd) || bestPass(c, Math.sin(c.dir), Math.cos(c.dir), dd) || bestPass(c); // nessuno nella direzione: chi è davanti, poi il migliore
-  if (m) pass(c, m, pow);
+  if (m) prepara(c, 'passa', m.x, m.z, () => pass(c, m, pow));
 }
 // Cross: traversone se c'è un compagno in area, altrimenti lancio lungo nella direzione della levetta. La potenza decide
 // quanto lontano: poca sul primo palo, tanta sul secondo (o un lancio più lungo)
@@ -1004,19 +1025,19 @@ function pressD(down = true) {
   if (G.state !== 'play' || G.auto || G.penWait > 0) { G.charge = -1; return; } const c = G.ctrl, b = G.ball; if (down && comandaPortiere('piede')) return; if (!c || b.owner !== c) return;
   if (down) return caricaInizio('cross');
   if (G.charge < 0 || G.caricaTipo !== 'cross') return; const t = G.charge; G.charge = -1;
-  const pow = t < CARICA.tocco ? null : potenza(), { m, tipo } = bersaglioCross(c, pow); if (m) cross(c, m, pow, tipo);
+  if (c.carica) return; const pow = t < CARICA.tocco ? null : potenza(), { m, tipo } = bersaglioCross(c, pow); if (m) prepara(c, 'lancia', m.x, m.z, () => cross(c, m, pow, tipo));
 }
 function pressB(down) {
   if (G.state !== 'play' || G.auto) { G.charge = -1; return; } const c = G.ctrl, b = G.ball; if (!c) return;
   if (down) { if (b.owner === c) caricaInizio('tiro'); else slide(c, true); }
-  else if (G.charge >= 0 && G.caricaTipo === 'tiro') { if (b.owner === c) userShoot(clamp(potenza(), .18, 1)); G.charge = -1; }
+  else if (G.charge >= 0 && G.caricaTipo === 'tiro') { if (b.owner === c && !c.carica) userShoot(clamp(potenza(), .18, 1)); G.charge = -1; }
 }
 // la carica arriva in fondo: parte da sola
 function rilascia() { if (G.caricaTipo === 'pass') pressA(false); else if (G.caricaTipo === 'cross') pressD(false); else pressB(false); }
 function userShoot(pow) {
   const c = G.ctrl, [, iz] = inputWorld(); const gk = c.team.opp.players[0];
   const tz = Math.abs(iz) > .25 ? iz * GH * 1.06 : (gk.z > 0 ? -1 : 1) * GH * .68;
-  shoot(c, tz, pow, .9);
+  prepara(c, 'calcia', c.team.side * HL, tz, () => shoot(c, tz, pow, .9), pow > .65);
 }
 
 /* ------------------------------------------------------------------ IA */
@@ -1275,6 +1296,7 @@ function conduzione(p, pressato) {
   return best || { ux: s, uz: 0, sc: 0 };
 }
 function ownerThink(p, dt) {
+  if (p.carica) return; // sta già calciando
   const t = p.team, s = t.side, D = diffOf(p);
   if (p.fkShot) { // punizione diretta: fermo sul pallone, poi tiro sopra la barriera
     p.tx = p.x; p.tz = p.z; p.thinkT -= dt; if (p.thinkT > 0) return; p.fkShot = false;
@@ -1293,12 +1315,12 @@ function ownerThink(p, dt) {
   p.conduci = conduzione(p, press < .6);
   const tiro = valoreTiro(p), errore = D.err * (1 + (1 - clamp(press, 0, 1)) * .5);
   // si tira con una buona occasione, prima se pressati, sempre da vicino; e ogni tanto anche da fuori
-  if (tiro.q > .22 || (tiro.q > .12 && press < .7) || (tiro.q > .05 && tiro.d < 16) || (tiro.q > .05 && tiro.d < 27 && rnd() < .3)) return shoot(p, tiro.tz, tiro.d < 13 ? rnd(.5, .68) : rnd(.68, .84), errore * 1.1);
-  if (canCross(p) && rnd() < AIR.cross * 1.4) { const m = crossTarget(p); if (m && openness(m) > 1.4) return cross(p, m); }
+  if (tiro.q > .22 || (tiro.q > .12 && press < .7) || (tiro.q > .05 && tiro.d < 16) || (tiro.q > .05 && tiro.d < 27 && rnd() < .3)) { const f = tiro.d < 13 ? rnd(.5, .68) : rnd(.68, .84); return prepara(p, 'calcia', s * HL, tiro.tz, () => shoot(p, tiro.tz, f, errore * 1.1), f > .7); }
+  if (canCross(p) && rnd() < AIR.cross * 1.4) { const m = crossTarget(p); if (m && openness(m) > 1.4) return prepara(p, 'lancia', m.x, m.z, () => cross(p, m)); }
   const m = bestPass(p), sp = bestPass.punteggio, cd = p.conduci;
   // valore del portare palla: lo spazio trovato, meno la pressione; vicino alla porta avversaria conviene giocarla
   const portare = cd.sc + (press > 1.5 ? 9 : press > 1 ? 5 : press > .6 ? 0 : -10) - (p.x * s > HL - 12 ? 6 : 0);
-  if (m && (sp > portare + 6 || (press < .45 && sp > -8))) return pass(p, m);
+  if (m && (sp > portare + 6 || (press < .45 && sp > -8))) return prepara(p, 'passa', m.x, m.z, () => pass(p, m));
 }
 /**
  * Il portiere con la palla in mano. Appena la prende decide come rimetterla in gioco: lancio con le mani a un compagno
@@ -1538,7 +1560,8 @@ function traLeMani(p) {
 }
 function moveBall(dt) {
   const b = G.ball, o = b.owner;
-  if (G.state === 'play') { if (o && o.i) prevediTocco(o, b); else if (!o) prevediStop(b); } // i gesti con la palla, a tempo col tocco
+  if (G.state === 'play') { calciCaricati(dt); if (b.owner && b.owner.i) prevediTocco(b.owner, b); else if (!b.owner) prevediStop(b); } // i gesti con la palla, a tempo col tocco
+  else for (const p of all()) p.carica = null; // a gioco fermo nessun calcio resta in sospeso
   if (o && o.i !== 0 && G.state === 'play') { // dribbling: tocchi in avanti, la palla è libera tra un tocco e l'altro
     { let dm = 9; for (const q of o.team.opp.players) dm = Math.min(dm, hyp(q.x - o.x, q.z - o.z)); o.pressato = dm < 1.8; } // con un avversario addosso i tocchi si accorciano
     const r = FIS.conduci(b, o, dt, tecnica(o) * (o.sbil > 0 ? .4 : 1), Math.random, { x: o.tx - o.x, z: o.tz - o.z });
