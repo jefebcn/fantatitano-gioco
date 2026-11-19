@@ -41,16 +41,19 @@ const srv = http.createServer((q, r) => {
 /** Una partita intera nella pagina: ritorna misure e anomalie. Gira tutta dentro il browser (niente andata e ritorno). */
 function partita([seme, diffi, casa, ospiti]) {
   const g = window.__g, G = g.G, hyp = Math.hypot, HL = 52.5, HW = 34;
-  let sd = seme; Math.random = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
-  G.paused = true; G.shown = true; G.diff = g.DIFF[diffi];
-  g.newMatch(window.CLUBS[casa], window.CLUBS[ospiti]); G.auto = true;
+  // Stesso seme, stessa partita: la simulazione ha i suoi numeri casuali, la grafica altri (crea oggetti e particelle in
+  // quantità che dipendono da cosa c'era prima, e consumerebbe numeri della partita); il tempo riparte da zero
+  const caso = (x) => () => (x = (x * 16807) % 2147483647) / 2147483647, gioco = caso(seme), grafica = caso(seme + 7919);
+  Math.random = caso(seme + 104729); G.paused = true; G.shown = true; G.t = 0; G.diff = g.DIFF[diffi];
+  g.newMatch(window.CLUBS[casa], window.CLUBS[ospiti]); G.auto = true; Math.random = gioco;
   const disegna = g.renderer.render; g.renderer.render = () => {}; // si prepara tutto (scheletri, pose) ma non si disegna
+  const draw = (dt) => { Math.random = grafica; g.draw(dt); Math.random = gioco; };
   const tutti = () => G.teams[0].players.concat(G.teams[1].players);
   const anomalie = {}, esempi = [], nota = (k, d) => { anomalie[k] = (anomalie[k] || 0) + 1; if (anomalie[k] <= 2) esempi.push(`${G.t.toFixed(1)}s ${k} ${d}`); };
   const ripartenze = {}, tenute = [], prima = new Map(), aTerra = new Map(), gestoDa = new Map();
   let stato = '', ferma = 0, tiene = null, liberi = 0, conPalla = 0, n = 0;
   while (G.state !== 'full' && n++ < 60000) {
-    g.step(1 / 60); g.draw(1 / 60);
+    g.step(1 / 60); draw(1 / 60);
     const b = G.ball, o = b.owner, st = G.state;
     if (st !== stato) {
       if (st === 'restart') { const k = G.fk ? (G.fk.pen ? 'rigore' : 'punizione') : ((document.querySelector('#banner') || {}).textContent || 'ripresa').trim().toLowerCase(); ripartenze[k] = (ripartenze[k] || 0) + 1; }
