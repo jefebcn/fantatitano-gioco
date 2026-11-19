@@ -1395,9 +1395,9 @@ function scegliRinvio(p, tipo, dir) {
 function gkTiene(p, dt) {
   const t = p.team, s = t.side, gx = -s * HL;
   if (!p.rinvio) p.rinvio = { ...scegliRinvio(p), quando: rnd(...RINVIO.attesa) * (t.human ? 1.3 : 1), anim: false };
-  // mentre si rialza dopo un tuffo il tempo non corre: il rinvio sopra la posa sdraiata la mescolava a quella in piedi e il
-  // corpo finiva mezzo metro sotto l'erba (e veniva sollevato di altrettanto)
-  const r = p.rinvio; if (!/^rialza/.test(p.fx || '')) p.hold += dt;
+  // finché è a terra (presa in tuffo) e mentre si rialza il tempo non corre: il rinvio sopra la posa sdraiata la mescolava
+  // a quella in piedi e il corpo finiva mezzo metro sotto l'erba (e veniva sollevato di altrettanto)
+  const r = p.rinvio; if (p.st !== 'down' && p.st !== 'dive' && !A_TERRA_GF.test(p.fx || '')) p.hold += dt;
   // qualche passo in avanti, verso il lato dove andrà la palla, senza uscire dall'area
   const zv = r.m ? clamp(r.m.z * .25, -9, 9) : clamp(p.z, -6, 6); p.tx = gx + s * Math.min(RINVIO.limite, 5 + p.hold * 3); p.tz = zv; p.sprint = false;
   if (r.m) { const a = Math.atan2(r.m.x - p.x, r.m.z - p.z); if (p.hold > r.quando - .9) p.dir = a; } // si gira verso dove la lancia
