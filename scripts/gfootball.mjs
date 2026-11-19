@@ -125,6 +125,8 @@ Object.assign(ELENCO, { stop_gira90_fermo: 'trap/idle/090_IB000_accel_optional.a
   taglio_180: 'ballcontrol/walk/180_decel_decel.anim:giro', taglio_scatto_45: 'ballcontrol/sprint/045_decel.anim:giro', taglio_scatto_90: 'ballcontrol/sprint/090_decel_decel.anim:giro',
   // stop di un pallone che arriva di lato (nella sorgente da destra; «_sx» da sinistra)
   stop_lato_dx: 'trap/walk/000_D000_IB090.anim', stop_lato_sx: 'trap/walk/000_D000_IB090.anim:specchio' });
+// rialzarsi da terra (dopo un tuffo), da prono e da supino
+Object.assign(ELENCO, { rialza: 'movement_special/idle/special/000_stand_up_from_front.anim', rialza_schiena: 'movement_special/idle/special/000_stand_up_from_back.anim' });
 // passaggi, tiri e lanci anche col sinistro
 for (const k of ['passa_fermo', 'passa', 'passa_scatto', 'calcia_fermo', 'calcia', 'lancia_fermo', 'lancia']) ELENCO[`${k}_sx`] = `${ELENCO[k]}:specchio`;
 const SCAMBIO = Object.fromEntries(Object.keys(GF).map((n) => [n, n.startsWith('left_') ? n.replace('left_', 'right_') : n.startsWith('right_') ? n.replace('right_', 'left_') : n]));

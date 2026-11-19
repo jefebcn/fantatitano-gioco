@@ -297,7 +297,7 @@ function parata(p, tt, dz, y) {
   }
   return gesto(p, `presa_${y < .35 ? 'terra' : y < .9 ? 'ginocchio' : y < 1.8 ? 'busto' : 'alta'}`, tt, true);
 }
-const A_TERRA_GF = /^para_/; // i tuffi finiscono a terra: il corpo si alza quanto basta perché niente entri nell'erba
+const A_TERRA_GF = /^(para_|rialza)/; // i tuffi finiscono a terra (e da lì ci si rialza): il corpo si alza quanto basta perché niente entri nell'erba
 /** Spallata persa: chi perde palla si sbilancia dalla parte da cui arriva l'avversario (davanti, dietro, di lato). */
 function sbilancia(o, d) {
   const dx = d.x - o.x, dz = d.z - o.z, av = dx * Math.sin(o.dir) + dz * Math.cos(o.dir), sx = dx * Math.cos(o.dir) - dz * Math.sin(o.dir); // sx > 0: arriva da sinistra
@@ -375,6 +375,7 @@ async function loadModel() {
     }
     if (!MODEL.fx.idle || !MODEL.fx.walk || !MODEL.fx.run) throw new Error('mancano le animazioni di base');
     if (MODEL.fx.scivolata) DOWN.pl = .81; if (MODEL.fx.tuffoS) DOWN.gk = 1.1; if (MODEL.fx.caduta) DOWN.fall = 1.35;
+    if (MODEL.fx.rialza) DOWN.gk = .65; // dopo il tuffo c'è l'animazione per rialzarsi (0,76 s): a terra si resta meno, il tempo totale è quello di prima
   } catch (e) { console.warn('modello 3D non caricato', e); MODEL = null; }
 }
 const CORPO = 'MI_Superhero_Male', OCCHI = 'MI_Eyes';
@@ -1485,7 +1486,11 @@ function step(dt) {
   } else if (G.state === 'kickoff') { if (G.stateT > 1.2) { gain(G.taker); G.taker.thinkT = .2; setState('play'); } }
   else if (G.state === 'goal') { if (G.stateT > (G.goalEnd || 4.2)) kickoff(G.next); } // G.goalEnd lo allunga la regia quando c'è la sequenza del gol
   else if (G.state === 'restart') {
-    if (G.stateT > G.wait) {
+    // si batte quando il battitore è sul pallone e gli avversari sono alla distanza giusta, arrivati correndo (al massimo
+    // un secondo e mezzo in più): prima venivano spostati di colpo, anche di 4 metri, e si vedeva il salto
+    const pronti = () => { const k = G.taker, fk = G.fk, far = fk ? FOUL.wall : 6; if (!k || hyp(k.x - (b.x - k.team.side * .5), k.z - b.z) > .45) return false;
+      return !k.team.opp.players.some((o) => !(fk && fk.wall && fk.wall.some((w) => w.p === o)) && hyp(o.x - b.x, o.z - b.z) < far); };
+    if (G.stateT > G.wait && (pronti() || G.stateT > G.wait + 1.5 || (G.fk && G.fk.pen))) {
       const k = G.taker, fk = G.fk; k.x = b.x - k.team.side * .5; k.z = b.z; k.vx = k.vz = 0;
       if (fk && fk.pen) { // rigore: tutti fuori dall'area, portiere sulla linea
         for (const o of all()) if (o !== k) { const q = penSpot(o); o.x = q[0]; o.z = q[1]; o.vx = o.vz = 0; }
@@ -1555,6 +1560,7 @@ function movePlayer(p, dt) {
   if (p.st === 'slide') { const k = URTO.velScivolata(p.slideV0 || URTO.SCIVOLATA.v0, p.stT); if (p.stT < .55 && rnd() < dt * 30) { const fx = Math.sin(p.dir), fz = Math.cos(p.dir); PART.emetti('erba', p.x + fx * .9, .05, p.z + fz * .9, 2, k * .35, fx, fz); if (rnd() < .5) PART.emetti('polvere', p.x + fx * .6, .1, p.z + fz * .6, 1, 1.2, fx, fz); } p.vx = Math.sin(p.dir) * k; p.vz = Math.cos(p.dir) * k; if (p.stT > URTO.SCIVOLATA.durata) { p.st = 'down'; p.stT = 0; } }
   else if (p.st === 'dive') { const k = Math.max(0, 1 - p.stT / .5) * (p.diveV || 8); p.vx *= Math.pow(.8, dt * 60); p.vz = p.diveS * k; if (p.stT > .5) { p.st = 'down'; p.stT = 0; } }
   else if (p.st === 'down') { const f = Math.pow(.7, dt * 60); p.vx *= f; p.vz *= f; if (p.stT > (p.i === 0 ? DOWN.gk : DOWN.pl)) { p.st = 'run'; p.stT = 0; } }
+  else if (p.fx === 'rialza' && p.fxT < .45) { const f = Math.pow(.8, dt * 60); p.vx *= f; p.vz *= f; } // si sta rialzando: parte solo quando è quasi in piedi
   else return corri(p, dt);
   p.x = clamp(p.x + p.vx * dt, -HL - 3.5, HL + 3.5); p.z = clamp(p.z + p.vz * dt, -HW - 3, HW + 3);
 }
@@ -1876,7 +1882,12 @@ function poseSkinned(p, dt) {
   let on = false;
   if (p.fx && f.act) {
     p.fxT += dt; const c = FX[p.fx] || { sp: 1 }, g = !!GESTI[p.fx], dur = f.act.getClip().duration / (p.fxSp || c.sp);
-    if (p.fxT >= dur - .03) { if (A_TERRA_GF.test(p.fx) && p.st === 'dive') on = true; /* il tuffo resta a terra finché il portiere non si rialza */ else if (c.next && hasFx(c.next)) { p.fx = c.next; p.fxT = 0; p.fxSp = null; startFx(f, p.fx); on = true; } else p.fx = null; }
+    if (p.fxT >= dur - .03) {
+      // il tuffo resta a terra finché il portiere è giù (in volo e poi a terra), poi si rialza con la sua animazione: prima
+      // la posa sdraiata sfumava in quella in piedi e a metà strada il corpo finiva sotto l'erba (e veniva sollevato)
+      if (/^para_/.test(p.fx) && (p.st === 'dive' || p.st === 'down')) on = true;
+      else if (/^para_/.test(p.fx) && GESTI.rialza) { p.fx = null; gesto(p, 'rialza', 0); on = true; }
+      else if (c.next && hasFx(c.next)) { p.fx = c.next; p.fxT = 0; p.fxSp = null; startFx(f, p.fx); on = true; } else p.fx = null; }
     else on = p.fxT < (g ? dur - .05 : c.cut || dur - .12); // i gesti brevi restano pieni fin quasi alla fine
   }
   f.fxW += ((on ? 1 : 0) - f.fxW) * Math.min(1, dt * (on ? 16 : 6)); f.oldW += (0 - f.oldW) * Math.min(1, dt * 9);
