@@ -14,7 +14,7 @@ const ZONA = { PELLE: 0, MAGLIA: 1, PANTALONCINI: 2, CALZETTONI: 3, SCARPE: 4, A
 export const MISURE = { orloMaglia: 0.945, orloCorti: 0.705, bandaCorti: 0.176, risvolto: 0.40, suola: 0.022, fascia: [0.27, 0.315], braccio: 1.3 };
 const piu = (v) => Math.max(0, Math.min(1, v));
 /** I disegni della maglia: quanto un punto (x da sinistra a destra, h altezza, in metri) prende il secondo colore (0..1). */
-const DISEGNI = {
+export const DISEGNI = {
   righe: (x) => Math.floor((x + 0.5) / 0.075) & 1,
   righine: (x) => (((x + 0.5) / 0.05) % 1 < 0.16 ? 1 : 0),
   fasce: (x, h) => Math.floor(h / 0.085) & 1,
@@ -25,6 +25,17 @@ const DISEGNI = {
   fianchi: (x) => (Math.abs(x) > 0.15 ? 1 : 0),
   v: (x, h) => (Math.abs(h - (1.36 - Math.abs(x) * 0.55)) < 0.035 ? 1 : 0),
   sfumata: (x, h) => piu((1.25 - h) / 0.33),
+  // altri disegni classici (l'elenco viene da raccolte libere di disegni di maglie: football-kit-icons, CC0, e
+  // procedural-jersey-generator, MIT; qui sono riscritti da zero sulle misure del nostro calciatore)
+  chevron: (x, h) => (Math.abs(h - (1.22 + Math.abs(x) * 0.7)) < 0.06 ? 1 : 0),
+  diagonale: (x, h) => (Math.floor((x * 0.8 + h + 2) / 0.09) & 1),
+  quarti: (x, h) => ((x > 0) !== (h > 1.2) ? 1 : 0),
+  terzi: (x) => (Math.abs(x) < 0.065 ? 1 : 0),
+  maniche: (x, h) => (Math.abs(x) > 0.19 && h > 1.2 ? 1 : 0),
+  petto: (x, h) => (Math.abs(h - 1.3) < 0.07 ? 1 : 0),
+  onde: (x, h) => (Math.floor((h + 0.03 * Math.sin(x * 38)) / 0.085) & 1),
+  mimetica: (x, h) => (Math.sin(x * 47 + Math.sin(h * 31) * 1.8) + Math.sin(h * 53 - x * 23) * 0.9 + Math.sin((x - h) * 83) * 0.4 > 0.35 ? 1 : 0),
+  pennellata: (x, h) => { const c = 1.27 + 0.32 * x + 0.02 * Math.sin(x * 23), w = 0.075 + 0.022 * Math.sin(x * 61) + 0.012 * Math.sin(x * 157 + 1); return Math.abs(h - c) < w * (0.82 + 0.18 * Math.sin(h * 210 + x * 37)) ? 1 : 0; }, // una pennellata larga in diagonale sul petto, coi bordi sfrangiati
 };
 export const STILI = Object.keys(DISEGNI);
 /** I toni di pelle: moltiplicatori sul colore della texture originale (chiara). */
