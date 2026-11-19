@@ -102,6 +102,20 @@ const ELENCO = {
   calcia_fermo: 'shot/idle/020.anim', calcia: 'shot/sprint/010_short_bit_longer.anim',
   lancia_fermo: 'highpass/idle/000_long.anim', lancia: 'highpass/walk/000_long.anim',
 };
+// parate del portiere. Di lato: il nome senza suffisso è il tuffo verso la SUA sinistra, «_dx» verso la destra (nelle
+// sorgenti i tuffi rasoterra vanno a sinistra, gli altri a destra: quelli si specchiano). Al centro: presa a terra, al
+// ginocchio, al busto e alta.
+const PARATE = { terra_lontano: ['deflect/idle/090_ground_deflect_far.anim', 'sx'], terra_vicino: ['deflect/idle/090_ground_holdball_close.anim', 'sx'],
+  mezza_lontano: ['deflect/idle/090_midheight_deflect_far.anim', 'dx'], mezza_vicino: ['deflect/idle/090_midheight_holdball_close.anim', 'dx'],
+  busto: ['deflect/idle/090_trunk_deflect_far.anim', 'dx'], alto: ['deflect/idle/090_high_deflect_far.anim', 'dx'] };
+for (const [k, [f, lato]] of Object.entries(PARATE)) { ELENCO[`para_${k}`] = lato === 'sx' ? f : `${f}:specchio`; ELENCO[`para_${k}_dx`] = lato === 'sx' ? `${f}:specchio` : f; }
+Object.assign(ELENCO, { presa_terra: 'deflect/idle/000_ground_holdball.anim', presa_ginocchio: 'deflect/idle/000_kneeheight_holdball.anim',
+  presa_busto: 'deflect/idle/000_trunk_holdball.anim', presa_alta: 'deflect/idle/000_high_holdball.anim' });
+// sbilanciamenti dopo una spallata (senza palla): avanti, indietro, di lato (da sinistra; «_dx» da destra), da fermo e in corsa
+Object.assign(ELENCO, { spinta_avanti_fermo: 'trip/trip_t1/idle/000_protectfront.anim', spinta_dietro_fermo: 'trip/trip_t1/idle/000_protectback.anim',
+  spinta_lato_fermo: 'trip/trip_t1/idle/000_protectside.anim', spinta_lato_fermo_dx: 'trip/trip_t1/idle/000_protectside.anim:specchio',
+  spinta_avanti: 'trip/trip_t1/walk/000_protectfront.anim', spinta_dietro: 'trip/trip_t1/walk/000_protectback.anim',
+  spinta_lato: 'trip/trip_t1/walk/028_D045_sidebump.anim', spinta_lato_dx: 'trip/trip_t1/walk/028_D045_sidebump.anim:specchio' });
 // passaggi, tiri e lanci anche col sinistro
 for (const k of ['passa_fermo', 'passa', 'passa_scatto', 'calcia_fermo', 'calcia', 'lancia_fermo', 'lancia']) ELENCO[`${k}_sx`] = `${ELENCO[k]}:specchio`;
 const SCAMBIO = Object.fromEntries(Object.keys(GF).map((n) => [n, n.startsWith('left_') ? n.replace('left_', 'right_') : n.startsWith('right_') ? n.replace('right_', 'left_') : n]));

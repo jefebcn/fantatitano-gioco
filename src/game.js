@@ -215,11 +215,14 @@ function azione(p, name) { if (hasFx(name) && p.fig.skinned) { p.fx = name; p.fx
    fotogramma cada proprio nell'istante in cui la fisica tocca la palla: il piede e il pallone vanno a tempo. */
 const GESTI = window.ANIMS_GF ? window.ANIMS_GF.info : {};
 /** Libero per un gesto: nessuna azione in corso, o un gesto che ha già toccato la palla (i tocchi si susseguono). */
-const libero = (p) => !p.fx || (!!GESTI[p.fx] && p.fxT * (p.fxSp || 1) > GESTI[p.fx].tocco + .02);
+const libero = (p) => !p.fx || (!!GESTI[p.fx] && GESTI[p.fx].tocco !== undefined && !/^(para|presa_)/.test(p.fx) && p.fxT * (p.fxSp || 1) > GESTI[p.fx].tocco + .02);
 /** Fa partire il gesto «nome» in modo che il piede tocchi la palla fra «fra» secondi. */
-function gesto(p, nome, fra) {
-  const i = GESTI[nome]; if (!i || i.tocco === undefined || !hasFx(nome) || !p.fig.skinned || !libero(p)) return false;
-  const v = hyp(p.vx, p.vz) / (p.fig.alt || 1), sp = i.v > 1 ? clamp(v / i.v, .6, 1.5) : 1, da = Math.max(0, i.tocco - fra * sp);
+function gesto(p, nome, fra, adatta = false) {
+  const i = GESTI[nome]; if (!i || !hasFx(nome) || !p.fig.skinned || !libero(p)) return false;
+  const v = hyp(p.vx, p.vz) / (p.fig.alt || 1);
+  // adatta: invece della velocità del giocatore, il ritmo che porta il contatto esattamente fra «fra» secondi (le parate)
+  const sp = adatta && i.tocco && fra > i.tocco ? clamp(i.tocco / fra, .6, 1) : i.v > 1 && !adatta ? clamp(v / i.v, .6, 1.5) : 1;
+  const da = Math.max(0, (i.tocco || 0) - fra * sp); // senza tocco (uno sbilanciamento) parte dall'inizio
   p.fx = nome; p.fxSp = sp; p.fxDa = da; p.fxT = da / sp; p.fxNew = true; return true;
 }
 /**
@@ -263,6 +266,26 @@ function prepara(p, tipo, bx, bz, calcio, forte = false) {
 /** A ogni passo di fisica: il calcio caricato parte quando il piede arriva sulla palla. */
 function calciCaricati(dt) {
   for (const p of all()) if (p.carica && (p.carica.t -= dt) <= 0) { const c = p.carica.calcio; p.carica = null; if (G.ball.owner === p && G.state === 'play') c(); }
+}
+/**
+ * Parate: il portiere sa fra quanto (tt) e dove (dz di lato, y di altezza) il pallone passa sulla sua linea. Di lato un
+ * tuffo scelto per altezza e distanza, al centro una presa a terra, al ginocchio, al busto o alta: la mano arriva sul
+ * pallone in quel momento. Ritorna false se il gesto non c'è (resta il tuffo di prima).
+ */
+function parata(p, tt, dz, y) {
+  if (Math.abs(dz) > 1) {
+    const sinistra = -sgn(dz) * Math.sin(p.dir) > 0, lontano = Math.abs(dz) > 1.7; // la sua sinistra, nel mondo: (cos dir, -sin dir)
+    const tipo = y < .45 ? (lontano ? 'terra_lontano' : 'terra_vicino') : y < 1.2 ? (lontano ? 'mezza_lontano' : 'mezza_vicino') : y < 1.8 ? 'busto' : 'alto';
+    return gesto(p, `para_${tipo}${sinistra ? '' : '_dx'}`, tt, true);
+  }
+  return gesto(p, `presa_${y < .35 ? 'terra' : y < .9 ? 'ginocchio' : y < 1.8 ? 'busto' : 'alta'}`, tt, true);
+}
+const A_TERRA_GF = /^para_/; // i tuffi finiscono a terra: il corpo si alza quanto basta perché niente entri nell'erba
+/** Spallata persa: chi perde palla si sbilancia dalla parte da cui arriva l'avversario (davanti, dietro, di lato). */
+function sbilancia(o, d) {
+  const dx = d.x - o.x, dz = d.z - o.z, av = dx * Math.sin(o.dir) + dz * Math.cos(o.dir), sx = dx * Math.cos(o.dir) - dz * Math.sin(o.dir); // sx > 0: arriva da sinistra
+  const fermo = hyp(o.vx, o.vz) < 2 ? '_fermo' : '', dove = Math.abs(av) > Math.abs(sx) ? (av > 0 ? 'avanti' : 'dietro') : 'lato';
+  gesto(o, `spinta_${dove}${fermo}${dove === 'lato' && sx < 0 ? '_dx' : ''}`, 0);
 }
 /** Ricezione: il compagno a cui arriva il passaggio (o chi sta per prendere una palla vagante) fa lo stop, col piede dalla parte della palla. */
 function prevediStop(b) {
@@ -1386,7 +1409,8 @@ function gkThink(p, dt) {
     if (tt > 0 && tt < 1.6 && Math.abs(a.z) < GH + 2.5) {
       if (G.t < p.reagisce && G.shooter) { p.tx = p.x; p.tz = p.z; return; } // sta ancora leggendo il tiro
       const zp = a.z; p.tx = p.x; p.tz = clamp(zp, -GH - .6, GH + .6); p.sprint = true; p.tiroY = a.y;
-      if (tt < .45 && Math.abs(zp - p.z) > 1 && p.st === 'run') { p.st = 'dive'; p.stT = 0; p.diveS = sgn(zp - p.z); p.diveV = clamp(Math.abs(zp - p.z) / Math.max(tt, .22), 4, 10); azione(p, -p.diveS * Math.sin(p.dir) > 0 ? 'tuffoS' : 'tuffoD'); }
+      if (tt < .45 && Math.abs(zp - p.z) > 1 && p.st === 'run') { p.st = 'dive'; p.stT = 0; p.diveS = sgn(zp - p.z); p.diveV = clamp(Math.abs(zp - p.z) / Math.max(tt, .22), 4, 10); p.fx = null; if (!parata(p, tt, zp - p.z, a.y)) azione(p, -p.diveS * Math.sin(p.dir) > 0 ? 'tuffoS' : 'tuffoD'); }
+      else if (Math.abs(zp - p.z) <= 1 && p.st === 'run' && !p.fx && tt < .2) parata(p, tt, zp - p.z, a.y); // al centro: la presa, a tempo col pallone
       return;
     }
   }
@@ -1620,7 +1644,7 @@ function contacts(dt) {
       AU.calcio(sp, 'presa'); p.s.sv++; if (G.shooter && G.shooter.team !== p.team) { AU.ooh(.8); // parata: il pubblico fa ooh
         G.shooter.s.sot++; G.shooter = null; }
       // presa solo se il pallone arriva addosso e non troppo forte; altrimenti respinta
-      if ((sp < 30 && lontano < .45 && b.y > .2 && b.y < 2.55) || (sp < 21 && lontano < .65) || sp < 15) { if (p.st === 'run') azione(p, 'presa'); return gain(p); }
+      if ((sp < 30 && lontano < .45 && b.y > .2 && b.y < 2.55) || (sp < 21 && lontano < .65) || sp < 15) { if (p.st === 'run' && !/^(para|presa_)/.test(p.fx || '')) azione(p, 'presa'); return gain(p); }
       G.stats.resp[p.team.idx]++;
       // respinta: il pallone rimbalza sulle mani verso il campo e di lato (dalla parte del tuffo), più forte se il tiro era forte;
       // vicino al palo può finire in angolo
@@ -1644,7 +1668,7 @@ function contacts(dt) {
     const db = hyp(d.x - b.x, d.z - b.z); if (db > .9 || db > lontana - .15) continue;
     const forza = userDrives(d) ? 1.3 : (d.team.human ? MATE.steal : G.diff.steal) / 1.25, rapporto = clamp(URTO.forza(d) / URTO.forza(own), .4, 1.6); // chi è più forte copre la palla col corpo
     if (rnd() > rapporto * rapporto * .8) { d.cool = .5; continue; } // il portatore lo tiene lontano col corpo
-    if (rnd() < .5 * forza) { own.cool = .5; G.lastPass = null; gain(d); d.s.tk++; AU.calcio(7, 'tocco'); return; } // la prende lui
+    if (rnd() < .5 * forza) { own.cool = .5; G.lastPass = null; gain(d); d.s.tk++; AU.calcio(7, 'tocco'); if (own.i) sbilancia(own, d); return; } // la prende lui
     b.owner = null; const k = 4 + rnd(3); b.vx = (b.x - d.x) / (db || 1) * k + rnd(-1.5, 1.5); b.vz = (b.z - d.z) / (db || 1) * k + rnd(-1.5, 1.5); b.vy = rnd(.5); // la tocca via: palla contesa
     d.cool = .3; own.cool = .3; G.lastTouch = d; G.lastPass = null; G.offs = null; AU.calcio(6, 'tocco'); return;
   }
@@ -1661,7 +1685,7 @@ function contacts(dt) {
       if (d.i !== 0 && rnd() < FOUL.rate[dietro ? 1 : 0] * (affiancati ? .2 : 1) * dt) return foul(d, own, false, dietro); // spinta o trattenuta
       if (rnd() < r * dt) {
         if (rnd() < FOUL.stand[dietro ? 1 : 0] * (d.i === 0 ? .5 : 1) * (affiancati ? .5 : 1)) return foul(d, own, false, dietro);
-        own.stun = .5; own.cool = .8; G.lastPass = null; gain(d); d.s.tk++; AU.calcio(8, 'tocco'); return;
+        own.stun = .5; own.cool = .8; G.lastPass = null; gain(d); d.s.tk++; AU.calcio(8, 'tocco'); if (own.i) sbilancia(own, d); return;
       }
     }
   }
@@ -1827,7 +1851,7 @@ function poseSkinned(p, dt) {
   let on = false;
   if (p.fx && f.act) {
     p.fxT += dt; const c = FX[p.fx] || { sp: 1 }, g = !!GESTI[p.fx], dur = f.act.getClip().duration / (p.fxSp || c.sp);
-    if (p.fxT >= dur - .03) { if (c.next && hasFx(c.next)) { p.fx = c.next; p.fxT = 0; p.fxSp = null; startFx(f, p.fx); on = true; } else p.fx = null; }
+    if (p.fxT >= dur - .03) { if (A_TERRA_GF.test(p.fx) && p.st === 'dive') on = true; /* il tuffo resta a terra finché il portiere non si rialza */ else if (c.next && hasFx(c.next)) { p.fx = c.next; p.fxT = 0; p.fxSp = null; startFx(f, p.fx); on = true; } else p.fx = null; }
     else on = p.fxT < (g ? dur - .05 : c.cut || dur - .12); // i gesti brevi restano pieni fin quasi alla fine
   }
   f.fxW += ((on ? 1 : 0) - f.fxW) * Math.min(1, dt * (on ? 16 : 6)); f.oldW += (0 - f.oldW) * Math.min(1, dt * 9);
@@ -1854,7 +1878,7 @@ function poseSkinned(p, dt) {
   // nelle azioni a terra (cadute, tuffi, scivolate, anche mentre sfumano e il giocatore si rialza) si misura la posa vera e
   // si alza il corpo quanto basta perché nessun punto entri nell'erba; capita a pochi giocatori per volta
   f.body.position.y = by;
-  const aTerra = (a, w) => a && w > .01 && A_TERRA.has(a.getClip().name);
+  const aTerra = (a, w) => a && w > .01 && (A_TERRA.has(a.getClip().name) || A_TERRA_GF.test(a.getClip().name));
   if (aTerra(f.act, f.fxW) || aTerra(f.old, f.oldW)) {
     f.root.updateMatrixWorld(true); const giu = Math.max(0, -puntoBasso(f) - .008);
     f.alza = giu > (f.alza || 0) ? giu : (f.alza || 0) + (giu - (f.alza || 0)) * Math.min(1, dt * 20); // sale subito, scende morbido
@@ -2562,6 +2586,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, cam, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, cam, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
