@@ -209,7 +209,53 @@ const DOWN = { pl: .38, gk: .5, fall: .7 };
 /** Le azioni registrate: velocità, da che secondo cominciano a sfumare (se manca: alla fine), cosa viene dopo. */
 const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.55 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 }, rinvio: { sp: 1.15 }, testa: { sp: 1.3, cut: .45 }, bandiera: { sp: 1 } };
 const hasFx = (n) => !!(MODEL && MODEL.fx && MODEL.fx[n]);
-function azione(p, name) { if (hasFx(name) && p.fig.skinned) { p.fx = name; p.fxT = 0; p.fxNew = true; } sporca(p, name); }
+function azione(p, name) { if (hasFx(name) && p.fig.skinned) { p.fx = name; p.fxT = 0; p.fxNew = true; p.fxSp = null; p.fxDa = 0; } sporca(p, name); }
+/* Gesti con la palla: animazioni brevi di GameplayFootball (public/anim-gf.js, scripts/gfootball.mjs) col fotogramma in cui
+   il piede tocca la palla. Si fanno partire in anticipo, dal punto giusto e alla velocità del giocatore, così che quel
+   fotogramma cada proprio nell'istante in cui la fisica tocca la palla: il piede e il pallone vanno a tempo. */
+const GESTI = window.ANIMS_GF ? window.ANIMS_GF.info : {};
+/** Libero per un gesto: nessuna azione in corso, o un gesto che ha già toccato la palla (i tocchi si susseguono). */
+const libero = (p) => !p.fx || (!!GESTI[p.fx] && p.fxT * (p.fxSp || 1) > GESTI[p.fx].tocco + .02);
+/** Fa partire il gesto «nome» in modo che il piede tocchi la palla fra «fra» secondi. */
+function gesto(p, nome, fra) {
+  const i = GESTI[nome]; if (!i || i.tocco === undefined || !hasFx(nome) || !p.fig.skinned || !libero(p)) return false;
+  const v = hyp(p.vx, p.vz) / (p.fig.alt || 1), sp = i.v > 1 ? clamp(v / i.v, .6, 1.5) : 1, da = Math.max(0, i.tocco - fra * sp);
+  p.fx = nome; p.fxSp = sp; p.fxDa = da; p.fxT = da / sp; p.fxNew = true; return true;
+}
+/**
+ * Conduzione: fra quanto il piede spinge la palla. Le stesse condizioni di FIS.conduci, portate avanti nel tempo: il tocco
+ * arriva quando il passo è a 0,42 o 0,92 (un piede sta per scendere) con la palla a portata, oppure, tra un passo e
+ * l'altro, quando la palla è ormai a meno di COND.forza davanti. Il piede è quello in volo in quel momento.
+ */
+function prevediTocco(o, b) {
+  if (!o.fig.skinned || !libero(o) || b.y > .5) return;
+  const v = hyp(o.vx, o.vz), vr = v / (o.fig.alt || 1); if (vr < FIS.COND.fermo + .1) return;
+  const cad = MOTO.cadenza(vr); if (!(cad > 0)) return;
+  const C = FIS.COND, ux = o.vx / v, uz = o.vz / v, rx = b.x - o.x, rz = b.z - o.z;
+  if (Math.abs(rx * uz - rz * ux) > .9 || hyp(rx, rz) > 1.3) return;
+  const av0 = rx * ux + rz * uz, chiude = v - (b.vx * ux + b.vz * uz), avanti = (t) => av0 - chiude * t;
+  const ph = o.passo || 0, prossimo = ph < .42 ? .42 : ph < .92 ? .92 : 1.42, tPasso = (prossimo - ph) / cad;
+  const tForza = chiude > .1 ? Math.max(0, (av0 - C.forza) / chiude) : Infinity;
+  let fra = Math.min(avanti(tPasso) < C.vicino + C.ritmo ? tPasso : Infinity, tForza); fra = Math.max(fra, o.tocco || 0);
+  if (!(fra < .5)) return;
+  const sinistro = fra === tPasso ? Math.abs(prossimo % 1 - .42) < .01 : (ph + cad * fra) % 1 < .5; // da 0 a 0,5 il sinistro è in volo (0 = appoggio destro)
+  const nome = (vr > 5.8 ? 'tocco_scatto' : 'tocco') + (sinistro ? '_sx' : ''), i = GESTI[nome]; if (!i) return;
+  const anticipo = i.tocco / clamp(vr / i.v, .6, 1.5);
+  if (fra <= anticipo && fra > anticipo - .05) gesto(o, nome, fra);
+}
+/** Ricezione: il compagno a cui arriva il passaggio (o chi sta per prendere una palla vagante) fa lo stop, col piede dalla parte della palla. */
+function prevediStop(b) {
+  const sp = hyp(b.vx, b.vz); if (b.owner || b.y > .6 || sp > 19 || G.state !== 'play') return;
+  let p = G.intended;
+  if (!p) { let bd = 4; for (const q of all()) { const d = hyp(q.x - b.x, q.z - b.z); if (q.i && d < bd) { bd = d; p = q; } } }
+  if (!p || !p.i || !libero(p) || !p.fig.skinned || p.cool > 0 || p.st !== 'run') return;
+  const rx = b.x - p.x, rz = b.z - p.z, d = hyp(rx, rz); if (d > 6 || d < 1.05) return;
+  const chiude = -(rx * (b.vx - p.vx) + rz * (b.vz - p.vz)) / d; if (chiude < .8) return;
+  const fra = (d - 1.05) / chiude, vr = hyp(p.vx, p.vz) / (p.fig.alt || 1);
+  const sx = rx * Math.cos(p.dir) - rz * Math.sin(p.dir) > 0, nome = (vr > 1.6 ? 'stop' : 'stop_fermo') + (sx ? '_sx' : ''), i = GESTI[nome]; if (!i) return; // +x del giocatore è la sua sinistra
+  const anticipo = i.tocco / (i.v > 1 ? clamp(vr / i.v, .6, 1.5) : 1);
+  if (fra <= anticipo && fra > anticipo - .06) gesto(p, nome, fra);
+}
 const b64 = (t) => Uint8Array.from(atob(t), (c) => c.charCodeAt(0)).buffer;
 const pixel = (im) => { const [c, x] = cv(im.naturalWidth || im.width, im.naturalHeight || im.height); x.drawImage(im, 0, 0); return x.getImageData(0, 0, c.width, c.height); };
 /**
@@ -252,7 +298,8 @@ async function loadModel() {
       sponsorM: appoggio(0, box.min.y + alto * .72, true, .048),
       occhi: io ? new T.MeshLambertMaterial({ map: Object.assign(new T.Texture(io), { flipY: false, colorSpace: T.SRGBColorSpace, needsUpdate: true }) }) : mat(0xffffff) };
     const A = window.ANIMS; if (!A) throw new Error('mancano le animazioni');
-    for (const [nome, c] of Object.entries(A.clip)) {
+    const GFc = window.ANIMS_GF && window.ANIMS_GF.ossa.join() === A.ossa.join() ? window.ANIMS_GF.clip : {}; // stesse ossa, stesso ordine
+    for (const [nome, c] of Object.entries({ ...A.clip, ...GFc })) {
       const B = A.ossa.length, times = new Float32Array(c.n), pos = new Float32Array(c.n * 3);
       for (let i = 0; i < c.n; i++) { times[i] = i / A.fps; for (let j = 0; j < 3; j++) pos[i * 3 + j] = c.p[i * 3 + j] / 10000; }
       const tracks = [new T.VectorKeyframeTrack(`${A.bacino}.position`, times, pos)];
@@ -1491,11 +1538,12 @@ function traLeMani(p) {
 }
 function moveBall(dt) {
   const b = G.ball, o = b.owner;
+  if (G.state === 'play') { if (o && o.i) prevediTocco(o, b); else if (!o) prevediStop(b); } // i gesti con la palla, a tempo col tocco
   if (o && o.i !== 0 && G.state === 'play') { // dribbling: tocchi in avanti, la palla è libera tra un tocco e l'altro
     { let dm = 9; for (const q of o.team.opp.players) dm = Math.min(dm, hyp(q.x - o.x, q.z - o.z)); o.pressato = dm < 1.8; } // con un avversario addosso i tocchi si accorciano
     const r = FIS.conduci(b, o, dt, tecnica(o) * (o.sbil > 0 ? .4 : 1), Math.random, { x: o.tx - o.x, z: o.tz - o.z });
     if (r === 'perso') { b.owner = null; G.lastTouch = o; }
-    else if (r === 'tocco') { // vicino alle linee il tocco si accorcia: la palla resta in campo (si esce solo correndoci sopra)
+    else if (r === 'tocco') { G.tocchi = (G.tocchi || 0) + 1; // vicino alle linee il tocco si accorcia: la palla resta in campo (si esce solo correndoci sopra)
       const k = .45, ez = b.z + b.vz * k, ex = b.x + b.vx * k, mz = HW - .8, mx = HL - .8;
       if (Math.abs(ez) > mz && Math.abs(o.z) < HW) b.vz = (sgn(ez) * mz - b.z) / k;
       if (Math.abs(ex) > mx && Math.abs(o.x) < HL && Math.abs(b.z) > GH + 2) b.vx = (sgn(ex) * mx - b.x) / k;
@@ -1735,11 +1783,11 @@ function goal(team) {
 }
 
 /* ------------------------------------------------------------------ animazione delle figure */
-function startFx(f, name) {
+function startFx(f, name, da = 0, sp = null) {
   const a = f.mixer.clipAction(MODEL.fx[name]);
   if (f.old && f.old !== a) f.old.stop();
   f.old = f.act && f.act !== a ? f.act : null; f.oldW = f.old ? f.fxW : 0; f.fxW = 0;
-  a.setLoop(T.LoopOnce, 1); a.clampWhenFinished = true; a.reset(); a.timeScale = FX[name].sp; a.play(); f.act = a;
+  a.setLoop(T.LoopOnce, 1); a.clampWhenFinished = true; a.reset(); a.timeScale = sp || FX[name].sp; a.time = da; a.play(); f.act = a;
 }
 function poseSkinned(p, dt) {
   const f = p.fig, v = hyp(p.vx, p.vz), alt = f.alt || 1; f.root.position.set(p.x, 0, p.z);
@@ -1752,12 +1800,12 @@ function poseSkinned(p, dt) {
     const a = f.mixer.clipAction(MODEL.fx[G.dbgFx.name]); if (f.dbg && f.dbg !== a) f.dbg.stop(); a.play(); a.paused = true; a.time = G.dbgFx.t; a.setEffectiveWeight(1); f.dbg = a; f.mixer.update(0); f.body.position.y = 0; return;
   } else if (f.dbg) { f.dbg.stop(); f.dbg = null; }
   // l'azione registrata in corso (tiro, scivolata, tuffo…)
-  if (p.fxNew) { p.fxNew = false; startFx(f, p.fx); }
+  if (p.fxNew) { p.fxNew = false; startFx(f, p.fx, p.fxDa || 0, p.fxSp); }
   let on = false;
   if (p.fx && f.act) {
-    p.fxT += dt; const c = FX[p.fx], dur = f.act.getClip().duration / c.sp;
-    if (p.fxT >= dur - .03) { if (c.next && hasFx(c.next)) { p.fx = c.next; p.fxT = 0; startFx(f, p.fx); on = true; } else p.fx = null; }
-    else on = p.fxT < (c.cut || dur - .12);
+    p.fxT += dt; const c = FX[p.fx] || { sp: 1 }, g = !!GESTI[p.fx], dur = f.act.getClip().duration / (p.fxSp || c.sp);
+    if (p.fxT >= dur - .03) { if (c.next && hasFx(c.next)) { p.fx = c.next; p.fxT = 0; p.fxSp = null; startFx(f, p.fx); on = true; } else p.fx = null; }
+    else on = p.fxT < (g ? dur - .05 : c.cut || dur - .12); // i gesti brevi restano pieni fin quasi alla fine
   }
   f.fxW += ((on ? 1 : 0) - f.fxW) * Math.min(1, dt * (on ? 16 : 6)); f.oldW += (0 - f.oldW) * Math.min(1, dt * 9);
   if (f.act) { f.act.setEffectiveWeight(f.fxW); if (!p.fx && f.fxW < .02) { f.act.stop(); f.act = null; f.fxW = 0; } }
@@ -2491,6 +2539,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, cam, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, cam, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
