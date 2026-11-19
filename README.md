@@ -41,6 +41,8 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 | `scripts/prova-carriera.mjs` | Prove della logica della carriera: `npm run prova` |
 | `scripts/controlla-commenti.mjs` | Cerca i commenti che si sono mangiati del codice nelle righe lunghe: `npm run controlla` |
 | `scripts/simula.cjs` | Gioca partite simulate e stampa gol, tiri, possesso, inserimenti e scivolate: serve per tarare l'IA (richiede Playwright). Stampa anche falli, fuorigioco, rigori, cartellini, angoli, cross e colpi di testa |
+| `scripts/prove/partita.cjs` | Rete di sicurezza: partite intere computer contro computer con tutti i controlli (giocatori che saltano, gesti bloccati, corpi nell'erba, palla abbandonata, errori nella pagina) e le misure di gioco confrontate con gli obiettivi. `npm run partite` dopo `npm run build`; `RAPPORTO=prima.json` salva tutto per confrontare prima e dopo una modifica |
+| `.github/workflows/prove.yml` | A ogni PR: compilazione, `npm run controlla`, `npm run prova` e tre partite simulate. Un'anomalia ferma la PR; le misure di gioco si leggono nel registro |
 | `scripts/analizza.mjs` | Misura le clip di un pacchetto Mixamo, per scegliere quali usare e dove ritagliarle |
 
 ## Cosa c'è

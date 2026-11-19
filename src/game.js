@@ -1395,7 +1395,9 @@ function scegliRinvio(p, tipo, dir) {
 function gkTiene(p, dt) {
   const t = p.team, s = t.side, gx = -s * HL;
   if (!p.rinvio) p.rinvio = { ...scegliRinvio(p), quando: rnd(...RINVIO.attesa) * (t.human ? 1.3 : 1), anim: false };
-  const r = p.rinvio; p.hold += dt;
+  // mentre si rialza dopo un tuffo il tempo non corre: il rinvio sopra la posa sdraiata la mescolava a quella in piedi e il
+  // corpo finiva mezzo metro sotto l'erba (e veniva sollevato di altrettanto)
+  const r = p.rinvio; if (!/^rialza/.test(p.fx || '')) p.hold += dt;
   // qualche passo in avanti, verso il lato dove andrà la palla, senza uscire dall'area
   const zv = r.m ? clamp(r.m.z * .25, -9, 9) : clamp(p.z, -6, 6); p.tx = gx + s * Math.min(RINVIO.limite, 5 + p.hold * 3); p.tz = zv; p.sprint = false;
   if (r.m) { const a = Math.atan2(r.m.x - p.x, r.m.z - p.z); if (p.hold > r.quando - .9) p.dir = a; } // si gira verso dove la lancia
@@ -1486,11 +1488,15 @@ function step(dt) {
   } else if (G.state === 'kickoff') { if (G.stateT > 1.2) { gain(G.taker); G.taker.thinkT = .2; setState('play'); } }
   else if (G.state === 'goal') { if (G.stateT > (G.goalEnd || 4.2)) kickoff(G.next); } // G.goalEnd lo allunga la regia quando c'è la sequenza del gol
   else if (G.state === 'restart') {
-    // si batte quando il battitore è sul pallone e gli avversari sono alla distanza giusta, arrivati correndo (al massimo
-    // un secondo e mezzo in più): prima venivano spostati di colpo, anche di 4 metri, e si vedeva il salto
+    // si batte quando il battitore è sul pallone, gli avversari sono alla distanza giusta e chi ha un posto (barriera, area
+    // sul calcio d'angolo) ci è arrivato correndo, al massimo tre secondi in più: prima venivano spostati di colpo, anche
+    // di 4 metri, e si vedeva il salto. Allo scadere si sistema solo chi è a pochi centimetri; gli altri restano dove sono.
     const pronti = () => { const k = G.taker, fk = G.fk, far = fk ? FOUL.wall : 6; if (!k || hyp(k.x - (b.x - k.team.side * .5), k.z - b.z) > .45) return false;
+      if (fk && fk.wall && fk.wall.some((w) => hyp(w.p.x - w.x, w.p.z - w.z) > .5)) return false;
+      if (fk && fk.pos) for (const [o, q] of fk.pos) if (hyp(o.x - q[0], o.z - q[1]) > 1) return false;
       return !k.team.opp.players.some((o) => !(fk && fk.wall && fk.wall.some((w) => w.p === o)) && hyp(o.x - b.x, o.z - b.z) < far); };
-    if (G.stateT > G.wait && (pronti() || G.stateT > G.wait + 1.5 || (G.fk && G.fk.pen))) {
+    const sposta = (o, x, z) => { if (hyp(o.x - x, o.z - z) < .6) { o.x = x; o.z = z; o.vx = o.vz = 0; } };
+    if (G.stateT > G.wait && (pronti() || G.stateT > G.wait + 3 || (G.fk && G.fk.pen))) {
       const k = G.taker, fk = G.fk; k.x = b.x - k.team.side * .5; k.z = b.z; k.vx = k.vz = 0;
       if (fk && fk.pen) { // rigore: tutti fuori dall'area, portiere sulla linea
         for (const o of all()) if (o !== k) { const q = penSpot(o); o.x = q[0]; o.z = q[1]; o.vx = o.vz = 0; }
@@ -1499,9 +1505,9 @@ function step(dt) {
         else shoot(k, sgn(rnd(-1, 1)) * GH * rnd(.5, .88), rnd(.58, .78), diffOf(k).err * .8);
       } else {
         const far = fk ? FOUL.wall : 6;
-        if (fk && fk.wall) for (const w of fk.wall) { w.p.x = w.x; w.p.z = w.z; w.p.vx = w.p.vz = 0; }
-        if (fk && fk.pos) for (const [o, q] of fk.pos) { o.x = q[0]; o.z = q[1]; o.vx = o.vz = 0; }
-        for (const o of k.team.opp.players) { if (fk && fk.wall && fk.wall.some((w) => w.p === o)) continue; const d = hyp(o.x - b.x, o.z - b.z); if (d < far) { o.x = b.x + (o.x - b.x) / (d || 1) * (far + .5); o.z = clamp(b.z + (o.z - b.z) / (d || 1) * (far + .5) - (fk ? 0 : sgn(b.z) * 2), -HW, HW); } }
+        if (fk && fk.wall) for (const w of fk.wall) sposta(w.p, w.x, w.z);
+        if (fk && fk.pos) for (const [o, q] of fk.pos) sposta(o, q[0], q[1]);
+        for (const o of k.team.opp.players) { if (fk && fk.wall && fk.wall.some((w) => w.p === o)) continue; const d = hyp(o.x - b.x, o.z - b.z); if (d < far) sposta(o, b.x + (o.x - b.x) / (d || 1) * far, b.z + (o.z - b.z) / (d || 1) * far); }
         gain(k); k.shield = 1; setState('play');
         if (fk && fk.direct && !userDrives(k)) { k.fkShot = true; k.thinkT = .45; k.shield = 1.5; }
         if (fk && fk.corner && !userDrives(k)) { k.cornerKick = true; k.thinkT = .4; k.shield = 1.5; }
