@@ -116,18 +116,41 @@ Object.assign(ELENCO, { spinta_avanti_fermo: 'trip/trip_t1/idle/000_protectfront
   spinta_lato_fermo: 'trip/trip_t1/idle/000_protectside.anim', spinta_lato_fermo_dx: 'trip/trip_t1/idle/000_protectside.anim:specchio',
   spinta_avanti: 'trip/trip_t1/walk/000_protectfront.anim', spinta_dietro: 'trip/trip_t1/walk/000_protectback.anim',
   spinta_lato: 'trip/trip_t1/walk/028_D045_sidebump.anim', spinta_lato_dx: 'trip/trip_t1/walk/028_D045_sidebump.anim:specchio' });
+// gesti con un giro: «:giro» toglie dalla clip la rotazione del corpo attorno alla verticale (nel gioco il giocatore lo gira
+// il motore) e ne fa due, «_sx» che gira verso la sua sinistra e «_dx» verso destra (una è lo specchio dell'altra).
+// Stop con giro (da fermo 90° e 135°, in corsa 135°) e tagli in conduzione (45°, 90°, 135°, 180°, e in scatto 45° e 90°).
+Object.assign(ELENCO, { stop_gira90_fermo: 'trap/idle/090_IB000_accel_optional.anim:giro', stop_gira135_fermo: 'trap/idle/135_IB000.anim:giro',
+  stop_gira135: 'trap/walk/135_D000_IB000_decel_decel.anim:giro',
+  taglio_45: 'ballcontrol/walk/045.anim:giro', taglio_90: 'ballcontrol/walk/090_strongfoot.anim:giro', taglio_135: 'ballcontrol/walk/135_decel_decel.anim:giro',
+  taglio_180: 'ballcontrol/walk/180_decel_decel.anim:giro', taglio_scatto_45: 'ballcontrol/sprint/045_decel.anim:giro', taglio_scatto_90: 'ballcontrol/sprint/090_decel_decel.anim:giro',
+  // stop di un pallone che arriva di lato (nella sorgente da destra; «_sx» da sinistra)
+  stop_lato_dx: 'trap/walk/000_D000_IB090.anim', stop_lato_sx: 'trap/walk/000_D000_IB090.anim:specchio' });
 // passaggi, tiri e lanci anche col sinistro
 for (const k of ['passa_fermo', 'passa', 'passa_scatto', 'calcia_fermo', 'calcia', 'lancia_fermo', 'lancia']) ELENCO[`${k}_sx`] = `${ELENCO[k]}:specchio`;
 const SCAMBIO = Object.fromEntries(Object.keys(GF).map((n) => [n, n.startsWith('left_') ? n.replace('left_', 'right_') : n.startsWith('right_') ? n.replace('right_', 'left_') : n]));
 const specchia = (W) => { const M = {}; for (const n in W) { const q = W[SCAMBIO[n]]; M[n] = new T.Quaternion(q.x, -q.y, -q.z, q.w); } return M; };
 
 const out = { fps: FPS, bacino: 'pelvis', ossa: OSSA, clip: {}, info: {} };
-const lista = voci.length ? voci.map((v) => v.split('=')) : Object.entries(ELENCO);
-for (const [nome, sorg] of lista) {
-  const [file, opz] = sorg.split(':'), A = leggi(readFileSync(join(dir, file), 'utf8')), sp = opz === 'specchio';
+// di quanto è girato il corpo attorno alla verticale (radianti, positivo verso la sua sinistra), senza salti di 360°
+const imbardata = (q, prima) => { let a = 2 * Math.atan2(q.y, q.w); while (a - prima > Math.PI) a -= 2 * Math.PI; while (a - prima < -Math.PI) a += 2 * Math.PI; return a; };
+const SU = new T.Vector3(0, 1, 0);
+const lista = [];
+for (const [nome, sorg] of voci.length ? voci.map((v) => v.split('=')) : Object.entries(ELENCO)) {
+  const [file, opz] = sorg.split(':');
+  if (opz !== 'giro') { lista.push([nome, file, opz === 'specchio', false]); continue; }
+  const A = leggi(readFileSync(join(dir, file), 'utf8')), netto = imbardata(mondo(A, A.fine).body, imbardata(mondo(A, A.fine / 2).body, imbardata(mondo(A, 0).body, 0))) - imbardata(mondo(A, 0).body, 0);
+  lista.push([`${nome}_${netto > 0 ? 'sx' : 'dx'}`, file, false, true], [`${nome}_${netto > 0 ? 'dx' : 'sx'}`, file, true, true]);
+}
+for (const [nome, file, sp, giro] of lista) {
+  const A = leggi(readFileSync(join(dir, file), 'utf8')), sorg = `${file}${sp ? ':specchio' : ''}${giro ? ':giro' : ''}`; let y0 = null, yPrima = 0, netto = 0;
   const durata = A.fine / ORIG, n = Math.max(2, Math.round(durata * FPS) + 1), p = [], q = [], prev = OSSA.map(() => null);
   for (let i = 0; i < n; i++) {
-    const f = Math.min(A.fine, i / FPS * ORIG), W0 = mondo(A, f), W = sp ? specchia(W0) : W0;
+    const f = Math.min(A.fine, i / FPS * ORIG), W0 = mondo(A, f);
+    if (giro) { // via la rotazione attorno alla verticale accumulata dall'inizio: il corpo resta rivolto in avanti
+      const y = imbardata(W0.body, yPrima); yPrima = y; if (y0 === null) y0 = y; netto = y - y0;
+      const via = new T.Quaternion().setFromAxisAngle(SU, -netto); for (const k in W0) W0[k].premultiply(via);
+    }
+    const W = sp ? specchia(W0) : W0;
     const Wt = OSSA.map((o, k) => W[DA[o]].clone().multiply(corr[k]).multiply(tRest[k]));
     Wt.forEach((w, k) => {
       const padre = typeof tPadre[k] === 'number' ? Wt[tPadre[k]] : tPadre[k], l = padre.clone().invert().multiply(w).normalize();
@@ -142,8 +165,10 @@ for (const [nome, sorg] of lista) {
   out.clip[nome] = { n, p, q };
   // per il gioco: velocità a cui è stata animata (m/s, dallo spostamento del giocatore), quando il piede tocca la palla e
   // dove sta la palla in quel momento rispetto al giocatore (lo spostamento orizzontale lo fa il motore)
-  const k = A.chiavi.player, v = k && k.length > 1 ? Math.hypot(k[k.length - 1][1].x - k[0][1].x, k[k.length - 1][1].z - k[0][1].z) / durata : 0;
-  const info = { v: +v.toFixed(2), durata: +durata.toFixed(3) };
+  // la velocità: strada percorsa (lungo la curva, se gira) diviso la durata
+  const k = A.chiavi.player; let strada = 0; for (let i = 1; k && i < k.length; i++) strada += Math.hypot(k[i][1].x - k[i - 1][1].x, k[i][1].z - k[i - 1][1].z);
+  const v = strada / durata;
+  const info = { v: +v.toFixed(2), durata: +durata.toFixed(3) }; if (giro) info.giro = Math.round(netto * 180 / Math.PI) * (sp ? -1 : 1);
   if (A.palla) { const pl = a(k, A.palla.f, false), rel = A.palla.pos.clone().sub(new T.Vector3(pl.x, 0, pl.z)); if (sp) rel.x = -rel.x; info.tocco = +(A.palla.f / ORIG).toFixed(3); info.palla = rel.toArray().map((x) => +x.toFixed(3)); }
   out.info[nome] = info;
   console.log(nome.padEnd(16), sorg.padEnd(44), `${durata.toFixed(2)} s`, n, 'fotogrammi', `${info.v} m/s`, info.tocco !== undefined ? `tocco a ${info.tocco} s` : '');

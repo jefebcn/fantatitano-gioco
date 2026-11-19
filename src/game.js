@@ -216,12 +216,29 @@ function azione(p, name) { if (hasFx(name) && p.fig.skinned) { p.fx = name; p.fx
 const GESTI = window.ANIMS_GF ? window.ANIMS_GF.info : {};
 /** Libero per un gesto: nessuna azione in corso, o un gesto che ha già toccato la palla (i tocchi si susseguono). */
 const libero = (p) => !p.fx || (!!GESTI[p.fx] && GESTI[p.fx].tocco !== undefined && !/^(para|presa_)/.test(p.fx) && p.fxT * (p.fxSp || 1) > GESTI[p.fx].tocco + .02);
+/** A che ritmo gira un gesto per chi corre a velocità v: quello della sua corsa, tranne i gesti con un giro (frenano e ripartono da soli). */
+const ritmoGesto = (i, v) => (i.giro !== undefined ? 1 : i.v > 1 ? clamp(v / i.v, .6, 1.5) : 1);
+/** Verso dove si porta la palla chi la controlla: la levetta, o il dischetto avversario per chi gioca da solo (null: dritto davanti a sé). */
+function versoControllo(p) {
+  const [jx, jz] = userDrives(p) ? inputWorld() : [0, 0], s = p.team.side;
+  return hyp(jx, jz) > .3 ? { x: jx, z: jz } : userDrives(p) ? null : { x: s * (HL - 11) - p.x, z: -p.z * .5 }; // verso il dischetto: dentro al campo anche vicino alla linea di fondo
+}
+const giroVerso = (da, a) => Math.atan2(Math.sin(a - da), Math.cos(a - da)); // angolo da una direzione all'altra, positivo verso sinistra
+/** Tocco di conduzione che cambia direzione: il gesto del taglio parte dal fotogramma del contatto (il tocco è appena avvenuto). */
+function taglio(o, b) {
+  if (o.carica || !o.fig.skinned || (o.fx && !/^(tocco|stop|taglio)/.test(o.fx))) return;
+  const v = hyp(o.vx, o.vz), bv = hyp(b.vx, b.vz); if (v < 1 || bv < 1) return;
+  const a = giroVerso(Math.atan2(o.vx, o.vz), Math.atan2(b.vx, b.vz)), g = Math.abs(a) * 180 / Math.PI; if (g < 35) return;
+  const scatto = v / (o.fig.alt || 1) > 5.8 && g < 112;
+  const nome = (scatto ? `taglio_scatto_${g < 67 ? 45 : 90}` : `taglio_${g < 67 ? 45 : g < 112 ? 90 : g < 157 ? 135 : 180}`) + (a > 0 ? '_sx' : '_dx');
+  if (GESTI[nome]) { o.fx = null; gesto(o, nome, 0); }
+}
 /** Fa partire il gesto «nome» in modo che il piede tocchi la palla fra «fra» secondi. */
 function gesto(p, nome, fra, adatta = false) {
   const i = GESTI[nome]; if (!i || !hasFx(nome) || !p.fig.skinned || !libero(p)) return false;
   const v = hyp(p.vx, p.vz) / (p.fig.alt || 1);
   // adatta: invece della velocità del giocatore, il ritmo che porta il contatto esattamente fra «fra» secondi (le parate)
-  const sp = adatta && i.tocco && fra > i.tocco ? clamp(i.tocco / fra, .6, 1) : i.v > 1 && !adatta ? clamp(v / i.v, .6, 1.5) : 1;
+  const sp = adatta ? (i.tocco && fra > i.tocco ? clamp(i.tocco / fra, .6, 1) : 1) : ritmoGesto(i, v);
   const da = Math.max(0, (i.tocco || 0) - fra * sp); // senza tocco (uno sbilanciamento) parte dall'inizio
   p.fx = nome; p.fxSp = sp; p.fxDa = da; p.fxT = da / sp; p.fxNew = true; return true;
 }
@@ -296,8 +313,14 @@ function prevediStop(b) {
   const rx = b.x - p.x, rz = b.z - p.z, d = hyp(rx, rz); if (d > 6 || d < 1.05) return;
   const chiude = -(rx * (b.vx - p.vx) + rz * (b.vz - p.vz)) / d; if (chiude < .8) return;
   const fra = (d - 1.05) / chiude, vr = hyp(p.vx, p.vz) / (p.fig.alt || 1);
-  const sx = rx * Math.cos(p.dir) - rz * Math.sin(p.dir) > 0, nome = (vr > 1.6 ? 'stop' : 'stop_fermo') + (sx ? '_sx' : ''), i = GESTI[nome]; if (!i) return; // +x del giocatore è la sua sinistra
-  const anticipo = i.tocco / (i.v > 1 ? clamp(vr / i.v, .6, 1.5) : 1);
+  // quale stop: se dopo il controllo andrà da un'altra parte (la levetta, o la porta) lo stop è già col giro, da quella
+  // parte, se il pallone gli taglia la strada di lato lo stop è laterale, altrimenti quello dritto col piede dalla parte della palla
+  const lento = vr <= 1.6, vc = versoControllo(p), giro = vc ? giroVerso(p.dir, Math.atan2(vc.x, vc.z)) : 0, ag = Math.abs(giro) * 180 / Math.PI, parte = giro > 0 ? '_sx' : '_dx';
+  const bl = sp > .5 ? (b.vx * Math.cos(p.dir) - b.vz * Math.sin(p.dir)) / sp : 0; // quanto il pallone viaggia verso la sua sinistra (+x del giocatore è la sua sinistra)
+  const sx = rx * Math.cos(p.dir) - rz * Math.sin(p.dir) > 0;
+  const nome = ag > 112 ? (lento ? 'stop_gira135_fermo' : 'stop_gira135') + parte : ag > 55 && lento ? 'stop_gira90_fermo' + parte
+    : !lento && Math.abs(bl) > .8 ? (bl > 0 ? 'stop_lato_dx' : 'stop_lato_sx') : (lento ? 'stop_fermo' : 'stop') + (sx ? '_sx' : ''), i = GESTI[nome]; if (!i) return;
+  const anticipo = i.tocco / ritmoGesto(i, vr);
   if (fra <= anticipo && fra > anticipo - .06) gesto(p, nome, fra);
 }
 const b64 = (t) => Uint8Array.from(atob(t), (c) => c.charCodeAt(0)).buffer;
@@ -515,7 +538,7 @@ function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
   if (sm) { const c = new T.Mesh(GEO1, sm); c.scale.set(sm.userData.ratio, 1, 1); c.applyMatrix4(MODEL.stemmaM); bones.spine_03.add(c); vicini.push(c); }
   const sh = new T.Mesh(GEO.shadow, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; sh.scale.setScalar(1.5); root.add(sh);
   const mixer = new T.AnimationMixer(obj), A = {}, w = {};
-  const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, aereo: kit.gloves ? null : MODEL.fx.aereo, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null, passoS: kit.gloves ? MODEL.fx.passoS : null, passoD: kit.gloves ? MODEL.fx.passoD : null };
+  const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, aereo: kit.gloves ? null : MODEL.fx.aereo, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null, passoS: MODEL.fx.passoS, passoD: MODEL.fx.passoD }; // i passi laterali servono anche a chi difende guardando la palla
   for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = rnd(base[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; w[n] = n === 'idle' ? 1 : 0; }
   const fig = { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true, sporco: u.uSporco.value, alt, vicini, ombra: sh, dettagli: true };
   FIGURE.add(fig); return fig;
@@ -712,8 +735,7 @@ function gain(p) {
   const b = G.ball, prev = G.poss; if (prev && prev !== p.team && G.state === 'play') { prev.persaT = G.t; if (p.x * p.team.side > 0) G.stats.recAlti[p.team.idx]++; } b.owner = p; G.lastTouch = p; G.intended = null; G.poss = p.team; p.shield = .45; p.hold = 0;
   { let pr = 9; for (const o of p.team.opp.players) pr = Math.min(pr, hyp(o.x - p.x, o.z - p.z)); p.thinkT = diffOf(p).think * rnd(.6, 1.3) * (pr < 3.5 ? .35 : 1); p.conduci = null; } // con l'avversario addosso si gioca di prima
   if (p.i && G.state === 'play') { // stop (anche di petto): la palla si smorza davanti al piede, verso la levetta (o verso la porta per chi gioca da solo)
-    const [jx, jz] = userDrives(p) ? inputWorld() : [0, 0], s = p.team.side;
-    FIS.controlla(b, p, tecnica(p), Math.random, hyp(jx, jz) > .3 ? { x: jx, z: jz } : userDrives(p) ? null : { x: s * (HL - 11) - p.x, z: -p.z * .5 }); // verso il dischetto: dentro al campo anche vicino alla linea di fondo
+    FIS.controlla(b, p, tecnica(p), Math.random, versoControllo(p));
   }
   if (p.team.human) { if (p.i !== 0) setCtrl(p); } else if (prev !== p.team || !G.ctrl) { const m = migliorDifensore(G.teams[0]); setCtrl(m ? m.p : nearestTo(G.teams[0], b.x, b.z)); }
 }
@@ -1593,7 +1615,7 @@ function moveBall(dt) {
     { let dm = 9; for (const q of o.team.opp.players) dm = Math.min(dm, hyp(q.x - o.x, q.z - o.z)); o.pressato = dm < 1.8; } // con un avversario addosso i tocchi si accorciano
     const r = FIS.conduci(b, o, dt, tecnica(o) * (o.sbil > 0 ? .4 : 1), Math.random, { x: o.tx - o.x, z: o.tz - o.z });
     if (r === 'perso') { b.owner = null; G.lastTouch = o; }
-    else if (r === 'tocco') { G.tocchi = (G.tocchi || 0) + 1; // vicino alle linee il tocco si accorcia: la palla resta in campo (si esce solo correndoci sopra)
+    else if (r === 'tocco') { G.tocchi = (G.tocchi || 0) + 1; taglio(o, b); // vicino alle linee il tocco si accorcia: la palla resta in campo (si esce solo correndoci sopra)
       const k = .45, ez = b.z + b.vz * k, ex = b.x + b.vx * k, mz = HW - .8, mx = HL - .8;
       if (Math.abs(ez) > mz && Math.abs(o.z) < HW) b.vz = (sgn(ez) * mz - b.z) / k;
       if (Math.abs(ex) > mx && Math.abs(o.x) < HL && Math.abs(b.z) > GH + 2) b.vx = (sgn(ex) * mx - b.x) / k;
@@ -1867,16 +1889,22 @@ function poseSkinned(p, dt) {
   else if (f.A.jog) { const w = MOTO.pesi(v / alt); tg.run = w.run; tg.jog = w.jog; tg.walk = w.walk; tg.idle = 1 - w.run - w.jog - w.walk; } // stesse soglie della fase del passo
   else { tg.run = clamp((v - 2.6) / 2.6, 0, 1); tg.walk = clamp(v / 2.2, 0, 1) * (1 - tg.run); tg.idle = 1 - tg.run - tg.walk; }
   if (f.A.gkIdle && G.state === 'play') { tg.gkIdle = tg.idle; tg.idle = 0; }
-  if (f.A.passoS && G.state === 'play' && G.ball.owner !== p) { // il portiere guarda la palla: se si sposta di lato fa i passi laterali, non la corsa
-    const lat = p.vx * Math.cos(p.dir) - p.vz * Math.sin(p.dir), av = Math.abs(p.vx * Math.sin(p.dir) + p.vz * Math.cos(p.dir));
-    if (Math.abs(lat) > av && Math.abs(lat) > .8) { const m = tg.walk + tg.jog + tg.run; tg.walk = tg.jog = tg.run = 0; tg[lat > 0 ? 'passoS' : 'passoD'] = m; f.A.passoS.timeScale = f.A.passoD.timeScale = clamp(Math.abs(lat) / (3.5 * alt), .5, 1.7); }
-  }
+  // Chi guarda la palla mentre si sposta (il portiere, il difensore che temporeggia) non corre in avanti: di lato fa i passi
+  // laterali, all'indietro la corsetta al contrario (la clip gira a rovescio: la punta tocca prima del tallone, come arretrando)
+  if (f.A.passoS && G.state === 'play' && G.ball.owner !== p && (p.i === 0 || p.jock)) {
+    const lat = p.vx * Math.cos(p.dir) - p.vz * Math.sin(p.dir), av = p.vx * Math.sin(p.dir) + p.vz * Math.cos(p.dir), m = tg.walk + tg.jog + tg.run;
+    if (p.i === 0) { if (Math.abs(lat) > Math.abs(av) && Math.abs(lat) > .8) { tg.walk = tg.jog = tg.run = 0; tg[lat > 0 ? 'passoS' : 'passoD'] = m; } }
+    else if (v > .8) { const q = lat * lat / (lat * lat + av * av + .01); tg.walk *= 1 - q; tg.jog *= 1 - q; tg.run *= 1 - q; tg[lat > 0 ? 'passoS' : 'passoD'] = m * q; } // in diagonale un po' dell'uno e un po' dell'altro
+    f.A.passoS.timeScale = f.A.passoD.timeScale = clamp(Math.abs(lat) / (3.5 * alt), .5, 1.7);
+    f.indietro = f.indietro ? av < -.2 : av < -.6;
+    if (f.indietro) { tg.jog += tg.run; tg.run = 0; } // all'indietro non si scatta
+  } else f.indietro = false;
   if (f.A.aereo && G.state === 'goal' && p === G.scorer && v > 2.2) { // il marcatore corre verso la bandierina a braccia aperte
     const m = tg.walk + tg.jog + tg.run; tg.walk = tg.jog = tg.run = 0; tg.aereo = m; f.A.aereo.timeScale = clamp(v / (5.3 * alt), .8, 1.5);
   }
   const a = Math.min(1, dt * 16), rest = Math.max(0, 1 - f.fxW - f.oldW); // le andature seguono presto la velocità: pesi in ritardo fanno scivolare i piedi
   for (const k in f.A) { f.w[k] += (tg[k] - f.w[k]) * a; f.A[k].setEffectiveWeight(f.w[k] * rest); }
-  for (const k in MOTO.ANDATURE) if (f.A[k]) f.A[k].timeScale = MOTO.ritmoClip(k, v / alt); // il piede in appoggio resta fermo sull'erba
+  for (const k in MOTO.ANDATURE) if (f.A[k]) f.A[k].timeScale = MOTO.ritmoClip(k, v / alt) * (f.indietro ? -1 : 1); // il piede in appoggio resta fermo sull'erba
   f.mixer.update(dt); f.posaT = G.t;
   // nelle azioni a terra (cadute, tuffi, scivolate, anche mentre sfumano e il giocatore si rialza) si misura la posa vera e
   // si alza il corpo quanto basta perché nessun punto entri nell'erba; capita a pochi giocatori per volta
@@ -1915,7 +1943,9 @@ function allinea(p, dt) {
   const v = hyp(p.vx, p.vz);
   for (const k in MOTO.ANDATURE) {
     const a = f.A[k]; if (!a) continue;
-    const D = a.getClip().duration, t = (((p.passo || 0) + MOTO.ANDATURE[k].dx) % 1) * D - dt * MOTO.ritmoClip(k, v / (f.alt || 1));
+    // chi arretra guardando la palla percorre la clip al contrario: la fase va all'indietro mentre il passo avanza
+    const D = a.getClip().duration, r = dt * MOTO.ritmoClip(k, v / (f.alt || 1));
+    const t = f.indietro ? (((1 - (p.passo || 0) + MOTO.ANDATURE[k].dx) % 1) * D + r) : (((p.passo || 0) + MOTO.ANDATURE[k].dx) % 1) * D - r;
     a.time = ((t % D) + D) % D;
   }
 }
