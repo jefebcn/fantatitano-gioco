@@ -1,0 +1,34 @@
+# A ogni PR (e a ogni unione in main): compila, controlla i commenti, fa le prove di carriera e fisica e gioca tre partite
+# simulate con tutti i controlli (scripts/prove/partita.cjs). Se compare un'anomalia o un errore nella pagina la PR si
+# ferma. Le misure di gioco (angoli, tenuta palla, contrasti…) si leggono nel registro ma non bloccano.
+name: Prove
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: prove-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run controlla
+      - run: npm run prova
+      - name: Browser per le partite simulate
+        run: npm i --no-save playwright@1.63.0 && npx playwright install --with-deps chromium
+      - name: Partite simulate
+        run: node scripts/prove/partita.cjs 3 normale
+      - name: Rigori
+        run: node scripts/prove/rigori.cjs

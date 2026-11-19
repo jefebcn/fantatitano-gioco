@@ -1227,7 +1227,7 @@ function think(p, dt) {
       else { const h = homeOf(p); p.tx = h[0]; p.tz = h[1]; }
     } else if (G.state === 'restart') {
       const fk = G.fk, w = fk && fk.wall && fk.wall.find((q) => q.p === p);
-      if (p === G.taker) { p.tx = b.x - s * (fk && fk.pen ? 2.4 : .6); p.tz = b.z; p.sprint = true; }
+      if (p === G.taker) { p.tx = b.x - s * .6; p.tz = b.z; p.sprint = true; }
       else if (fk && fk.pen) { const q = penSpot(p); p.tx = q[0]; p.tz = q[1]; p.sprint = true; }
       else if (w) { p.tx = w.x; p.tz = w.z; p.sprint = true; }
       else if (fk && fk.pos && fk.pos.has(p)) { const q = fk.pos.get(p); p.tx = q[0]; p.tz = q[1]; p.sprint = true; }
@@ -1395,7 +1395,9 @@ function scegliRinvio(p, tipo, dir) {
 function gkTiene(p, dt) {
   const t = p.team, s = t.side, gx = -s * HL;
   if (!p.rinvio) p.rinvio = { ...scegliRinvio(p), quando: rnd(...RINVIO.attesa) * (t.human ? 1.3 : 1), anim: false };
-  const r = p.rinvio; p.hold += dt;
+  // finché è a terra (presa in tuffo) e mentre si rialza il tempo non corre: il rinvio sopra la posa sdraiata la mescolava
+  // a quella in piedi e il corpo finiva mezzo metro sotto l'erba (e veniva sollevato di altrettanto)
+  const r = p.rinvio; if (p.st !== 'down' && p.st !== 'dive' && !A_TERRA_GF.test(p.fx || '')) p.hold += dt;
   // qualche passo in avanti, verso il lato dove andrà la palla, senza uscire dall'area
   const zv = r.m ? clamp(r.m.z * .25, -9, 9) : clamp(p.z, -6, 6); p.tx = gx + s * Math.min(RINVIO.limite, 5 + p.hold * 3); p.tz = zv; p.sprint = false;
   if (r.m) { const a = Math.atan2(r.m.x - p.x, r.m.z - p.z); if (p.hold > r.quando - .9) p.dir = a; } // si gira verso dove la lancia
@@ -1435,7 +1437,8 @@ function gkThink(p, dt) {
     if (tt > 0 && tt < 1.6 && Math.abs(a.z) < GH + 2.5) {
       if (G.t < p.reagisce && G.shooter) { p.tx = p.x; p.tz = p.z; return; } // sta ancora leggendo il tiro
       const zp = a.z; p.tx = p.x; p.tz = clamp(zp, -GH - .6, GH + .6); p.sprint = true; p.tiroY = a.y;
-      if (tt < .45 && Math.abs(zp - p.z) > 1 && p.st === 'run') { p.st = 'dive'; p.stT = 0; p.diveS = sgn(zp - p.z); p.diveV = clamp(Math.abs(zp - p.z) / Math.max(tt, .22), 4, 10); p.fx = null; if (!parata(p, tt, zp - p.z, a.y)) azione(p, -p.diveS * Math.sin(p.dir) > 0 ? 'tuffoS' : 'tuffoD'); }
+      // non si tuffa di nuovo mentre si rialza: la posa sdraiata mescolata al tuffo nuovo sollevava il corpo di mezzo metro
+      if (tt < .45 && Math.abs(zp - p.z) > 1 && p.st === 'run' && !/^rialza/.test(p.fx || '')) { p.st = 'dive'; p.stT = 0; p.diveS = sgn(zp - p.z); p.diveV = clamp(Math.abs(zp - p.z) / Math.max(tt, .22), 4, 10); p.fx = null; if (!parata(p, tt, zp - p.z, a.y)) azione(p, -p.diveS * Math.sin(p.dir) > 0 ? 'tuffoS' : 'tuffoD'); }
       else if (Math.abs(zp - p.z) <= 1 && p.st === 'run' && !p.fx && tt < .2) parata(p, tt, zp - p.z, a.y); // al centro: la presa, a tempo col pallone
       return;
     }
@@ -1486,22 +1489,29 @@ function step(dt) {
   } else if (G.state === 'kickoff') { if (G.stateT > 1.2) { gain(G.taker); G.taker.thinkT = .2; setState('play'); } }
   else if (G.state === 'goal') { if (G.stateT > (G.goalEnd || 4.2)) kickoff(G.next); } // G.goalEnd lo allunga la regia quando c'è la sequenza del gol
   else if (G.state === 'restart') {
-    // si batte quando il battitore è sul pallone e gli avversari sono alla distanza giusta, arrivati correndo (al massimo
-    // un secondo e mezzo in più): prima venivano spostati di colpo, anche di 4 metri, e si vedeva il salto
-    const pronti = () => { const k = G.taker, fk = G.fk, far = fk ? FOUL.wall : 6; if (!k || hyp(k.x - (b.x - k.team.side * .5), k.z - b.z) > .45) return false;
+    // si batte quando il battitore è sul pallone, gli avversari sono alla distanza giusta e chi ha un posto (barriera, area
+    // sul calcio d'angolo, posto sul rigore) ci è arrivato correndo. Si aspetta al massimo tre secondi in più, sette sul
+    // rigore (chi lo batte può essere dall'altra parte del campo), ma sempre col battitore sul pallone. Prima venivano
+    // spostati di colpo, anche di 4 metri, e si vedeva il salto: ora allo scadere si sistema solo chi è a pochi centimetri.
+    const accanto = () => { const k = G.taker; return !!k && hyp(k.x - (b.x - k.team.side * .5), k.z - b.z) <= .45; };
+    const pronti = () => { const k = G.taker, fk = G.fk, far = fk ? FOUL.wall : 6; if (!accanto()) return false;
+      if (fk && fk.pen) return all().every((o) => o === k || hyp(o.x - penSpot(o)[0], o.z - penSpot(o)[1]) < .6); // rigore: tutti al loro posto
+      if (fk && fk.wall && fk.wall.some((w) => hyp(w.p.x - w.x, w.p.z - w.z) > .5)) return false;
+      if (fk && fk.pos) for (const [o, q] of fk.pos) if (hyp(o.x - q[0], o.z - q[1]) > 1) return false;
       return !k.team.opp.players.some((o) => !(fk && fk.wall && fk.wall.some((w) => w.p === o)) && hyp(o.x - b.x, o.z - b.z) < far); };
-    if (G.stateT > G.wait && (pronti() || G.stateT > G.wait + 1.5 || (G.fk && G.fk.pen))) {
+    const sposta = (o, x, z) => { if (hyp(o.x - x, o.z - z) < .6) { o.x = x; o.z = z; o.vx = o.vz = 0; } };
+    if (G.stateT > G.wait && (pronti() || (G.stateT > G.wait + (G.fk && G.fk.pen ? 7 : 3) && accanto()) || G.stateT > G.wait + 15)) { // dopo 15 s si batte comunque
       const k = G.taker, fk = G.fk; k.x = b.x - k.team.side * .5; k.z = b.z; k.vx = k.vz = 0;
       if (fk && fk.pen) { // rigore: tutti fuori dall'area, portiere sulla linea
-        for (const o of all()) if (o !== k) { const q = penSpot(o); o.x = q[0]; o.z = q[1]; o.vx = o.vz = 0; }
+        for (const o of all()) if (o !== k) { const q = penSpot(o); sposta(o, q[0], q[1]); }
         gain(k); k.shield = 9; G.pen = true; setState('play');
         if (userDrives(k)) { G.penWait = 6; banner('', 'Mira con la levetta e tira', 2200); }
         else shoot(k, sgn(rnd(-1, 1)) * GH * rnd(.5, .88), rnd(.58, .78), diffOf(k).err * .8);
       } else {
         const far = fk ? FOUL.wall : 6;
-        if (fk && fk.wall) for (const w of fk.wall) { w.p.x = w.x; w.p.z = w.z; w.p.vx = w.p.vz = 0; }
-        if (fk && fk.pos) for (const [o, q] of fk.pos) { o.x = q[0]; o.z = q[1]; o.vx = o.vz = 0; }
-        for (const o of k.team.opp.players) { if (fk && fk.wall && fk.wall.some((w) => w.p === o)) continue; const d = hyp(o.x - b.x, o.z - b.z); if (d < far) { o.x = b.x + (o.x - b.x) / (d || 1) * (far + .5); o.z = clamp(b.z + (o.z - b.z) / (d || 1) * (far + .5) - (fk ? 0 : sgn(b.z) * 2), -HW, HW); } }
+        if (fk && fk.wall) for (const w of fk.wall) sposta(w.p, w.x, w.z);
+        if (fk && fk.pos) for (const [o, q] of fk.pos) sposta(o, q[0], q[1]);
+        for (const o of k.team.opp.players) { if (fk && fk.wall && fk.wall.some((w) => w.p === o)) continue; const d = hyp(o.x - b.x, o.z - b.z); if (d < far) sposta(o, b.x + (o.x - b.x) / (d || 1) * far, b.z + (o.z - b.z) / (d || 1) * far); }
         gain(k); k.shield = 1; setState('play');
         if (fk && fk.direct && !userDrives(k)) { k.fkShot = true; k.thinkT = .45; k.shield = 1.5; }
         if (fk && fk.corner && !userDrives(k)) { k.cornerKick = true; k.thinkT = .4; k.shield = 1.5; }
@@ -2654,6 +2664,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, cam, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, cam, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
