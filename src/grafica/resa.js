@@ -15,18 +15,27 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
 export const RESA = {
   esposizione: 1,
-  giorno: { alto: 0x5d97da, orizzonte: 0xcfe2f2, terra: 0x3d5a2c, sole: [30, 70, 40], luce: 0xfff1d8, forza: 5, ambiente: 0.45, alone: [0.12, 0.3, 0.97] },
-  notte: { alto: 0x03050c, orizzonte: 0x161d33, terra: 0x0c120c, ambiente: 0.6, alone: [0.55, 0.5, 0.78], torri: 0xfff4dd, forzaTorri: 14 },
+  // foto: il cielo vero (Poly Haven, CC0, public/textures/cielo), per lo sfondo e per la parte alta della mappa d'ambiente;
+  // sfondo: quanto è luminoso il cielo dietro gli spalti (la foto di notte è più chiara di come appare sotto i fari)
+  giorno: { alto: 0x5d97da, orizzonte: 0xcfe2f2, terra: 0x3d5a2c, sole: [30, 70, 40], luce: 0xfff1d8, forza: 5, ambiente: 0.4, alone: [0.12, 0.3, 0.97], foto: 'textures/cielo/giorno.webp', sfondo: 1, fotoInLuce: true },
+  notte: { alto: 0x03050c, orizzonte: 0x161d33, terra: 0x0c120c, ambiente: 0.6, alone: [0.55, 0.5, 0.78], torri: 0xfff4dd, forzaTorri: 14, foto: 'textures/cielo/notte.webp', sfondo: 0.13, fotoInLuce: false },
 };
 
-/** Il cielo per la mappa d'ambiente: una sfera col gradiente e, dentro, le sorgenti luminose come piccoli dischi. */
-function cielo(T, o, torri) {
+/**
+ * Il cielo per la mappa d'ambiente: una sfera col gradiente (o, se c'è, la foto del cielo sopra l'orizzonte: sotto la foto
+ * ha solo un riflesso finto, lì resta il colore del prato) e, dentro, le sorgenti luminose come piccoli dischi.
+ */
+function cielo(T, o, torri, foto = null) {
   const sc = new T.Scene();
   const mat = new T.ShaderMaterial({
     side: T.BackSide, depthWrite: false,
-    uniforms: { alto: { value: new T.Color(o.alto) }, orizzonte: { value: new T.Color(o.orizzonte) }, terra: { value: new T.Color(o.terra) } },
+    uniforms: { alto: { value: new T.Color(o.alto) }, orizzonte: { value: new T.Color(o.orizzonte) }, terra: { value: new T.Color(o.terra) }, foto: { value: foto }, conFoto: { value: foto ? 1 : 0 } },
     vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'uniform vec3 alto, orizzonte, terra; varying vec3 vD; void main(){ float y = vD.y; vec3 c = y > 0.0 ? mix(orizzonte, alto, pow(y, 0.6)) : mix(orizzonte, terra, pow(-y, 0.35)); gl_FragColor = vec4(c, 1.0); }',
+    fragmentShader: `uniform vec3 alto, orizzonte, terra; uniform sampler2D foto; uniform float conFoto; varying vec3 vD;
+      void main(){ float y = vD.y; vec3 c = y > 0.0 ? mix(orizzonte, alto, pow(y, 0.6)) : mix(orizzonte, terra, pow(-y, 0.35));
+        if (conFoto > 0.5 && y > -0.02) { vec2 uv = vec2(atan(vD.z, vD.x) / 6.2831853 + 0.5, asin(clamp(y, -1.0, 1.0)) / 3.1415927 + 0.5);
+          vec3 f = texture2D(foto, uv).rgb; c = mix(c, f, smoothstep(-0.02, 0.06, y)); }
+        gl_FragColor = vec4(c, 1.0); }`,
   });
   sc.add(new T.Mesh(new T.SphereGeometry(100, 32, 16), mat));
   const disco = (dir, colore, forza, r) => {
@@ -41,9 +50,22 @@ function cielo(T, o, torri) {
 export function creaResa(T, { renderer, scene, cam, torri = [] }) {
   renderer.toneMapping = T.NeutralToneMapping; renderer.toneMappingExposure = RESA.esposizione;
   // le mappe d'ambiente, giorno e notte
-  const pm = new T.PMREMGenerator(renderer), mappe = {};
-  for (const nome of ['giorno', 'notte']) { const sc = cielo(T, RESA[nome], nome === 'notte' ? torri : []); mappe[nome] = pm.fromScene(sc, 0.02).texture; sc.traverse((x) => { if (x.geometry) x.geometry.dispose(); if (x.material) x.material.dispose(); }); }
-  pm.dispose();
+  const mappe = {}, foto = {};
+  function faiMappe() {
+    const pm = new T.PMREMGenerator(renderer);
+    for (const nome of ['giorno', 'notte']) {
+      const sc = cielo(T, RESA[nome], nome === 'notte' ? torri : [], RESA[nome].fotoInLuce ? foto[nome] || null : null), vecchia = mappe[nome]; // di notte la luce resta quella dei fari: la foto (più chiara) solo sullo sfondo
+      mappe[nome] = pm.fromScene(sc, 0.02).texture; if (vecchia) vecchia.dispose();
+      sc.traverse((x) => { if (x.geometry) x.geometry.dispose(); if (x.material) x.material.dispose(); });
+    }
+    pm.dispose();
+  }
+  faiMappe();
+  // le foto del cielo arrivano dopo (sono piccole, ma non si aspetta per partire): poi si rifanno le mappe e lo sfondo
+  const carica = new T.TextureLoader();
+  Promise.all(['giorno', 'notte'].map((nome) => new Promise((ok) => carica.load(RESA[nome].foto, (t) => {
+    t.colorSpace = T.SRGBColorSpace; t.mapping = T.EquirectangularReflectionMapping; foto[nome] = t; ok();
+  }, undefined, () => ok())))).then(() => { if (foto.giorno || foto.notte) { faiMappe(); imposta(ora); } });
 
   // gli effetti: si creano solo se servono (WebGL2 con multisample: i bordi restano lisci anche passando da una texture)
   const gl2 = renderer.capabilities.isWebGL2 !== false && renderer.capabilities.maxSamples >= 4;
@@ -65,6 +87,7 @@ export function creaResa(T, { renderer, scene, cam, torri = [] }) {
   function imposta(nome) {
     ora = RESA[nome] ? nome : 'giorno';
     scene.environment = mappe[ora]; scene.environmentIntensity = RESA[ora].ambiente; applicaAlone();
+    if (foto[ora]) { scene.background = foto[ora]; scene.backgroundIntensity = RESA[ora].sfondo; } // altrimenti resta il colore del cielo messo da luce.js
   }
   /** Al posto di renderer.render(scene, cam). */
   function disegna() {
