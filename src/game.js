@@ -58,6 +58,10 @@ const FORMS = {
 // Mentalità (-1, 0, 1): quanti metri in più si sale quando si attacca, quanto restano alti gli attaccanti quando si difende
 // (con la difensiva rientrano), quanto spesso ci si inserisce, quanto prima si va sul pallone con l'offensiva;
 // con la difensiva: a quanti metri dal portatore sta il secondo uomo in copertura, quanti metri prima si smette di temporeggiare
+// Pressing senza palla: da dove (metri dalla metà campo verso la porta avversaria, mentalità equilibrata) si va sul portatore;
+// il secondo uomo raddoppia quando il primo è a meno di `primo` metri dal portatore e lui a meno di `raggio`, stringendo a
+// `stretto` metri
+const PRESSING = { da: 18, primo: 3.5, raggio: 16, stretto: 2.2 };
 const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
 function setTactics(t, name, ment) {
   t.formName = FORMS[name] ? name : '4-3-3'; const f = FORMS[t.formName]; t.form = f.pos; if (ment !== undefined) t.ment = ment;
@@ -734,7 +738,7 @@ function gain(p) {
   if (G.state === 'play') { if (lp && lp.team === p.team && lp !== p) { lp.s.pc++; p.by = lp; } else if (!G.ball.owner && lk && lk.team !== p.team && p.i) p.s.int++; }
   // chi recupera palla nella metà avversaria (misura del pressing)
   const b = G.ball, prev = G.poss; if (prev && prev !== p.team && G.state === 'play') { prev.persaT = G.t; if (p.x * p.team.side > 0) G.stats.recAlti[p.team.idx]++; } b.owner = p; G.lastTouch = p; G.intended = null; G.poss = p.team; p.shield = .45; p.hold = 0;
-  { let pr = 9; for (const o of p.team.opp.players) pr = Math.min(pr, hyp(o.x - p.x, o.z - p.z)); p.thinkT = diffOf(p).think * rnd(.6, 1.3) * (pr < 3.5 ? .35 : 1); p.conduci = null; } // con l'avversario addosso si gioca di prima
+  { let pr = 9; for (const o of p.team.opp.players) pr = Math.min(pr, hyp(o.x - p.x, o.z - p.z)); p.thinkT = diffOf(p).think / .4 * (pr < 2.5 ? TENUTA.primoAddosso : rnd(...TENUTA.primo) * (pr < 5 ? .5 : 1)); p.conduci = null; } // con l'avversario addosso si decide subito (TENUTA)
   if (p.i && G.state === 'play') { // stop (anche di petto): la palla si smorza davanti al piede, verso la levetta (o verso la porta per chi gioca da solo)
     FIS.controlla(b, p, tecnica(p), Math.random, versoControllo(p));
   }
@@ -1244,13 +1248,22 @@ function think(p, dt) {
   } else if (own.team !== t) {
     // NON POSSESSO. Pressing: da dove si va sul portatore lo decide la mentalità (offensiva ovunque e in due, equilibrata
     // dalla metà campo, difensiva solo vicino alla propria area); più in là il primo uomo lo accompagna a distanza senza buttarsi
-    const gx = -s * HL, bxT = own.x * s, pressa = t.ment > 0 || (t.ment < 0 ? bxT < -10 : bxT < 6);
+    const gx = -s * HL, bxT = own.x * s, pressa = t.ment > 0 || (t.ment < 0 ? bxT < -10 : bxT < PRESSING.da);
     p.stato = 'posizione';
     if (p === t.chaser && (!t.human || G.auto || t.chaserD < 15)) {
       if (pressa || t.chaserD < 4) { p.stato = 'pressing'; return chase(p, own, dt); }
       const dx = gx - own.x, dz = -own.z, d = hyp(dx, dz) || 1; p.tx = own.x + dx / d * 6.5; p.tz = own.z + dz / d * 6.5; p.jock = true; p.stato = 'accompagna'; return;
     }
     if (p === t.cover) {
+      // secondo uomo: quando il primo è già sul portatore, il più vicino dopo di lui stringe dal lato della porta e chiude
+      // l'uscita (Kickoff di Yuka: uno pressa, uno copre a breve distanza)
+      const ch = t.chaser;
+      if (pressa && ch && hyp(ch.x - own.x, ch.z - own.z) < PRESSING.primo && hyp(p.x - own.x, p.z - own.z) < PRESSING.raggio) {
+        const ax = own.x - ch.x, az = own.z - ch.z, la = hyp(ax, az) || 1; // dall'altra parte rispetto al primo, verso la nostra porta
+        const dx = gx - own.x, dz = -own.z, d = hyp(dx, dz) || 1;
+        p.tx = own.x + own.vx * .3 + (ax / la * .6 + dx / d * .8) * PRESSING.stretto; p.tz = own.z + own.vz * .3 + (az / la * .6 + dz / d * .8) * PRESSING.stretto;
+        p.sprint = true; p.stato = 'raddoppio'; return;
+      }
       if (Math.abs(own.z) > HW - 12 && (pressa || bxT < 0)) { p.tx = own.x + own.vx * .3 - s * 1.6; p.tz = own.z + own.vz * .3 - sgn(own.z) * 1.4; p.sprint = true; p.stato = 'raddoppio'; return; } // sulla fascia: raddoppio, chiudendo il rientro verso il centro
       const dx = gx - own.x, dz = -own.z, d = hyp(dx, dz) || 1, k = Math.min(t.ment > 0 ? 2.5 : 7, d * .5); p.tx = own.x + dx / d * k; p.tz = own.z + dz / d * k; p.stato = t.ment > 0 ? 'pressing' : 'copertura'; p.sprint = t.ment > 0; return; // con l'offensiva il secondo uomo pressa anche lui
     }
@@ -1344,8 +1357,18 @@ function conduzione(p, pressato) {
   }
   return best || { ux: s, uz: 0, sc: 0 };
 }
+/* Col pallone (l'IA). Regola presa da GameplayFootball (elizacontroller.cpp): si passa solo se il compagno sta meglio di
+   chi ha la palla di una certa soglia; altrimenti si porta palla. Così il computer tiene palla uno o due secondi invece di
+   giocare tutto di prima. primo: attesa prima della prima decisione dopo lo stop (secondi, per think 0,4: si scala con la
+   difficoltà); pensa: tra una decisione e l'altra; addosso: avversario a meno di questo tempo dal pallone, si scarica
+   subito se c'è un passaggio sensato (punteggio oltre scarico); primoAddosso: la prima decisione quando lo stop arriva
+   con l'avversario a meno di 2,5 m; soglia: di quanto il passaggio deve battere il portare palla; diPrima: in
+   più, se la palla è appena arrivata (passaggio di prima solo verso un compagno davvero libero); negli ultimi `area` metri
+   si decide al più ogni `inArea` secondi. */
+const TENUTA = { primo: [1.2, 2], primoAddosso: .5, pensa: [1.2, 2], addosso: .45, scarico: 5, soglia: 6, diPrima: 8, appena: .4, area: 28, inArea: .25 };
 function ownerThink(p, dt) {
   if (p.carica) return; // sta già calciando
+  p.hold += dt;
   const t = p.team, s = t.side, D = diffOf(p);
   if (p.fkShot) { // punizione diretta: fermo sul pallone, poi tiro sopra la barriera
     p.tx = p.x; p.tz = p.z; p.thinkT -= dt; if (p.thinkT > 0) return; p.fkShot = false;
@@ -1360,7 +1383,8 @@ function ownerThink(p, dt) {
   // tra una decisione e l'altra si porta palla nella direzione scelta (aggiornata a ogni decisione)
   const dir = p.conduci || (p.conduci = conduzione(p, press < .6));
   p.tx = p.x + dir.ux * 8; p.tz = clamp(p.z + dir.uz * 8, -HW + 1.5, HW - 1.5); p.sprint = press > .5 && dir.ux * s > .3;
-  p.thinkT -= dt; if (p.thinkT > 0) return; p.thinkT = D.think * rnd(.6, 1.1) * (press < .6 ? .5 : 1); // sotto pressione si decide prima
+  if (p.x * s > HL - TENUTA.area) p.thinkT = Math.min(p.thinkT, TENUTA.inArea); // negli ultimi metri si decide in fretta: il tiro non aspetta
+  p.thinkT -= dt; if (p.thinkT > 0) return; p.thinkT = D.think * rnd(...TENUTA.pensa) * (press < .6 ? .5 : 1); // sotto pressione si decide prima
   p.conduci = conduzione(p, press < .6);
   const tiro = valoreTiro(p), errore = D.err * (1 + (1 - clamp(press, 0, 1)) * .5);
   // si tira con una buona occasione, prima se pressati, sempre da vicino; e ogni tanto anche da fuori
@@ -1369,7 +1393,8 @@ function ownerThink(p, dt) {
   const m = bestPass(p), sp = bestPass.punteggio, cd = p.conduci;
   // valore del portare palla: lo spazio trovato, meno la pressione; vicino alla porta avversaria conviene giocarla
   const portare = cd.sc + (press > 1.5 ? 9 : press > 1 ? 5 : press > .6 ? 0 : -10) - (p.x * s > HL - 12 ? 6 : 0);
-  if (m && (sp > portare + 6 || (press < .45 && sp > -8))) return prepara(p, 'passa', m.x, m.z, () => pass(p, m));
+  const soglia = TENUTA.soglia + (p.hold < TENUTA.appena ? TENUTA.diPrima : 0);
+  if (m && (sp > portare + soglia || (press < TENUTA.addosso && sp > TENUTA.scarico))) return prepara(p, 'passa', m.x, m.z, () => pass(p, m));
 }
 /**
  * Il portiere con la palla in mano. Appena la prende decide come rimetterla in gioco: lancio con le mani a un compagno
@@ -1499,7 +1524,7 @@ function step(dt) {
       if (fk && fk.wall && fk.wall.some((w) => hyp(w.p.x - w.x, w.p.z - w.z) > .5)) return false;
       if (fk && fk.pos) for (const [o, q] of fk.pos) if (hyp(o.x - q[0], o.z - q[1]) > 1) return false;
       return !k.team.opp.players.some((o) => !(fk && fk.wall && fk.wall.some((w) => w.p === o)) && hyp(o.x - b.x, o.z - b.z) < far); };
-    const sposta = (o, x, z) => { if (hyp(o.x - x, o.z - z) < .6) { o.x = x; o.z = z; o.vx = o.vz = 0; } };
+    const sposta = (o, x, z) => { if (hyp(o.x - x, o.z - z) < .45) { o.x = x; o.z = z; o.vx = o.vz = 0; } };
     if (G.stateT > G.wait && (pronti() || (G.stateT > G.wait + (G.fk && G.fk.pen ? 7 : 3) && accanto()) || G.stateT > G.wait + 15)) { // dopo 15 s si batte comunque
       const k = G.taker, fk = G.fk; k.x = b.x - k.team.side * .5; k.z = b.z; k.vx = k.vz = 0;
       if (fk && fk.pen) { // rigore: tutti fuori dall'area, portiere sulla linea

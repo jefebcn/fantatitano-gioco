@@ -65,13 +65,14 @@ function partita([seme, diffi, casa, ospiti]) {
     if (st === 'play') {
       // palla ferma e nessuno la va a prendere
       if (!o && hyp(b.vx, b.vz) < .4 && b.y < .3) { ferma += 1 / 60; if (Math.abs(ferma - 2) < .009) nota('palla ferma 2 s senza nessuno', `${b.x.toFixed(0)},${b.z.toFixed(0)}`); } else ferma = 0;
-      // quanto tiene palla ogni giocatore di movimento (non il portiere) prima di passarla, tirare o perderla
+      // quanto tiene palla ogni giocatore di movimento (non il portiere) prima che la tocchi un altro: in conduzione la palla è
+      // libera tra un tocco e l'altro, quel tempo non conta ma il possesso continua finché non la prende qualcun altro
+      if (o && o !== (tiene && tiene.p)) { if (tiene) tenute.push(tiene.t); tiene = o.i ? { p: o, t: 0 } : null; }
       if (o && o.i) {
-        if (!tiene || tiene.p !== o) { if (tiene) tenute.push(tiene.t); tiene = { p: o, t: 0 }; }
         tiene.t += 1 / 60; conPalla++;
         let d = 99; for (const q of o.team.opp.players) d = Math.min(d, hyp(q.x - o.x, q.z - o.z));
         if (d > 6) liberi++;
-      } else if (tiene) { tenute.push(tiene.t); tiene = null; }
+      }
       for (const p of tutti()) {
         const pp = prima.get(p);
         if (pp && hyp(p.x - pp[0], p.z - pp[1]) > .6) nota('giocatore teletrasportato', `${p.name} ${hyp(p.x - pp[0], p.z - pp[1]).toFixed(1)} m`);
@@ -79,7 +80,7 @@ function partita([seme, diffi, casa, ospiti]) {
         if (p.fx) { const k = gestoDa.get(p); if (k && k[0] === p.fx) { k[1] += 1 / 60; if (Math.abs(k[1] - 2.5) < .009) nota('gesto bloccato 2,5 s', `${p.name} ${p.fx}`); } else gestoDa.set(p, [p.fx, 0]); } else gestoDa.delete(p);
         if (p.fig && p.fig.root && Math.abs(p.fig.body.position.y) > .5) nota('corpo sollevato o affondato', `${p.name} ${p.fig.body.position.y.toFixed(2)} ${p.fx || p.st}`);
       }
-    } else tiene = null;
+    } else if (tiene) { tenute.push(tiene.t); tiene = null; }
     for (const p of tutti()) prima.set(p, [p.x, p.z]);
   }
   g.renderer.render = disegna;
