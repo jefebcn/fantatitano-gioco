@@ -1008,9 +1008,24 @@ function bestPass(p, ix, iz, voglio) {
   }
   bestPass.punteggio = bs; return best;
 }
-function pass(p, m, pow = null) {
+/** Un avversario addosso al pallone, proprio sulla traiettoria (entro PASSA.addosso metri e PASSA.cono gradi): la gamba lo devierebbe. */
+function avversarioAddosso(p, o, ux, uz) {
+  for (const q of p.team.opp.players) { if (q.stun > 0 && q.st === 'down') continue; const dx = q.x - o.x, dz = q.z - o.z, d = hyp(dx, dz); if (d < PASSA.addosso && (dx * ux + dz * uz) / (d || 1) > Math.cos(PASSA.cono * Math.PI / 180)) return true; }
+  return false;
+}
+// Al momento del calcio (dopo il caricamento del gesto, 0,1-0,27 s dalla decisione) l'avversario può essersi messo davanti al
+// pallone: allora l'IA cambia compagno se ce n'è uno con la linea libera, se no (e per l'utente) alza un pallonetto corto
+const PASSA = { addosso: 1.6, cono: 40, scavalca: 3.6 };
+function pass(p, m, pow = null, rivisto = false) {
   if (G.rimessa && G.ball.owner === p && G.rimessa.chi === p) return lanciaRimessa(p, m);
   const o = piede(p), pt = puntoIncontro(p, m); let dx = pt.x - o.x, dz = pt.z - o.z; const d = hyp(dx, dz) || 1;
+  if (avversarioAddosso(p, o, dx / d, dz / d)) {
+    if (!rivisto && !userDrives(p)) { const m2 = bestPass(p); if (m2 && m2 !== m) { const p2 = puntoIncontro(p, m2), d2 = hyp(p2.x - o.x, p2.z - o.z) || 1; if (!avversarioAddosso(p, o, (p2.x - o.x) / d2, (p2.z - o.z) / d2)) return pass(p, m2, pow, true); } }
+    if (d < 30) { // pallonetto corto sopra la gamba: scende sui piedi del compagno
+      const T = clamp(d / 13, .55, 1.6), v = FIS.mira(o, { x: pt.x, y: .3, z: pt.z }, T, 0, -.2); v.vy = Math.max(v.vy, PASSA.scavalca);
+      kick(p, v.vx, v.vy, v.vz, 'passaggio', 0, -.2); G.intended = m; if (p.team.human) setCtrl(m); p.s.pa++; G.lastPass = p; return;
+    }
+  }
   { const e = rnd(-1, 1) * .035 * qf(p) * (userDrives(p) ? .6 : diffOf(p).err) * (pt.spazio ? 1.25 : 1), c = Math.cos(e), n = Math.sin(e), x = dx * c - dz * n; dz = dx * n + dz * c; dx = x; } // imprecisione (un po' di più sul filtrante)
   const lob = d > 18 && laneBlocked(p, m, pt.x, pt.z);
   if (lob) { // a scavalcare, con un po' di rotazione all'indietro; se lui corre, la palla scende dove arriverà
@@ -1728,9 +1743,12 @@ function traLeMani(p) {
   return { x: (_mL.x + _mR.x) / 2 + fx, y: Math.max(BR, (_mL.y + _mR.y) / 2), z: (_mL.z + _mR.z) / 2 + fz };
 }
 function moveBall(dt) {
-  const b = G.ball, o = b.owner;
+  const b = G.ball;
   if (G.state === 'play') { calciCaricati(dt); if (b.owner && b.owner.i && !G.rimessa) prevediTocco(b.owner, b); else if (!b.owner) prevediStop(b); } // i gesti con la palla, a tempo col tocco
   else for (const p of all()) p.carica = null; // a gioco fermo nessun calcio resta in sospeso
+  // chi ha la palla lo si legge dopo i calci caricati: se il calcio è appena partito non c'è più nessuno da far condurre
+  // (prima il passatore dava un tocco di conduzione al pallone appena calciato e il passaggio finiva lento e di lato)
+  const o = b.owner;
   if (o && o.i !== 0 && G.state === 'play' && !(G.rimessa && G.rimessa.chi === o)) { // dribbling: tocchi in avanti, la palla è libera tra un tocco e l'altro
     { let dm = 9; for (const q of o.team.opp.players) dm = Math.min(dm, hyp(q.x - o.x, q.z - o.z)); o.pressato = dm < 1.8; } // con un avversario addosso i tocchi si accorciano
     const r = FIS.conduci(b, o, dt, tecnica(o) * (o.sbil > 0 ? .4 : 1), Math.random, { x: o.tx - o.x, z: o.tz - o.z });

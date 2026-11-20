@@ -200,6 +200,9 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   18 m oltre la metà campo, e il secondo uomo raddoppia quando il primo è sul portatore (come Kickoff di Yuka). Su 8
   partite a normale, prima e dopo: tenuta palla 0,43→0,94 s, contrasti vinti 0,25→6,8, falli 0→0,8, portatore libero
   55→33%, tiri 8,9→8,8. Si misura con `npm run partite` (le misure fuori obiettivo sono segnate con ✗).
+  Passaggi riusciti 58→73% dopo aver tolto un difetto: col gesto caricato il calcio parte qualche fotogramma dopo la
+  decisione e il pallone appena calciato riceveva ancora un tocco di conduzione dal passatore (finiva lento e di lato).
+  Se al momento del calcio c'è un avversario addosso sulla traiettoria, l'IA cambia compagno o alza un pallonetto corto.
 - **Calci piazzati dal gioco e fuorigioco** (`CALCI` in `src/game.js`). Il difensore che in area devia un pallone degli
   avversari spesso lo manda in angolo, di testa con l'attaccante addosso anche; la respinta del portiere può finire in
   angolo. Un attaccante su tre ogni tanto resta oltre la linea di un metro o due e chi passa non vede il fuorigioco di poco.
