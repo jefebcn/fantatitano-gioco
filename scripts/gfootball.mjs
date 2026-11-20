@@ -127,6 +127,16 @@ Object.assign(ELENCO, { stop_gira90_fermo: 'trap/idle/090_IB000_accel_optional.a
   stop_lato_dx: 'trap/walk/000_D000_IB090.anim', stop_lato_sx: 'trap/walk/000_D000_IB090.anim:specchio' });
 // rialzarsi da terra (dopo un tuffo), da prono e da supino
 Object.assign(ELENCO, { rialza: 'movement_special/idle/special/000_stand_up_from_front.anim', rialza_schiena: 'movement_special/idle/special/000_stand_up_from_back.anim' });
+// esultanze dopo il gol (normale, scatenata con la frenata) e delusione di chi lo subisce; rimessa laterale con le mani (corta
+// e lunga: il pallone parte al «tocco»); colpi di testa da fermo, in salto, in corsa e contesi; scivolate (in corsa e
+// camminando) e cadute dopo un fallo (in avanti, di lato, camminando); l'arbitro che mostra il cartellino; il portiere col
+// pallone in mano, fermo e camminando
+Object.assign(ELENCO, { esulta: 'celebration/happy_normal/000.anim', esulta_corsa: 'celebration/happy_extreme/000_decel_decel.anim', delusione: 'celebration/sad_normal/000.anim',
+  rimessa: 'pass/idle/special/000_throw.anim', rimessa_lunga: 'highpass/idle/special/000_throw.anim',
+  testa_fermo: 'pass/idle/nonbase/000_header.anim', testa_salto: 'pass/idle/nonbase/000_header_jump_forwards.anim', testa_corsa: 'pass/sprint/nonbase/000_header_jump.anim',
+  testa_contesa: 'interfere/idle/000_header_jump.anim', scivola: 'sliding/sprint/000.anim', scivola_sx: 'sliding/sprint/000.anim:specchio', scivola_corta: 'sliding/walk/000.anim',
+  cade: 'trip/trip_t3/sprint/000.anim', cade_lato: 'trip/trip_t3/sprint/045.anim', cade_lato_dx: 'trip/trip_t3/sprint/045.anim:specchio', cade_cammina: 'trip/trip_t3/walk/000_000.anim',
+  cartellino: 'special/000_showcard.anim', tiene_palla: 'movement_special/idle/special/000_holdball.anim', cammina_palla: 'movement_special/dribble/special/000_holdball.anim' });
 // passaggi, tiri e lanci anche col sinistro
 for (const k of ['passa_fermo', 'passa', 'passa_scatto', 'calcia_fermo', 'calcia', 'lancia_fermo', 'lancia']) ELENCO[`${k}_sx`] = `${ELENCO[k]}:specchio`;
 const SCAMBIO = Object.fromEntries(Object.keys(GF).map((n) => [n, n.startsWith('left_') ? n.replace('left_', 'right_') : n.startsWith('right_') ? n.replace('right_', 'left_') : n]));

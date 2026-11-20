@@ -127,7 +127,17 @@ export function creaRegia(X) {
     return { shirt, shorts: '#16161a', socks: '#16161a', sleeve: shirt, boots: '#16161a', ink: '#111', c2: '#16161a', stile: null };
   }
   const ufficiale = (kit, seed, x, z) => { const fig = X.makeSkinned(kit, seed, '', null, ''); scene.add(fig.root); return { fig, x, z, vx: 0, vz: 0, dir: 0, team: SQ_ARB, i: 5, fx: null, fxNew: false, fxT: 0, st: 'run' }; };
-  function creaArbitro(kit) { return X.model() ? ufficiale(kit, 90210, 0, -ARB.dist) : null; }
+  // il cartellino nella mano destra dell'arbitro: compare quando il braccio comincia ad alzarsi (dopo CART.in secondi)
+  const CART = { dur: 1.5, in: .35 }, cartaGeo = new PlaneGeometry(.11, .155); // un po' più grande del vero, per vederlo dalla telecamera
+  function creaArbitro(kit) {
+    if (!X.model()) return null;
+    const a = ufficiale(kit, 90210, 0, -ARB.dist); a.carta = new Mesh(cartaGeo, new MeshBasicMaterial({ color: 0xF2E21B, side: DoubleSide })); a.carta.visible = false; scene.add(a.carta); return a;
+  }
+  function carta() { // segue la mano destra, in piedi sopra le dita
+    const a = S.arb; if (!a || !a.carta || !a.carta.visible) return; const bo = a.fig.bones; if (!bo.hand_r || !bo.lowerarm_r) return;
+    a.fig.root.updateMatrixWorld(true); bo.hand_r.getWorldPosition(_p); bo.lowerarm_r.getWorldPosition(_g);
+    _g.subVectors(_p, _g).normalize(); a.carta.position.copy(_p).addScaledVector(_g, .07); a.carta.quaternion.setFromUnitVectors(SU, _g); a.carta.rotateY(a.dir);
+  }
   /* ---------------------------------------------------------------- guardalinee */
   // Uno per metà campo, su lati opposti come nelle partite vere: seguono il penultimo difensore (o il pallone, se è più avanti)
   // e alzano la bandierina quando il gioco fischia un fuorigioco nella loro metà.
@@ -205,9 +215,14 @@ export function creaRegia(X) {
     let dx = tx - b.x, dz = tz - b.z, d = hyp(dx, dz);
     if (d < ARB.dist) { if (d < .5) { dx = a.x - b.x; dz = a.z - b.z; d = hyp(dx, dz) || 1; } tx = b.x + dx / d * ARB.dist; tz = b.z + dz / d * ARB.dist; }
     tx = clamp(tx, -HL + 3, HL - 3); tz = clamp(tz, -HW + 3, HW - 3);
-    const ex = tx - a.x, ez = tz - a.z, e = hyp(ex, ez), fermo = G.state !== 'play', v = fermo || e < 1.5 ? 0 : Math.min(ARB.v, e * 1.3), k = Math.min(1, dt * 3);
+    const ex = tx - a.x, ez = tz - a.z, e = hyp(ex, ez), fermo = G.state !== 'play' || a.cartT > 0, v = fermo || e < 1.5 ? 0 : Math.min(ARB.v, e * 1.3), k = Math.min(1, dt * 3);
     a.vx += ((e ? ex / e * v : 0) - a.vx) * k; a.vz += ((e ? ez / e * v : 0) - a.vz) * k; a.x += a.vx * dt; a.z += a.vz * dt;
-    const corre = hyp(a.vx, a.vz) > 1.2, verso = corre ? Math.atan2(a.vx, a.vz) : Math.atan2(b.x - a.x, b.z - a.z);
+    // cartellino: si ferma, guarda chi l'ha preso e alza il braccio col cartellino in mano (GameplayFootball)
+    const nc = G.cards ? G.cards.length : 0;
+    if (nc > S.cart) { const c = G.cards[nc - 1], t = G.teams[c.t], chi = t && t.players.concat(t.out || []).find((q) => q.name === c.name);
+      a.chi = chi || null; a.cartT = CART.dur; a.vx = a.vz = 0; a.carta.material.color.set(c.c === 'r' ? 0xE5262B : 0xF2E21B); if (X.hasFx('cartellino')) { a.fx = 'cartellino'; a.fxNew = true; a.fxT = 0; a.fxSp = 1; a.fxDa = 0; } }
+    S.cart = nc; a.cartT = (a.cartT || 0) - dt; a.carta.visible = a.fx === 'cartellino' && a.fxT > CART.in && a.fxT < CART.dur - .15;
+    const corre = hyp(a.vx, a.vz) > 1.2, verso = a.cartT > 0 && a.chi ? Math.atan2(a.chi.x - a.x, a.chi.z - a.z) : corre ? Math.atan2(a.vx, a.vz) : Math.atan2(b.x - a.x, b.z - a.z);
     let da = verso - a.dir; da = Math.atan2(Math.sin(da), Math.cos(da)); a.dir += da * Math.min(1, dt * 6);
   }
 
@@ -282,10 +297,10 @@ export function creaRegia(X) {
     },
     /** Chiamata da draw() dopo la telecamera normale: tutto il resto. */
     dopo(dt) {
-      if (!G.teams.length || !G.ball) { if (S.on) fine(); for (const a of extra()) { scene.remove(a.fig.root); if (a.flag) scene.remove(a.flag); } S.arb = null; S.ass = []; S.squadra = null; pin.visible = false; return; }
+      if (!G.teams.length || !G.ball) { if (S.on) fine(); for (const a of extra()) { scene.remove(a.fig.root); if (a.flag) scene.remove(a.flag); if (a.carta) scene.remove(a.carta); } S.arb = null; S.ass = []; S.squadra = null; pin.visible = false; return; }
       if (G.teams[0] !== S.squadra) { // partita nuova
-        for (const a of extra()) { scene.remove(a.fig.root); if (a.flag) scene.remove(a.flag); }
-        S.squadra = G.teams[0]; const kit = kitArbitro(); S.arb = creaArbitro(kit); S.ass = creaGuardalinee(kit); S.offs = 0; pubblico(); S.visti = 0; S.on = false; S.pinDi = null; G.cine = null; G.goalEnd = 0; recInit();
+        for (const a of extra()) { scene.remove(a.fig.root); if (a.flag) scene.remove(a.flag); if (a.carta) scene.remove(a.carta); }
+        S.squadra = G.teams[0]; const kit = kitArbitro(); S.arb = creaArbitro(kit); S.ass = creaGuardalinee(kit); S.offs = 0; S.cart = G.cards ? G.cards.length : 0; pubblico(); S.visti = 0; S.on = false; S.pinDi = null; G.cine = null; G.goalEnd = 0; recInit();
       }
       const st = G.state, t = G.stateT, replay = inReplay(); if (replay) palla();
       if (st === 'goal' && !S.on && G.goals.length !== S.visti) inizio();
@@ -301,7 +316,7 @@ export function creaRegia(X) {
         }
       }
 
-      bandiere(); saltano(dt);
+      bandiere(); carta(); saltano(dt);
       // segnaposto col nome al posto della freccia
       const c = G.ctrl, cine = S.on && t >= S.c0; arrow.visible = false; pin.visible = ring.visible && !!c && !cine;
       if (cine) ring.visible = false;
