@@ -70,13 +70,13 @@ export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['I
 /* ---------------------------------------------------------------- telecamera di gioco */
 // Misure di Alex (dai video DLS, corrette il 20/11): alto e dietro dove sta la telecamera rispetto al punto inquadrato, in
 // metri (dietro, in pianta, è verso la linea laterale vicina: 39 m in linea d'aria). inclina: gradi verso il basso, fissi:
-// così il punto inquadrato (il pallone) sta a circa il 40% dell'altezza dello schermo dall'alto. campoOriz: angolo
-// orizzontale in gradi, uguale su ogni schermo (su un telefono 19,5:9 in orizzontale sono 28° in verticale). seguiX e
+// così il punto inquadrato (il pallone) sta a circa il 40% dell'altezza dello schermo dall'alto. fov: campo visivo VERTICALE in gradi (quello della
+// PerspectiveCamera di three.js), fisso: su un telefono 19,5:9 in orizzontale sono circa 57° in orizzontale. seguiX e
 // seguiZ: quanto il punto inquadrato segue il pallone lungo il campo e in profondità (tutto: il pallone resta al 40%).
 // Scelte nostre, da confrontare coi video: molla è la prontezza con cui segue (più alta, meno ritardo), bordoX i metri dalla
 // linea di fondo a cui si ferma, zMax fin dove arriva verso la tribuna vicina (oltre ci entrerebbe: col pallone negli ultimi
 // metri verso la tribuna vicina il pallone scende un po' sullo schermo)
-export const CAMERA = { alto: 12.5, dietro: 36.9, inclina: 21.3, campoOriz: 56.8, seguiX: 1, seguiZ: 1, molla: 6, bordoX: 16, zMax: 56 };
+export const CAMERA = { alto: 12.5, dietro: 36.9, inclina: 21.3, fov: 28, seguiX: 1, seguiZ: 1, molla: 6, bordoX: 16, zMax: 56 };
 
 /* ---------------------------------------------------------------- comandi dell'utente (come Dream League, docs/dls-gameplay.md) */
 // La levetta: base fissa (un cerchio di `raggio` px), la levetta si muove dentro. Poco inclinata si cammina, poi si corre;

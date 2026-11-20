@@ -737,7 +737,9 @@ function newMatch(home, away) {
   paintBoards(home, away, CREST);
   $('#sbH').src = img(home.id + '-mini'); $('#sbA').src = img(away.id + '-mini'); $('#sbHn').textContent = home.short; $('#sbAn').textContent = away.short;
   hud(); kickoff(G.teams[0]);
-  camPos.set(0, 46, 70); camLook.set(0, 0, 0);
+  // la telecamera parte già al suo posto di gioco: prima arrivava da 46 m di altezza e 70 m di distanza in un paio di secondi,
+  // e al calcio d'inizio si vedeva tutto il campo da lontano
+  updateCamera(9);
 }
 const all = () => G.teams[0].players.concat(G.teams[1].players);
 const diffOf = (p) => (p.team.human ? MATE : G.diff);
@@ -2214,8 +2216,7 @@ function updateCamera(dt) {
     const C = CAMERA; gioco = true;
     const tx = clamp(fx * C.seguiX, -(HL - C.bordoX), HL - C.bordoX), tz = Math.min(clamp(fz, -HW, HW) * C.seguiZ, C.zMax - C.dietro);
     px = tx; py = C.alto; pz = tz + C.dietro; lx = tx; lz = tz;
-    // la stessa larghezza di campo su ogni schermo: l'angolo orizzontale è fisso, quello verticale segue le proporzioni
-    fov = 2 * Math.atan(Math.tan(C.campoOriz * Math.PI / 360) / cam.aspect) * 180 / Math.PI;
+    fov = C.fov; // verticale, fisso (Dream League): la larghezza in orizzontale segue le proporzioni dello schermo
   }
   // movimento morbido: una molla smorzata al punto giusto, senza scatti né oscillazioni, più lenta nel menu. In gioco è il
   // leggero ritardo con cui l'inquadratura segue il pallone
