@@ -2086,7 +2086,8 @@ function poseSkinned(p, dt) {
       const scatenata = p === G.scorer && p.esultaGol !== ng && hasFx('esulta_corsa');
       clipGF(p, scatenata ? 'esulta_corsa' : 'esulta', 0, p === G.scorer ? 1 : .85 + (p.i % 4) * .08); if (p === G.scorer) p.esultaGol = ng;
     }
-    else if (p.deluso !== ng && hasFx('delusione')) { p.deluso = ng; clipGF(p, 'delusione', 0, .7); }
+    // chi ha subito il gol: mani sopra la testa (clip Mixamo `mani_testa` quando c'è, se no la delusione di GameplayFootball)
+    else if (p.deluso !== ng && (hasFx('mani_testa') || hasFx('delusione'))) { p.deluso = ng; if (hasFx('mani_testa')) clipGF(p, 'mani_testa', 0, 1); else clipGF(p, 'delusione', 0, .7); }
   }
   // attesa, camminata, corsetta e corsa secondo la velocità; esultanza dopo un gol
   const tg = { idle: 0, walk: 0, run: 0, jog: 0, gkIdle: 0, esulta: 0, passoS: 0, passoD: 0, aereo: 0, braccia: 0 }; let by = 0;
@@ -2194,9 +2195,9 @@ function updateCamera(dt) {
     // telecamera di gioco come Dream League (TELECAMERA): di lato, sempre alla stessa altezza e distanza dal punto seguito,
     // inclinata in giù di un angolo fisso; segue il pallone guardando un po' avanti dove va
     const C = TELECAMERA, ax = fx + (b ? clamp(b.vx * C.avanti[0], -C.avantiMax[0], C.avantiMax[0]) : 0), az = fz + (b ? clamp(b.vz * C.avanti[1], -C.avantiMax[1], C.avantiMax[1]) : 0);
-    const piano = Math.sqrt(C.distanza * C.distanza - C.altezza * C.altezza); // la distanza in pianta dal punto seguito
-    lx = clamp(ax, -HL + C.bordo, HL - C.bordo); lz = Math.min(az * .8, C.zMax - Math.sqrt(C.distanza * C.distanza - C.altezza * C.altezza)); px = lx; pz = lz + piano; py = C.altezza; fov = C.fov;
-    ly = C.altezza - piano * Math.tan(C.inclinazione * Math.PI / 180); // dove guarda in altezza: così l'inclinazione è proprio quella
+    const piano = C.piano; // la distanza in pianta dal punto seguito
+    lx = clamp(ax, -HL + C.bordo, HL - C.bordo); lz = Math.min(az * C.segueZ, C.zMax - C.piano); px = lx; pz = lz + piano; py = C.altezza; fov = C.fov;
+    ly = C.altezza - piano * Math.tan(C.inclinazione * Math.PI / 180); // dove guarda in altezza (sotto l'erba): così l'inclinazione è proprio quella e il pallone sta sopra il centro
   }
   // movimento morbido: una molla smorzata al punto giusto (niente scatti né oscillazioni), più lenta nel menu
   const kk = G.state === 'menu' ? 1.6 : 3.2, v = G.camV || (G.camV = { px: 0, py: 0, pz: 0, lx: 0, lz: 0 }), h = Math.min(dt, .05);
@@ -2802,11 +2803,13 @@ function startMatch(h, a, d) {
 }
 // Schermata delle sostituzioni: si tocca chi esce e chi entra
 let cOut = null, cIn = -1;
+// L'energia non si vede durante il gioco (come Dream League): sta qui, una barretta per giocatore (in panchina sono freschi)
+const barraEn = (en) => `<s class="enb" data-l="${en < .4 ? 'b' : en < .7 ? 'm' : 'a'}"><i style="width:${Math.round(clamp(en, 0, 1) * 100)}%"></i></s>`;
 function drawCambi(msg) {
   const t = G.teams[0], fuori = (p) => `${p.inj ? ' <u class="inf">infortunato</u>' : ''}${p.yel ? ' <i class="g"></i>' : ''}`;
   $('#cambiT').textContent = `Sostituzioni · ${t.subs} di ${SUB.max}`; $('#cambiM').textContent = msg || (t.subs >= SUB.max ? 'Cambi finiti' : 'Tocca chi esce e chi entra');
-  $('#cambiL').innerHTML = `<div><h4>In campo</h4>${t.players.map((p, k) => `<button class="gioc${cOut === p ? ' sel' : ''}" data-o="${k}"><b>${p.num} ${esc(p.name)}</b><span>${RUOLO[p.role]}${fuori(p)}</span><em>${Math.round(p.en * 100)}%</em></button>`).join('')}</div>`
-    + `<div><h4>Panchina</h4>${t.bench.map((b, k) => `<button class="gioc${cIn === k ? ' sel' : ''}" data-b="${k}" ${b.used ? 'disabled' : ''}><b>${b.num} ${esc(b.name)}</b><span>${RUOLO[b.role]}${b.used ? ' · già entrato' : ''}</span><em>${ovr(b.role, b.q)}</em></button>`).join('')}</div>`;
+  $('#cambiL').innerHTML = `<div><h4>In campo</h4>${t.players.map((p, k) => `<button class="gioc${cOut === p ? ' sel' : ''}" data-o="${k}"><b>${p.num} ${esc(p.name)}</b><span>${RUOLO[p.role]}${fuori(p)}</span><em>${Math.round(p.en * 100)}%</em>${barraEn(p.en)}</button>`).join('')}</div>`
+    + `<div><h4>Panchina</h4>${t.bench.map((b, k) => `<button class="gioc${cIn === k ? ' sel' : ''}" data-b="${k}" ${b.used ? 'disabled' : ''}><b>${b.num} ${esc(b.name)}</b><span>${RUOLO[b.role]}${b.used ? ' · già entrato' : ''}</span><em>${ovr(b.role, b.q)}</em>${barraEn(1)}</button>`).join('')}</div>`;
 }
 function tapCambi(e) {
   const b = e.target.closest('button'), t = G.teams[0]; if (!b) return;
@@ -2815,7 +2818,7 @@ function tapCambi(e) {
   const esce = cOut, p = sostituisci(t, esce, cIn), ruoli = (esce.i === 0) !== (t.bench[cIn].role === 'P'); cOut = null; cIn = -1;
   drawCambi(p ? `Entra ${p.name}, esce ${esce.name}` : ruoli ? 'Il portiere si cambia solo con un portiere' : 'Cambio non possibile'); hud();
 }
-function pause(v) { if (G.state === 'menu' || G.state === 'full') return; G.paused = v; show(v ? '#stop' : null); AU.pausa(v); $('#apriCambi').classList.toggle('nas', !(G.teams[0] && G.teams[0].bench.length) || !!G.so); }
+function pause(v) { if (G.state === 'menu' || G.state === 'full') return; G.paused = v; show(v ? '#stop' : null); AU.pausa(v); $('#apriCambi').classList.toggle('nas', !G.teams[0] || !!G.so); } // sempre: lì si vede anche l'energia
 function toMenu() { G.state = 'menu'; clearMatch(); G.ball = null; G.ctrl = null; ballMesh.visible = ballShadow.visible = ring.visible = arrow.visible = freccia.visible = false; $('#hud').classList.add('nas'); casa(); AU.amb(0); AU.pausa(false); AU.musica(true); }
 function vote(p) {
   const t = p.team, s = p.s, V = VOTE, conc = t.opp.score;

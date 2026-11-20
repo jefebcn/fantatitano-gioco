@@ -9,7 +9,7 @@
 import * as T from 'three';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 
 const FPS = 30;
 // nome nel gioco: [sorgente, da (s), a (s), opzione]. Sorgente 'base:nome' = clip di animazioni-base.glb, altrimenti file FBX.
@@ -33,6 +33,11 @@ const CLIP = {
   esulta: ['base:idle', 0, 1, 'braccia'], // non c'è nel pacchetto: braccia alzate sopra la posa d'attesa
   aereo: ['base:run', 0, 0, 'aereo'],     // corsa a braccia aperte del marcatore, piegandosi a destra e a sinistra (costruita)
   bandiera: ['base:idle', 0, 2, 'bandiera'], // guardalinee: braccio destro alzato, fermo (costruita)
+  // dopo un gol (facoltative: se il file manca si salta). Da Mixamo, scaricate da Alex nella stessa cartella con questi nomi:
+  // chi subisce il gol con tutte e due le mani sopra la testa (cercare «disappointed», «defeated» o «frustrated»), e l'arbitro
+  // col braccio teso in avanti verso il centro del campo (cercare «pointing» o «point»)
+  mani_testa: ['mani in testa', 0, 0, 'facoltativa'],
+  indica: ['indica', 0, 0, 'facoltativa'],
 };
 // osso Mixamo -> osso del calciatore
 const OSSA = { Hips: 'pelvis', Spine: 'spine_01', Spine1: 'spine_02', Spine2: 'spine_03', Neck: 'neck_01', Head: 'Head',
@@ -74,6 +79,7 @@ const _e = new T.Euler(), _q = new T.Quaternion();
 
 const out = { fps: FPS, bacino: 'pelvis', ossa: SRC.map((s) => OSSA[s]), clip: {} };
 for (const [nome, [da_dove, da, a, opz]] of Object.entries(CLIP)) {
+  if (opz === 'facoltativa' && !existsSync(`${dir}/${da_dove}.fbx`)) { console.log(`manca ${da_dove}.fbx: salto ${nome}`); continue; }
   const s = da_dove.startsWith('base:') ? sorgenti.base : sorgenti.fbx;
   const clip = s === sorgenti.base ? base.animations.find((c) => c.name === da_dove.slice(5)) : fbx.parse(ab(`${dir}/${da_dove}.fbx`), '').animations[0];
   if (!clip) throw new Error(`clip non trovata: ${da_dove}`);

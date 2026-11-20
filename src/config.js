@@ -105,12 +105,14 @@ export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco
 export const RIVEDI = { secs: 3, vel: .85, stacco: .3, min: 1.5 };
 
 /* ---------------------------------------------------------------- telecamera di gioco */
-// Dal lato del campo, segue il pallone: `altezza` metri sopra l'erba, `distanza` metri in linea d'aria dal punto seguito,
-// guarda in giù di `inclinazione` gradi con un campo visivo verticale di `fov` gradi. Guarda un po' avanti dove va la palla
-// (`avanti` secondi di corsa, al massimo `avantiMax` metri) e non esce dal campo oltre `bordo` metri dalla linea di fondo.
-// Non va oltre `zMax` metri dal centro verso la tribuna vicina (dietro c'è la tribuna: col pallone sulla fascia vicina si
-// vedrebbe il cemento da dentro)
-export const TELECAMERA = { altezza: 12.5, distanza: 37, inclinazione: 21, fov: 28, avanti: [.3, .25], avantiMax: [6, 4], bordo: 8, zMax: 55 };
+// Dal lato del campo, segue il pallone (valori di Alex dai video DLS): `altezza` metri sopra l'erba, `piano` metri in pianta
+// dal punto seguito (39 m in linea d'aria), guarda in giù di `inclinazione` gradi con un campo visivo verticale di `fov` gradi.
+// Così il punto seguito (il pallone) sta a circa il 40% dell'altezza dello schermo dall'alto. Guarda un po' avanti dove va la
+// palla (`avanti` secondi di corsa, al massimo `avantiMax` metri), segue lo spostamento laterale per `segueZ` (1 = tutto, così
+// il pallone resta al 40%) e non esce dal campo oltre `bordo` metri dalla linea di
+// fondo. Non va oltre `zMax` metri dal centro verso la tribuna vicina (dietro c'è la tribuna: col pallone sulla fascia
+// vicina si vedrebbe il cemento da dentro)
+export const TELECAMERA = { altezza: 12.5, piano: 36.9, inclinazione: 21.3, fov: 28, avanti: [.3, .25], avantiMax: [6, 4], bordo: 8, zMax: 55, segueZ: 1 };
 
 /* ---------------------------------------------------------------- IA col pallone, passaggi, scatti */
 /* Col pallone (l'IA). Regola presa da GameplayFootball (elizacontroller.cpp): si passa solo se il compagno sta meglio di

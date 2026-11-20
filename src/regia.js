@@ -244,8 +244,8 @@ export function creaRegia(X) {
     let dx = tx - b.x, dz = tz - b.z, d = hyp(dx, dz);
     if (d < ARB.dist) { if (d < .5) { dx = a.x - b.x; dz = a.z - b.z; d = hyp(dx, dz) || 1; } tx = b.x + dx / d * ARB.dist; tz = b.z + dz / d * ARB.dist; }
     tx = clamp(tx, -HL + 3, HL - 3); tz = clamp(tz, -HW + 3, HW - 3);
-    // dopo un gol si ferma, guarda il centro del campo e alza il braccio verso il centro (clip del guardalinee)
-    if (G.state === 'goal' && S.arbGol !== G.goals.length) { S.arbGol = G.goals.length; a.indicaT = GOLSEQ.fermi; a.vx = a.vz = 0; if (X.hasFx('bandiera')) { a.fx = 'bandiera'; a.fxNew = true; a.fxT = 0; a.fxSp = 1; a.fxDa = 0; } }
+    // dopo un gol si ferma, guarda il centro del campo e indica il centro col braccio teso (clip Mixamo `indica`, quando c'è)
+    if (G.state === 'goal' && S.arbGol !== G.goals.length) { S.arbGol = G.goals.length; a.indicaT = GOLSEQ.fermi; a.vx = a.vz = 0; if (X.hasFx('indica')) { a.fx = 'indica'; a.fxNew = true; a.fxT = 0; a.fxSp = 1; a.fxDa = 0; } }
     a.indicaT = (a.indicaT || 0) - dt;
     if (a.indicaT > 0) { let da = Math.atan2(-a.x, -a.z) - a.dir; da = Math.atan2(Math.sin(da), Math.cos(da)); a.dir += da * Math.min(1, dt * 6); return; }
     const ex = tx - a.x, ez = tz - a.z, e = hyp(ex, ez), fermo = G.state !== 'play' || a.cartT > 0, v = fermo || e < 1.5 ? 0 : Math.min(ARB.v, e * 1.3), k = Math.min(1, dt * 3);

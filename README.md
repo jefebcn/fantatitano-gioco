@@ -237,11 +237,12 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 - **Partita «come Dream League»** (`docs/dls-gameplay.md`, numeri in `src/config.js`). Dai video di Alex: levetta a base
   fissa con lo scatto automatico al bordo, tre tasti con le scritte che cambiano col possesso (Calcio forte, Calcio basso,
   Calcio alto; senza palla scivolata, Pressing, Cambia giocatore), nome e segnalino sopra la testa con la barra della
-  potenza, X gialla dove scende un pallone alto, telecamera fissa (12,5 m, 37 m, 21°, 28°), tabellone in alto a sinistra,
+  potenza, X gialla dove scende un pallone alto, telecamera fissa (12,5 m di altezza, 36,9 m in pianta, 21,3°, 28°, pallone al 40% dall'alto), tabellone in alto a sinistra,
   minimappa con la mentalità a frecce, replay dal pulsante in alto a destra, cronometro più lento a gioco fermo,
   conduzione a 4,5 m/s, 3-4 compagni in area quando si arriva al limite, portiere sulla linea che esce sul palo vicino,
   palle ferme con la scritta sotto il tabellone e il replay prima dell'angolo dopo una parata, sequenza del gol con
-  rallentatore, arbitro che indica il centro e primo piano basso col difensore deluso davanti.
+  rallentatore, arbitro che indica il centro e primo piano basso col difensore deluso davanti. L'energia non si vede in
+  partita: sta nella schermata Sostituzioni (pausa), una barretta per giocatore.
 - **Colori delle maglie** da `src/data.js` dell'app; il secondo colore è scelto a occhio dagli
   stemmi (`scripts/genera-dati.py`). Qualche divisa non combacia col suo stemma.
 - **Nomi dei calciatori**: sono quelli del listone dell'app. Verificare che l'accordo con

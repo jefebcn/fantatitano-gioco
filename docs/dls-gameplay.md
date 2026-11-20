@@ -9,11 +9,14 @@ Alex, non si inventa (vedi «Domande aperte» in fondo).
 
 Questo file sostituisce le note precedenti sulla modalità «come DLS» dove sono in conflitto.
 
-## 0. Campo e telecamera (dal prompt precedente, invariati)
-- Telecamera di gioco: altezza **12,5 m**, distanza **37 m** dal punto inquadrato, inclinazione **21°** verso il basso,
-  campo visivo verticale **28°**. Segue il pallone di lato, sempre alla stessa distanza (niente zoom in area).
-- Interpretazione nel codice (`TELECAMERA` in `src/config.js`): la telecamera sta 12,5 m sopra l'erba, a 37 m in linea
-  d'aria dal punto seguito; guarda in giù di 21°. Da confermare con Alex se il «37 m» è in linea d'aria o in pianta.
+## 0. Campo e telecamera (valori di Alex, corretti il 20/11)
+- Telecamera di gioco: **36,9 m in pianta** dal punto inquadrato, **12,5 m** di altezza (39,0 m in linea d'aria),
+  inclinazione **21,3°** verso il basso, campo visivo verticale **28°**. Il punto inquadrato (il pallone) sta a circa il
+  **40%** dell'altezza dello schermo dall'alto. Segue il pallone di lato, sempre alla stessa distanza (niente zoom in area).
+- Controllo nel gioco (pallone fermo in quattro punti, telecamera a regime): al centro 39,7% dall'alto, 21,3°, 12,5 m,
+  36,9 m in pianta, 28°; a (20, -10) e (-30, 10) sempre 39,7% (vicino alle porte la telecamera guarda un po' in diagonale,
+  `DIAG` in `src/regia.js`: inclinazione 20,8-21,1°). Eccezione: col pallone negli ultimi ~7 m verso la tribuna vicina la
+  telecamera si ferma per non entrarci (`TELECAMERA.zMax`) e il pallone scende fino al ~53%.
 - Scala del campo: invariata (campo 100 × 64 m, `HL` e `HW`).
 
 ## 1. Comandi
@@ -95,18 +98,35 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
 | ~0,5-1,2 s | leggero rallentatore; avversari con le mani in testa, arbitro che indica il centro |
 | ~1,3 s | stacco su una telecamera bassa (~1,7 m) a pochi metri dal marcatore che esulta, con un difensore deluso in primo piano |
 
-Esultanze e reazioni: clip libere (GameplayFootball oggi: `esulta`, `esulta_corsa`, `delusione`; l'arbitro usa il braccio
-alzato del guardalinee). Mixamo quando Alex scarica le clip giuste (mani in testa, arbitro che indica). Tempi in `GOLSEQ`;
+Esultanze e reazioni: esultanze di GameplayFootball (`esulta`, `esulta_corsa`). Chi subisce il gol: clip Mixamo
+`mani_testa` (entrambe le mani sopra la testa; finché manca resta la `delusione` di GameplayFootball). Arbitro: clip Mixamo
+`indica` (braccio teso in avanti verso il centro; finché manca si ferma e guarda il centro, senza braccio). Tempi in `GOLSEQ`;
 nel codice `inizio()` e `delusoDavanti()` in `src/regia.js`, `rallenta()` in `src/game.js`.
 
+## Energia
+Non si vede durante il gioco. Sta nel menu di pausa, nella schermata «Sostituzioni»: una barretta per giocatore (verde,
+arancione sotto il 70%, rossa sotto il 40%); in panchina sono freschi.
+
+## Clip Mixamo da scaricare (Alex)
+Su mixamo.com, col personaggio «X Bot» e le stesse impostazioni delle clip del Soccer Game Pack (FBX, 30 fps):
+- «disappointed», «defeated» o «frustrated»: quella con **entrambe le mani sopra la testa** → file `mani in testa.fbx`;
+- «pointing» o «point»: **braccio teso in avanti** → file `indica.fbx`.
+Vanno nella **stessa cartella degli FBX del Soccer Game Pack** (quella con `X Bot.fbx`), sul computer, non nel repository
+(gli FBX di Mixamo non si ridistribuiscono). Poi `node scripts/animazioni.mjs <quella cartella>` rigenera `public/anim.js`
+(le clip sono già in `CLIP`, facoltative: se un file manca si salta). Se preferisci, colleghi la cartella a una sessione e
+lo faccio io.
+
+## Licenze delle animazioni
+- GameplayFootball (Bastiaan Konings Schuiling, dal motore di Google Research Football): **Unlicense**, pubblico dominio
+  (`modelli/gfootball/LICENSE`). Si possono usare, modificare e pubblicare senza limiti: vanno bene nella versione pubblicata.
+- Mixamo: si possono usare nei giochi, anche commerciali, dentro il gioco (in `public/anim.js` sono già convertite); non si
+  ridistribuiscono i file FBX così come sono. Per questo stanno fuori dal repository.
+
 ## Domande aperte per Alex
-Risposte provvisorie di Alex (20/11, da verificare su DLS): passaggio assistito, replay automatico breve, icone e pulsante
-replay in alto a destra come segnaposto.
-1. Telecamera: i 37 m sono in linea d'aria (come nel codice) o in pianta?
-2. Tastiera (computer): le frecce sono una levetta tutta inclinata, quindi scatto sempre. Va bene tenere Maiusc per
+Risposte provvisorie di Alex (20/11, da verificare su DLS): passaggio assistito (`PASSAGGIO.assistito`), replay automatico
+breve, icone dei calci piazzati e pulsante replay in alto a destra come segnaposto. Risposte definitive: telecamera (sopra),
+energia nella schermata sostituzioni, clip Mixamo per mani in testa e arbitro.
+1. Tastiera (computer): le frecce sono una levetta tutta inclinata, quindi scatto sempre. Va bene tenere Maiusc per
    correre senza scattare?
-3. In alto al centro c'erano nome del giocatore e barretta dell'energia: li ho nascosti (in DLS non ci sono). L'energia
-   va mostrata da qualche parte?
-4. Il segnale centrale «Gol!» non c'è più (restano tabelloni e primo piano): va bene?
-5. Clip Mixamo per mani in testa e arbitro che indica: quali scarichi? (Gli FBX restano fuori dal repository pubblico.)
-6. Conduzione a 4,5 m/s: tra computer e computer i gol scendono (3,4 → 1,1 a partita su 8): va tarata giocando.
+2. Il segnale centrale «Gol!» non c'è più (restano tabelloni e primo piano): va bene?
+3. Conduzione a 4,5 m/s: tra computer e computer i gol scendono (3,4 → 1,1 a partita su 8): va tarata giocando.
