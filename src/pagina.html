@@ -115,49 +115,95 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 .cap .sc em{font-style:normal;font:900 14px Lato;background:#0A0A0C;color:var(--lime);border-radius:50%;width:27px;height:27px;display:grid;place-items:center}
 .cap .sc img{height:18px;width:auto}.cap .sc b{font-family:Anton;font-weight:400;font-size:13px;line-height:1}.cap .sc u{text-decoration:none;font:900 9px Lato;background:#0A0A0C;color:#fff;padding:1px 5px;border-radius:4px}
 /* ---------- dashboard della carriera ---------- */
-#hub{display:grid;align-items:stretch;justify-items:stretch;grid-template-columns:1fr 1fr;grid-template-rows:auto minmax(0,1fr) minmax(0,1fr) minmax(0,.84fr);gap:6px;padding:6px 10px 8px;overflow:hidden;max-width:1180px;margin:0 auto}
-#hub .barra{grid-column:1/-1;display:flex;align-items:center;gap:6px;min-width:0}
-#hub .ic{width:34px;height:34px;flex:none;border-radius:9px;background:rgba(255,255,255,.1);font-size:17px;font-weight:900;color:#fff}
-#hub .pill{display:flex;align-items:center;gap:6px;height:34px;padding:0 10px;border-radius:9px;background:rgba(75,6,252,.55);border:1px solid rgba(217,245,31,.35);white-space:nowrap;min-width:0;color:#fff;flex:none}
-#hub .pill b{font-family:Anton;font-weight:400;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
-#hub .pill span{font:900 11px Lato;color:var(--lime)}#hub .pill i{font-style:normal;font:900 11px Lato;background:rgba(0,0,0,.35);padding:2px 6px;border-radius:99px}
-#hub .premi{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15)}#hub .premi.pieno{background:var(--lime);color:var(--ink);animation:pulsa 1.2s infinite alternate}
+/* Misure in px per un telefono in orizzontale: sugli schermi più alti tutta la dashboard si ingrandisce (zoom, --zh). */
+/* Dashboard: tre colonne come il disegno di Alex. A sinistra il campionato (alto), al centro classifica, lo stadio 3D che
+   si vede dietro e le coppe, a destra squadra, mercato, sfide e club. Colori Fantatitano: blu notte, viola e lime. */
+#hub{display:grid;align-items:stretch;justify-items:stretch;grid-template-columns:1.12fr .84fr .84fr .56fr .56fr;grid-template-rows:auto minmax(0,1fr) minmax(0,.62fr) minmax(0,1fr);
+  grid-template-areas:"barra barra barra barra barra" "camp class class rosa rosa" "camp vista vista merc merc" "camp cast coppa sfide club";
+  gap:7px;padding:6px 10px 8px;overflow:hidden;max-width:1280px;margin:0 auto;zoom:var(--zh,1)}
+.riq .avv>div{min-width:0}.riq .avv b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hub::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 55%,rgba(13,23,51,0) 30%,rgba(8,12,30,.62) 75%),linear-gradient(180deg,rgba(8,12,30,.55),rgba(8,12,30,.15) 40%,rgba(8,12,30,.5))}
+#hub .barra{grid-area:barra;display:flex;align-items:center;gap:7px;min-width:0}
+#hub .ic{position:relative;width:36px;height:36px;flex:none;border-radius:10px;background:linear-gradient(160deg,rgba(75,6,252,.55),rgba(13,23,51,.85));border:1px solid rgba(185,164,255,.45);box-shadow:0 0 10px rgba(75,6,252,.35);color:#fff;display:grid;place-items:center;padding:0}
+#hub .ic svg,#hub .pill svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#hub #hHome{color:var(--lime);border-color:rgba(217,245,31,.6)}
+#hub .ic em{position:absolute;top:-4px;right:-4px;font:900 10px Lato;font-style:normal;background:#E5262B;color:#fff;border-radius:99px;padding:1px 5px}#hub .ic em:empty{display:none}
+#hub .pill{display:flex;align-items:center;gap:6px;height:36px;padding:0 11px;border-radius:10px;background:linear-gradient(160deg,rgba(13,23,51,.92),rgba(10,10,12,.85));border:1px solid rgba(217,245,31,.45);white-space:nowrap;min-width:0;color:#fff;flex:none}
+#hub .pill svg{color:var(--lime);width:18px;height:18px}
+#hub .pill b{font-family:Anton;font-weight:400;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+#hub .pill span{font:400 13px Anton;color:var(--lime)}#hub .pill i{font-style:normal;font:400 13px Anton}#hub .pill i::before{content:"• ";color:rgba(255,255,255,.5)}
+#hub .premi{background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.05));border-color:rgba(255,255,255,.25)}#hub .premi.pieno{background:var(--lime);color:var(--ink);animation:pulsa 1.2s infinite alternate}
 #hub .premi em{font:900 11px Lato;font-style:normal;background:#E5262B;color:#fff;border-radius:99px;padding:1px 6px}#hub .premi em:empty{display:none}
-#hub .val{display:flex;align-items:center;gap:5px;height:34px;padding:0 10px;border-radius:9px;background:rgba(10,10,12,.55);font:900 13px Lato;white-space:nowrap;flex:none}#hub .val i{font-style:normal;color:var(--lime)}#hub .gem i{color:#7fd8ff}
-#hub .prof{margin-left:auto;display:flex;align-items:center;gap:8px;text-align:right;background:none;padding:0;min-width:0;color:#fff}
-#hub .prof img{height:36px;width:auto;flex:none}#hub .prof div{min-width:0}
+#hub .val{display:flex;align-items:center;gap:6px;height:36px;padding:0 11px;border-radius:10px;background:rgba(10,10,12,.6);border:1px solid rgba(255,255,255,.18);font:400 16px Anton;white-space:nowrap;flex:none}
+#hub .val i{font-style:normal;color:var(--lime);font-size:15px}#hub .gem i{color:#7fd8ff}#hub .gem{margin-left:auto}
+#hub .prof{display:flex;align-items:center;gap:8px;text-align:left;background:linear-gradient(90deg,rgba(13,23,51,.92),rgba(13,23,51,.4));border:1px solid rgba(185,164,255,.35);border-radius:12px;padding:2px 10px 2px 3px;min-width:0;color:#fff;flex:0 1 auto}
+#hub .prof .foto{width:38px;height:38px;border-radius:50%;object-fit:cover;background:radial-gradient(circle at 50% 35%,#2a3a7a,#0d1733);border:2px solid var(--lime);flex:none}
+#hub .prof .foto:not([src]),#hub .prof .foto[src=""]{visibility:hidden;width:0;border:0}
+#hub .prof #hStemma{height:34px;width:auto;flex:none}#hub .prof div{min-width:0}
 #hub .prof b{display:block;font-family:Anton;font-weight:400;font-size:15px;text-transform:uppercase;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#hub .prof span{display:block;font-size:10.5px;color:rgba(255,255,255,.78);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#hCloud{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.3);flex:none}#hCloud.salvato,#hCloud.pronto{background:var(--lime)}#hCloud.salvo{background:#7fd8ff;animation:pulsa 1s infinite alternate}#hCloud.errore{background:#E5262B}
+#hub .prof span{display:block;font-size:10.5px;color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hCloud{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.3);flex:none}#hCloud.salvato,#hCloud.pronto{background:var(--lime)}#hCloud.salvo{background:#7fd8ff;animation:pulsa 1s infinite alternate}#hCloud.errore{background:#E5262B}
 @keyframes pulsa{to{opacity:.55}}
-.riq,.blocco{position:relative;min-height:0;min-width:0;overflow:hidden;text-align:left;color:#fff;background:linear-gradient(160deg,rgba(13,23,51,.95),rgba(10,10,12,.92));border:1px solid rgba(255,255,255,.14);border-radius:12px}
+#hub .vista{grid-area:vista;pointer-events:none;display:flex;align-items:flex-end;justify-content:center;min-height:0;overflow:hidden}#hub .vista svg{width:100%;height:100%;filter:drop-shadow(0 0 6px rgba(217,245,31,.35))}
+#cCamp{grid-area:camp}#cClass{grid-area:class}#cCast{grid-area:cast}#cCoppa{grid-area:coppa}#tRosa{grid-area:rosa}#tMerc{grid-area:merc}#tSfide{grid-area:sfide}#tClub{grid-area:club}
+.blocchi{display:contents}
+/* i riquadri: vetro blu notte con un filo di luce; quelli grandi in lime, i piccoli in viola */
+.riq,.blocco{position:relative;min-height:0;min-width:0;overflow:hidden;text-align:left;color:#fff;background:linear-gradient(165deg,rgba(16,26,62,.94),rgba(9,12,28,.9));border:1px solid rgba(217,245,31,.42);border-radius:12px;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 0 14px rgba(75,6,252,.28),inset 0 1px 0 rgba(255,255,255,.08)}
+.blocco{border-color:rgba(185,164,255,.45)}
 .riq{display:flex;flex-direction:column;padding:0}.riq:active,.blocco:active{filter:brightness(1.2)}
-.riq .tt{display:flex;align-items:center;gap:10px;padding:5px 12px;background:linear-gradient(90deg,rgba(75,6,252,.8),rgba(75,6,252,.2));flex:none}
-.riq .tt.gioca{background:linear-gradient(90deg,#d62a31,rgba(214,42,49,.25))}
-.riq .tt span{font:900 9.5px Lato;letter-spacing:.08em;text-transform:uppercase;background:rgba(0,0,0,.3);padding:3px 7px;border-radius:6px;line-height:1.15;max-width:64px}
-.riq h3{margin:0;font-family:Anton;font-weight:400;font-size:clamp(15px,2.3vw,23px);text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.riq .tt{display:flex;align-items:center;gap:10px;padding:5px 12px;background:linear-gradient(90deg,rgba(75,6,252,.55),rgba(75,6,252,.05));border-bottom:1px solid rgba(255,255,255,.08);flex:none}
+.riq h3{margin:0;font-family:Anton;font-weight:400;font-size:18.6px;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.riq h3 b{font-weight:400;color:var(--lime)}
 .riq .tt em{margin-left:auto;font-style:normal;font-family:Anton;color:var(--lime);font-size:20px}
 .riq .corpo{flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 12px;min-height:0}
 .riq .corpo>div:first-child{min-width:0}
-.riq .avv img{height:min(calc(var(--vh)*12),66px);width:auto}.riq .avv b{font-size:clamp(15px,2.3vw,24px)}
-.riq .maglia{height:90%;max-height:120px;width:auto;flex:none}.riq .icona{height:78%;max-height:104px;width:auto;color:var(--lime);flex:none}
-.riq .logo{height:62%;max-height:84px;width:auto;flex:none;opacity:.9}
+.riq .avv img{height:43px;width:auto}.riq .avv b{font-size:18.6px}
+.riq .icona{height:70%;max-height:96px;max-width:27%;width:auto;color:var(--lime);flex:none;filter:drop-shadow(0 0 8px rgba(217,245,31,.35))}
+.riq .logo{height:62%;max-height:84px;width:auto;flex:none;opacity:.95}
 .riq .pp{display:block;font:900 10px Lato;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:2px}
-.riq table.mini{flex:1;font-size:11px}.riq table.mini td:nth-child(3){text-align:left;white-space:nowrap}.riq table.mini td:nth-child(2){color:rgba(255,255,255,.6)}
-.blocchi{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;min-height:0}
+.riq table.mini{flex:1;font-size:12px}.riq table.mini td:nth-child(3){text-align:left;white-space:nowrap}.riq table.mini td:nth-child(2){color:rgba(255,255,255,.6)}
+#cClass table.mini td,#cClass table.mini th{padding:0 5px;line-height:1.22}#cClass .corpo{padding-top:2px;padding-bottom:2px}
+.riq table.mini tr.io td{color:var(--lime);background:rgba(217,245,31,.12)}
+/* il campionato, a sinistra: prossima partita, maglia grande, matchday e ultimi risultati */
+#cCast .avv b,#cCoppa .avv b{font-size:15.2px}#cCast h3,#cCoppa h3{font-size:14.8px}#cCast .pp,#cCoppa .pp{white-space:nowrap;font-size:9px}#cCast .avv i,#cCoppa .avv i{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#cCast .avv img,#cCoppa .avv img{height:35px}
+#cCamp .tt{background:linear-gradient(90deg,rgba(217,245,31,.16),rgba(217,245,31,0))}
+#cCamp .testa{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px 2px 12px;flex:none}
+#cCamp .gioca{flex:none;background:var(--lime);color:var(--ink);font:400 12.7px Anton;text-transform:uppercase;line-height:1.05;text-align:center;padding:6px 16px 6px 10px;clip-path:polygon(0 0,86% 0,100% 50%,86% 100%,0 100%);box-shadow:0 0 12px rgba(217,245,31,.5)}
+#cCamp .gioca.no{background:rgba(255,255,255,.2);color:#fff;box-shadow:none}
+#cCamp .kit{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative;margin:2px 12px;border-radius:10px;background:radial-gradient(circle at 50% 55%,rgba(75,6,252,.45),rgba(75,6,252,0) 62%)}
+#cCamp .kit::before{content:"";position:absolute;width:min(70%,117px);aspect-ratio:1;border-radius:50%;border:2px solid rgba(217,245,31,.25);box-shadow:0 0 18px rgba(217,245,31,.18)}
+#cCamp .kit .maglia{height:94%;max-height:240px;width:auto;position:relative;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
+#cCamp .md{flex:none;margin:0 10px;text-align:center;font:400 16px Anton;letter-spacing:.12em;color:var(--lime);text-transform:uppercase;border-top:1px solid rgba(217,245,31,.35);border-bottom:1px solid rgba(217,245,31,.35);background:linear-gradient(90deg,rgba(75,6,252,0),rgba(75,6,252,.45),rgba(75,6,252,0))}
+#cCamp .forma{flex:none;display:flex;justify-content:center;gap:5px;padding:6px 10px 8px}
+#cCamp .forma i{font:400 13px Anton;font-style:normal;min-width:24px;padding:3px 0;border-radius:6px;text-align:center;background:rgba(255,255,255,.12)}
+#cCamp .forma .v{background:var(--lime);color:var(--ink)}#cCamp .forma .p{background:#E5262B}#cCamp .forma .n{background:rgba(185,164,255,.5)}
+#cCamp .forma span{font:900 10px Lato;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.65);align-self:center}
+/* i blocchi di destra */
 .blocco{display:flex;flex-direction:column;gap:2px;padding:6px 10px}
-.blocco h4{margin:0;font-family:Anton;font-weight:400;font-size:clamp(14px,2vw,20px);text-transform:uppercase;letter-spacing:.02em;color:#9fb6ff}
-.blocco .conti{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:auto}.blocco .conti span{display:flex;flex-direction:column;align-items:center;min-width:0}
-.blocco .conti i{font:900 8px Lato;letter-spacing:0;text-transform:uppercase;color:rgba(255,255,255,.65);font-style:normal;white-space:nowrap}
-.blocco .conti b{font:900 13px Lato;background:rgba(0,0,0,.4);border-radius:6px;padding:2px 6px;margin-top:2px}
-.bollo{position:absolute;top:6px;right:8px;font-style:normal;background:#E5262B;border-radius:99px;font:900 11px Lato;padding:1px 7px}
-.blocco .big{font-family:Anton;font-weight:400;font-size:clamp(16px,2.5vw,26px);text-transform:uppercase;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:auto}
-.blocco .sx,.blocco .rr{font:900 10px Lato;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.06em}.blocco .rr{color:var(--lime)}
-.blocco p{margin:0;font-size:10.5px;line-height:1.25;color:rgba(255,255,255,.8)}
+.blocco h4{margin:0;font-family:Anton;font-weight:400;font-size:16px;text-transform:uppercase;letter-spacing:.02em;color:#B9A4FF;line-height:1.05}
+.blocco h5{margin:0;font-family:Anton;font-weight:400;font-size:12.7px;text-transform:uppercase;color:#fff;line-height:1.05}
+#tRosa{flex-direction:row;align-items:stretch;gap:8px}#tRosa .txt{display:flex;flex-direction:column;min-width:0;flex:1}
+#tRosa .ritratto{height:100%;aspect-ratio:1;max-width:46%;border-radius:10px;object-fit:cover;flex:none;background:radial-gradient(circle at 50% 30%,#2a3a7a,#0d1733);border:1px solid rgba(185,164,255,.5);box-shadow:0 0 12px rgba(75,6,252,.45)}
+#tRosa .ritratto[src=""]{display:none}
+.blocco .big{font-family:Anton;font-weight:400;font-size:20.3px;text-transform:uppercase;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:auto}
+.blocco .sx,.blocco .rr{font:900 10px Lato;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.06em}.blocco .rr{color:var(--lime);font:400 12.7px Anton}
+#tMerc .tit{display:flex;align-items:center;gap:8px}#tMerc .tit h4{flex:1;min-width:0}
+#tMerc .valore{flex:none;font:400 17.7px Anton;line-height:1.1;color:var(--lime);border:1px solid rgba(217,245,31,.6);border-radius:8px;padding:1px 7px;background:rgba(10,10,12,.6);box-shadow:0 0 10px rgba(217,245,31,.3)}
+#tMerc .frecce{font:900 16px Lato;line-height:1}#tMerc .frecce i{display:block;font-style:normal;color:var(--lime)}#tMerc .frecce i+i{color:#E5262B}
+.blocco p{margin:0;font-size:10.5px;line-height:1.25;color:rgba(255,255,255,.8);min-height:0;overflow:hidden}#tMerc p{flex:1 1 0}.mcard{flex:none}
 .mcard{display:flex;align-items:center;gap:6px;margin-top:auto;background:rgba(217,245,31,.12);border-radius:8px;padding:3px 7px;min-width:0}
 .mcard em{font-style:normal;font:900 13px Lato;color:var(--lime)}.mcard img{height:16px;width:auto}.mcard b{font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mcard u{text-decoration:none;font:900 9px Lato}
-#tClub{display:grid;grid-template-columns:1fr 1fr;gap:3px 6px;align-content:start}#tClub h4,#tClub>.st{grid-column:1/-1}
-#tClub button{background:rgba(255,255,255,.09);border-radius:7px;padding:5px 6px;font:900 10.5px Lato;text-align:left;letter-spacing:0;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blocco .anelli{display:grid;grid-template-columns:1fr 1fr;gap:1px 6px;margin-top:auto;justify-items:center}
+.anello{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
+.anello i{font:900 8.5px Lato;font-style:normal;text-transform:uppercase;color:rgba(255,255,255,.7);white-space:nowrap}
+.anello b{display:grid;place-items:center;width:31.2px;aspect-ratio:1;border-radius:50%;font:400 11px Anton;background:radial-gradient(closest-side,#0d1733 76%,transparent 78%),conic-gradient(var(--lime) calc(var(--p)*1%),rgba(185,164,255,.3) 0)}
+.bollo{position:absolute;top:6px;right:8px;font-style:normal;background:#E5262B;border-radius:99px;font:900 11px Lato;padding:1px 7px}
+#tClub{display:flex;flex-direction:column;gap:3px}
+#tClub button{display:flex;justify-content:space-between;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:4px 8px;font:900 11px Lato;text-align:left;letter-spacing:0;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tClub button span{color:var(--lime)}
+/* telefono basso: meno aria */
+.basso #hub{gap:5px;padding:4px 8px 6px}.basso #hub .ic,.basso #hub .pill,.basso #hub .val{height:32px}.basso #hub .ic{width:32px}.basso #hub .prof .foto{width:32px;height:32px}
+.bassissimo #cCamp .forma{display:none}.bassissimo .blocco h5{display:none}
 /* ---------- pannelli della carriera ---------- */
 .sfida{display:grid;grid-template-columns:1fr 46px 104px 84px;align-items:center;gap:8px;padding:6px 8px;border-radius:9px;background:rgba(255,255,255,.06);margin-top:4px}
 .sfida b{font-size:13px}.sfida .barra{display:block;height:5px;border-radius:5px;background:rgba(255,255,255,.12);margin-top:4px;overflow:hidden}.sfida .barra i{display:block;height:100%;background:var(--lime)}
@@ -307,13 +353,14 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 
 <div id="hub" class="scr nas">
   <div class="barra">
-    <button class="ic" id="hHome" aria-label="Schermata iniziale">⌂</button><button class="ic" id="hImp" aria-label="Impostazioni">⚙</button><button class="ic" id="hInfo" aria-label="Come si gioca">i</button>
-    <button class="pill" id="hSett"><b>Settimana</b><span id="hSettT"></span><i id="hSettP"></i></button>
+    <button class="prof" id="hProf"><img class="foto" id="hFoto" alt=""><div><b id="hNome"></b><span id="hClub"></span></div><img id="hStemma" alt=""><i id="hCloud"></i></button>
+    <button class="pill" id="hSett"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><b>Settimana</b><span id="hSettT"></span><i id="hSettP"></i></button>
     <button class="pill premi" id="hPremi"><b>Premi</b><em id="hPremiN"></em></button>
     <span class="val gem" id="hGem"></span><span class="val" id="hMon"></span>
-    <button class="prof" id="hProf"><div><b id="hNome"></b><span id="hClub"></span></div><img id="hStemma" alt=""><i id="hCloud"></i></button>
+    <button class="ic" id="hHome" aria-label="Schermata iniziale"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></button><button class="ic" id="hImp" aria-label="Impostazioni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button><button class="ic" id="hInfo" aria-label="Come si gioca"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></button><button class="ic" id="hCamp" aria-label="Notifiche"><svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4zM10 21h4"/></svg><em id="hCampN"></em></button>
   </div>
   <button class="riq" id="cCamp"></button><button class="riq" id="cClass"></button>
+  <div class="vista"><svg viewBox="0 0 400 120" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><defs><linearGradient id="vMonte" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4B06FC" stop-opacity=".55"/><stop offset="1" stop-color="#0D1733" stop-opacity="0"/></linearGradient></defs><path d="M0 120 L40 104 L80 98 L120 80 L150 70 L178 52 L200 46 L226 56 L250 44 L280 62 L320 78 L360 92 L400 104 L400 120Z" fill="url(#vMonte)"/><path d="M0 104 L40 104 L80 98 L120 80 L150 70 L178 52 L200 46 L226 56 L250 44 L280 62 L320 78 L360 92 L400 104" fill="none" stroke="#D9F51F" stroke-opacity=".55" stroke-width="1.5"/><g fill="#D9F51F" fill-opacity=".85"><path d="M144 70v-16h2v-3h2v3h2v-3h2v3h2v16z"/><path d="M193 47v-26h2v-4h2v4h3v-4h3v4h2v26z"/><path d="M244 45v-20h2v-3h2v3h2v-3h2v3h2v20z"/></g><g fill="#fff" fill-opacity=".6"><circle cx="60" cy="108" r="1"/><circle cx="96" cy="100" r="1"/><circle cx="300" cy="80" r="1"/><circle cx="338" cy="92" r="1"/><circle cx="130" cy="86" r="1"/><circle cx="270" cy="68" r="1"/></g></svg></div>
   <button class="riq" id="cCast"></button><button class="riq" id="cCoppa"></button>
   <div class="blocchi"><button class="blocco" id="tSfide"></button><button class="blocco" id="tRosa"></button><button class="blocco" id="tMerc"></button><div class="blocco" id="tClub"></div></div>
 </div>

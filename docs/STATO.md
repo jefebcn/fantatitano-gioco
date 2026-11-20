@@ -17,7 +17,7 @@
 3. Impostazioni grafiche Bassa/Media/Alta/Molto alta, 30/60 fps, preset iniziale dal telefono.
 4. Difficoltà continua: parametri da 0 a 1 per difficoltà e valore del giocatore.
 5. Ruoli in campo: rigori, punizioni, angoli (oltre al capitano).
-6. Hub: riquadri con stato vivo, avvisi prima di GIOCA, al massimo un popup.
+6. Hub: nuova dashboard dal disegno di Alex — FATTO (colori Fantatitano, ritratti 3D). Restano avvisi prima di GIOCA e un solo popup.
 7. Stadio come requisito di promozione.
 Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 

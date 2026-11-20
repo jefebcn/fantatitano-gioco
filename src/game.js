@@ -2517,22 +2517,70 @@ function drawHub() {
   $('#hGem').innerHTML = `<i>◆</i>${mon(K.gemme)}`; $('#hMon').innerHTML = `<i>●</i>${mon(K.monete)}`; $('#hNome').textContent = K.nome; $('#hClub').innerHTML = `${esc(me.name)} ${stelle(me.str)}`; $('#hStemma').src = img(me.id + '-mini');
   $('#hSettT').textContent = fmtTempo(CAR.fineSettimana(oggi) - oggi); $('#hSettP').textContent = `${st.conti.w[0]}/${st.conti.w[1]}`;
   $('#hPremiN').textContent = st.daRiscuotere || ''; $('#hPremi').classList.toggle('pieno', st.daRiscuotere > 0);
+  $('#hCampN').textContent = st.daRiscuotere || '';
   const avv = (id, righe) => `<div class="avv"><img src="${img(id)}" alt=""><div><b>${esc(club(id).name)}</b>${righe}</div></div>`;
-  $('#cCamp').innerHTML = `<div class="tt gioca"><span>${p ? 'Gioca adesso' : 'Stagione finita'}</span><h3>Campionato</h3></div><div class="corpo">`
-    + (p ? avv(p.avv, `${stelle(club(p.avv).str)}<i>Partita ${p.giornata} di ${p.totale} · ${p.inCasa ? 'in casa' : 'in trasferta'}</i>`) : avv(K.campione, `<i>Campione · tu ${pos + 1}º</i><i class="vai">Tocca per la nuova stagione</i>`)) + kit + '</div>';
-  const da = clamp(pos - 2, 0, tab.length - 5);
-  $('#cClass').innerHTML = `<div class="tt"><h3>Campionato · stagione ${K.stagione}</h3><em>»</em></div><div class="corpo"><table class="mini"><tr><th>G</th><th></th><th>Squadra</th><th>DR</th><th>PUN</th></tr>${tab.slice(da, da + 5).map((r, i) => `<tr class="${r.id === K.club ? 'io' : ''}"><td>${r.g || '–'}</td><td>${da + i + 1}</td><td>${mini(r.id)}${esc(club(r.id).name)}</td><td>${r.gf - r.gs}</td><td>${r.pt}</td></tr>`).join('')}</table><img class="logo" src="img/corona-lime.png" alt=""></div>`;
-  const cupCard = (titolo, icona, pr, fineF) => { const fine = pr ? null : fineF(); return `<div class="tt"><h3>${titolo}</h3><em>»</em></div><div class="corpo"><div><span class="pp">${pr ? 'Prossima partita' : fine.titolo}</span>${pr ? avv(pr.avv, `${stelle(club(pr.avv).str)}<i>${pr.nome}</i>`) : avv(fine.id, `<i>${fine.testo}</i>`)}</div>${icona}</div>`; }; // la fine si calcola solo quando c'è
+  // il campionato: prossima partita col tasto, la maglia grande, la giornata e gli ultimi cinque risultati
+  const forma = ultimi(5).map((r) => `<i class="${r}">${r.toUpperCase()}</i>`).join('');
+  $('#cCamp').innerHTML = `<div class="tt"><h3><b>Fantatitano</b> Campionato</h3></div><div class="testa">`
+    + (p ? avv(p.avv, `${stelle(club(p.avv).str)}<i>Partita ${p.giornata} di ${p.totale} · ${p.inCasa ? 'in casa' : 'in trasferta'}</i>`) : avv(K.campione, `<i>Campione · tu ${pos + 1}º</i><i class="vai">Tocca per la nuova stagione</i>`))
+    + `<span class="gioca${p ? '' : ' no'}">${p ? 'Gioca<br>adesso' : 'Nuova<br>stagione'}</span></div><div class="kit">${kit}</div>`
+    + `<div class="md">Matchday${p ? ` · ${p.giornata}` : ''}</div><div class="forma">${forma || '<span>Prima giornata</span>'}</div>`;
+  // sugli schermi bassi quattro righe di classifica, se no cinque
+  const nr = innerHeight <= 480 ? 4 : 5, da = clamp(pos - 2, 0, tab.length - nr);
+  $('#cClass').innerHTML = `<div class="tt"><h3>Classifica · stagione ${K.stagione}</h3><em>»</em></div><div class="corpo"><table class="mini"><tr><th>G</th><th></th><th>Squadra</th><th>DR</th><th>PUN</th></tr>${tab.slice(da, da + nr).map((r, i) => `<tr class="${r.id === K.club ? 'io' : ''}"><td>${r.g || '–'}</td><td>${da + i + 1}</td><td>${mini(r.id)}${esc(club(r.id).name)}</td><td>${r.gf - r.gs}</td><td>${r.pt}</td></tr>`).join('')}</table><img class="logo" src="img/corona-lime.png" alt=""></div>`;
+  // la fine si calcola solo quando la competizione è finita
+  const cupCard = (titolo, icona, pr, fineF) => { const fine = pr ? null : fineF(); return `<div class="tt"><h3>${titolo}</h3><em>»</em></div><div class="corpo"><div><span class="pp">${pr ? 'Prossima partita' : fine.titolo}</span>${pr ? avv(pr.avv, `${stelle(club(pr.avv).str)}<i>${pr.nome}</i>`) : avv(fine.id, `<i>${fine.testo}</i>`)}</div>${icona}</div>`; };
   const kc = K.castelli, cc = CAR.castelliProssima(K), camC = CAR.castelliCampione(K);
   $('#cCast').innerHTML = cupCard('Trofeo dei Castelli', TORRI, cc, () => ({ titolo: kc.vinta ? 'Vinto!' : 'Trofeo finito', id: camC || K.club, testo: kc.vinta ? 'Il trofeo è tuo' : `Lo vince ${esc(club(camC).name)} · tu fuori ${kc.fuori === 'gironi' ? 'ai gironi' : CAR.TURNI_KO[kc.fuori].toLowerCase()}` }));
   const k = K.coppa, cp = CAR.coppaProssima(K);
   $('#cCoppa').innerHTML = cupCard('Coppa Titano', COPPA, cp, () => ({ titolo: k.vinta ? 'Vinta!' : 'Coppa finita', id: k.campione || K.club, testo: k.vinta ? 'La coppa è tua' : `La vince ${esc(club(k.campione).name)} · tu fuori: ${CAR.TURNI[k.fuori].toLowerCase()}` }));
-  $('#tSfide').innerHTML = `<h4>Sfide</h4><div class="conti">${Object.entries({ d: 'Oggi', w: 'Sett.', c: 'Carriera', s: 'Stagione' }).map(([g, n]) => `<span><i>${n}</i><b>${st.conti[g][0]}/${st.conti[g][1]}</b></span>`).join('')}</div>${st.daRiscuotere ? `<em class="bollo">${st.daRiscuotere}</em>` : ''}`;
+  // le sfide in quattro anelli che si riempiono
+  $('#tSfide').innerHTML = `<h4>Sfide</h4><div class="anelli">${Object.entries({ d: 'Oggi', w: 'Sett.', c: 'Carriera', s: 'Stagione' }).map(([g, n]) => `<span class="anello"><i>${n}</i><b style="--p:${Math.round(st.conti[g][0] / Math.max(1, st.conti[g][1]) * 100)}">${st.conti[g][0]}/${st.conti[g][1]}</b></span>`).join('')}</div>${st.daRiscuotere ? `<em class="bollo">${st.daRiscuotere}</em>` : ''}`;
   const cap = me.xi.find((x) => K.mio && x[0] === K.mio.capitano) || me.xi.slice().sort((a, b) => ovr(b[1], b[3]) - ovr(a[1], a[3]))[0];
-  $('#tRosa').innerHTML = `<h4>Squadra</h4><span class="sx">${K.mio && cap[0] === K.mio.capitano ? 'Capitano' : 'Il migliore'}</span><b class="big">${esc(cap[0])}</b><span class="rr">${RUOLO[cap[1]]} · ${ovr(cap[1], cap[3])}</span>`;
-  const t = consigliato(); $('#tMerc').innerHTML = `<h4>Trasferimenti</h4><p>Rinforza la squadra: scambia i tuoi giocatori con quelli delle altre.</p>${t ? `<div class="mcard"><em>${t.v}</em>${mini(t.c.id)}<b>${esc(t.x[0])}</b><u>${RUOLO[t.x[1]]}</u></div>` : ''}`;
-  $('#tClub').innerHTML = `<h4>Il mio club</h4><button data-club="stadio">Stadio · ${K.stadio}</button><button data-club="personalizza">Stemma</button><button data-club="allenamento">Allena</button><button data-club="amichevole">Amichevole</button>`;
+  $('#tRosa').innerHTML = `<div class="txt"><h4>Squadra</h4><span class="sx">${K.mio && cap[0] === K.mio.capitano ? 'Capitano' : 'Il migliore'}</span><b class="big">${esc(cap[0])}</b><span class="rr">${RUOLO[cap[1]]} · ${ovr(cap[1], cap[3])}</span></div><img class="ritratto" src="${ritratto(K.club, cap[0], cap[2], RUOLO[cap[1]] === 'POR')}" alt="">`;
+  const t = consigliato(); $('#tMerc').innerHTML = `<div class="tit"><h4>Trasferimenti</h4>${t ? `<span class="frecce"><i>←</i><i>→</i></span><span class="valore">${t.v}</span>` : ''}</div><h5>Mercato</h5><p>Rinforza la squadra: scambia i tuoi giocatori con quelli delle altre.</p>${t ? `<div class="mcard"><em>${t.v}</em>${mini(t.c.id)}<b>${esc(t.x[0])}</b><u>${RUOLO[t.x[1]]}</u></div>` : ''}`;
+  const sedute = Object.values(K.allen || {}).reduce((a, b) => a + b, 0);
+  $('#tClub').innerHTML = `<h4>Il mio club</h4><button data-club="stadio">Stadio <span>${K.stadio}</span></button><button data-club="allenamento">Allena <span>${sedute}</span></button><button data-club="personalizza">Stemma <span>›</span></button><button data-club="amichevole">Amichevole <span>›</span></button>`;
+  $('#hFoto').src = ritratto(K.club, K.nome, '', false, true);
   aggiornaCloud();
+}
+/** Gli ultimi n risultati del campionato del club dell'utente, dal più vecchio: 'v', 'n' o 'p'. */
+function ultimi(n) {
+  const out = [];
+  for (let g = 0; g < (K.ris || []).length; g++) {
+    const i = (K.cal[g] || []).findIndex(([a, b]) => a === K.club || b === K.club), r = K.ris[g] && K.ris[g][i]; if (i < 0 || !r) continue;
+    const [f, s] = K.cal[g][i][0] === K.club ? r : [r[1], r[0]]; out.push(f > s ? 'v' : f < s ? 'p' : 'n');
+  }
+  return out.slice(-n);
+}
+/*
+ * Ritratto di un giocatore (o del mister) dal modello 3D del gioco: la stessa faccia, capelli e divisa che ha in campo,
+ * disegnati una volta in un'immagine piccola e tenuti in memoria. mister: senza numero né nome sulla schiena.
+ */
+const RITRATTI = new Map();
+function ritratto(clubId, nome, num, portiere, mister = false) {
+  const chiave = `${clubId}|${nome}|${portiere ? 1 : 0}`; if (RITRATTI.has(chiave)) return RITRATTI.get(chiave);
+  if (!MODEL || !MODEL.scene) return '';
+  let url = '';
+  try {
+    const c = club(clubId), ks = pickKits(c, CLUBS.find((x) => x.id !== clubId) || c), kit = portiere ? ks[2] : ks[0];
+    const fig = makeSkinned(kit, hash(clubId + nome), mister ? '' : num, portiere ? null : clubId, mister ? '' : nome, {}); FIGURE.delete(fig);
+    const sc = new T.Scene(), luce = new T.DirectionalLight(0xffffff, 2.6), viso = new T.DirectionalLight(0xffffff, 1.6), taglio = new T.DirectionalLight(0xB9A4FF, 2.2);
+    luce.position.set(1.4, 2.4, 3); viso.position.set(-.6, .4, 3); taglio.position.set(-2, 1.5, -2); sc.add(new T.HemisphereLight(0xdfe6ff, 0x2a2550, 1.8), luce, viso, taglio, fig.root);
+    fig.mixer.update(0); fig.root.updateMatrixWorld(true);
+    const testa = fig.bones.Head.getWorldPosition(new T.Vector3()), cam = new T.PerspectiveCamera(26, 1, .05, 20), L = 256;
+    cam.position.set(testa.x + .28, testa.y + .1, testa.z + 1.15); cam.lookAt(testa.x, testa.y - .02, testa.z);
+    const rt = new T.WebGLRenderTarget(L, L), prima = renderer.getRenderTarget(), col = renderer.getClearColor(new T.Color()), alfa = renderer.getClearAlpha();
+    rt.texture.colorSpace = T.SRGBColorSpace;
+    renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(sc, cam);
+    const px = new Uint8Array(L * L * 4); renderer.readRenderTargetPixels(rt, 0, 0, L, L, px);
+    renderer.setRenderTarget(prima); renderer.setClearColor(col, alfa); rt.dispose();
+    const [cv2, x] = cv(L, L), dati = x.createImageData(L, L);
+    // le righe arrivano dal basso: si capovolgono
+    for (let r = 0; r < L; r++) dati.data.set(px.subarray((L - 1 - r) * L * 4, (L - r) * L * 4), r * L * 4);
+    x.putImageData(dati, 0, 0); url = cv2.toDataURL('image/png');
+  } catch (e) { url = ''; }
+  RITRATTI.set(chiave, url); return url;
 }
 // Il giocatore più forte che si può prendere adesso al posto del più debole del suo ruolo (o, se non basta niente, il più vicino)
 function consigliato() {
@@ -2714,7 +2762,7 @@ function buildMenu() {
   $('#cCoppa').onclick = panCoppa; $('#cCast').onclick = panCastelli;
   $('#cClass').onclick = panClassifica; $('#tMerc').onclick = () => { mPreso = null; panMercato(); }; $('#tSfide').onclick = () => panSfide();
   $('#hImp').onclick = () => { armato = false; panImp(); }; $('#hInfo').onclick = panInfo; $('#hHome').onclick = () => { drawHome(); show('#home'); }; $('#hProf').onclick = panProfilo;
-  $('#hSett').onclick = () => panSfide('w'); $('#hPremi').onclick = () => { riscuotiTutto(); drawHub(); };
+  $('#hSett').onclick = () => panSfide('w'); $('#hPremi').onclick = () => { riscuotiTutto(); drawHub(); }; $('#hCamp').onclick = () => panSfide();
   const clubAz = (k) => (k === 'personalizza' ? (K.mio && K.club === POSTO ? apriNuovo(true) : avviso('Si personalizza il club creato all\'inizio della carriera')) : k === 'amichevole' ? vai() : panClubMio(k));
   $('#tClub').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) clubAz(b.dataset.club); });
   $('#campoA').addEventListener('click', tapRosa);
@@ -2826,6 +2874,8 @@ function resize() {
   const iw = window.innerWidth, ih = window.innerHeight, rot = ih > iw, w = rot ? ih : iw, h = rot ? iw : ih, root = document.documentElement, st = document.body.style;
   G.rot = rot; st.width = `${w}px`; st.height = `${h}px`; st.left = rot ? `${iw}px` : '0'; st.transform = rot ? 'rotate(90deg)' : 'none';
   root.style.setProperty('--vw', `${w / 100}px`); root.style.setProperty('--vh', `${h / 100}px`);
+  // la dashboard è disegnata per un telefono in orizzontale (circa 430 px di altezza): sugli schermi più alti si ingrandisce tutta
+  root.style.setProperty('--zh', String(clamp(Math.min(h / 420, w / 880), 1, 1.8)));
   root.classList.toggle('rot', rot); root.classList.toggle('largo', w / h >= 1.3); root.classList.toggle('basso', h <= 480); root.classList.toggle('bassissimo', h <= 430);
   renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
 }
