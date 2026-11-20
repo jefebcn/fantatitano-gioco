@@ -226,7 +226,9 @@ function azione(p, name) { if (hasFx(name) && p.fig.skinned) { p.fxFermo = false
    fotogramma cada proprio nell'istante in cui la fisica tocca la palla: il piede e il pallone vanno a tempo. */
 const GESTI = window.ANIMS_GF ? window.ANIMS_GF.info : {};
 /** Libero per un gesto: nessuna azione in corso, o un gesto che ha già toccato la palla (i tocchi si susseguono). */
-const libero = (p) => !p.fx || (!!GESTI[p.fx] && GESTI[p.fx].tocco !== undefined && !/^(para|presa_)/.test(p.fx) && p.fxT * (p.fxSp || 1) > GESTI[p.fx].tocco + .02);
+// i movimenti senza palla (partenze, inversioni, frenata) sono solo grafica: qualunque altro gesto li interrompe
+const MOV = /^(parte|inverti|frena)_/;
+const libero = (p) => !p.fx || MOV.test(p.fx) || (!!GESTI[p.fx] && GESTI[p.fx].tocco !== undefined && !/^(para|presa_)/.test(p.fx) && p.fxT * (p.fxSp || 1) > GESTI[p.fx].tocco + .02);
 /** A che ritmo gira un gesto per chi corre a velocità v: quello della sua corsa, tranne i gesti con un giro (frenano e ripartono da soli). */
 const ritmoGesto = (i, v) => (i.giro !== undefined ? 1 : i.v > 1 ? clamp(v / i.v, .6, 1.5) : 1);
 /** Verso dove si porta la palla chi la controlla: la levetta, o il dischetto avversario per chi gioca da solo (null: dritto davanti a sé). */
@@ -237,12 +239,39 @@ function versoControllo(p) {
 const giroVerso = (da, a) => Math.atan2(Math.sin(a - da), Math.cos(a - da)); // angolo da una direzione all'altra, positivo verso sinistra
 /** Tocco di conduzione che cambia direzione: il gesto del taglio parte dal fotogramma del contatto (il tocco è appena avvenuto). */
 function taglio(o, b) {
-  if (o.carica || !o.fig.skinned || (o.fx && !/^(tocco|stop|taglio)/.test(o.fx))) return;
+  if (o.carica || !o.fig.skinned || (o.fx && !/^(tocco|stop|taglio|parte|inverti|frena)/.test(o.fx))) return;
   const v = hyp(o.vx, o.vz), bv = hyp(b.vx, b.vz); if (v < 1 || bv < 1) return;
   const a = giroVerso(Math.atan2(o.vx, o.vz), Math.atan2(b.vx, b.vz)), g = Math.abs(a) * 180 / Math.PI; if (g < 35) return;
   const scatto = v / (o.fig.alt || 1) > 5.8 && g < 112;
   const nome = (scatto ? `taglio_scatto_${g < 67 ? 45 : 90}` : `taglio_${g < 67 ? 45 : g < 112 ? 90 : g < 157 ? 135 : 180}`) + (a > 0 ? '_sx' : '_dx');
   if (GESTI[nome]) { o.fx = null; gesto(o, nome, 0); }
+}
+/**
+ * Movimenti senza palla (solo grafica, non cambiano la partita): chi parte da fermo verso una direzione girata fa la
+ * partenza col giro, chi inverte la corsa la frenata con la svolta, chi smette di scattare la frenata. Il corpo gira
+ * insieme al gesto (in poseSkinned) invece di ruotare sul posto. MOVI.fermo: sotto questa velocità si è fermi (m/s);
+ * parte: velocità voluta minima per una partenza; giro: gradi minimi per una partenza girata; corsa: velocità minima per
+ * un'inversione; inverti: coseno sotto cui la direzione voluta è alle spalle (lo stesso del corpo); scatto: velocità
+ * relativa dello scatto; pausa: secondi tra un movimento e il successivo. In corsa il gesto parte solo quando a terra c'è
+ * il piede con cui comincia la clip, appena appoggiato (entro MOVI.passo del passo): se no si aspetta al massimo
+ * MOVI.attesa secondi, intanto il giocatore frena e la velocità minima scende a MOVI.corsaAttesa.
+ */
+const MOVI = { fermo: .6, parte: 2, giro: 35, corsa: 2.4, inverti: -.35, scatto: 5.3, pausa: .3, passo: .2, attesa: .35, corsaAttesa: 1.2 };
+function movimento(p, v) {
+  if (p.i === 0 || p.st !== 'run' || G.ball.owner === p || p.fx || p.carica || !p.fig.skinned || (p.movT || 0) > G.t || G.state === 'goal') return;
+  const M = MOVI, w = hyp(p.wx || 0, p.wz || 0), vr = v / (p.fig.alt || 1); let nome = null, verso = p.dir;
+  if (v < M.fermo && w > M.parte) {
+    verso = Math.atan2(p.wx, p.wz); const a = giroVerso(p.dir, verso), g = Math.abs(a) * 180 / Math.PI; if (g < M.giro) return;
+    nome = `parte_${g < 67 ? 45 : g < 112 ? 90 : g < 157 ? 135 : 180}${a > 0 ? '_sx' : '_dx'}`;
+  } else if (v > ((p.movAsp || 0) > G.t ? M.corsaAttesa : M.corsa) && w > 1.5 && (p.wx * p.vx + p.wz * p.vz) / (w * v) < M.inverti) {
+    verso = Math.atan2(p.wx, p.wz); const a = giroVerso(Math.atan2(p.vx, p.vz), verso), g = Math.abs(a) * 180 / Math.PI;
+    nome = (vr > M.scatto ? 'inverti_scatto_135' : g < 157 ? 'inverti_135' : 'inverti_180') + (a > 0 ? '_sx' : '_dx');
+  } else if (vr > M.scatto && w < 1) nome = 'frena_scatto';
+  if (!nome || !GESTI[nome]) return;
+  const giu = (p.passo || 0) < .5 ? 'dx' : 'sx', ap = GESTI[nome].appoggio;
+  if (v >= M.fermo && ap && (giu !== ap || (p.passo || 0) % .5 > M.passo)) { if (!((p.movAsp || 0) > G.t - M.attesa)) p.movAsp = G.t + M.attesa; return; }
+  if (!gesto(p, nome, 0)) return;
+  p.movAsp = 0; p.fxSp = 1; p.movDa = p.fig.vdir ?? p.dir; p.movA = giroVerso(p.movDa, verso); p.movT = G.t + GESTI[nome].durata + M.pausa;
 }
 /** Fa partire il gesto «nome» in modo che il piede tocchi la palla fra «fra» secondi. */
 function gesto(p, nome, fra, adatta = false) {
@@ -1718,6 +1747,7 @@ function corri(p, dt) {
   // velocità voluta: piena finché si è lontani, poi quella che permette di fermarsi sul punto (niente frenate brusche all'ultimo)
   const dx = gx - p.x, dz = gz - p.z, d = hyp(dx, dz); let wx = 0, wz = 0;
   if (d > .15) { const k = (insegue ? sp : Math.min(sp, Math.sqrt(2 * MOTO.CORPO.frena * .55 * d), d * 4)) / d; wx = dx * k; wz = dz * k; } // inseguendo la propria palla non si frena all'arrivo
+  p.wx = wx; p.wz = wz; // per l'animazione (movimento): dove vuole andare
   const scatto = p.sprint && hyp(p.vx, p.vz) > 5, aiuto = guida ? 1.12 : 1; // chi guida l'utente risponde un filo prima
   const o = { acc: fm.acc * aiuto * (p.i === 0 ? 1.15 : 1) * (sb ? .7 : 1), frena: (.85 + .15 * fm.acc) * aiuto, lat: fm.lat * aiuto * (scatto ? MOTO.CORPO.latScatto : 1) * (sb ? .75 : 1) }; // sbilanciato da una spallata: per un attimo meno spunto e meno curva
   const vPrima = hyp(p.vx, p.vz), h = MOTO.CORPO.passoMax; p.restoC = (p.restoC || 0) + dt;
@@ -2014,8 +2044,18 @@ function poseSkinned(p, dt) {
   const f = p.fig, v = hyp(p.vx, p.vz), alt = f.alt || 1; f.root.position.set(p.x, 0, p.z);
   // il corpo segue la direzione con una molla rapida: tiri, passaggi e scivolate girano p.dir di colpo, il bacino no
   // (oltre i 150° o dopo un salto di posizione, come a un calcio d'inizio, si gira subito)
+  if (dt > 0) movimento(p, v);
   const da = Math.atan2(Math.sin(p.dir - (f.vdir ?? p.dir)), Math.cos(p.dir - (f.vdir ?? p.dir)));
-  f.vdir = Math.abs(da) > 2.6 || dt <= 0 ? p.dir : (f.vdir ?? p.dir) + da * Math.min(1, dt * 20); f.root.rotation.y = f.vdir;
+  // durante un movimento senza palla il corpo gira col gesto, dalla direzione di partenza a quella voluta
+  const mi = MOV.test(p.fx || '') && p.movA !== undefined ? GESTI[p.fx] : null, mk = mi ? clamp(p.fxT * (p.fxSp || 1) / mi.durata, 0, 1) : 0;
+  // finito il gesto il corpo resta girato dove è arrivato finché la direzione del corpo fisico (che gira solo quando la
+  // velocità si è invertita) non lo raggiunge: se no tornerebbe indietro per un attimo, coi piedi che strisciano
+  if (mi) { f.vdir = p.movDa + p.movA * mk * mk * (3 - 2 * mk); p.movTieni = p.movA !== 0; }
+  else {
+    if (p.movTieni && !(dt > 0 && Math.abs(da) > .35 && G.t < (p.movT || 0) + .6 && p.st === 'run')) p.movTieni = false;
+    if (!p.movTieni) f.vdir = Math.abs(da) > 2.6 || dt <= 0 ? p.dir : (f.vdir ?? p.dir) + da * Math.min(1, dt * 20);
+  }
+  f.root.rotation.y = f.vdir;
   if (G.dbgFx && hasFx(G.dbgFx.name)) { // per le prove: tutti fermi su un fotogramma di una clip
     for (const k in f.A) f.A[k].setEffectiveWeight(0); if (f.act) f.act.setEffectiveWeight(0);
     const a = f.mixer.clipAction(MODEL.fx[G.dbgFx.name]); if (f.dbg && f.dbg !== a) f.dbg.stop(); a.play(); a.paused = true; a.time = G.dbgFx.t; a.setEffectiveWeight(1); f.dbg = a; f.mixer.update(0); f.body.position.y = 0; return;
@@ -2035,7 +2075,10 @@ function poseSkinned(p, dt) {
       else if (c.next && hasFx(c.next)) { p.fx = c.next; p.fxT = 0; p.fxSp = null; startFx(f, p.fx); on = true; } else p.fx = null; }
     else on = p.fxT < (g ? dur - .05 : c.cut || dur - .12); // i gesti brevi restano pieni fin quasi alla fine
   }
-  f.fxW += ((on ? 1 : 0) - f.fxW) * Math.min(1, dt * (on ? 16 : 6)); f.oldW += (0 - f.oldW) * Math.min(1, dt * 9);
+  // i movimenti senza palla entrano più piano (partono in mezzo alla corsa) ed escono più svelti: l'ultimo fotogramma
+  // della clip, fermo, sotto un corpo che corre farebbe strisciare i piedi
+  const mov = MOV.test(p.fx || '') || (!p.fx && f.act && MOV.test(f.act.getClip().name));
+  f.fxW += ((on ? 1 : 0) - f.fxW) * Math.min(1, dt * (on ? (mov ? 8 : 16) : mov ? 10 : 6)); f.oldW += (0 - f.oldW) * Math.min(1, dt * 9);
   if (f.act) { f.act.setEffectiveWeight(f.fxW); if (!p.fx && f.fxW < .02) { f.act.stop(); f.act = null; f.fxW = 0; } }
   if (f.old) { f.old.setEffectiveWeight(f.oldW); if (f.oldW < .02) { f.old.stop(); f.old = null; f.oldW = 0; } }
   // Dopo un gol (clip di GameplayFootball): chi ha segnato, appena si ferma, fa l'esultanza scatenata e poi quella normale

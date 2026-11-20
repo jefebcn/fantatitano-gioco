@@ -76,6 +76,14 @@ const tb = {}; tgt.traverse((o) => { if (o.isBone) tb[o.name] = o; });
 const tRest = OSSA.map((n) => { if (!tb[n]) throw new Error(`nel calciatore manca l'osso ${n}`); return mondoQ(tb[n]); });
 const tPadre = OSSA.map((n) => { const p = tb[n].parent, k = OSSA.indexOf(p.name); return k >= 0 ? k : mondoQ(p); });
 const tBacino = mondoP(tb.pelvis), tRadice = tb.pelvis.parent;
+/** Mette il calciatore nella posa data (rotazioni locali in ordine OSSA, più il bacino) e dice quale piede è più basso; poi lo rimette a riposo. */
+function piedeGiu(posa) {
+  const prima = OSSA.map((o) => tb[o].quaternion.clone()), b0 = tb.pelvis.position.clone();
+  OSSA.forEach((o, k) => tb[o].quaternion.copy(posa[k])); tb.pelvis.position.copy(posa.bacino); tgt.updateMatrixWorld(true);
+  const giu = mondoP(tb.foot_l).y < mondoP(tb.foot_r).y ? 'sx' : 'dx';
+  OSSA.forEach((o, k) => tb[o].quaternion.copy(prima[k])); tb.pelvis.position.copy(b0); tgt.updateMatrixWorld(true);
+  return giu;
+}
 
 // correzione delle ossa lunghe: porta la direzione a riposo del calciatore su quella a riposo della sorgente
 const dirRiposo = (art, punta) => (punta ? V(GF[punta][1]) : V(PUNTA[art])).normalize();
@@ -125,6 +133,12 @@ Object.assign(ELENCO, { stop_gira90_fermo: 'trap/idle/090_IB000_accel_optional.a
   taglio_180: 'ballcontrol/walk/180_decel_decel.anim:giro', taglio_scatto_45: 'ballcontrol/sprint/045_decel.anim:giro', taglio_scatto_90: 'ballcontrol/sprint/090_decel_decel.anim:giro',
   // stop di un pallone che arriva di lato (nella sorgente da destra; «_sx» da sinistra)
   stop_lato_dx: 'trap/walk/000_D000_IB090.anim', stop_lato_sx: 'trap/walk/000_D000_IB090.anim:specchio' });
+// movimenti senza palla, col giro tolto come nei tagli: partenze da fermo girandosi (45°, 90°, 135°, 180°), inversioni di
+// corsa (in corsetta a 135° e 180°, in scatto a 135°) e la frenata dallo scatto
+Object.assign(ELENCO, { parte_45: 'movement/idle/045_accel.anim:giro', parte_90: 'movement/idle/090_accel.anim:giro',
+  parte_135: 'movement/idle/135_accel.anim:giro', parte_180: 'movement/idle/180_accel.anim:giro',
+  inverti_135: 'movement/dribble/135.anim:giro', inverti_180: 'movement/dribble/180_decel.anim:giro',
+  inverti_scatto_135: 'movement/sprint/135_decel_decel_decel.anim:giro', frena_scatto: 'movement/sprint/000_decel_decel_decel_todo.anim' });
 // rialzarsi da terra (dopo un tuffo), da prono e da supino
 Object.assign(ELENCO, { rialza: 'movement_special/idle/special/000_stand_up_from_front.anim', rialza_schiena: 'movement_special/idle/special/000_stand_up_from_back.anim' });
 // esultanze dopo il gol (normale, scatenata con la frenata) e delusione di chi lo subisce; rimessa laterale con le mani (corta
@@ -155,7 +169,7 @@ for (const [nome, sorg] of voci.length ? voci.map((v) => v.split('=')) : Object.
 }
 for (const [nome, file, sp, giro] of lista) {
   const A = leggi(readFileSync(join(dir, file), 'utf8')), sorg = `${file}${sp ? ':specchio' : ''}${giro ? ':giro' : ''}`; let y0 = null, yPrima = 0, netto = 0;
-  const durata = A.fine / ORIG, n = Math.max(2, Math.round(durata * FPS) + 1), p = [], q = [], prev = OSSA.map(() => null);
+  const durata = A.fine / ORIG, n = Math.max(2, Math.round(durata * FPS) + 1), p = [], q = [], prev = OSSA.map(() => null), primo = [];
   for (let i = 0; i < n; i++) {
     const f = Math.min(A.fine, i / FPS * ORIG), W0 = mondo(A, f);
     if (giro) { // via la rotazione attorno alla verticale accumulata dall'inizio: il corpo resta rivolto in avanti
@@ -168,11 +182,12 @@ for (const [nome, file, sp, giro] of lista) {
       const padre = typeof tPadre[k] === 'number' ? Wt[tPadre[k]] : tPadre[k], l = padre.clone().invert().multiply(w).normalize();
       let v = [l.x, l.y, l.z, l.w];
       if (prev[k] && prev[k][0] * v[0] + prev[k][1] * v[1] + prev[k][2] * v[2] + prev[k][3] * v[3] < 0) v = v.map((c) => -c);
-      prev[k] = v; for (const c of v) q.push(Math.round(c * 10000));
+      prev[k] = v; for (const c of v) q.push(Math.round(c * 10000)); if (i === 0) primo[k] = l.clone();
     });
     // il bacino: altezza in proporzione (la sorgente ha il bacino a 0,96 m più lo spostamento verticale del giocatore)
     const pl = a(A.chiavi.player, f, false), y = (0.96 + pl.y) / 0.96 * tBacino.y, loc = tRadice.worldToLocal(new T.Vector3(tBacino.x, y, tBacino.z));
     p.push(Math.round(loc.x * 10000), Math.round(loc.y * 10000), Math.round(loc.z * 10000));
+    if (i === 0) primo.bacino = loc;
   }
   out.clip[nome] = { n, p, q };
   // per il gioco: velocità a cui è stata animata (m/s, dallo spostamento del giocatore), quando il piede tocca la palla e
@@ -181,6 +196,8 @@ for (const [nome, file, sp, giro] of lista) {
   const k = A.chiavi.player; let strada = 0; for (let i = 1; k && i < k.length; i++) strada += Math.hypot(k[i][1].x - k[i - 1][1].x, k[i][1].z - k[i - 1][1].z);
   const v = strada / durata;
   const info = { v: +v.toFixed(2), durata: +durata.toFixed(3) }; if (giro) info.giro = Math.round(netto * 180 / Math.PI) * (sp ? -1 : 1);
+  // i movimenti senza palla: quale piede è a terra al primo fotogramma (il più basso), per farli partire al passo giusto
+  if (/^(parte|inverti|frena)_/.test(nome)) info.appoggio = piedeGiu(primo);
   if (A.palla) { const pl = a(k, A.palla.f, false), rel = A.palla.pos.clone().sub(new T.Vector3(pl.x, 0, pl.z)); if (sp) rel.x = -rel.x; info.tocco = +(A.palla.f / ORIG).toFixed(3); info.palla = rel.toArray().map((x) => +x.toFixed(3)); }
   out.info[nome] = info;
   console.log(nome.padEnd(16), sorg.padEnd(44), `${durata.toFixed(2)} s`, n, 'fotogrammi', `${info.v} m/s`, info.tocco !== undefined ? `tocco a ${info.tocco} s` : '');
