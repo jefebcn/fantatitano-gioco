@@ -57,7 +57,8 @@ const hemi = new T.HemisphereLight(0xffffff, 0x47703a, 2.1); scene.add(hemi);
 const sun = new T.DirectionalLight(0xfff4dd, 1.9); sun.position.set(30, 70, 40); scene.add(sun); scene.add(sun.target);
 // Ombre vere del sole: una mappa d'ombra morbida che copre solo la zona inquadrata e la segue (vedi seguiOmbre), così resta
 // nitida e leggera. Sui telefoni deboli si scende a una mappa più piccola, e se i fotogrammi calano si spengono (vedi qualita).
-const OMBRA = { lato: 34, mappa: (navigator.hardwareConcurrency || 4) >= 6 && (window.devicePixelRatio || 1) < 2.5 ? 2048 : 1024 };
+// ombre nette sul campo (come Dream League): mappa da 2048 dove il telefono regge, 1024 sugli altri (vedi qualita)
+const OMBRA = { lato: 34, mappa: (navigator.hardwareConcurrency || 4) >= 6 ? 2048 : 1024 };
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFShadowMap; // in three r18x la PCF usa shadow.radius: ombre morbide senza il vecchio PCFSoft
 sun.castShadow = true; sun.shadow.mapSize.set(OMBRA.mappa, OMBRA.mappa); sun.shadow.bias = -.0006; sun.shadow.normalBias = .03; sun.shadow.radius = 3;
 Object.assign(sun.shadow.camera, { left: -OMBRA.lato, right: OMBRA.lato, top: OMBRA.lato, bottom: -OMBRA.lato, near: 10, far: 160 }); sun.shadow.camera.updateProjectionMatrix();
@@ -351,7 +352,9 @@ async function loadModel() {
     let head = null, spine = null, body = null;
     scene.traverse((o) => { if (o.isBone && o.name === 'Head') head = o; if (o.isBone && o.name === 'spine_03') spine = o; if (o.isSkinnedMesh && o.material.name === CORPO) body = o; });
     if (!head || !spine || !body) throw new Error('modello non riconosciuto');
+    const originale = body.geometry.clone();
     snellisci(body); // proporzioni da calciatore, non da supereroe: prima del resto, così numero e stemma si appoggiano al corpo nuovo
+    const corporature = CORPORATURE.map((f) => (f === 1 ? body.geometry : (() => { const g2 = originale.clone(); snellisci(body, f, g2); return g2; })()));
     // k porta il modello a un metro di altezza: ogni giocatore lo moltiplica per la sua statura
     const box = new T.Box3().setFromObject(scene), k = 1 / (box.max.y - box.min.y);
     // capelli: portati nello spazio dell'osso della testa, così basta appenderli
@@ -373,7 +376,7 @@ async function loadModel() {
       // il numerino sulla gamba sinistra dei pantaloncini, appeso alla coscia
       cortiM: coscia ? appoggio(.095, box.min.y + alto * .405, true, .1 / .3, new T.Matrix4().copy(coscia.matrixWorld).invert(), .03) : null,
       zone: (() => { const z = creaZone(pixel(im)), t = new T.DataTexture(z.data, z.size, z.size); t.flipY = false; t.magFilter = t.minFilter = T.LinearFilter; t.needsUpdate = true; return t; })(),
-      stili: stiliCapelli(hair, scene, hInv), corpi: [],
+      stili: stiliCapelli(hair, scene, hInv), corpi: [], corporature,
       // rilievo della stoffa (normal map) e lucidità per zona (roughness), dalla stessa maschera
       ...(() => { const r = creaRilievo(pixel(im)), dt = (d) => { const t = new T.DataTexture(d, r.size, r.size); t.flipY = false; t.magFilter = T.LinearFilter; t.minFilter = T.LinearMipmapLinearFilter; t.generateMipmaps = true; t.anisotropy = 4; t.needsUpdate = true; return t; }; return { rilievo: dt(r.normali), ruvido: dt(r.ruvido) }; })(),
       sponsorM: appoggio(0, box.min.y + alto * .72, true, .048),
@@ -412,19 +415,21 @@ function puntoBasso(f) {
  * ogni vertice all'osso che lo muove (braccia, avambracci, cosce, polpacci, clavicole, torace, collo): restano le stesse
  * animazioni, con un fisico da calciatore.
  */
-function snellisci(body) {
+// Tre corporature (snella, normale, robusta): quanto il corpo si stringe verso le ossa rispetto alla snellitura normale (1)
+const CORPORATURE = [1.4, 1, .5];
+function snellisci(body, forza = 1, g = body.geometry) {
   const sk = body.skeleton, idx = {}; sk.bones.forEach((b, i) => { idx[b.name] = i; });
   const dove = (n) => new T.Vector3().setFromMatrixPosition(new T.Matrix4().copy(sk.boneInverses[idx[n]]).invert()).applyMatrix4(body.bindMatrixInverse);
   const SEG = [['upperarm', 'lowerarm', .84], ['lowerarm', 'hand', .9], ['thigh', 'calf', .92], ['calf', 'foot', .94], ['clavicle', 'upperarm', .9]], seg = {};
   for (const [a, b, f] of SEG) for (const l of ['_l', '_r']) if (idx[a + l] !== undefined && idx[b + l] !== undefined) seg[idx[a + l]] = [dove(a + l), dove(b + l), f];
   for (const [a, b, f] of [['spine_03', 'neck_01', .93], ['spine_02', 'spine_03', .96], ['neck_01', 'head', .9]]) if (idx[a] !== undefined && idx[b] !== undefined) seg[idx[a]] = [dove(a), dove(b), f];
-  const COMP = ['getX', 'getY', 'getZ', 'getW'], g = body.geometry, P = g.attributes.position, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight, v = new T.Vector3(), d = new T.Vector3(), q = new T.Vector3(), ab = new T.Vector3();
+  const COMP = ['getX', 'getY', 'getZ', 'getW'], P = g.attributes.position, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight, v = new T.Vector3(), d = new T.Vector3(), q = new T.Vector3(), ab = new T.Vector3();
   for (let i = 0; i < P.count; i++) {
     v.fromBufferAttribute(P, i); d.set(0, 0, 0);
     for (let k = 0; k < 4; k++) {
       const w = SW[COMP[k]](i), s = seg[SI[COMP[k]](i)]; if (!w || !s) continue;
       ab.subVectors(s[1], s[0]); const t = clamp(q.subVectors(v, s[0]).dot(ab) / ab.lengthSq(), 0, 1);
-      q.copy(s[0]).addScaledVector(ab, t); d.addScaledVector(q.subVectors(v, q), w * (s[2] - 1)); // verso l'asse dell'osso
+      q.copy(s[0]).addScaledVector(ab, t); d.addScaledVector(q.subVectors(v, q), w * (s[2] - 1) * forza); // verso l'asse dell'osso
     }
     P.setXYZ(i, v.x + d.x, v.y + d.y, v.z + d.z);
   }
@@ -550,6 +555,7 @@ function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
   const corpo = corpoMat(kit, u), bones = {}, vicini = []; // vicini: i dettagli che si vedono solo da vicino (vedi dettagliFigure)
   obj.traverse((o) => {
     if (o.isBone) bones[o.name] = o;
+    if (o.isSkinnedMesh && o.material.name === CORPO && MODEL.corporature) o.geometry = MODEL.corporature[(seed >>> 27) % MODEL.corporature.length]; // corporatura dal seme
     if (o.isSkinnedMesh) { o.frustumCulled = false; o.material = o.material.name === CORPO ? corpo : o.material.name === OCCHI ? MODEL.occhi : pelo; if (o.material !== corpo) { o.castShadow = false; vicini.push(o); } } // occhi e sopracciglia
   });
   const stile = ACCONCIATURE[(seed >>> 8) % ACCONCIATURE.length];
@@ -626,8 +632,9 @@ function pickKits(h, a) {
   const prove = seconde.map(prova), [kh, ka] = prove.find((x) => x[2] >= SOGLIA) || prove.sort((x, y) => y[2] - x[2])[0];
   // l'arbitro: maglia lontana dalle due squadre, pantaloncini e calzettoni neri
   const vicino = (c, ks) => Math.min(...ks.map((k) => Math.min(cdist(c, k.shirt), cdist(c, misto(k)))));
-  const arbC = ['#F2E21B', '#FF5A1F', '#E91E8C', '#16161a', '#19D3B1', '#3FA9F5', '#9B5DE5', '#2E7D32'].sort((p, q) => vicino(q, [kh, ka]) - vicino(p, [kh, ka]))[0];
-  const arb = { shirt: arbC, shorts: NERO, socks: NERO, sleeve: arbC, boots: NERO, suola: NERO, ink: '#111', c2: NERO, stile: null, banda: arbC, colletto: 'polo' };
+  // arbitro in rosso e nero (come in Dream League). Se una squadra veste di rosso, maglia nera con le maniche rosse
+  const ROSSO = '#D7262E', rossa = [kh, ka].some((k) => cdist(k.shirt, ROSSO) < .3), arbC = rossa ? NERO : ROSSO, arbM = rossa ? ROSSO : NERO;
+  const arb = { shirt: arbC, shorts: NERO, socks: NERO, sleeve: arbM, boots: NERO, suola: NERO, ink: rossa ? '#fff' : '#111', c2: arbM, stile: null, banda: arbM, colletto: 'polo' };
   // i portieri: colori accesi lontani da tutte le maglie in campo, compreso l'altro portiere; maniche lunghe e guanti
   const gk = (altri) => {
     const c = ['#FF7A1A', '#19D3B1', '#E91E8C', '#111111', '#F2E21B', '#7B2FF7', '#3FD45A', '#F3F3F3'].sort((p, q) => vicino(q, altri) - vicino(p, altri))[0], scura = '#' + new T.Color(c).multiplyScalar(.55).getHexString();
