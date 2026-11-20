@@ -2191,7 +2191,7 @@ function updateCamera(dt) {
     // inclinata in giù di un angolo fisso; segue il pallone guardando un po' avanti dove va
     const C = TELECAMERA, ax = fx + (b ? clamp(b.vx * C.avanti[0], -C.avantiMax[0], C.avantiMax[0]) : 0), az = fz + (b ? clamp(b.vz * C.avanti[1], -C.avantiMax[1], C.avantiMax[1]) : 0);
     const piano = Math.sqrt(C.distanza * C.distanza - C.altezza * C.altezza); // la distanza in pianta dal punto seguito
-    lx = clamp(ax, -HL + C.bordo, HL - C.bordo); lz = az * .8; px = lx; pz = lz + piano; py = C.altezza; fov = C.fov;
+    lx = clamp(ax, -HL + C.bordo, HL - C.bordo); lz = Math.min(az * .8, C.zMax - Math.sqrt(C.distanza * C.distanza - C.altezza * C.altezza)); px = lx; pz = lz + piano; py = C.altezza; fov = C.fov;
     ly = C.altezza - piano * Math.tan(C.inclinazione * Math.PI / 180); // dove guarda in altezza: così l'inclinazione è proprio quella
   }
   // movimento morbido: una molla smorzata al punto giusto (niente scatti né oscillazioni), più lenta nel menu

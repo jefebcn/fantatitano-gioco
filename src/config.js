@@ -90,7 +90,8 @@ export const FERMI = { comandi: 2, buio: .5, occasione: 4, replayAngolo: 3.5, co
 // Gol, in secondi veri dal pallone in rete: da `lento` per `durataLento` secondi un leggero rallentatore (a velocità `vel`),
 // con gli avversari fermi a disperarsi per `fermi` secondi e l'arbitro che indica il centro; a `stacco` la telecamera passa
 // al primo piano del marcatore: alta `camAlt` metri, a `camDist` metri da lui, con un difensore deluso in primo piano
-export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.7, camDist: 4.6 };
+// Il deluso sta a `deluso` = [parte della distanza dalla telecamera, metri di lato]
+export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.7, camDist: 4.6, deluso: [.55, 1.7] };
 
 /* ---------------------------------------------------------------- replay e stacchi */
 // Replay (pulsante in alto a destra, angoli dopo una grande occasione): rivede gli ultimi `secs` secondi registrati a
@@ -100,8 +101,10 @@ export const RIVEDI = { secs: 6, vel: .8, stacco: .3, min: 1.5 };
 /* ---------------------------------------------------------------- telecamera di gioco */
 // Dal lato del campo, segue il pallone: `altezza` metri sopra l'erba, `distanza` metri in linea d'aria dal punto seguito,
 // guarda in giù di `inclinazione` gradi con un campo visivo verticale di `fov` gradi. Guarda un po' avanti dove va la palla
-// (`avanti` secondi di corsa, al massimo `avantiMax` metri) e non esce dal campo oltre `bordo` metri dalla linea di fondo
-export const TELECAMERA = { altezza: 12.5, distanza: 37, inclinazione: 21, fov: 28, avanti: [.3, .25], avantiMax: [6, 4], bordo: 8 };
+// (`avanti` secondi di corsa, al massimo `avantiMax` metri) e non esce dal campo oltre `bordo` metri dalla linea di fondo.
+// Non va oltre `zMax` metri dal centro verso la tribuna vicina (dietro c'è la tribuna: col pallone sulla fascia vicina si
+// vedrebbe il cemento da dentro)
+export const TELECAMERA = { altezza: 12.5, distanza: 37, inclinazione: 21, fov: 28, avanti: [.3, .25], avantiMax: [6, 4], bordo: 8, zMax: 55 };
 
 /* ---------------------------------------------------------------- IA col pallone, passaggi, scatti */
 /* Col pallone (l'IA). Regola presa da GameplayFootball (elizacontroller.cpp): si passa solo se il compagno sta meglio di

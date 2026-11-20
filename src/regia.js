@@ -335,8 +335,8 @@ export function creaRegia(X) {
   function delusoDavanti(C, a) {
     const sc = G.scorer; if (!sc || G.auto) return; let d = null, dd = 1e9;
     for (const o of sc.team.opp.players) { if (!o.i || o.st !== 'run') continue; const k = hyp(o.x - sc.x, o.z - sc.z); if (k < dd) { dd = k; d = o; } }
-    if (!d) return; const ux = Math.sin(a), uz = Math.cos(a), k = GOLSEQ.camDist * .42;
-    d.x = C.fx + ux * k + uz * .9; d.z = C.fz + uz * k - ux * .9; d.vx = d.vz = 0; d.dir = Math.atan2(ux, uz); d.deluso = -1; d.fx = null;
+    if (!d) return; const ux = Math.sin(a), uz = Math.cos(a), k = GOLSEQ.camDist * GOLSEQ.deluso[0], l = GOLSEQ.deluso[1];
+    d.x = C.fx + ux * k + uz * l; d.z = C.fz + uz * k - ux * l; d.vx = d.vz = 0; d.dir = Math.atan2(ux, uz); d.deluso = -1; d.fx = null;
     G.delusoGol = d; G.delusoPunto = [d.x, d.z];
   }
   function fine() {
