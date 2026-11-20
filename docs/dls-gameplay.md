@@ -126,9 +126,8 @@ lo faccio io.
 ## Domande aperte per Alex
 Risposte provvisorie di Alex (20/11, da verificare su DLS): passaggio assistito (`PASSAGGIO.assistito`), replay automatico
 breve, icone dei calci piazzati e pulsante replay in alto a destra come segnaposto. Risposte definitive: telecamera (sopra),
-energia nella schermata sostituzioni, clip Mixamo per mani in testa e arbitro.
-1. Tastiera (computer): le frecce sono una levetta tutta inclinata, quindi scatto sempre. Va bene tenere Maiusc per
-   correre senza scattare?
-2. Il segnale centrale «Gol!» non c'è più (restano tabelloni e primo piano): va bene?
-3. Gol tra computer e computer: con la porta vera (PR #57) erano già scesi da 3 a 1,4; con conduzione a 4,5 m/s e il portiere
+energia nella schermata sostituzioni, clip Mixamo per mani in testa e arbitro; tastiera (solo per i test al computer:
+frecce o WASD = levetta al bordo, quindi scatto; Maiusc tenuto = corsa normale senza scatto); nessuna scritta al centro
+dopo il gol (in DLS la scritta del gol compare solo sui cartelloni LED a bordo campo, alternata al nome del marcatore).
+1. Gol tra computer e computer: con la porta vera (PR #57) erano già scesi da 3 a 1,4; con conduzione a 4,5 m/s e il portiere
    nuovo sono 0,5 a partita (8 partite). Da tarare giocando: conduzione, reazione e prese del portiere, valore dei tiri.
