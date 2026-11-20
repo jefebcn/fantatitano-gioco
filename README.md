@@ -225,6 +225,11 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   sono un passo solo e non si ripetono bene); dopo una presa in tuffo si rialza col pallone stretto (`rialza_palla`); le
   prese senza parata preparata (cross, tiro addosso) scelgono la clip per altezza: terra, ginocchio, busto, alta.
   Tuffi già in sei zone (terra, mezza altezza, vicino/lontano, busto, alto) e rinvio con le mani o di collo.
+- **Dashboard** (`drawHub` in `src/game.js`, CSS «Dashboard» in `src/pagina.html`). Impaginazione dal disegno di Alex
+  (20/11/2026) con i colori Fantatitano: a sinistra il campionato alto (prossima partita, maglia grande, matchday, ultimi
+  risultati), al centro classifica, la sagoma del Titano sopra lo stadio 3D e le coppe, a destra squadra, mercato, sfide
+  e club. I ritratti (mister e capitano) li disegna `ritratto()` dal modello 3D del gioco, una volta sola. Le misure sono
+  in px per un telefono in orizzontale; sugli schermi più grandi tutto si ingrandisce con `zoom` (`--zh`).
 - **Colori delle maglie** da `src/data.js` dell'app; il secondo colore è scelto a occhio dagli
   stemmi (`scripts/genera-dati.py`). Qualche divisa non combacia col suo stemma.
 - **Nomi dei calciatori**: sono quelli del listone dell'app. Verificare che l'accordo con
