@@ -26,7 +26,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Fonti: quello che descrive Alex e i suoi video; l'analisi che ha fatto lui resta fuori dal repository e vale solo
   come elenco di categorie. Mai codice, valori, asset, interfaccia, testi o nomi loro. Se un comportamento non è noto: chiedere.
 - Passo 1 FATTO: valori di gioco in `src/config.js` (partite identiche prima e dopo).
-- Passo 2 FATTO (20/11, notte): i dati di Alex da 4 video in `docs/dls-gameplay.md`, applicati: comandi (levetta fissa, scatto
+- Passo 2 FATTO: misure vere (campo, porta, pallone, stature) e telecamera di gioco dalle misure di Alex; controllo
+  `scripts/prove/inquadratura.cjs` (sette misure dentro ±2). Effetto: gol ~1,4 e tiri ~6,4 a partita (prima 3 e 9).
+- Passo 3 FATTO (20/11, notte): i dati di Alex da 4 video in `docs/dls-gameplay.md`, applicati: comandi (levetta fissa, scatto
   automatico, tre tasti col possesso, pressing), segni in campo, telecamera fissa, interfaccia (tabellone a sinistra,
   minimappa e mentalità a frecce, replay), ritmo (cronometro lento a gioco fermo, conduzione 4,5 m/s), IA in area, portiere,
   palle ferme e sequenza del gol. Domande aperte in fondo a `docs/dls-gameplay.md`.

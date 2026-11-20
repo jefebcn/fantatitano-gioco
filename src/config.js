@@ -4,7 +4,13 @@
    I numeri ancora scritti dentro le funzioni di game.js passano qui man mano che si lavora su quella parte. */
 
 /* ---------------------------------------------------------------- campo, tempi, difficoltà, IA di squadra */
-export const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
+// Misure vere, in metri, niente ingrandimenti: campo 105 × 68 (HL e HW sono le metà), porta 7,32 × 2,44 (GH mezza
+// larghezza, GT altezza), pallone di 22 cm (BR il raggio). GRAV è la gravità del gioco.
+export const HL = 52.5, HW = 34, GH = 3.66, GT = 2.44, BR = 0.11, GRAV = 20;
+// Giocatori a grandezza vera: alti in media 1,80 m, da 1,70 a 1,95 secondo il giocatore; i portieri da `portiere` in su
+export const ALTEZZA = { min: 1.70, max: 1.95, media: 1.80, portiere: 1.84 };
+// Le linee: area di rigore 16,5 × 40,32, area piccola 5,5 × 18,32, dischetto a 11 m, cerchio di centrocampo e lunetta 9,15
+export const LINEE = { area: [16.5, 40.32], piccola: [5.5, 18.32], dischetto: 11, cerchio: 9.15 };
 // Ritmo come Dream League: il cronometro corre `gioco` volte il tempo vero quando si gioca (90 minuti in 4 minuti veri) e
 // `fermo` volte durante le palle ferme, dopo i gol e al calcio d'inizio. Conduzione: velocità di corsa col pallone (senza
 // scatto) in m/s, stima dai video da tarare
@@ -39,7 +45,9 @@ export const VOTE = { g: 1.1, a: .7, kp: .12, sot: .15, tk: .2, int: .08, sv: .4
 // angolo se il pallone arriva a meno di respintaLato metri dal palo; chi passa non vede il fuorigioco sotto vedeFuori metri;
 // un attaccante su tre, a tratti di 2-5 s, resta oltre la linea di `oltre` metri
 export const CALCI = { deviaAngolo: .4, testaAngolo: .35, respintaLato: 3.2, vedeFuori: 1.4, distratto: .35, oltre: [.8, 2] };
-export const AIR = { low: 1.55, top: 2.6, reach: 1.05, fast: 22.6, wide: 13, deep: 24, cross: .5, shot: 15, attacca: 6, stacco: .1 };
+// (altezze per giocatori di 1,80 m: salto è l'altezza oltre cui si stacca per colpire, bersaglio quella a cui mira un cross,
+// intercetta e stop fin dove un giocatore arriva sul pallone con la testa e col petto, scende l'altezza minima di un pallone che cade forte)
+export const AIR = { low: 1.05, top: 2.4, reach: .8, salto: 1.5, bersaglio: 1.4, intercetta: 1.5, stop: 1.15, scende: .7, fast: 22.6, wide: 13, deep: 24, cross: .5, shot: 15, attacca: 6, stacco: .1 };
 // Moduli: dove sta ciascuno degli undici e che compito ha (P portiere, D difensore, C centrocampista, A attaccante).
 // Nei dati l'ordine è sempre portiere, quattro difensori, tre centrocampisti, tre attaccanti: cambiando modulo qualcuno cambia compito
 export const FORMS = {
@@ -48,6 +56,8 @@ export const FORMS = {
   '3-5-2': { pos: [[-46, 0], [-33, -12], [-35, 0], [-33, 12], [-16, -23], [-18, 0], [-9, -9], [-9, 9], [-16, 23], [9, -6], [9, 6]], roles: 'PDDDCCCCCAA' },
   '4-2-3-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-19, -7], [-19, 7], [-3, 0], [1, -20], [11, 0], [1, 20]], roles: 'PDDDDCCCAAA' },
 };
+// le posizioni qui sopra sono scritte per un campo di 100 × 64: si allargano in proporzione al campo vero
+for (const f of Object.values(FORMS)) f.pos = f.pos.map(([x, z]) => [x * HL / 50, z * HW / 32]);
 // Mentalità (-1, 0, 1): quanti metri in più si sale quando si attacca, quanto restano alti gli attaccanti quando si difende
 // (con la difensiva rientrano), quanto spesso ci si inserisce, quanto prima si va sul pallone con l'offensiva;
 // con la difensiva: a quanti metri dal portatore sta il secondo uomo in copertura, quanti metri prima si smette di temporeggiare
@@ -56,6 +66,17 @@ export const FORMS = {
 // `stretto` metri
 export const PRESSING = { da: 18, primo: 3.5, raggio: 16, stretto: 2.2 };
 export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['In difesa', 'Equilibrata', 'In attacco'], push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
+
+/* ---------------------------------------------------------------- telecamera di gioco */
+// Misure di Alex (dai video DLS, corrette il 20/11): alto e dietro dove sta la telecamera rispetto al punto inquadrato, in
+// metri (dietro, in pianta, è verso la linea laterale vicina: 39 m in linea d'aria). inclina: gradi verso il basso, fissi:
+// così il punto inquadrato (il pallone) sta a circa il 40% dell'altezza dello schermo dall'alto. campoOriz: angolo
+// orizzontale in gradi, uguale su ogni schermo (su un telefono 19,5:9 in orizzontale sono 28° in verticale). seguiX e
+// seguiZ: quanto il punto inquadrato segue il pallone lungo il campo e in profondità (tutto: il pallone resta al 40%).
+// Scelte nostre, da confrontare coi video: molla è la prontezza con cui segue (più alta, meno ritardo), bordoX i metri dalla
+// linea di fondo a cui si ferma, zMax fin dove arriva verso la tribuna vicina (oltre ci entrerebbe: col pallone negli ultimi
+// metri verso la tribuna vicina il pallone scende un po' sullo schermo)
+export const CAMERA = { alto: 12.5, dietro: 36.9, inclina: 21.3, campoOriz: 56.8, seguiX: 1, seguiZ: 1, molla: 6, bordoX: 16, zMax: 56 };
 
 /* ---------------------------------------------------------------- comandi dell'utente (come Dream League, docs/dls-gameplay.md) */
 // La levetta: base fissa (un cerchio di `raggio` px), la levetta si muove dentro. Poco inclinata si cammina, poi si corre;
@@ -104,15 +125,6 @@ export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco
 // toccando lo schermo o il pulsante in basso a destra. Sotto `min` secondi registrati non parte
 export const RIVEDI = { secs: 3, vel: .85, stacco: .3, min: 1.5 };
 
-/* ---------------------------------------------------------------- telecamera di gioco */
-// Dal lato del campo, segue il pallone (valori di Alex dai video DLS): `altezza` metri sopra l'erba, `piano` metri in pianta
-// dal punto seguito (39 m in linea d'aria), guarda in giù di `inclinazione` gradi con un campo visivo verticale di `fov` gradi.
-// Così il punto seguito (il pallone) sta a circa il 40% dell'altezza dello schermo dall'alto. Guarda un po' avanti dove va la
-// palla (`avanti` secondi di corsa, al massimo `avantiMax` metri), segue lo spostamento laterale per `segueZ` (1 = tutto, così
-// il pallone resta al 40%) e non esce dal campo oltre `bordo` metri dalla linea di
-// fondo. Non va oltre `zMax` metri dal centro verso la tribuna vicina (dietro c'è la tribuna: col pallone sulla fascia
-// vicina si vedrebbe il cemento da dentro)
-export const TELECAMERA = { altezza: 12.5, piano: 36.9, inclinazione: 21.3, fov: 28, avanti: [.3, .25], avantiMax: [6, 4], bordo: 8, zMax: 55, segueZ: 1 };
 
 /* ---------------------------------------------------------------- IA col pallone, passaggi, scatti */
 /* Col pallone (l'IA). Regola presa da GameplayFootball (elizacontroller.cpp): si passa solo se il compagno sta meglio di
@@ -138,6 +150,10 @@ export const RISERVA = { soglia: .25, riparte: .4 };
 export const AREA_IA = { da: 30, corsa: 1.5, quanti: [3, 4], angolo: [4, 5], vicino: 35, stretta: .62 };
 
 /* ---------------------------------------------------------------- portiere */
+// Sotto queste altezze del pallone, in metri, cambia il gesto. tuffo: rasoterra, mezza altezza, busto e oltre alto. presa al
+// centro: a terra, al ginocchio, al busto e oltre alta. uscita: da che altezza un cross è una presa alta. lancio: da che
+// altezza parte il pallone lanciato con le mani. rinvio: a che altezza arriva il rinvio lungo
+export const PARATA = { tuffo: [.3, .8, 1.25], presa: [.25, .6, 1.2], uscita: .9, lancio: 1.9, rinvio: 1.1 };
 // Come Dream League: sta sulla linea (`linea` metri davanti) e segue il pallone di lato. Quando l'attaccante col pallone entra
 // in area (`area` metri dalla linea di fondo) esce verso il palo vicino: `palo` = [metri davanti alla linea, metri dentro dal
 // palo]. Reagisce al tiro dopo `reazione` secondi (il più bravo il primo numero, il meno bravo il secondo), poi si tuffa.
@@ -153,7 +169,8 @@ export const MANO = { peso: 9 };
 /* ---------------------------------------------------------------- riprese, panchina, a terra */
 // Rimessa laterale con le mani. linea: dove sta chi batte; max: fin dove può lanciare; lunga: da quanti metri il lancio è
 // lungo e alto; fermo: il secondo della clip in cui si tiene il pallone dietro la testa; pensa: quanto aspetta dopo il fischio
-export const RIMESSA = { linea: HW - .25, max: 28, lunga: 14, fermo: .08, pensa: [.4, .9] };
+// mani e manoMin: a che altezza sta il pallone sopra la testa, se la posa non si può leggere, e il minimo
+export const RIMESSA = { linea: HW - .25, max: 28, lunga: 14, fermo: .08, pensa: [.4, .9], mani: 1.95, manoMin: .9 };
 // Panchina: quante sostituzioni a partita, quante ne fa l'IA, da che punto della partita comincia e ogni quanto ne fa un'altra
 export const SUB = { max: 5, ai: 3, from: .55, every: .12 };
 /** Quanto si resta a terra dopo una scivolata, un tuffo o un contrasto subito: si allunga se ci sono le clip registrate. */
@@ -220,8 +237,8 @@ export const FATICA = { scatto: 0.045, corsa: 0.006, recupero: 0.022, fondoCorsa
 /* ---------------------------------------------------------------- contrasti */
 // Duelli: sotto `vicini` metri due avversari in corsa si toccano. Conta la forza (massa, velocità, freschezza): chi ne ha di
 // più sposta l'altro e lo sbilancia per un attimo (meno velocità, meno controllo della palla).
-export const DUELLO = { vicini: 0.95, corsa: 3, paralleli: 0.35, spinta: 14, sbilancio: 0.45, perde: 0.32 }; // spinta in m/s² finché ci si tocca
+export const DUELLO = { vicini: 0.63, corsa: 3, paralleli: 0.35, spinta: 14, sbilancio: 0.45, perde: 0.32 }; // spinta in m/s² finché ci si tocca
 // La scivolata: si parte a `v0` (almeno la velocità che si ha, un po' di più) e l'erba frena (attrito). Le gambe colpiscono
 // solo nella parte centrale (da `attiva` a `fine`, in secondi), quando il piede è tutto avanti: lungo la gamba, da `anca` a
 // `piede` metri davanti al bacino, con uno spessore `raggio`. Tempi e misure vengono dall'animazione del modello.
-export const SCIVOLATA = { v0: 8.5, spinta: 1.1, attrito: 2.2, durata: 0.75, attiva: 0.16, fine: 0.62, anca: 0.2, piede: 1.25, raggio: 0.38, giuPalla: 0.75, uomo: 0.5, dopo: 0.12 };
+export const SCIVOLATA = { v0: 8.5, spinta: 1.1, attrito: 2.2, durata: 0.75, attiva: 0.16, fine: 0.62, anca: 0.13, piede: 0.83, raggio: 0.25, giuPalla: 0.5, uomo: 0.33, dopo: 0.12 };

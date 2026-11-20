@@ -17,7 +17,6 @@ export function creaRegia(X) {
   const ARB = { dist: 8, v: 6.2 };                                    // arbitro: quanto sta lontano dal pallone, quanto corre
   const ASS = { fuori: 1.4, v: 7, band: 2 };                          // guardalinee: quanto fuori dalla linea, quanto corrono, secondi di bandierina alzata
   const TIFO = { casa: [.5, .3], salto: .014 };                       // pubblico: quota del primo e del secondo colore; quanto salta dopo un gol
-  const DIAG = .3;                                                    // quanto la telecamera resta indietro verso il centro (0 = sempre di fronte)
 
   /* ---------------------------------------------------------------- grafica */
   const stile = document.createElement('style');
@@ -135,7 +134,7 @@ export function creaRegia(X) {
   let avvDi = null;
   function nomeAvv(p) { if (avvDi === p) return; avvDi = p; ax.clearRect(0, 0, 256, 48); scritta(ax, nomeCorto(p), 128, 24); atex.needsUpdate = true; }
   gx.clearRect(0, 0, 64, 80); gx.globalAlpha = .55; goccia(gx, 32, 30, '#9a9aa6', 'rgba(255,255,255,.8)'); gx.globalAlpha = 1; gtex.needsUpdate = true;
-  const sopraTesta = (s, p, alzo) => s.position.set(p.x, 2.72 * ((p.fig && p.fig.alt) || 1) + alzo, p.z); // il giocatore è alto 2,72
+  const sopraTesta = (s, p, alzo) => s.position.set(p.x, ((p.fig && p.fig.metri) || 1.8) + alzo * .45, p.z); // sopra la testa, a statura vera
   function segni(cine) {
     const c = G.ctrl, b = G.ball, h = 2 * Math.tan(cam.fov * Math.PI / 360) * (cam.aspect < 1 ? SEGNI.scala * .55 : SEGNI.scala), on = !!G.segno && !cine;
     pin.visible = on && !!c;
@@ -402,9 +401,7 @@ export function creaRegia(X) {
         return;
       }
       if (!S.on) {
-        // vicino alle porte la telecamera guarda in diagonale, così la porta si vede
-        // (non sui piazzati, che hanno la loro inquadratura)
-        if (!G.dbgCam && st !== 'menu' && !G.portrait && !G.inquadra) { cam.position.x -= camLook.x * DIAG; cam.lookAt(camLook.x, camLook.y, camLook.z); }
+        // la telecamera di gioco non si gira mai (vedi CAMERA in src/config.js)
         return;
       }
 
@@ -432,7 +429,7 @@ export function creaRegia(X) {
         const sc = G.scorer, u = t - S.c0, C = G.cine || { fx: sc.x, fz: sc.z }, a = S.a0 + u * .05, R = GOLSEQ.camDist + .6 - Math.min(u, 2) * .3;
         if (!S.cut) { S.cut = true; delusoDavanti(C, S.a0); }
         cam.position.set(C.fx + Math.sin(a) * R, GOLSEQ.camAlt, C.fz + Math.cos(a) * R); cam.fov = stretto ? 52 : 34;
-        cam.lookAt(sc.x, 1.45, sc.z); cam.updateProjectionMatrix();
+        cam.lookAt(sc.x, ((sc.fig && sc.fig.metri) || 1.8) * .7, sc.z); cam.updateProjectionMatrix();
       }
     },
   };

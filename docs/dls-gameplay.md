@@ -10,14 +10,15 @@ Alex, non si inventa (vedi «Domande aperte» in fondo).
 Questo file sostituisce le note precedenti sulla modalità «come DLS» dove sono in conflitto.
 
 ## 0. Campo e telecamera (valori di Alex, corretti il 20/11)
-- Telecamera di gioco: **36,9 m in pianta** dal punto inquadrato, **12,5 m** di altezza (39,0 m in linea d'aria),
-  inclinazione **21,3°** verso il basso, campo visivo verticale **28°**. Il punto inquadrato (il pallone) sta a circa il
-  **40%** dell'altezza dello schermo dall'alto. Segue il pallone di lato, sempre alla stessa distanza (niente zoom in area).
-- Controllo nel gioco (pallone fermo in quattro punti, telecamera a regime): al centro 39,7% dall'alto, 21,3°, 12,5 m,
-  36,9 m in pianta, 28°; a (20, -10) e (-30, 10) sempre 39,7% (vicino alle porte la telecamera guarda un po' in diagonale,
-  `DIAG` in `src/regia.js`: inclinazione 20,8-21,1°). Eccezione: col pallone negli ultimi ~7 m verso la tribuna vicina la
-  telecamera si ferma per non entrarci (`TELECAMERA.zMax`) e il pallone scende fino al ~53%.
-- Scala del campo: invariata (campo 100 × 64 m, `HL` e `HW`).
+- Scala vera dalla PR #57 (prompt precedente): campo 105 × 68, porta 7,32 × 2,44, pallone di 22 cm, giocatori 1,70-1,95 m.
+- Telecamera di gioco (`CAMERA` in `src/config.js`): **36,9 m in pianta** dal punto inquadrato, **12,5 m** di altezza
+  (39,0 m in linea d'aria), inclinazione **21,3°** verso il basso, campo visivo verticale **28°** (fisso in orizzontale,
+  56,8°, uguale su ogni schermo). Mai girata a destra o sinistra, niente zoom in area. Il punto inquadrato è il pallone,
+  seguito per intero lungo il campo e in profondità, e sta a circa il **40%** dell'altezza dello schermo dall'alto.
+- Controllo (`scripts/prove/inquadratura.cjs`, anche nella CI, 844 × 390): cerchio 44,6% (rif. 43), bordo lontano 28,6% (29),
+  dischetto 41,0% (40), bordo vicino 60,3% (60), linea laterale lontana 10,0% (10), giocatore 8,5% (9), pallone 1,1% (1).
+  Pallone fermo in sei punti del campo: 40,4% dall'alto e al centro in larghezza. Eccezione: negli ultimi ~9 m verso la
+  tribuna vicina la telecamera si ferma per non entrarci (`CAMERA.zMax`) e il pallone scende fino al ~52%.
 
 ## 1. Comandi
 - **Levetta a sinistra**: la base è un cerchio fisso, la levetta si muove dentro. Poco inclinata si cammina, poi si
@@ -129,4 +130,5 @@ energia nella schermata sostituzioni, clip Mixamo per mani in testa e arbitro.
 1. Tastiera (computer): le frecce sono una levetta tutta inclinata, quindi scatto sempre. Va bene tenere Maiusc per
    correre senza scattare?
 2. Il segnale centrale «Gol!» non c'è più (restano tabelloni e primo piano): va bene?
-3. Conduzione a 4,5 m/s: tra computer e computer i gol scendono (3,4 → 1,1 a partita su 8): va tarata giocando.
+3. Gol tra computer e computer: con la porta vera (PR #57) erano già scesi da 3 a 1,4; con conduzione a 4,5 m/s e il portiere
+   nuovo sono 0,5 a partita (8 partite). Da tarare giocando: conduzione, reazione e prese del portiere, valore dei tiri.
