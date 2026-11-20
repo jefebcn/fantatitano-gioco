@@ -16,19 +16,22 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..', '..', 'public');
 const N = +process.argv[2] || 3, DIFFI = process.argv[3] || 'normale', SEME = +process.env.SEME || 7;
 
-// Obiettivi per partita (somma delle due squadre, una partita simulata di circa 4 minuti veri): [minimo, massimo].
+// Obiettivi per partita (somma delle due squadre): [minimo, massimo]. La partita dura 4 minuti di gioco (due tempi da
+// 120 s, HALF_SECS in game.js): i numeri del calcio vero su 90 minuti si dividono per circa 20, con margine perché qui
+// l'azione è più fitta (10 calci d'angolo a partita diventano 0,5; 4 fuorigioco 0,2). Il ritmo di tiri, contrasti e
+// passaggi è quello di un gioco, non quello della realtà.
 // Sono la direzione verso cui tarare l'IA; quelli ancora lontani escono segnati con ✗ ma non bloccano, salvo SEVERO=1.
 const OBIETTIVI = {
   gol: [1, 6],
-  tiri: [8, 30],
+  tiri: [7, 30],
   'passaggi riusciti %': [70, 90],
-  angoli: [2, 10],
-  'rimesse laterali': [4, 20],
-  'rimesse dal fondo': [2, 12],
-  falli: [1, 8],
-  fuorigioco: [0.3, 5],
+  angoli: [.3, 3],
+  'rimesse laterali': [1.5, 12],
+  'rimesse dal fondo': [.7, 8],
+  falli: [.5, 6],
+  fuorigioco: [.05, 1.5],
   'tenuta palla mediana s': [0.9, 2.2],
-  'contrasti vinti': [6, 30],
+  'contrasti vinti': [4, 30],
   'portatore libero %': [20, 45],
 };
 

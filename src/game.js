@@ -46,6 +46,11 @@ const VOTE = { g: 1.1, a: .7, kp: .12, sot: .15, tk: .2, int: .08, sv: .4, pass:
 // velocità oltre la quale il pallone non si prende di testa (i tiri passano), probabilità che l'IA crossi quando può,
 // distanza massima per tirare di testa, quante respinte del portiere finiscono in angolo, da quanti metri chi attacca va incontro
 // al cross e quanto più lontano arriva staccando in corsa
+// Calci piazzati che nascono dal gioco: il difensore che devia in area un pallone degli avversari lo manda in angolo con
+// probabilità deviaAngolo; di testa, in area e con l'attaccante addosso, testaAngolo; la respinta del portiere può finire in
+// angolo se il pallone arriva a meno di respintaLato metri dal palo; chi passa non vede il fuorigioco sotto vedeFuori metri;
+// un attaccante su tre, a tratti di 2-5 s, resta oltre la linea di `oltre` metri
+const CALCI = { deviaAngolo: .4, testaAngolo: .35, respintaLato: 3.2, vedeFuori: 1.4, distratto: .35, oltre: [.8, 2] };
 const AIR = { low: 1.55, top: 2.6, reach: 1.05, fast: 22.6, wide: 13, deep: 24, cross: .5, shot: 15, behind: .55, attacca: 6, stacco: .1 };
 // Moduli: dove sta ciascuno degli undici e che compito ha (P portiere, D difensore, C centrocampista, A attaccante).
 // Nei dati l'ordine è sempre portiere, quattro difensori, tre centrocampisti, tre attaccanti: cambiando modulo qualcuno cambia compito
@@ -821,7 +826,9 @@ function header(p) {
       const sc = Math.min(openness(o), 6) * 1.4 + verso * 6 - d * .15 + (o.x * s - p.x * s) * .12; if (sc > bs) { bs = sc; m = o; }
     }
     if (m && (bs > 6 || dir || !difesa)) { const dx = m.x + m.vx * .3 - b.x, dz = m.z + m.vz * .3 - b.z, d = hyp(dx, dz) || 1, sp = clamp(6 + d * .5, 8, 15); vx = dx / d * sp; vz = dz / d * sp; vy = 2 + d * .08; G.intended = m; p.s.pa++; G.lastPass = p; }
-    else { const fuori = sgn(p.z || rnd(-1, 1)), ux = dir ? dir[0] : s * .8, uz = dir ? dir[1] : fuori * .6, l = hyp(ux, uz) || 1, sp = rnd(13, 17); vx = ux / l * sp; vz = uz / l * sp; vy = rnd(6.5, 9); } // spazzata: lontano, verso la fascia
+    else if (!dir && p.x * s < -HL + 17 && openness(p) < 1.8 && rnd() < CALCI.testaAngolo) { // in area con l'attaccante addosso: nel dubbio in angolo
+      const zt = sgn(p.z || rnd(-1, 1)) * rnd(GH + 3, GH + 14), xt = -s * (HL + 3), dl = hyp(xt - b.x, zt - b.z) || 1, sp = rnd(8, 12); vx = (xt - b.x) / dl * sp; vz = (zt - b.z) / dl * sp; vy = rnd(2.5, 5);
+    } else { const fuori = sgn(p.z || rnd(-1, 1)), ux = dir ? dir[0] : s * .8, uz = dir ? dir[1] : fuori * .6, l = hyp(ux, uz) || 1, sp = rnd(13, 17); vx = ux / l * sp; vz = uz / l * sp; vy = rnd(6.5, 9); } // spazzata: lontano, verso la fascia
   }
   b.vx = vx; b.vy = vy; b.vz = vz; b.c = b.t = 0; G.calcioT = G.t; p.cool = .5; p.dir = Math.atan2(vx, vz); G.lastTouch = G.lastKicker = p; G.poss = t; AU.calcio(hyp(vx, vz), 'testa'); azione(p, 'testa'); markOffside(p);
 }
@@ -897,7 +904,8 @@ function arrivo(q, x, z, riflesso = .16) {
  */
 function margine(p, x, z, sp, m) {
   const o = piede(p), dx = x - o.x, dz = z - o.z, d = hyp(dx, dz) || 1; let min = 9;
-  for (const k of [.18, .34, .5, .66, .8, .92, 1]) {
+  // anche i primi metri (a 0,6 e 1,2 m dal piede): l'avversario a ridosso del pallone prima non veniva visto
+  for (const k of [.6 / d, 1.2 / d, .18, .34, .5, .66, .8, .92, 1].filter((k, i) => i > 1 || k < .18)) {
     const px = o.x + dx * k, pz = o.z + dz * k, tb = tempoRaso(sp, d * k), mio = m && k > .75 ? arrivo(m, px, pz, .05) : 9;
     for (const q of p.team.opp.players) { if (q.stun > 0 && q.st === 'down') continue; const tq = arrivo(q, px, pz) + (q.i === 0 ? .1 : 0); min = Math.min(min, Math.min(tq, 9) - Math.max(tb, k > .75 ? Math.min(tb, mio) : tb)); }
   }
@@ -913,7 +921,9 @@ function openness(m) { let d = 99; for (const o of m.team.opp.players) d = Math.
 function liberoIn(t, x, z) { let d = 99; for (const o of t.opp.players) d = Math.min(d, hyp(o.x - x, o.z - z)); return d; }
 function laneBlocked(p, m, tx = m.x, tz = m.z) {
   const o0 = piede(p), dx = tx - o0.x, dz = tz - o0.z, L = hyp(dx, dz) || 1;
-  for (const o of p.team.opp.players) { const t = clamp(((o.x - o0.x) * dx + (o.z - o0.z) * dz) / (L * L), 0, 1); if (t > .08 && t < .95 && hyp(o0.x + dx * t - o.x, o0.z + dz * t - o.z) < 1.7) return true; }
+  // anche chi è a ridosso del pallone, appena davanti al piede: prima il primo 8% del tragitto non contava e si passava
+  // addosso all'avversario a mezzo metro (la palla gli sbatteva contro nello stesso istante)
+  for (const o of p.team.opp.players) { const t = clamp(((o.x - o0.x) * dx + (o.z - o0.z) * dz) / (L * L), 0, 1), m = t * L; if (m > .2 && t < .95 && hyp(o0.x + dx * t - o.x, o0.z + dz * t - o.z) < (m < 2.5 ? 1.2 : 1.7)) return true; }
   return false;
 }
 /**
@@ -926,7 +936,7 @@ function bestPass(p, ix, iz, voglio) {
   for (const m of p.team.players) {
     if (m === p || m.i === 0 || m.stun > 0) continue;
     const pt = puntoIncontro(p, m), dx = pt.x - p.x, dz = pt.z - p.z, d = hyp(dx, dz); if (d < 4 || d > 46) continue;
-    const over = pt.x * s - offsideLine(p.team, p.x), off = over > .35 && m.x * s > offsideLine(p.team, p.x) - .2; if (over > 1.2 && !dirGiven && !m.run) continue; // chi passa non vede il fuorigioco di poco
+    const over = pt.x * s - offsideLine(p.team, p.x), off = over > .35 && m.x * s > offsideLine(p.team, p.x) - .2; if (over > CALCI.vedeFuori + .5 && !dirGiven && !m.run) continue; // chi passa non vede il fuorigioco di poco
     const chiusa = laneBlocked(p, m, pt.x, pt.z), lib = Math.min(liberoIn(p.team, pt.x, pt.z), 7);
     let sc;
     if (dirGiven) {
@@ -936,7 +946,7 @@ function bestPass(p, ix, iz, voglio) {
     } else { // l'IA: avanzare, ma solo se il pallone arriva davvero (margine sui tempi di tutti gli avversari)
       const f = d > 18 && chiusa ? null : forzaPassaggio(p, pt.x, pt.z, m), mg = f ? f.mg : (chiusa ? -.3 : .3), gx = s * HL, vic = Math.max(0, 30 - hyp(gx - pt.x, pt.z));
       const oltre = pt.x * s > p.team.offLine - 3 && !off ? 8 : 0; // dietro la linea difensiva avversaria (in gioco): il passaggio che rompe la difesa
-      sc = dx * s * .55 + Math.min(lib, 6) * 1.1 + clamp(mg, -.6, .6) * 26 - (mg < 0 ? 14 : 0) - d * .06 + vic * .5 + oltre + (m.run ? 5 : 0) + (pt.spazio ? 2 : 0) - (pt.x * s < -30 ? 6 : 0) - (off ? 30 : 0) + rnd(2);
+      sc = dx * s * .55 + Math.min(lib, 6) * 1.1 + clamp(mg, -.6, .6) * 26 - (mg < 0 ? 14 : 0) - d * .06 + vic * .5 + oltre + (m.run ? 5 : 0) + (pt.spazio ? 2 : 0) - (pt.x * s < -30 ? 6 : 0) - (over > CALCI.vedeFuori && off ? 30 : 0) + rnd(2); // il fuorigioco di meno di un metro chi passa non lo vede
       if (m.stun > 0 || m.inj) sc -= 6;
     }
     if (sc > bs) { bs = sc; best = m; }
@@ -1275,7 +1285,9 @@ function think(p, dt) {
     const h = homeOf(p); p.tx = h[0]; p.tz = h[1]; if (rientra && (p.x - h[0]) * s > 6) { p.sprint = true; p.stato = 'rientro'; } return;
   }
   // finché il compagno ha palla si resta in linea coi difensori: lo scatto oltre la linea parte col passaggio
-  const lim = own && own.team === t ? (t.offLine - .5 + (p.run && p.run.g || 0)) * s : null, onside = () => { if (lim !== null && p.tx * s > lim * s) p.tx = lim; };
+  // ogni tanto chi sta davanti si distrae e resta oltre la linea di qualche decina di centimetri (il fuorigioco esiste)
+  if (!p.distrattoT || G.t > p.distrattoT) { p.distratto = p.role === 'A' && rnd() < CALCI.distratto ? rnd(...CALCI.oltre) : 0; p.distrattoT = G.t + rnd(2, 5); }
+  const lim = own && own.team === t ? (t.offLine - .5 + (p.run && p.run.g || 0) + p.distratto) * s : null, onside = () => { if (lim !== null && p.tx * s > lim * s) p.tx = lim; };
   if (p.run) { p.tx = p.run.x; p.tz = p.run.z; p.sprint = true; p.stato = p.run.sovr ? 'sovrapposizione' : 'inserimento'; return onside(); }
   const h = homeOf(p); p.tx = h[0]; p.tz = h[1]; p.stato = 'posizione';
   if (own && own.team === t) { // POSSESSO
@@ -1545,6 +1557,8 @@ function step(dt) {
     }
   } else if (G.state === 'half') { if (G.stateT > 2.6) { G.half = 2; G.clock = 0; for (const p of all()) { p.fondo = Math.min(1, (p.fondo || 1) + .08); p.en = Math.min(p.fondo, p.en + MOTO.FATICA.intervallo); } for (const t of G.teams) t.side = -t.side; kickoff(G.teams[1]); } } // cambio di campo
   else if (G.state === 'full') { if (G.stateT > 2 && !G.shown) { G.shown = true; showEnd(); } }
+  // all'intervallo e a fine partita il pallone che esce dal campo si ferma: prima rotolava fino in tribuna
+  if ((G.state === 'half' || G.state === 'full') && (Math.abs(b.z) > HW + 1.5 || Math.abs(b.x) > HL + 2.5)) { b.vx *= .8; b.vz *= .8; }
 
   if (G.penWait > 0) { // rigore dell'utente: tutti fermi finché non tira; se aspetta troppo parte da solo
     const k = G.taker; G.penWait -= dt;
@@ -1683,6 +1697,9 @@ function contacts(dt) {
     const sp = hyp(b.vx, b.vz); let best = null, bd = 9;
     for (const p of all()) {
       if (p.cool > 0 || p.stun > 0 || p.st === 'down' || p.st === 'slide' || (G.so && p !== G.so.gk)) continue; // ai rigori il pallone lo può toccare solo il portiere
+      // appena calciato, i compagni di chi calcia (non chi deve riceverlo) lo lasciano passare: al calcio d'inizio e sulle
+      // punizioni il compagno accanto al pallone lo deviava subito, e un passaggio su cinque finiva lento e storto
+      if (G.lastKicker && p.team === G.lastKicker.team && p !== G.intended && G.t - (G.calcioT || -9) < .2) continue;
       const d = hyp(p.x - b.x, p.z - b.z), gk = p.i === 0, inBox = Math.abs(p.x) > HL - 17 && Math.abs(p.z) < 20.5;
       if (sp > 8 && !gk && p !== G.intended && (p.x - b.x) * b.vx + (p.z - b.z) * b.vz < -.3 * sp) continue; // un pallone veloce che si allontana non lo tocca chi gli sta dietro o di fianco
       const reach = gk && inBox ? (p.st === 'dive' ? 2.0 : 1.3) : (p.st === 'slide' ? 1.3 : 1.05), top = gk && inBox ? 2.7 : 1.55;
@@ -1716,11 +1733,16 @@ function contacts(dt) {
       // vicino al palo può finire in angolo
       const lato = p.st === 'dive' ? p.diveS : sgn(b.z - p.z || rnd(-1, 1)), forza = 4 + sp * .22;
       b.vx = s2 * rnd(.25, .6) * forza - b.vx * .1; b.vz = lato * rnd(.55, .95) * forza + b.vz * .15; b.vy = rnd(1.5, 4.5); b.c = b.t = 0; G.lastTouch = p; p.cool = .5;
-      if (Math.abs(b.z) > GH - 1.4 && rnd() < AIR.behind) { b.vx = -s2 * rnd(2, 5); b.vz = sgn(b.z) * rnd(6, 11); } // deviata in angolo
+      if (Math.abs(b.z) > GH - CALCI.respintaLato && rnd() < AIR.behind) { b.vx = -s2 * rnd(2, 5); b.vz = sgn(b.z) * rnd(6, 11); } // deviata in angolo
       return;
     }
     if (p !== G.intended && !gk && sp > 10 && (sp > 19 || rnd() < .25 + (sp - 10) * .06)) { // deviazione: un pallone veloce non diretto a te lo si devia, prenderlo pulito è difficile
       if (G.offs && G.offs.includes(p)) return offside(p);
+      const s3 = p.team.side, inArea = p.x * s3 < -HL + 17 && Math.abs(p.z) < 22; // nella propria area
+      if (inArea && G.lastKicker && G.lastKicker.team !== p.team && rnd() < CALCI.deviaAngolo) { // deviata oltre la linea di fondo, fuori dai pali
+        const zt = sgn(b.z || rnd(-1, 1)) * rnd(GH + 2, GH + 12), xt = -s3 * (HL + 3), dl = hyp(xt - b.x, zt - b.z) || 1, v = rnd(7, 11);
+        b.vx = (xt - b.x) / dl * v; b.vz = (zt - b.z) / dl * v; b.vy = rnd(1, 3.5); b.c = b.t = 0; p.cool = .4; G.lastTouch = p; AU.calcio(10, 'tocco'); return;
+      }
       const nx = (b.x - p.x) / (bd || 1), nz = (b.z - p.z) / (bd || 1), dot = b.vx * nx + b.vz * nz;
       b.vx = (b.vx - 2 * dot * nx) * .35 + rnd(-1, 1); b.vz = (b.vz - 2 * dot * nz) * .35 + rnd(-1, 1); b.vy = rnd(1, 4); p.cool = .4; G.lastTouch = p; AU.calcio(10, 'tocco'); return;
     }
