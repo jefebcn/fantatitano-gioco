@@ -11,9 +11,9 @@
 - Piedi piantati (src/grafica/piedi.js, IK a due ossa), si spegne a qualità ≥2.
 
 ## Piano "fluido come DLS" (deciso con Alex il 20/11, una PR per punto)
-1. Animazioni di passaggio senza palla — FATTO (questa PR).
-2. Portiere completo: tuffi in 6 zone, prese a 4 altezze, rinvio corto/lungo con mano e piede
-   (clip già convertite e non usate: `tiene_palla`, `cammina_palla`).
+1. Animazioni di passaggio senza palla — FATTO (PR #53).
+2. Portiere completo — FATTO: pallone al petto, rialzarsi col pallone, prese per altezza (tuffi in 6 zone c'erano già).
+   Manca un rinvio di piede al volo dedicato: nessuna clip libera, resta il tiro di Mixamo.
 3. Impostazioni grafiche Bassa/Media/Alta/Molto alta, 30/60 fps, preset iniziale dal telefono.
 4. Difficoltà continua: parametri da 0 a 1 per difficoltà e valore del giocatore.
 5. Ruoli in campo: rigori, punizioni, angoli (oltre al capitano).
@@ -29,6 +29,6 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   Non metterli nel repository.
 
 ## Attenzione
-- `public/anim-gf.js` è a 737 KB (precaricato dal service worker): crescere con giudizio.
+- `public/anim-gf.js` è a 747 KB (precaricato dal service worker): crescere con giudizio.
 - Le modifiche solo grafiche cambiano comunque le partite a parità di seme (la posa delle mani entra nel gioco):
   confrontare medie su 16+ partite. Contrasti vinti oscillano tra 3 e 5 a gruppo di 8.

@@ -140,7 +140,9 @@ Object.assign(ELENCO, { parte_45: 'movement/idle/045_accel.anim:giro', parte_90:
   inverti_135: 'movement/dribble/135.anim:giro', inverti_180: 'movement/dribble/180_decel.anim:giro',
   inverti_scatto_135: 'movement/sprint/135_decel_decel_decel.anim:giro', frena_scatto: 'movement/sprint/000_decel_decel_decel_todo.anim' });
 // rialzarsi da terra (dopo un tuffo), da prono e da supino
-Object.assign(ELENCO, { rialza: 'movement_special/idle/special/000_stand_up_from_front.anim', rialza_schiena: 'movement_special/idle/special/000_stand_up_from_back.anim' });
+Object.assign(ELENCO, { rialza: 'movement_special/idle/special/000_stand_up_from_front.anim', rialza_schiena: 'movement_special/idle/special/000_stand_up_from_back.anim',
+  // il portiere che si rialza col pallone stretto al petto, dopo una presa in tuffo
+  rialza_palla: 'movement_special/idle/special/000_stand_up_from_front_holdball.anim' });
 // esultanze dopo il gol (normale, scatenata con la frenata) e delusione di chi lo subisce; rimessa laterale con le mani (corta
 // e lunga: il pallone parte al «tocco»); colpi di testa da fermo, in salto, in corsa e contesi; scivolate (in corsa e
 // camminando) e cadute dopo un fallo (in avanti, di lato, camminando); l'arbitro che mostra il cartellino; il portiere col

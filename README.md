@@ -220,6 +220,11 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   delle mani del portiere e di chi batte la rimessa si legge dallo scheletro, quindi a parità di seme la partita prende
   presto un'altra strada. Su 90 s di gioco: piede che scivola (mediana) camminata 0,55→0,38 m/s, corsetta 0,49→0,42,
   corsa e scatto invariate (0,36-0,38); scatti della posa circa 1 per mille fotogrammi come prima.
+- **Portiere col pallone** (`MANO`, `presaPortiere` in `src/game.js`). Con il pallone in mano le braccia lo tengono al petto
+  (dalla clip `tiene_palla` di GameplayFootball solo braccia e spalle, sopra la corsa normale: le clip intere col pallone
+  sono un passo solo e non si ripetono bene); dopo una presa in tuffo si rialza col pallone stretto (`rialza_palla`); le
+  prese senza parata preparata (cross, tiro addosso) scelgono la clip per altezza: terra, ginocchio, busto, alta.
+  Tuffi già in sei zone (terra, mezza altezza, vicino/lontano, busto, alto) e rinvio con le mani o di collo.
 - **Colori delle maglie** da `src/data.js` dell'app; il secondo colore è scelto a occhio dagli
   stemmi (`scripts/genera-dati.py`). Qualche divisa non combacia col suo stemma.
 - **Nomi dei calciatori**: sono quelli del listone dell'app. Verificare che l'accordo con

@@ -337,6 +337,11 @@ function parata(p, tt, dz, y) {
   }
   return gesto(p, `presa_${y < .35 ? 'terra' : y < .9 ? 'ginocchio' : y < 1.8 ? 'busto' : 'alta'}`, tt, true);
 }
+/** Presa senza parata preparata (cross, tiro addosso): la clip all'altezza del pallone, dal momento in cui le mani lo toccano. */
+function presaPortiere(p, y) {
+  const nome = `presa_${y < .35 ? 'terra' : y < .9 ? 'ginocchio' : y < 1.8 ? 'busto' : 'alta'}`, i = GESTI[nome];
+  if (!i || !clipGF(p, nome, i.tocco || 0)) azione(p, 'presa');
+}
 const A_TERRA_GF = /^(para_|rialza|scivola|cade)/; // tuffi, scivolate e cadute finiscono a terra (e da lì ci si rialza): il corpo si alza quanto basta perché niente entri nell'erba
 // Dopo le clip che finiscono a terra si resta sdraiati quanto serve, poi ci si rialza: da prono dopo un tuffo o una caduta,
 // da supino dopo una scivolata. Il portiere resta giù finché è in tuffo o a terra; gli altri finché manca il tempo del rialzarsi.
@@ -432,6 +437,9 @@ async function loadModel() {
       MODEL.fx[nome] = new T.AnimationClip(nome, (c.n - 1) / A.fps, tracks);
     }
     if (!MODEL.fx.idle || !MODEL.fx.walk || !MODEL.fx.run) throw new Error('mancano le animazioni di base');
+    // il portiere col pallone in mano: dalla clip di GameplayFootball solo braccia e spalle (pallone stretto al petto), le
+    // gambe restano quelle della corsa (le clip intere col pallone sono un passo solo e non si possono ripetere)
+    if (MODEL.fx.tiene_palla) MODEL.braccia = new T.AnimationClip('braccia', MODEL.fx.tiene_palla.duration, MODEL.fx.tiene_palla.tracks.filter((k) => /^(clavicle|upperarm|lowerarm|hand)_/.test(k.name)));
     if (MODEL.fx.scivolata) DOWN.pl = .81; if (MODEL.fx.tuffoS) DOWN.gk = 1.1; if (MODEL.fx.caduta) DOWN.fall = 1.35;
     if (MODEL.fx.scivola && MODEL.fx.rialza_schiena) DOWN.pl = .85; if (MODEL.fx.cade && MODEL.fx.rialza) DOWN.fall = 1.6; // scivolata e caduta di GameplayFootball, poi ci si rialza (0,72-0,76 s)
     if (MODEL.fx.rialza) DOWN.gk = .65; // dopo il tuffo c'è l'animazione per rialzarsi (0,76 s): a terra si resta meno, il tempo totale è quello di prima
@@ -600,6 +608,7 @@ function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
   const mixer = new T.AnimationMixer(obj), A = {}, w = {};
   const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, aereo: kit.gloves ? null : MODEL.fx.aereo, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null, passoS: MODEL.fx.passoS, passoD: MODEL.fx.passoD }; // i passi laterali servono anche a chi difende guardando la palla
   for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = rnd(base[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; w[n] = n === 'idle' ? 1 : 0; }
+  if (kit.gloves && MODEL.braccia) { const a = mixer.clipAction(MODEL.braccia); a.play(); a.setEffectiveWeight(0); A.braccia = a; w.braccia = 0; }
   const fig = { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true, sporco: u.uSporco.value, alt, vicini, ombra: sh, dettagli: true };
   FIGURE.add(fig); return fig;
 }
@@ -1524,6 +1533,8 @@ function ownerThink(p, dt) {
  * (lancio verso la levetta, o rinvio lungo).
  */
 const RINVIO = { attesa: [1.3, 2.1], braccio: .63, piede: .3, corto: 30, limite: 14 };
+/** Portiere col pallone in mano. peso: quanto le braccia che lo tengono contano rispetto alla corsa (9 = nove decimi). */
+const MANO = { peso: 9 };
 function scegliRinvio(p, tipo, dir) {
   const t = p.team, s = t.side; let m = null, bs = -1e9;
   if (tipo !== 'piede') for (const o of t.players) { // a chi lanciarla con le mani: libero, entro 30 m, il passaggio arriva
@@ -1828,7 +1839,7 @@ function contacts(dt) {
     if (gk && !tiro && b.y > 1.3 && G.lastKicker && G.lastKicker.team !== p.team && G.state === 'play') { // cross o lancio alto: presa in uscita, o pugno se c'è un attaccante addosso
       const conteso = p.team.opp.players.some((o) => o.i && hyp(o.x - p.x, o.z - p.z) < 1.5);
       if (conteso && rnd() < .65) { const s2 = p.team.side; b.vx = s2 * rnd(8, 13); b.vz = rnd(-6, 6); b.vy = rnd(4, 7); b.c = b.t = 0; G.lastTouch = p; p.cool = .5; G.intended = null; AU.calcio(12, 'presa'); azione(p, 'testa'); return; }
-      azione(p, 'presa'); return gain(p);
+      presaPortiere(p, b.y); return gain(p);
     }
     if (gk && sp > 13 && tiro && G.lastKicker && G.lastKicker.team !== p.team) {
       if (p.saveId === G.shotId) return; p.saveId = G.shotId;
@@ -1840,7 +1851,7 @@ function contacts(dt) {
       AU.calcio(sp, 'presa'); p.s.sv++; if (G.shooter && G.shooter.team !== p.team) { AU.ooh(.8); // parata: il pubblico fa ooh
         G.shooter.s.sot++; G.shooter = null; }
       // presa solo se il pallone arriva addosso e non troppo forte; altrimenti respinta
-      if ((sp < 30 && lontano < .45 && b.y > .2 && b.y < 2.55) || (sp < 21 && lontano < .65) || sp < 15) { if (p.st === 'run' && !/^(para|presa_)/.test(p.fx || '')) azione(p, 'presa'); return gain(p); }
+      if ((sp < 30 && lontano < .45 && b.y > .2 && b.y < 2.55) || (sp < 21 && lontano < .65) || sp < 15) { if (p.st === 'run' && !/^(para|presa_)/.test(p.fx || '')) presaPortiere(p, b.y); return gain(p); }
       G.stats.resp[p.team.idx]++;
       // respinta: il pallone rimbalza sulle mani verso il campo e di lato (dalla parte del tuffo), più forte se il tiro era forte;
       // vicino al palo può finire in angolo
@@ -2069,7 +2080,7 @@ function poseSkinned(p, dt) {
     if (p.fxT >= dur - .03) {
       // il tuffo resta a terra finché il portiere è giù (in volo e poi a terra), poi si rialza con la sua animazione: prima
       // la posa sdraiata sfumava in quella in piedi e a metà strada il corpo finiva sotto l'erba (e veniva sollevato)
-      const r = rialzo(p.fx);
+      const r = p.i === 0 && G.ball.owner === p && /^para_/.test(p.fx) && GESTI.rialza_palla ? 'rialza_palla' : rialzo(p.fx);
       if (r && aTerraAncora(p, r)) on = true;
       else if (r && GESTI[r]) { p.fx = null; gesto(p, r, 0); on = true; }
       else if (c.next && hasFx(c.next)) { p.fx = c.next; p.fxT = 0; p.fxSp = null; startFx(f, p.fx); on = true; } else p.fx = null; }
@@ -2092,12 +2103,16 @@ function poseSkinned(p, dt) {
     else if (p.deluso !== ng && hasFx('delusione')) { p.deluso = ng; clipGF(p, 'delusione', 0, .7); }
   }
   // attesa, camminata, corsetta e corsa secondo la velocità; esultanza dopo un gol
-  const tg = { idle: 0, walk: 0, run: 0, jog: 0, gkIdle: 0, esulta: 0, passoS: 0, passoD: 0, aereo: 0 }; let by = 0;
+  const tg = { idle: 0, walk: 0, run: 0, jog: 0, gkIdle: 0, esulta: 0, passoS: 0, passoD: 0, aereo: 0, braccia: 0 }; let by = 0;
   const festa = G.state === 'goal' && G.scorer && p.team === G.scorer.team && p.i !== 0 && v < 5 && f.fxW < .25;
   if (festa && f.A.esulta) { tg.esulta = 1; by = Math.abs(Math.sin(G.t * 7 + p.i)) * .3; }
   else if (f.A.jog) { const w = MOTO.pesi(v / alt); tg.run = w.run; tg.jog = w.jog; tg.walk = w.walk; tg.idle = 1 - w.run - w.jog - w.walk; } // stesse soglie della fase del passo
   else { tg.run = clamp((v - 2.6) / 2.6, 0, 1); tg.walk = clamp(v / 2.2, 0, 1) * (1 - tg.run); tg.idle = 1 - tg.run - tg.walk; }
-  if (f.A.gkIdle && G.state === 'play') { tg.gkIdle = tg.idle; tg.idle = 0; }
+  // col pallone in mano il portiere sta dritto (niente posa di attesa) e le braccia lo tengono al petto: il peso alto fa
+  // prevalere le braccia sulla corsa (three.js fa la media pesata delle azioni sullo stesso osso)
+  const inMano = f.A.braccia && p.i === 0 && G.ball.owner === p && (G.state === 'play' || G.state === 'restart');
+  if (inMano && !p.fx) tg.braccia = MANO.peso;
+  else if (f.A.gkIdle && G.state === 'play') { tg.gkIdle = tg.idle; tg.idle = 0; }
   // Chi guarda la palla mentre si sposta (il portiere, il difensore che temporeggia) non corre in avanti: di lato fa i passi
   // laterali, all'indietro la corsetta al contrario (la clip gira a rovescio: la punta tocca prima del tallone, come arretrando)
   if (f.A.passoS && G.state === 'play' && G.ball.owner !== p && (p.i === 0 || p.jock)) {
