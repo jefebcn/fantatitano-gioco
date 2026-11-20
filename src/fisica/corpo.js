@@ -11,24 +11,9 @@
 
    Tutto avanza a passi fissi di 1/120 di secondo, come il pallone: stesso risultato a ogni frame rate. */
 
-export const CORPO = {
-  acc: 12, // accelerazione da fermo (m/s²)
-  accMin: 0.22, // quanta accelerazione resta vicino alla velocità massima (frazione di acc)
-  frena: 17, // frenata massima (m/s²)
-  lat: 30, // forza laterale massima per curvare, da fermo (m/s²)
-  latV: 6, // velocità a cui la forza laterale si dimezza: più veloce, curva più larga
-  latScatto: 0.75, // in scatto la curva si allarga ancora
-  inverti: -0.35, // coseno sotto cui la direzione chiesta è "alle spalle": prima si frena
-  giro: 13, // velocità massima di rotazione del busto da fermo (rad/s)
-  giroCorsa: 7.5, // e a piena corsa
-  molla: 160, // quanto forte il busto insegue la direzione voluta
-  smorza: 24, // e quanto si smorza (oltre questo valore niente oscillazioni)
-  passoMax: 1 / 120,
-};
-
-// Fatica (en da 0 a 1): lo scatto consuma, correndo forte si consuma poco, piano si recupera. `fondo` è il tetto a cui si
-// recupera e cala piano durante la partita: nel finale chi ha corso tanto non torna più fresco come all'inizio.
-export const FATICA = { scatto: 0.045, corsa: 0.006, recupero: 0.022, fondoCorsa: 0.0011, fondoScatto: 0.0022, fondoMin: 0.6, intervallo: 0.4 };
+// i valori stanno in src/config.js
+import { CORPO, FATICA } from '../config.js';
+export { CORPO, FATICA };
 
 const hyp = Math.hypot, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const giro = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };

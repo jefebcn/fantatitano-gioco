@@ -1,13 +1,13 @@
 /* Contrasti, senza grafica: si prova da solo (scripts/prova-fisica.mjs) e game.js lo usa per i duelli spalla a spalla e
    per la scivolata. I giocatori sono oggetti semplici { x, z, vx, vz, dir, massa, en }. */
 
+// i valori stanno in src/config.js
+import { DUELLO, SCIVOLATA } from '../config.js';
+export { DUELLO, SCIVOLATA };
+
 const hyp = Math.hypot, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 /* ---------------------------------------------------------------- spalla a spalla */
-
-// Duelli: sotto `vicini` metri due avversari in corsa si toccano. Conta la forza (massa, velocità, freschezza): chi ne ha di
-// più sposta l'altro e lo sbilancia per un attimo (meno velocità, meno controllo della palla).
-export const DUELLO = { vicini: 0.95, corsa: 3, paralleli: 0.35, spinta: 14, sbilancio: 0.45, perde: 0.32 }; // spinta in m/s² finché ci si tocca
 
 /** La forza di un giocatore nel duello: massa, quanto è lanciato, quanto è fresco (e se è già sbilanciato). */
 export function forza(p) {
@@ -37,11 +37,6 @@ export function duello(a, c, dt = 1 / 60) {
 }
 
 /* ---------------------------------------------------------------- scivolata */
-
-// La scivolata: si parte a `v0` (almeno la velocità che si ha, un po' di più) e l'erba frena (attrito). Le gambe colpiscono
-// solo nella parte centrale (da `attiva` a `fine`, in secondi), quando il piede è tutto avanti: lungo la gamba, da `anca` a
-// `piede` metri davanti al bacino, con uno spessore `raggio`. Tempi e misure vengono dall'animazione del modello.
-export const SCIVOLATA = { v0: 8.5, spinta: 1.1, attrito: 2.2, durata: 0.75, attiva: 0.16, fine: 0.62, anca: 0.2, piede: 1.25, raggio: 0.38, giuPalla: 0.75, uomo: 0.5, dopo: 0.12 };
 
 /** Distanza del punto (px, pz) dal segmento da (ax, az) a (bx, bz). */
 export function distSegmento(px, pz, ax, az, bx, bz) {
