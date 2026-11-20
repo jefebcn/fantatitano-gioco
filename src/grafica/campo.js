@@ -7,21 +7,22 @@
 const RIS = 'textures/grass/';
 
 /** Le linee del campo su un canvas trasparente: s pixel per metro, M metri di bordo attorno al rettangolo di gioco. */
-function disegnaLinee(HL, HW, M, s) {
+function disegnaLinee(HL, HW, M, s, L) {
   const c = document.createElement('canvas'); c.width = Math.round((HL * 2 + M * 2) * s); c.height = Math.round((HW * 2 + M * 2) * s);
   const x = c.getContext('2d'), X = (wx) => (wx + HL + M) * s, Z = (wz) => (wz + HW + M) * s;
   x.strokeStyle = '#fff'; x.fillStyle = '#fff'; x.lineWidth = 0.12 * s; x.lineJoin = 'round';
   x.strokeRect(X(-HL), Z(-HW), HL * 2 * s, HW * 2 * s);
   x.beginPath(); x.moveTo(X(0), Z(-HW)); x.lineTo(X(0), Z(HW)); x.stroke();
-  x.beginPath(); x.arc(X(0), Z(0), 9.15 * s, 0, 7); x.stroke();
+  const [aL, aW] = L.area, [pL, pW] = L.piccola, R = L.cerchio, D = L.dischetto;
+  x.beginPath(); x.arc(X(0), Z(0), R * s, 0, 7); x.stroke();
   x.beginPath(); x.arc(X(0), Z(0), 0.2 * s, 0, 7); x.fill();
   for (const d of [-1, 1]) {
     const gx = d * HL;
-    x.strokeRect(Math.min(X(gx), X(gx - d * 16.5)), Z(-20), 16.5 * s, 40 * s);
-    x.strokeRect(Math.min(X(gx), X(gx - d * 5.5)), Z(-9.2), 5.5 * s, 18.4 * s);
-    x.beginPath(); x.arc(X(gx - d * 11), Z(0), 0.18 * s, 0, 7); x.fill();
-    x.beginPath(); const a = Math.acos(5.5 / 9.15);
-    x.arc(X(gx - d * 11), Z(0), 9.15 * s, d > 0 ? Math.PI - a : -a, d > 0 ? Math.PI + a : a); x.stroke();
+    x.strokeRect(Math.min(X(gx), X(gx - d * aL)), Z(-aW / 2), aL * s, aW * s);
+    x.strokeRect(Math.min(X(gx), X(gx - d * pL)), Z(-pW / 2), pL * s, pW * s);
+    x.beginPath(); x.arc(X(gx - d * D), Z(0), 0.18 * s, 0, 7); x.fill();
+    x.beginPath(); const a = Math.acos((aL - D) / R);
+    x.arc(X(gx - d * D), Z(0), R * s, d > 0 ? Math.PI - a : -a, d > 0 ? Math.PI + a : a); x.stroke();
     for (const e of [-1, 1]) { const f = Math.atan2(-e, -d); x.beginPath(); x.arc(X(gx), Z(e * HW), 1 * s, f - Math.PI / 4, f + Math.PI / 4); x.stroke(); } // quarto di cerchio dell'angolo, verso l'interno
   }
   return c;
@@ -38,14 +39,14 @@ function pratoDiRiserva(T) {
  * Crea il campo e risponde una promessa con { campo, fuori }: il rettangolo di gioco col suo bordo e il prato attorno.
  * `anisotropia` è quella massima della scheda grafica.
  */
-export async function creaCampo(T, { HL, HW, M = 6, anisotropia = 8, passo = 4, strisce = 5.6 }) {
+export async function creaCampo(T, { HL, HW, linee: L, M = 6, anisotropia = 8, passo = 4, strisce = 5.6 }) {
   const loader = new T.TextureLoader(), carica = (n) => new Promise((ok) => loader.load(RIS + n, ok, undefined, () => ok(null)));
   const [alb, nor, rug] = await Promise.all([carica('grass_albedo.webp'), carica('grass_normal.webp'), carica('grass_roughness.webp')]);
   const W = (HL + M) * 2, H = (HW + M) * 2, prepara = (t, srgb) => {
     if (!t) return null; t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(W / passo, H / passo); t.anisotropy = anisotropia; if (srgb) t.colorSpace = T.SRGBColorSpace; return t;
   };
   const map = prepara(alb, true) || prepara(pratoDiRiserva(T), true);
-  const linee = new T.CanvasTexture(disegnaLinee(HL, HW, M, 20)); linee.anisotropy = anisotropia;
+  const linee = new T.CanvasTexture(disegnaLinee(HL, HW, M, 20, L)); linee.anisotropy = anisotropia;
   const mat = new T.MeshStandardMaterial({ map, normalMap: prepara(nor), roughnessMap: prepara(rug), roughness: 1, metalness: 0, normalScale: new T.Vector2(0.55, 0.55) });
   mat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, { uLinee: { value: linee }, uCampo: { value: new T.Vector4(HL, HW, M, strisce) }, uTexel: { value: 1 / 20 } });

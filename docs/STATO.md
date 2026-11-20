@@ -26,7 +26,15 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Fonti: quello che descrive Alex e i suoi video; l'analisi che ha fatto lui resta fuori dal repository e vale solo
   come elenco di categorie. Mai codice, valori, asset, interfaccia, testi o nomi loro. Se un comportamento non è noto: chiedere.
 - Passo 1 FATTO: valori di gioco in `src/config.js` (partite identiche prima e dopo).
-- Prossimi passi, uno per PR: comandi e gesti, telecamera, ritmo e peso di passaggi e tiri, IA e compagni, portiere, flusso.
+- Passo 2 FATTO: misure vere (campo, porta, pallone, stature) e telecamera di gioco dalle misure di Alex; controllo
+  `scripts/prove/inquadratura.cjs` (sette misure dentro ±2). Effetto: gol ~1,4 e tiri ~6,4 a partita (prima 3 e 9).
+- Passo 3 (prossimo): interfaccia di partita nella disposizione chiesta da Alex, grafica Fantatitano: pausa, tabellone e
+  cronometro in alto a sinistra; levetta in basso a sinistra; tre pulsanti in basso a destra (tiro in basso a destra,
+  passaggio rasoterra alla sua sinistra, alto o cross sopra; in difesa cambiano); minimappa in basso al centro con lo stato
+  della squadra; nome e segnalino verde sopra il giocatore controllato.
+- Da chiedere ad Alex: inquadrature di punizioni, angoli, rigori e dopo il gol; quanto si ferma la telecamera ai bordi;
+  cosa fanno i tre pulsanti in difesa; se c'è lo scatto.
+- Poi, uno per PR: comandi e gesti, telecamera, ritmo e peso di passaggi e tiri, IA e compagni, portiere, flusso.
   Prima di ognuno servono le risposte di Alex (meglio un video dello schermo).
 - Prestazioni: 60 fps su iPhone nella webview dell'app, minimo 30.
 

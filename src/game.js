@@ -18,7 +18,7 @@ import { creaAudio } from './audio.js';
 import { creaPrestazioni } from './prestazioni.js';
 import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
-import { HL, HW, GH, GT, BR, GRAV, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA } from './config.js';
+import { HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA } from './config.js';
 
 (() => {
 // i valori di gioco (campo, tempi, difficoltà, IA, comandi, fisica) stanno tutti in src/config.js
@@ -77,7 +77,7 @@ function ctex(c, repX = 1, repY = 1) {
 function cv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
 
 async function buildPitch() {
-  const { campo, fuori } = await creaCampo(T, { HL, HW, anisotropia: renderer.capabilities.getMaxAnisotropy() }); scene.add(campo, fuori); CAMPO = campo; // prato PBR, strisce, usura e linee: src/grafica/campo.js
+  const { campo, fuori } = await creaCampo(T, { HL, HW, linee: LINEE, anisotropia: renderer.capabilities.getMaxAnisotropy() }); scene.add(campo, fuori); CAMPO = campo; // prato PBR, strisce, usura e linee: src/grafica/campo.js
   // porte con la rete che si deforma e bandierine che si flettono (src/grafica/stadio.js)
   PORTE = [-1, 1].map((d) => new Porta(T, scene, { d, gx: d * HL, GH, GT }));
   BANDIERINE = new Bandierine(T, scene, { HL, HW });
@@ -130,7 +130,7 @@ const GEO = {
   torso: new T.BoxGeometry(.46, .54, .26), shorts: new T.BoxGeometry(.42, .27, .27), thigh: new T.BoxGeometry(.16, .42, .17),
   shin: new T.BoxGeometry(.125, .4, .135), boot: new T.BoxGeometry(.135, .1, .28), uarm: new T.BoxGeometry(.125, .3, .135),
   farm: new T.BoxGeometry(.1, .28, .1), head: new T.SphereGeometry(.145, 12, 9), hair: new T.SphereGeometry(.156, 12, 8, 0, Math.PI * 2, 0, Math.PI * .56),
-  num: new T.PlaneGeometry(.3, .3), shadow: new T.CircleGeometry(.5, 14), ring: new T.RingGeometry(.72, .95, 28), tri: new T.ConeGeometry(.22, .4, 3),
+  num: new T.PlaneGeometry(.3, .3), shadow: new T.CircleGeometry(.5, 14), ring: new T.RingGeometry(.48, .63, 28), tri: new T.ConeGeometry(.15, .27, 3),
 };
 const shadowMat = new T.MeshBasicMaterial({ map: texturaOmbra(T), transparent: true, opacity: .32, depthWrite: false }); // ombra di contatto morbida sotto i piedi
 const SKIN = [0xf1c9a5, 0xe0ac7e, 0xc68b5e, 0x9a6441, 0x6e452c], HAIR = [0x1c1410, 0x2e2018, 0x5a3a20, 0x8a6a3a, 0x111111, 0xc9a25a, 0xd8bd7a, 0x8e3b1c, 0x9c9a96, 0xe8e0c8];
@@ -162,7 +162,7 @@ function makeFigure(kit, seed, num) {
   const [legL, kneeL] = leg(-1), [legR, kneeR] = leg(1), [armL, elL] = arm(-1), [armR, elR] = arm(1);
   const n = new T.Mesh(GEO.num, numMat(num, kit.ink)); n.position.set(0, 1.3, -.135); n.rotation.y = Math.PI; body.add(n);
   const sh = new T.Mesh(GEO.shadow, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; root.add(sh);
-  root.scale.setScalar(1.5);
+  root.scale.setScalar(1);
   return { root, body, legL, legR, kneeL, kneeR, armL, armR, elL, elR };
 }
 /* --- figure con scheletro e animazioni registrate (modello GLB): se il modello non si carica restano quelle a blocchi --- */
@@ -278,17 +278,18 @@ function calciCaricati(dt) {
  * tuffo scelto per altezza e distanza, al centro una presa a terra, al ginocchio, al busto o alta: la mano arriva sul
  * pallone in quel momento. Ritorna false se il gesto non c'è (resta il tuffo di prima).
  */
+const altezzaPresa = (y) => (y < PARATA.presa[0] ? 'terra' : y < PARATA.presa[1] ? 'ginocchio' : y < PARATA.presa[2] ? 'busto' : 'alta');
 function parata(p, tt, dz, y) {
   if (Math.abs(dz) > 1) {
     const sinistra = -sgn(dz) * Math.sin(p.dir) > 0, lontano = Math.abs(dz) > 1.7; // la sua sinistra, nel mondo: (cos dir, -sin dir)
-    const tipo = y < .45 ? (lontano ? 'terra_lontano' : 'terra_vicino') : y < 1.2 ? (lontano ? 'mezza_lontano' : 'mezza_vicino') : y < 1.8 ? 'busto' : 'alto';
+    const [h1, h2, h3] = PARATA.tuffo, tipo = y < h1 ? (lontano ? 'terra_lontano' : 'terra_vicino') : y < h2 ? (lontano ? 'mezza_lontano' : 'mezza_vicino') : y < h3 ? 'busto' : 'alto';
     return gesto(p, `para_${tipo}${sinistra ? '' : '_dx'}`, tt, true);
   }
-  return gesto(p, `presa_${y < .35 ? 'terra' : y < .9 ? 'ginocchio' : y < 1.8 ? 'busto' : 'alta'}`, tt, true);
+  return gesto(p, `presa_${altezzaPresa(y)}`, tt, true);
 }
 /** Presa senza parata preparata (cross, tiro addosso): la clip all'altezza del pallone, dal momento in cui le mani lo toccano. */
 function presaPortiere(p, y) {
-  const nome = `presa_${y < .35 ? 'terra' : y < .9 ? 'ginocchio' : y < 1.8 ? 'busto' : 'alta'}`, i = GESTI[nome];
+  const nome = `presa_${altezzaPresa(y)}`, i = GESTI[nome];
   if (!i || !clipGF(p, nome, i.tocco || 0)) azione(p, 'presa');
 }
 const A_TERRA_GF = /^(para_|rialza|scivola|cade)/; // tuffi, scivolate e cadute finiscono a terra (e da lì ci si rialza): il corpo si alza quanto basta perché niente entri nell'erba
@@ -351,7 +352,8 @@ async function loadModel() {
     scene.traverse((o) => { if (o.isBone && o.name === 'Head') head = o; if (o.isBone && o.name === 'spine_03') spine = o; if (o.isSkinnedMesh && o.material.name === CORPO) body = o; });
     if (!head || !spine || !body) throw new Error('modello non riconosciuto');
     snellisci(body); // proporzioni da calciatore, non da supereroe: prima del resto, così numero e stemma si appoggiano al corpo nuovo
-    const box = new T.Box3().setFromObject(scene), k = 2.72 / (box.max.y - box.min.y);
+    // k porta il modello a un metro di altezza: ogni giocatore lo moltiplica per la sua statura
+    const box = new T.Box3().setFromObject(scene), k = 1 / (box.max.y - box.min.y);
     // capelli: portati nello spazio dell'osso della testa, così basta appenderli
     const hair = {}, hInv = new T.Matrix4().copy(head.matrixWorld).invert(); h.scene.updateMatrixWorld(true);
     h.scene.traverse((o) => { if (o.isMesh) { const geo = o.geometry.clone(); geo.applyMatrix4(o.matrixWorld).applyMatrix4(hInv); geo.computeVertexNormals(); hair[o.name] = geo; } });
@@ -530,9 +532,15 @@ const lineare = (c) => Math.pow(c, 2.2);
  * Un calciatore col modello vero. Dal seme (nome e club) vengono, sempre uguali: tono di pelle, capelli e loro colore,
  * barba, scarpini, altezza. opz.capitano mette la fascia.
  */
+/** La statura di un giocatore, sempre la stessa per lo stesso seme: tra ALTEZZA.min e max con la media giusta, i portieri più alti. */
+function statura(seed, portiere) {
+  const A = ALTEZZA, u = ((seed >>> 16) % 11) / 10, esp = (A.max - A.min) / (A.media - A.min) - 1;
+  return portiere ? A.portiere + (A.max - A.portiere) * u : A.min + (A.max - A.min) * Math.pow(u, esp);
+}
 function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
   const root = new T.Group(), body = new T.Group(); root.add(body);
-  const alt = .95 + ((seed >>> 16) % 11) * .01, obj = SkeletonUtils.clone(MODEL.scene); obj.scale.multiplyScalar(MODEL.k * alt); body.add(obj); // altezze diverse, ±5%: il passo si allunga con l'altezza
+  // statura vera, diversa per ogni giocatore (ALTEZZA in config): alt è il rapporto con la media, il passo si allunga con l'altezza
+  const metri = statura(seed, !!kit.gloves), alt = metri / ALTEZZA.media, obj = SkeletonUtils.clone(MODEL.scene); obj.scale.multiplyScalar(MODEL.k * metri); body.add(obj);
   const tono = seed % TONI.length, scuri = tono >= 4, varia = .97 + ((seed >>> 20) % 7) * .01;
   const pelo = mat(scuri ? [0x1c1410, 0x111111, 0x2e2018, 0x1c1410][(seed >>> 4) % 4] : HAIR[(seed >>> 4) % HAIR.length]);
   const sc = kit.boots ? [kit.boots, kit.suola || '#16161a'] : SCARPINI[(seed >>> 24) % SCARPINI.length];
@@ -553,12 +561,12 @@ function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
   if (MODEL.sponsorM && clubId) { const c = new T.Mesh(GEO1, sponsorMat(kit.ink)); c.scale.set(4, 1, 1); c.applyMatrix4(MODEL.sponsorM); bones.spine_03.add(c); vicini.push(c); }
   const sm = clubId && MODEL.stemmaM ? stemmaMat(clubId) : null;
   if (sm) { const c = new T.Mesh(GEO1, sm); c.scale.set(sm.userData.ratio, 1, 1); c.applyMatrix4(MODEL.stemmaM); bones.spine_03.add(c); vicini.push(c); }
-  const sh = new T.Mesh(GEO.shadow, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; sh.scale.setScalar(1.5); root.add(sh);
+  const sh = new T.Mesh(GEO.shadow, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; sh.scale.setScalar(1); root.add(sh);
   const mixer = new T.AnimationMixer(obj), A = {}, w = {};
   const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, aereo: kit.gloves ? null : MODEL.fx.aereo, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null, passoS: MODEL.fx.passoS, passoD: MODEL.fx.passoD }; // i passi laterali servono anche a chi difende guardando la palla
   for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = rnd(base[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; w[n] = n === 'idle' ? 1 : 0; }
   if (kit.gloves && MODEL.braccia) { const a = mixer.clipAction(MODEL.braccia); a.play(); a.setEffectiveWeight(0); A.braccia = a; w.braccia = 0; }
-  const fig = { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true, sporco: u.uSporco.value, alt, vicini, ombra: sh, dettagli: true };
+  const fig = { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true, sporco: u.uSporco.value, alt, metri, vicini, ombra: sh, dettagli: true };
   FIGURE.add(fig); return fig;
 }
 /* Meno chiamate di disegno per ogni persona in campo. Le ombre di contatto sotto i piedi di tutti sono un'unica InstancedMesh
@@ -769,7 +777,7 @@ function lanciaRimessa(p, m) {
   const b = G.ball, d0 = hyp(m.x - p.x, m.z - p.z), nome = d0 > RIMESSA.lunga ? 'rimessa_lunga' : 'rimessa', i = GESTI[nome];
   p.dir = Math.atan2(m.x - p.x, m.z - p.z);
   const via = () => {
-    const h = traLeMani(p) || { x: b.x, y: 2.1, z: b.z }, tx = clamp(m.x + m.vx * .45, -HL + 1, HL - 1), tz = clamp(m.z + m.vz * .45, -HW + 1, HW - 1), d = hyp(tx - h.x, tz - h.z);
+    const h = traLeMani(p) || { x: b.x, y: RIMESSA.mani, z: b.z }, tx = clamp(m.x + m.vx * .45, -HL + 1, HL - 1), tz = clamp(m.z + m.vz * .45, -HW + 1, HW - 1), d = hyp(tx - h.x, tz - h.z);
     const T = clamp(d / (d > RIMESSA.lunga ? 16 : 13), .45, 1.5), v = FIS.mira({ x: h.x, y: h.y, z: h.z }, { x: tx, y: .35, z: tz }, T, 0, 0);
     b.owner = null; b.x = h.x; b.y = h.y; b.z = clamp(h.z, -HW + .05, HW - .05); b.vx = v.vx; b.vy = clamp(v.vy, -2, 9); b.vz = v.vz; b.c = b.t = 0; b.resto = 0;
     G.calcioT = G.t; p.cool = .5; G.lastTouch = G.lastKicker = p; G.intended = m; G.lastPass = p; p.s.pa++; G.poss = p.team; G.rimessa = null; markOffside(p); AU.calcio(7, 'passaggio');
@@ -785,15 +793,15 @@ function palloneInMano() {
   if (G.state === 'restart' && !r.mani) { const q = postoBattitore(k, b); if (hyp(k.x - q[0], k.z - q[1]) < .6) r.mani = true; else return; } // lo prende quando arriva sulla linea
   if (G.state === 'play' && b.owner !== k) { G.rimessa = null; return; }
   if (!k.carica && !(k.fx === 'rimessa' && k.fxFermo)) { k.dir = Math.atan2(0, -sgn(k.z)); if (clipGF(k, 'rimessa', RIMESSA.fermo)) k.fxFermo = true; } // rivolto al campo, pallone dietro la testa
-  const h = traLeMani(k) || { x: k.x + Math.sin(k.dir) * .1, y: 2.1, z: k.z + Math.cos(k.dir) * .1 };
-  b.x = h.x; b.y = Math.max(h.y, 1.2); b.z = clamp(h.z, -HW + .05, HW - .05); b.vx = b.vy = b.vz = 0;
+  const h = traLeMani(k) || { x: k.x + Math.sin(k.dir) * .1, y: RIMESSA.mani, z: k.z + Math.cos(k.dir) * .1 };
+  b.x = h.x; b.y = Math.max(h.y, RIMESSA.manoMin); b.z = clamp(h.z, -HW + .05, HW - .05); b.vx = b.vy = b.vz = 0;
 }
 function kick(p, vx, vy, vz, anim = 'passaggio', c = 0, tp = 0) {
   const b = G.ball, o = piede(p); b.owner = null; b.x = o.x; b.z = o.z; b.y = BR;
   b.vx = vx; b.vy = vy; b.vz = vz; b.c = c; b.t = tp; b.resto = 0; G.calcioT = G.t; p.cool = .45;
   // tiro forte: si alza un po' d'erba
   if (hyp(vx, vz) > 23) { const v = hyp(vx, vz); PART.emetti('erba', o.x, .05, o.z, 6, 3, vx / v * .6, vz / v * .6); PART.emetti('polvere', o.x, .1, o.z, 3, 1.5, 0, 0); } p.st = 'kick'; p.stT = 0; G.lastTouch = G.lastKicker = p; AU.calcio(hyp(vx, vz), anim === 'tiro' || (p.fkShot && hyp(vx, vz) > 20) ? 'tiro' : anim);
-  if (p.i === 0 && p.fx === 'rinvio') { b.y = 2.3; b.vy = Math.max(b.vy, 1.2); } // rinvio con le mani: la palla parte dall'alto
+  if (p.i === 0 && p.fx === 'rinvio') { b.y = PARATA.lancio; b.vy = Math.max(b.vy, 1.2); } // rinvio con le mani: la palla parte dall'alto
   else if (!(GESTI[p.fx] && /^(passa|calcia|lancia|tiro)/.test(p.fx))) azione(p, anim); // col caricamento il gesto è già al punto del contatto
   const a = Math.atan2(vx, vz); p.dir = a;
   markOffside(p);
@@ -827,7 +835,7 @@ function cross(p, m, pow = null, tipo = 'cross') {
   let ttx = tx, ttz = tz; const o = piede(p);
   if (pow !== null) { const d0 = hyp(tx - o.x, tz - o.z) || 1, extra = (pow - powPer(tipo, d0)) * 10; ttx = clamp(tx + (tx - o.x) / d0 * extra, -HL + 1, HL - 1); ttz = clamp(tz + (tz - o.z) / d0 * extra, -HW + 1, HW - 1); } // con la barra: troppa potenza va oltre, poca resta corta
   const d = hyp(ttx - o.x, ttz - o.z) || 1, T = clamp(d / 18, .75, 1.35);
-  const c = effettoVerso(o, ttx, ttz, s * HL, 0) * rnd(.4, .7) * (rnd() < .7 ? 1 : -1), v = FIS.mira(o, { x: ttx, y: 1.95, z: ttz }, T, c, .15); // a rientrare verso la porta, ogni tanto a uscire
+  const c = effettoVerso(o, ttx, ttz, s * HL, 0) * rnd(.4, .7) * (rnd() < .7 ? 1 : -1), v = FIS.mira(o, { x: ttx, y: AIR.bersaglio, z: ttz }, T, c, .15); // a rientrare verso la porta, ogni tanto a uscire
   kick(p, v.vx, v.vy, v.vz, 'tiro', c, .15);
   G.intended = m; m.run = null; p.s.pa++; G.lastPass = p; if (m.x * s > HL - 19) G.stats.crosses[p.team.idx]++; if (p.team.human) setCtrl(m);
 }
@@ -838,7 +846,7 @@ function cross(p, m, pow = null, tipo = 'cross') {
 // Il colpo di testa di GameplayFootball adatto: in corsa, in salto se il pallone è alto, o da fermo. Parte poco prima del
 // contatto, così la testa arriva sul pallone col fotogramma giusto. Se la clip manca resta quello di prima.
 function testaGF(p, b) {
-  const v = hyp(p.vx, p.vz), nome = v > 3.5 ? 'testa_corsa' : b.y > 2.05 ? 'testa_salto' : 'testa_fermo', i = GESTI[nome];
+  const v = hyp(p.vx, p.vz), nome = v > 3.5 ? 'testa_corsa' : b.y > AIR.salto ? 'testa_salto' : 'testa_fermo', i = GESTI[nome];
   if (!i || !clipGF(p, nome, Math.max(0, i.tocco - .1))) azione(p, 'testa'); else sporca(p, 'testa');
 }
 function header(p) {
@@ -1098,7 +1106,7 @@ function migliorDifensore(team, salta) {
       const dietro = ((p.x - own.x) * ux + (p.z - own.z) * uz) / ul; // quanto è tra la palla e la porta (negativo: superato)
       sc = tempoA(p, cx, cz) + (dietro < -1 ? .9 + Math.min(1.2, -dietro * .08) : 0);
     } else if (path) {
-      sc = 5; for (const pt of path) if (pt.y < 2.2 && portata(p, pt.x, pt.z, pt.t) + .6 >= hyp(pt.x - p.x, pt.z - p.z)) { sc = pt.t; break; }
+      sc = 5; for (const pt of path) if (pt.y < AIR.intercetta && portata(p, pt.x, pt.z, pt.t) + .6 >= hyp(pt.x - p.x, pt.z - p.z)) { sc = pt.t; break; }
       if (sc >= 5) sc = 4 + tempoA(p, b.x, b.z) * .2; // nessuno ci arriva prima: il più vicino al punto dove si ferma
     } else sc = hyp(p.x - b.x, p.z - b.z) / 8;
     if (p.stun > 0 || p.st === 'down' || p.st === 'slide') sc += 1;
@@ -1188,7 +1196,7 @@ function intercept(p) {
   if (airborne()) return landing();
   // il primo punto del percorso previsto (calcolato una volta per fotogramma in step) dove si arriva prima del pallone
   const b = G.ball, path = G.path || FIS.percorso(b, 2.4, .1); let q = path[path.length - 1];
-  for (const pt of path) if (pt.y < 1.7 && hyp(pt.x - p.x, pt.z - p.z) <= portata(p, pt.x, pt.z, pt.t) + .6) { q = pt; break; }
+  for (const pt of path) if (pt.y < AIR.stop && hyp(pt.x - p.x, pt.z - p.z) <= portata(p, pt.x, pt.z, pt.t) + .6) { q = pt; break; }
   return [clamp(q.x, -HL - 2, HL + 2), clamp(q.z, -HW - 2, HW + 2)];
 }
 function roles() {
@@ -1495,7 +1503,7 @@ function rilasciaPortiere(p, r) {
     v = FIS.mira({ x: b.x, y: b.y, z: b.z }, { x: tx, y: .3, z: tz }, T, 0, 0); AU.calcio(9, 'passaggio');
   } else { // rinvio di collo: la palla cade dalle mani e parte alta e lunga
     b.y = Math.max(.8, b.y * .5); const tx = clamp(m.x + m.vx * 1.2 + s * 4, -HL + 3, HL - 3), tz = clamp(m.z, -HW + 3, HW - 3), d = hyp(tx - b.x, tz - b.z), T = clamp(d / 21, 1.3, 2.8);
-    v = FIS.mira({ x: b.x, y: b.y, z: b.z }, { x: tx, y: 1.6, z: tz }, T, 0, .1); AU.calcio(28, 'rinvio');
+    v = FIS.mira({ x: b.x, y: b.y, z: b.z }, { x: tx, y: PARATA.rinvio, z: tz }, T, 0, .1); AU.calcio(28, 'rinvio');
   }
   b.vx = v.vx; b.vy = clamp(v.vy, -2, 16); b.vz = v.vz; b.c = 0; b.t = r.tipo === 'piede' ? .1 : 0; b.resto = 0;
   G.calcioT = G.t; p.cool = .5; G.lastTouch = G.lastKicker = p; G.intended = m; G.lastPass = p; p.s.pa++; G.poss = p.team;
@@ -1749,14 +1757,14 @@ function contacts(dt) {
       const reach = gk && inBox ? (p.st === 'dive' ? 2.0 : 1.3) : (p.st === 'slide' ? 1.3 : 1.05), top = gk && inBox ? 2.7 : 1.55;
       if (d < reach && b.y < top && d < bd) { bd = d; best = p; }
     }
-    if (!G.so && !(best && best.i === 0) && b.y < AIR.top && sp < AIR.fast && (b.y >= AIR.low || (b.vy < -5 && b.y > 1))) { // pallone alto o che scende forte: chi ci arriva colpisce di testa
+    if (!G.so && !(best && best.i === 0) && b.y < AIR.top && sp < AIR.fast && (b.y >= AIR.low || (b.vy < -5 && b.y > AIR.scende))) { // pallone alto o che scende forte: chi ci arriva colpisce di testa
       const h = duelloAereo(b);
       if (h) header(h);
       return;
     }
     if (!best) return; const p = best, gk = p.i === 0;
     const tiro = (G.tiroT || -1) >= (G.calcioT || 0) - 1e-6; // l'ultimo pallone calciato era un tiro (non un cross o un lancio)
-    if (gk && !tiro && b.y > 1.3 && G.lastKicker && G.lastKicker.team !== p.team && G.state === 'play') { // cross o lancio alto: presa in uscita, o pugno se c'è un attaccante addosso
+    if (gk && !tiro && b.y > PARATA.uscita && G.lastKicker && G.lastKicker.team !== p.team && G.state === 'play') { // cross o lancio alto: presa in uscita, o pugno se c'è un attaccante addosso
       const conteso = p.team.opp.players.some((o) => o.i && hyp(o.x - p.x, o.z - p.z) < 1.5);
       if (conteso && rnd() < .65) { const s2 = p.team.side; b.vx = s2 * rnd(8, 13); b.vz = rnd(-6, 6); b.vy = rnd(4, 7); b.c = b.t = 0; G.lastTouch = p; p.cool = .5; G.intended = null; AU.calcio(12, 'presa'); azione(p, 'testa'); return; }
       presaPortiere(p, b.y); return gain(p);
@@ -2039,12 +2047,12 @@ function poseSkinned(p, dt) {
     const lat = p.vx * Math.cos(p.dir) - p.vz * Math.sin(p.dir), av = p.vx * Math.sin(p.dir) + p.vz * Math.cos(p.dir), m = tg.walk + tg.jog + tg.run;
     if (p.i === 0) { if (Math.abs(lat) > Math.abs(av) && Math.abs(lat) > .8) { tg.walk = tg.jog = tg.run = 0; tg[lat > 0 ? 'passoS' : 'passoD'] = m; } }
     else if (v > .8) { const q = lat * lat / (lat * lat + av * av + .01); tg.walk *= 1 - q; tg.jog *= 1 - q; tg.run *= 1 - q; tg[lat > 0 ? 'passoS' : 'passoD'] = m * q; } // in diagonale un po' dell'uno e un po' dell'altro
-    f.A.passoS.timeScale = f.A.passoD.timeScale = clamp(Math.abs(lat) / (3.5 * alt), .5, 1.7);
+    f.A.passoS.timeScale = f.A.passoD.timeScale = clamp(Math.abs(lat) / (2.3 * alt), .5, 1.7);
     f.indietro = f.indietro ? av < -.2 : av < -.6;
     if (f.indietro) { tg.jog += tg.run; tg.run = 0; } // all'indietro non si scatta
   } else f.indietro = false;
   if (f.A.aereo && G.state === 'goal' && p === G.scorer && v > 2.2) { // il marcatore corre verso la bandierina a braccia aperte
-    const m = tg.walk + tg.jog + tg.run; tg.walk = tg.jog = tg.run = 0; tg.aereo = m; f.A.aereo.timeScale = clamp(v / (5.3 * alt), .8, 1.5);
+    const m = tg.walk + tg.jog + tg.run; tg.walk = tg.jog = tg.run = 0; tg.aereo = m; f.A.aereo.timeScale = clamp(v / (3.5 * alt), .8, 1.5);
   }
   const a = Math.min(1, dt * 16), rest = Math.max(0, 1 - f.fxW - f.oldW); // le andature seguono presto la velocità: pesi in ritardo fanno scivolare i piedi
   for (const k in f.A) { f.w[k] += (tg[k] - f.w[k]) * a; f.A[k].setEffectiveWeight(f.w[k] * rest); }
@@ -2116,31 +2124,37 @@ function inquadratura() {
   if (fk.wall || fk.direct) { const t = G.next, gx = t ? t.side * HL : sgn(b.x) * HL, dx = b.x - gx, dz = b.z, d = hyp(dx, dz) || 1; return { p: [b.x + dx / d * 10, 5, b.z + dz / d * 10], l: [gx, 0, 0], fov: 34 }; }
   return null;
 }
+const _qCam = new T.Quaternion(), _mCam = new T.Matrix4(), _vCam = new T.Vector3(), _asseX = new T.Vector3(1, 0, 0);
 function updateCamera(dt) {
   const b = G.ball; let fx = 0, fz = 0;
   if (b) { fx = b.x; fz = b.z; if (G.state === 'goal' && G.scorer && G.stateT > .9) { fx = G.scorer.x; fz = G.scorer.z; } }
-  let px, py, pz, lx, lz, fov;
+  let px, py, pz, lx, lz, fov, gioco = false;
   if (G.dbgCam) { cam.position.set(G.dbgCam[0], G.dbgCam[1], G.dbgCam[2]); cam.lookAt(G.dbgCam[3], G.dbgCam[4], G.dbgCam[5]); cam.fov = G.dbgCam[6] || 30; cam.updateProjectionMatrix(); return; }
   if (G.state === 'menu') { const a = G.t * .07; px = Math.sin(a) * 74; pz = Math.cos(a) * 62; py = 30; lx = 0; lz = 0; fov = 40; }
   else if ((G.inquadra = inquadratura())) { const q = G.inquadra; [px, py, pz] = q.p; [lx, , lz] = q.l; fov = q.fov; } // piazzati: inquadratura dedicata
   else {
-    // telecamera di gioco: segue la palla guardando un po' avanti dove va; negli ultimi 25 metri e in area si avvicina
-    const close = G.state === 'goal' && G.stateT > .9, ax = fx + (b && !close ? clamp(b.vx * .3, -6, 6) : 0), az = fz + (b && !close ? clamp(b.vz * .25, -4, 4) : 0);
-    // l'area conta a sfumare (non tutto o niente sulla linea) e lo zoom segue piano: un pallone che entra ed esce dall'area
-    // non fa più pompare l'inquadratura avanti e indietro
-    const vicino = clamp((Math.abs(fx) - (HL - 25)) / 12, 0, 1), area = clamp((Math.abs(fx) - (HL - 19)) / 4, 0, 1) * clamp((23 - Math.abs(fz)) / 4, 0, 1);
-    const voluto = close ? 0 : Math.max(vicino * .7, area); G.zoomS = (G.zoomS ?? voluto) + (voluto - (G.zoomS ?? voluto)) * Math.min(1, dt * 1.1); const zoom = close ? 0 : G.zoomS;
-    // inquadratura di gioco: dal lato del campo, alta circa 30°, a una distanza da vedere bene i giocatori e una sessantina di metri di campo
-    lx = clamp(ax, -42, 42); lz = az * .8; px = lx * .97; pz = lz + (close ? 24 : 32 - 5 * zoom); py = close ? 12 : 19 - 3 * zoom; fov = 36 - 4 * zoom;
-    if (cam.aspect < 1.5) { py += 5; pz += 7; }
+    // Telecamera di gioco (CAMERA in src/config.js): di lato, sempre alla stessa altezza e distanza dal punto inquadrato,
+    // inclinata verso il basso di un angolo fisso e mai girata a destra o a sinistra. Il punto inquadrato segue il pallone
+    // (dopo un gol chi ha segnato): per intero lungo il campo, solo in parte in profondità, senza uscire dai bordi.
+    const C = CAMERA; gioco = true;
+    const tx = clamp(fx * C.seguiX, -(HL - C.bordoX), HL - C.bordoX), tz = clamp(fz, -HW, HW) * C.seguiZ;
+    px = tx; py = C.alto; pz = tz + C.dietro; lx = tx; lz = tz;
+    // la stessa larghezza di campo su ogni schermo: l'angolo orizzontale è fisso, quello verticale segue le proporzioni
+    fov = 2 * Math.atan(Math.tan(C.campoOriz * Math.PI / 360) / cam.aspect) * 180 / Math.PI;
   }
-  // movimento morbido: una molla smorzata al punto giusto (niente scatti né oscillazioni), più lenta nel menu
-  const kk = G.state === 'menu' ? 1.6 : 3.2, v = G.camV || (G.camV = { px: 0, py: 0, pz: 0, lx: 0, lz: 0 }), h = Math.min(dt, .05);
+  // movimento morbido: una molla smorzata al punto giusto, senza scatti né oscillazioni, più lenta nel menu. In gioco è il
+  // leggero ritardo con cui l'inquadratura segue il pallone
+  const kk = G.state === 'menu' ? 1.6 : gioco ? CAMERA.molla : 3.2, v = G.camV || (G.camV = { px: 0, py: 0, pz: 0, lx: 0, lz: 0 }), h = Math.min(dt, .05);
   const molla = (val, mira, nome) => { v[nome] += (kk * kk * (mira - val) - 2 * kk * v[nome]) * h; return val + v[nome] * h; };
-  camPos.x = molla(camPos.x, px, 'px'); camPos.y = molla(camPos.y, py, 'py'); camPos.z = molla(camPos.z, pz, 'pz');
-  camLook.x = molla(camLook.x, lx, 'lx'); camLook.z = molla(camLook.z, lz, 'lz');
-  cam.position.copy(camPos); cam.lookAt(camLook.x, 1, camLook.z);
-  if (Math.abs(cam.fov - fov) > .01) { cam.fov += (fov - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); }
+  // dt grande (dopo un replay, per le prove): si va subito al posto giusto
+  if (dt > 1) { camPos.set(px, py, pz); camLook.x = lx; camLook.z = lz; for (const k in v) v[k] = 0; }
+  else { camPos.x = molla(camPos.x, px, 'px'); camPos.y = molla(camPos.y, py, 'py'); camPos.z = molla(camPos.z, pz, 'pz'); camLook.x = molla(camLook.x, lx, 'lx'); camLook.z = molla(camLook.z, lz, 'lz'); }
+  cam.position.copy(camPos);
+  // orientamento: in gioco fisso, con la sola inclinazione. Altrove verso il punto inquadrato. Tra i due si passa morbidi
+  if (gioco) _qCam.setFromAxisAngle(_asseX, -CAMERA.inclina * Math.PI / 180);
+  else { _mCam.lookAt(camPos, _vCam.set(camLook.x, 1, camLook.z), cam.up); _qCam.setFromRotationMatrix(_mCam); }
+  if (dt > 1 || cam.quaternion.angleTo(_qCam) < .002) cam.quaternion.copy(_qCam); else cam.quaternion.slerp(_qCam, Math.min(1, dt * 5));
+  if (Math.abs(cam.fov - fov) > .01) { cam.fov = dt > 1 ? fov : cam.fov + (fov - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); }
 }
 // La folla: alla nuova partita prende i colori delle due squadre e si riempie secondo l'importanza (amichevole meno gente,
 // carriera secondo il livello dello stadio, coppe a eliminazione e finali piene); esulta sui tiri pericolosi e sui gol.
@@ -2169,7 +2183,7 @@ function draw(dt) {
     ballMesh.position.set(b.x, b.y, b.z); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; ballMesh.rotation.y += (b.c || 0) * dt * 25; }
     ballShadow.position.set(b.x, .04, b.z); ballShadow.scale.setScalar(1.25 + b.y * .16); ballShadow.material.opacity = .62 / (1 + Math.max(0, b.y - BR) * .32); // a terra scura e stretta, in aria larga e chiara: si capisce dove scende un cross
     const c = G.ctrl; ring.visible = arrow.visible = !!c && !G.auto && G.state !== 'full';
-    if (c) { ring.position.set(c.x, .05, c.z); arrow.position.set(c.x, 3.35 + Math.sin(G.t * 6) * .08, c.z); }
+    if (c) { ring.position.set(c.x, .05, c.z); arrow.position.set(c.x, (c.fig.metri || 1.8) + .45 + Math.sin(G.t * 6) * .06, c.z); }
     const [fx, fz] = c && !G.auto ? inputWorld() : [0, 0], fl = hyp(fx, fz); freccia.visible = ring.visible && fl > .2 && G.state === 'play';
     if (freccia.visible) { const a = Math.atan2(fx, fz); freccia.position.set(c.x + fx / fl * 1.9, .06, c.z + fz / fl * 1.9); freccia.rotation.y = a; freccia.scale.setScalar(1.3 + .45 * Math.min(1, fl)); freccia.material.opacity = .6 + .3 * Math.min(1, fl); }
   }
@@ -2485,11 +2499,12 @@ function ritratto(clubId, nome, num, portiere, mister = false) {
   try {
     const c = club(clubId), ks = pickKits(c, CLUBS.find((x) => x.id !== clubId) || c), kit = portiere ? ks[2] : ks[0];
     const fig = makeSkinned(kit, hash(clubId + nome), mister ? '' : num, portiere ? null : clubId, mister ? '' : nome, {}); FIGURE.delete(fig);
+    const kr = fig.metri / 2.72; // le distanze della ripresa erano pensate per una figura di 2,72 m
     const sc = new T.Scene(), luce = new T.DirectionalLight(0xffffff, 2.6), viso = new T.DirectionalLight(0xffffff, 1.6), taglio = new T.DirectionalLight(0xB9A4FF, 2.2);
     luce.position.set(1.4, 2.4, 3); viso.position.set(-.6, .4, 3); taglio.position.set(-2, 1.5, -2); sc.add(new T.HemisphereLight(0xdfe6ff, 0x2a2550, 1.8), luce, viso, taglio, fig.root);
     fig.mixer.update(0); fig.root.updateMatrixWorld(true);
     const testa = fig.bones.Head.getWorldPosition(new T.Vector3()), cam = new T.PerspectiveCamera(26, 1, .05, 20), L = 256;
-    cam.position.set(testa.x + .28, testa.y + .1, testa.z + 1.15); cam.lookAt(testa.x, testa.y - .02, testa.z);
+    cam.position.set(testa.x + .28 * kr, testa.y + .1 * kr, testa.z + 1.15 * kr); cam.lookAt(testa.x, testa.y - .02 * kr, testa.z);
     const rt = new T.WebGLRenderTarget(L, L), prima = renderer.getRenderTarget(), col = renderer.getClearColor(new T.Color()), alfa = renderer.getClearAlpha();
     rt.texture.colorSpace = T.SRGBColorSpace;
     renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(sc, cam);
@@ -2842,6 +2857,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, cam, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();

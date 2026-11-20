@@ -7,7 +7,7 @@
    PIEDI.su: quanto sopra il punto più basso raggiunto dalla caviglia il piede conta come appoggiato (metri);
    entra/esce: in quanti secondi il blocco arriva pieno e sparisce; max: il piede bloccato non resta mai più lontano di così
    da quello dell'animazione (oltre si fa trascinare: meglio un piccolo scivolone che una gamba tirata o uno scatto). */
-export const PIEDI = { su: 0.035, entra: 0.05, esce: 0.12, max: 0.28, risale: 0.0006 };
+export const PIEDI = { su: 0.023, entra: 0.05, esce: 0.12, max: 0.19, risale: 0.0004 };
 
 export function creaPiedi(T) {
   const H = new T.Vector3(), K = new T.Vector3(), A = new T.Vector3(), A2 = new T.Vector3(), M = new T.Vector3(), B = new T.Vector3(); // B: il bersaglio

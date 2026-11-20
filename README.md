@@ -230,6 +230,16 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   risultati), al centro classifica, la sagoma del Titano sopra lo stadio 3D e le coppe, a destra squadra, mercato, sfide
   e club. I ritratti (mister e capitano) li disegna `ritratto()` dal modello 3D del gioco, una volta sola. Le misure sono
   in px per un telefono in orizzontale; sugli schermi più grandi tutto si ingrandisce con `zoom` (`--zh`).
+- **Misure vere e telecamera di gioco** (20/11/2026, su misure prese da Alex). Campo 105 × 68 con aree, dischetto e cerchio
+  regolamentari (`LINEE`), porta 7,32 × 2,44, pallone di 22 cm, giocatori alti in media 1,80 m (da 1,70 a 1,95, `ALTEZZA` e
+  `statura()`): prima il gioco era ingrandito (giocatori di 2,72 m, pallone di 52 cm, porta di 8,4 m). Con la statura sono
+  cambiate le andature (`ANDATURE` in `src/fisica/corpo.js`, misurate per 1,80 m; la corsa gira al massimo a 1,6 volte, oltre
+  il piede scivola un poco), le altezze del gioco aereo (`AIR`) e del portiere (`PARATA`), la gamba in scivolata e la distanza
+  dei duelli. Le distanze di contrasto e conduzione erano già in metri veri e sono rimaste. La telecamera (`CAMERA`) sta 12,5 m
+  sopra e 37 m dietro il punto inquadrato, inclinata di 21° e mai girata, con 56,8° in orizzontale su ogni schermo; segue
+  il pallone per intero lungo il campo e al 45% in profondità. `node scripts/prove/inquadratura.cjs` misura il calcio
+  d'inizio su 844 × 390 e lo confronta col riferimento (gira anche nella CI). Dopo il cambio: gol da circa 3 a 1,4 a
+  partita e tiri da 9 a 6,4 su 16 partite, nessuna anomalia; il ritmo dei tiri e il portiere si tarano nei passi successivi.
 - **Valori di gioco in un file solo** (`src/config.js`): campo, tempi, difficoltà, IA, comandi, portiere, riprese, fisica di
   pallone, giocatori e contrasti. `game.js` e `src/fisica/*` li importano da lì (i moduli di fisica li riesportano). I numeri
   ancora scritti dentro le funzioni passano nel file man mano che si lavora su quella parte.
