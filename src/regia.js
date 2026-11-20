@@ -16,7 +16,6 @@ export function creaRegia(X) {
   const ARB = { dist: 8, v: 6.2 };                                    // arbitro: quanto sta lontano dal pallone, quanto corre
   const ASS = { fuori: 1.4, v: 7, band: 2 };                          // guardalinee: quanto fuori dalla linea, quanto corrono, secondi di bandierina alzata
   const TIFO = { casa: [.5, .3], salto: .014 };                       // pubblico: quota del primo e del secondo colore; quanto salta dopo un gol
-  const DIAG = .3;                                                    // quanto la telecamera resta indietro verso il centro (0 = sempre di fronte)
 
   /* ---------------------------------------------------------------- grafica */
   const stile = document.createElement('style');
@@ -327,9 +326,7 @@ export function creaRegia(X) {
 
       if (S.scatto) { S.scatto = false; X.updateCamera(9); } // dopo la sequenza la telecamera torna al suo posto di colpo, sotto la transizione
       if (!S.on) {
-        // vicino alle porte la telecamera guarda in diagonale, così la porta si vede
-        // (non sui piazzati, che hanno la loro inquadratura)
-        if (!G.dbgCam && st !== 'menu' && !G.portrait && !G.inquadra) { cam.position.x -= camLook.x * DIAG; cam.lookAt(camLook.x, 1, camLook.z); }
+        // la telecamera di gioco non si gira mai (vedi CAMERA in src/config.js)
         return;
       }
 
@@ -353,9 +350,9 @@ export function creaRegia(X) {
         cam.lookAt(S.guarda.x, Math.max(.9, S.guarda.y * .8), S.guarda.z); cam.updateProjectionMatrix();
       } else if (t >= S.c0) {
         // parte stretta sul marcatore e si allarga mentre arrivano i compagni
-        const sc = G.scorer, u = t - S.c0, w = Math.min(u, 2.2), a = S.a0 + u * .18, R = 6.2 + w * .7;
-        cam.position.set(sc.x + Math.sin(a) * R, 2 + w * .35, sc.z + Math.cos(a) * R); cam.fov = stretto ? 52 : 34;
-        cam.lookAt(sc.x, 1.75, sc.z); cam.updateProjectionMatrix(); // si guarda un po' sopra la testa: così il marcatore resta sotto il tabellino e sopra la scheda
+        const sc = G.scorer, u = t - S.c0, w = Math.min(u, 2.2), a = S.a0 + u * .18, R = 4.1 + w * .46;
+        cam.position.set(sc.x + Math.sin(a) * R, 1.35 + w * .23, sc.z + Math.cos(a) * R); cam.fov = stretto ? 52 : 34;
+        cam.lookAt(sc.x, 1.2, sc.z); cam.updateProjectionMatrix(); // si guarda un po' sopra la testa: così il marcatore resta sotto il tabellino e sopra la scheda
       }
     },
   };

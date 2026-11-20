@@ -32,3 +32,5 @@ jobs:
         run: node scripts/prove/partita.cjs 3 normale
       - name: Rigori
         run: node scripts/prove/rigori.cjs
+      - name: Inquadratura al calcio d'inizio (misure di riferimento, margine 2 punti)
+        run: node scripts/prove/inquadratura.cjs
