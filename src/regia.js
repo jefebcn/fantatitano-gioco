@@ -12,8 +12,8 @@ export function creaRegia(X) {
   const extra = () => [S.arb, ...S.ass].filter(Boolean); // arbitro e guardalinee
 
   // Numeri da ritoccare
-  const SEQ = { festa: 3.4, tenda: .32 };                             // secondi: primo piano, metà della transizione (l'azione dal vivo dura fino a GOLSEQ.stacco)
-  const REP = { hz: 30, secs: 6.5, prima: 3.6, dopo: 1, vel: .8, min: 1.2 }; // replay: quanto si registra, quanto si rivede, a che velocità
+  const SEQ = { festa: 3.4, stacco: RIVEDI.stacco / 2 };              // secondi: primo piano, metà dello stacco col logo (l'azione dal vivo dura fino a GOLSEQ.stacco)
+  const REP = { hz: 30, secs: 6.5, min: 1.2 };                        // registrazione: fotogrammi al secondo, secondi tenuti; quanto si rivede sta in RIVEDI
   const ARB = { dist: 8, v: 6.2 };                                    // arbitro: quanto sta lontano dal pallone, quanto corre
   const ASS = { fuori: 1.4, v: 7, band: 2 };                          // guardalinee: quanto fuori dalla linea, quanto corrono, secondi di bandierina alzata
   const TIFO = { casa: [.5, .3], salto: .014 };                       // pubblico: quota del primo e del secondo colore; quanto salta dopo un gol
@@ -42,20 +42,12 @@ export function creaRegia(X) {
 #stacco{position:absolute;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;z-index:21}
 #stacco img{height:32%}#stacco.va{animation:stacco var(--d) linear both}
 @keyframes stacco{0%{opacity:0}35%,65%{opacity:1}100%{opacity:0}}
-#hud.cine #replay{display:none!important}
-#tenda{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:20}
-#tenda i{position:absolute;top:-10%;bottom:-10%;left:-30%;width:160%;transform:translateX(-135%) skewX(-16deg);display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(90deg,var(--lime) 0 3%,var(--viola) 3% 50%,var(--ink) 50% 97%,var(--lime) 97%)}
-#tenda img{height:34%;transform:skewX(16deg)}
-#tenda.va i{animation:tenda ${SEQ.tenda * 2}s linear both}
-@keyframes tenda{0%{transform:translateX(-135%) skewX(-16deg)}42%,58%{transform:translateX(0) skewX(-16deg)}100%{transform:translateX(135%) skewX(-16deg)}}`;
+#hud.cine #replay{display:none!important}`;
   document.head.appendChild(stile);
   const hud = $('#hud');
   const el = (id, html) => { const d = document.createElement('div'); d.id = id; d.innerHTML = html || ''; hud.appendChild(d); return d; };
   const golc = el('golc', '<div class="sx"><img alt=""><b></b></div><div class="dx"><div class="r1"><span>Gol</span><i></i></div><div class="nm"></div><div class="as"></div><div class="cl"></div></div>');
   const salta = el('salta', 'Tocca per saltare'), rep = el('rep', 'Replay');
-  const tenda = el('tenda', '<i><img src="img/corona-lime.png" alt=""></i>');
-  const passa = () => { tenda.classList.remove('va'); void tenda.offsetWidth; tenda.classList.add('va'); };
   // stacco col logo Fantatitano (replay, angoli dopo una grande occasione): il logo copre lo schermo a metà dello stacco
   const stacco = el('stacco', '<img src="img/corona-lime.png" alt="">');
   const staccoLogo = (d) => { stacco.style.setProperty('--d', `${d}s`); stacco.classList.remove('va'); void stacco.offsetWidth; stacco.classList.add('va'); };
@@ -306,6 +298,7 @@ export function creaRegia(X) {
     RV.on = false; G.rivede = false; S.scatto = true; rep.classList.remove('su'); if (!S.on) hud.classList.remove('cine');
     const f = RV.poi; RV.poi = null; if (f) f();
   }
+  // il pulsante in basso a destra salta il replay breve (quello del gol lo salta il tocco sullo schermo, qui sotto)
   rep.addEventListener('pointerdown', (e) => { if (!RV.on) return; e.preventDefault(); e.stopPropagation(); if (RV.t < RV.dur - RIVEDI.stacco / 2) RV.t = RV.dur - RIVEDI.stacco / 2; });
   const inFesta = () => S.on && G.state === 'goal' && G.stateT >= S.c0 && G.stateT < S.c1;
 
@@ -318,7 +311,7 @@ export function creaRegia(X) {
     S.on = true; S.t1 = S.t2 = S.salvato = S.cut = false; S.c0 = L.lento + L.durataLento * v + Math.max(0, L.stacco - L.lento - L.durataLento); S.c1 = S.c0 + SEQ.festa; S.var = G.goals.length % 2; S.porta = sgn(G.ball.x) || 1;
     S.rp = !!REC.data && REC.len + REP.hz * S.c0 >= REP.hz * REP.min;
     hud.classList.add('cine'); $('#banner').classList.remove('su'); // levetta, tasti e minimappa spariscono subito
-    S.c2 = S.rp ? S.c1 + (REP.prima + REP.dopo) / REP.vel : S.c1; G.goalEnd = S.c2;
+    S.c2 = S.rp ? S.c1 + RIVEDI.secs / RIVEDI.vel : S.c1; G.goalEnd = S.c2;
     // il marcatore corre una decina di metri verso la bandierina più vicina e lì esulta
     const cx = sgn(sc.x || 1) * (HL - 7), cz = sgn(sc.z || 1) * (HW - 7), d = hyp(cx - sc.x, cz - sc.z) || 1, m = Math.min(d, 10);
     G.cine = { fx: sc.x + (cx - sc.x) / d * m, fz: sc.z + (cz - sc.z) / d * m };
@@ -346,10 +339,11 @@ export function creaRegia(X) {
     tabelloniNormali();
   }
   window.addEventListener('pointerdown', (e) => {
+    if (RV.on && !(e.target.closest && e.target.closest('#pausa,#audio'))) { if (RV.t < RV.dur - RIVEDI.stacco / 2) RV.t = RV.dur - RIVEDI.stacco / 2; return; } // il replay breve si salta toccando lo schermo
     if (!S.on || G.paused || G.state !== 'goal' || (e.target.closest && e.target.closest('#pausa,#audio,#replay'))) return;
     const t = G.stateT;
-    if (t > S.c0 + .5 && t < S.c1 - SEQ.tenda) G.stateT = S.c1 - SEQ.tenda;
-    else if (S.rp && t > S.c1 + .4 && t < S.c2 - SEQ.tenda) G.stateT = S.c2 - SEQ.tenda;
+    if (t > S.c0 + .5 && t < S.c1 - SEQ.stacco) G.stateT = S.c1 - SEQ.stacco;
+    else if (S.rp && t > S.c1 + .4 && t < S.c2 - SEQ.stacco) G.stateT = S.c2 - SEQ.stacco;
   });
 
   return {
@@ -364,8 +358,8 @@ export function creaRegia(X) {
       if (!inReplay()) return false;
       if (!S.salvato) { // primo fotogramma del replay: si mette da parte la scena dal vivo e si sceglie cosa rivedere
         recScrivi(REC.vivo, 0); S.salvato = true;
-        S.f1 = REC.len - 1; S.f0 = Math.max(0, S.f1 - (REP.prima + REP.dopo) * REP.hz);
-        S.c2 = S.c1 + Math.max(.5, (S.f1 - S.f0) / REP.hz / REP.vel); G.goalEnd = S.c2; S.guarda.set(NaN, 0, 0);
+        S.f1 = REC.len - 1; S.f0 = Math.max(0, S.f1 - RIVEDI.secs * REP.hz);
+        S.c2 = S.c1 + Math.max(.5, (S.f1 - S.f0) / REP.hz / RIVEDI.vel); G.goalEnd = S.c2; S.guarda.set(NaN, 0, 0);
       }
       recMostra(S.f0 + (G.stateT - S.c1) / (S.c2 - S.c1) * (S.f1 - S.f0));
       return true;
@@ -393,7 +387,7 @@ export function creaRegia(X) {
 
       bandiere(); carta(); saltano(dt);
       // segni sopra le teste (al posto dell'anello e della freccia)
-      segni(S.on && t >= S.c0);
+      segni((S.on && t >= S.c0) || RV.on); // durante i replay niente segni
 
       if (S.scatto) { S.scatto = false; X.updateCamera(9); } // dopo la sequenza la telecamera torna al suo posto di colpo, sotto la transizione
       if (RV.on) {
@@ -418,10 +412,10 @@ export function creaRegia(X) {
       for (const b of boards) b.material.map.offset.x += dt * .22;
       if (t >= S.c0) { hud.classList.add('cine'); $('#banner').classList.remove('su'); }
       golc.classList.toggle('su', inFesta() && t > S.c0 + .25 && t < S.c1 - .2);
-      salta.classList.toggle('su', t > S.c0 + .6 && t < S.c2 - SEQ.tenda);
+      salta.classList.toggle('su', t > S.c0 + .6 && t < S.c2 - SEQ.stacco);
       rep.classList.toggle('su', replay && t < S.c2 - .15);
-      if (!S.t1 && S.rp && t >= S.c1 - SEQ.tenda) { S.t1 = true; passa(); }
-      if (!S.t2 && t >= S.c2 - SEQ.tenda) { S.t2 = true; passa(); }
+      if (!S.t1 && S.rp && t >= S.c1 - SEQ.stacco) { S.t1 = true; staccoLogo(RIVEDI.stacco); } // stacco col logo prima e dopo il replay
+      if (!S.t2 && t >= S.c2 - SEQ.stacco) { S.t2 = true; staccoLogo(RIVEDI.stacco); }
       if (G.dbgCam) return;
       const stretto = cam.aspect < 1;
       if (replay) {

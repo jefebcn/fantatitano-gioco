@@ -33,6 +33,9 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
   un nostro passaggio (o cross) si resta «con la palla».
 - **Potenza**: si tiene premuto e si rilascia. Direzione dalla levetta, potenza dalla durata. Nessun effetto con lo
   swipe: strisciare il dito non cambia la traiettoria.
+- **Passaggio (Calcio basso)**, scelta provvisoria di Alex finché non verifica su DLS: assistito verso il compagno nella
+  direzione della levetta; la durata della pressione cambia solo un po' la velocità (±15%). Si spegne con
+  `PASSAGGIO.assistito = false` (allora la potenza decide anche quanto lontano si passa).
 - Dopo un passaggio il controllo passa subito al compagno che riceve, già mentre la palla viaggia.
 - Nel codice: `modoAttacco`, `pressA` (B), `pressB` (A), `pressD` (C), `userThink` (pressing), `bindInput` (levetta fissa).
 
@@ -49,7 +52,11 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
 - In alto a sinistra: pausa, tabellone (stemmi, sigle, punteggio) e cronometro accanto.
 - In basso al centro: minimappa con tutti i giocatori in tempo reale; sotto, il riquadro della mentalità con le frecce
   ai lati per cambiarla. La minimappa non indica chi ha la palla.
-- In alto a destra: pulsante replay (rivede gli ultimi secondi: `rivedi()` in `src/regia.js`, gioco fermo intanto).
+- In alto a destra: pulsante replay, per ora **solo segnaposto** (scelta provvisoria di Alex).
+- **Replay automatico e breve** (scelta provvisoria di Alex): dopo un gol e alla prima palla ferma dopo una grande
+  occasione (parata, tiro deviato, palo, tiro fuori di poco) rivede ~3 s di gioco (~3,5 s veri) tra due stacchi col logo
+  Fantatitano. Si salta toccando lo schermo o il pulsante «Replay» in basso a destra. `RIVEDI` e `FERMI.occasione`;
+  nel codice `rivedi()` in `src/regia.js` e `restart()` in `src/game.js`.
 
 ## 4. Ritmo
 - Cronometro ~**22,5×** il tempo vero (90 minuti ≈ 4 minuti veri); ~**3-4×** durante le palle ferme e dopo i gol
@@ -74,8 +81,9 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
   dopo ~2 s.
 - **Angolo dopo una grande occasione** (es. una parata): stacco col logo (~0,3 s), breve replay con il pulsante «REPLAY»
   in basso a destra per saltarlo, stacco col logo, poi l'inquadratura dell'angolo. Logo degli stacchi: Fantatitano.
-- Durante il calcio piazzato: tre icone in alto a destra (guanti, maglia, pallone). Per ora solo lo spazio: cosa fanno lo
-  decidiamo dopo.
+  Vale per ogni palla ferma dopo una grande occasione (vedi «Replay automatico»).
+- Durante il calcio piazzato: tre icone in alto a destra (guanti, maglia, pallone): **segnaposto senza funzione**
+  (scelta provvisoria di Alex).
 - L'angolo si può battere corto con un passaggio rasoterra: un compagno si offre vicino alla bandierina (`FERMI.corto`).
 - Nel codice: `restart()` (scritta, dissolvenza, comandi), `corner()` (replay dopo la grande occasione), `hud()`.
 
@@ -92,15 +100,13 @@ alzato del guardalinee). Mixamo quando Alex scarica le clip giuste (mani in test
 nel codice `inizio()` e `delusoDavanti()` in `src/regia.js`, `rallenta()` in `src/game.js`.
 
 ## Domande aperte per Alex
+Risposte provvisorie di Alex (20/11, da verificare su DLS): passaggio assistito, replay automatico breve, icone e pulsante
+replay in alto a destra come segnaposto.
 1. Telecamera: i 37 m sono in linea d'aria (come nel codice) o in pianta?
-2. Tocco veloce su «Calcio basso»/«Calcio alto»: oggi dosa la potenza da solo verso il compagno. In DLS un tocco
-   brevissimo fa un passaggio corto debole o un passaggio «assistito»?
-3. Tastiera (computer): le frecce sono una levetta tutta inclinata, quindi scatto sempre. Va bene tenere Maiusc per
+2. Tastiera (computer): le frecce sono una levetta tutta inclinata, quindi scatto sempre. Va bene tenere Maiusc per
    correre senza scattare?
-4. Replay dal pulsante in alto a destra: in DLS mette in pausa e fa rivedere gli ultimi secondi con un'altra
-   telecamera? Per ora rivede gli ultimi 6 s dalla telecamera bassa.
-5. Le tre icone dei calci piazzati (guanti, maglia, pallone): cosa devono fare?
-6. In alto al centro c'erano nome del giocatore e barretta dell'energia: li ho nascosti (in DLS non ci sono). L'energia
+3. In alto al centro c'erano nome del giocatore e barretta dell'energia: li ho nascosti (in DLS non ci sono). L'energia
    va mostrata da qualche parte?
-7. Il segnale centrale «Gol!» non c'è più (restano tabelloni e primo piano): va bene?
-8. Clip Mixamo per mani in testa e arbitro che indica: quali scarichi? (Gli FBX restano fuori dal repository pubblico.)
+4. Il segnale centrale «Gol!» non c'è più (restano tabelloni e primo piano): va bene?
+5. Clip Mixamo per mani in testa e arbitro che indica: quali scarichi? (Gli FBX restano fuori dal repository pubblico.)
+6. Conduzione a 4,5 m/s: tra computer e computer i gol scendono (3,4 → 1,1 a partita su 8): va tarata giocando.

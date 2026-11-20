@@ -68,6 +68,10 @@ export const ANDATURA = { morta: .15, cammina: .3, corsetta: .62, piena: .78 };
 // Senza palla: «Pressing» (tasto B tenuto) porta il giocatore addosso al portatore, puntando dove sarà fra `anticipo`
 // secondi; a meno di `vicino` metri rallenta e prova il contrasto in piedi. «Calcio forte» è una scivolata verso la levetta
 export const PRESSIONE = { anticipo: .25, vicino: 1.6 };
+// Passaggio (Calcio basso), da confermare con DLS: con `assistito` va al compagno nella direzione della levetta e la durata
+// della pressione cambia solo un po' la velocità (± `dosa`, da un tocco a tutta carica). Senza, la potenza decide anche quanto
+// lontano si passa (DIST)
+export const PASSAGGIO = { assistito: true, dosa: .15 };
 // Passa, Cross e Tira si tengono premuti: la barra sotto il giocatore si riempie (in 0,8 s) e al rilascio parte il colpo
 // con quella potenza. Un tocco veloce su Passa o Cross fa il passaggio dosato da solo, come prima.
 export const CARICA = { piena: .8, tocco: .12, max: .95 };
@@ -83,10 +87,11 @@ export const CARICO = { passa: .1, calcia: .14, lancia: .14 };
 
 /* ---------------------------------------------------------------- palle ferme e sequenza del gol (come Dream League) */
 // Palle ferme: i comandi tornano `comandi` secondi dopo il fischio della rimessa laterale; la dissolvenza scura della rimessa
-// dura `buio` secondi (a metà la telecamera stacca sul punto di battuta). Un angolo che arriva entro `occasione` secondi da una
-// parata (o da una deviazione in area) è preceduto dal replay degli ultimi `replayAngolo` secondi. Sull'angolo un compagno si
-// offre per batterlo corto, a `corto` = [metri dalla linea di fondo, metri dalla linea laterale]
-export const FERMI = { comandi: 2, buio: .5, occasione: 4, replayAngolo: 3.5, corto: [7, 7] };
+// dura `buio` secondi (a metà la telecamera stacca sul punto di battuta). Una palla ferma che arriva entro `occasione` secondi
+// da una grande occasione (parata, tiro deviato, palo, tiro fuori di poco: entro `fuori` metri dal palo) è preceduta dal
+// replay (RIVEDI). Sull'angolo un compagno si offre per batterlo corto, a `corto` = [metri dalla linea di fondo, metri dalla
+// linea laterale]
+export const FERMI = { comandi: 2, buio: .5, occasione: 4, fuori: 2.5, corto: [7, 7] };
 // Gol, in secondi veri dal pallone in rete: da `lento` per `durataLento` secondi un leggero rallentatore (a velocità `vel`),
 // con gli avversari fermi a disperarsi per `fermi` secondi e l'arbitro che indica il centro; a `stacco` la telecamera passa
 // al primo piano del marcatore: alta `camAlt` metri, a `camDist` metri da lui, con un difensore deluso in primo piano
@@ -94,9 +99,10 @@ export const FERMI = { comandi: 2, buio: .5, occasione: 4, replayAngolo: 3.5, co
 export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.7, camDist: 4.6, deluso: [.55, 1.7] };
 
 /* ---------------------------------------------------------------- replay e stacchi */
-// Replay (pulsante in alto a destra, angoli dopo una grande occasione): rivede gli ultimi `secs` secondi registrati a
-// velocità `vel`, tra due stacchi col logo di `stacco` secondi
-export const RIVEDI = { secs: 6, vel: .8, stacco: .3, min: 1.5 };
+// Replay automatico e breve (da confermare con DLS): dopo un gol e alla prima palla ferma dopo una grande occasione rivede gli
+// ultimi `secs` secondi registrati a velocità `vel` (circa 3,5 s veri), tra due stacchi col logo di `stacco` secondi. Si salta
+// toccando lo schermo o il pulsante in basso a destra. Sotto `min` secondi registrati non parte
+export const RIVEDI = { secs: 3, vel: .85, stacco: .3, min: 1.5 };
 
 /* ---------------------------------------------------------------- telecamera di gioco */
 // Dal lato del campo, segue il pallone: `altezza` metri sopra l'erba, `distanza` metri in linea d'aria dal punto seguito,
