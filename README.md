@@ -159,10 +159,10 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 
 ## Cosa manca, in ordine
 
-1. **Animazioni che mancano.** Esultanza vera (nel pacchetto non c'è), stop, rimessa laterale, rinvio di piede
-   del portiere. Molte sono già nel pacchetto scaricato (54 clip): basta aggiungerle a `CLIP` in
-   `scripts/animazioni.mjs` e a `FX` nel gioco. Gli FBX non stanno nel repository (i file grezzi di Mixamo non
-   si ridistribuiscono): vanno riscaricati da mixamo.com (Soccer Game Pack, FBX, 30 fps) con un Adobe ID.
+1. **Animazioni che mancano.** Il rinvio di piede del portiere e il portiere che cammina col pallone in mano (le clip
+   `tiene_palla` e `cammina_palla` sono già convertite, non ancora usate). Esultanze, rimessa laterale con le mani, colpi
+   di testa, scivolate, cadute, rialzarsi e cartellino dell'arbitro vengono da GameplayFootball (`scripts/gfootball.mjs`,
+   sorgenti in `modelli/gfootball`).
 2. **Divisa.** È dipinta sul corpo, quindi aderente: niente maglia larga con le pieghe. Il disegno è
    assegnato a mano a tre squadre (`STILE` in `scripts/genera-dati.py`); le altre sono a tinta unita.
    Il corpo è quello «Superhero» della versione gratuita del pacchetto: le proporzioni più normali sono

@@ -218,7 +218,7 @@ const DOWN = { pl: .38, gk: .5, fall: .7 };
 /** Le azioni registrate: velocità, da che secondo cominciano a sfumare (se manca: alla fine), cosa viene dopo. */
 const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.55 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 }, rinvio: { sp: 1.15 }, testa: { sp: 1.3, cut: .45 }, bandiera: { sp: 1 } };
 const hasFx = (n) => !!(MODEL && MODEL.fx && MODEL.fx[n]);
-function azione(p, name) { if (hasFx(name) && p.fig.skinned) { p.fx = name; p.fxT = 0; p.fxNew = true; p.fxSp = null; p.fxDa = 0; } sporca(p, name); }
+function azione(p, name) { if (hasFx(name) && p.fig.skinned) { p.fxFermo = false; p.fx = name; p.fxT = 0; p.fxNew = true; p.fxSp = null; p.fxDa = 0; } sporca(p, name); }
 /* Gesti con la palla: animazioni brevi di GameplayFootball (public/anim-gf.js, scripts/gfootball.mjs) col fotogramma in cui
    il piede tocca la palla. Si fanno partire in anticipo, dal punto giusto e alla velocità del giocatore, così che quel
    fotogramma cada proprio nell'istante in cui la fisica tocca la palla: il piede e il pallone vanno a tempo. */
@@ -249,7 +249,7 @@ function gesto(p, nome, fra, adatta = false) {
   // adatta: invece della velocità del giocatore, il ritmo che porta il contatto esattamente fra «fra» secondi (le parate)
   const sp = adatta ? (i.tocco && fra > i.tocco ? clamp(i.tocco / fra, .6, 1) : 1) : ritmoGesto(i, v);
   const da = Math.max(0, (i.tocco || 0) - fra * sp); // senza tocco (uno sbilanciamento) parte dall'inizio
-  p.fx = nome; p.fxSp = sp; p.fxDa = da; p.fxT = da / sp; p.fxNew = true; return true;
+  p.fxFermo = false; p.fx = nome; p.fxSp = sp; p.fxDa = da; p.fxT = da / sp; p.fxNew = true; return true;
 }
 /**
  * Conduzione: fra quanto il piede spinge la palla. Le stesse condizioni di FIS.conduci, portate avanti nel tempo: il tocco
@@ -306,7 +306,25 @@ function parata(p, tt, dz, y) {
   }
   return gesto(p, `presa_${y < .35 ? 'terra' : y < .9 ? 'ginocchio' : y < 1.8 ? 'busto' : 'alta'}`, tt, true);
 }
-const A_TERRA_GF = /^(para_|rialza)/; // i tuffi finiscono a terra (e da lì ci si rialza): il corpo si alza quanto basta perché niente entri nell'erba
+const A_TERRA_GF = /^(para_|rialza|scivola|cade)/; // tuffi, scivolate e cadute finiscono a terra (e da lì ci si rialza): il corpo si alza quanto basta perché niente entri nell'erba
+// Dopo le clip che finiscono a terra si resta sdraiati quanto serve, poi ci si rialza: da prono dopo un tuffo o una caduta,
+// da supino dopo una scivolata. Il portiere resta giù finché è in tuffo o a terra; gli altri finché manca il tempo del rialzarsi.
+const RIALZA = { para_: 'rialza', cade: 'rialza', scivola: 'rialza_schiena' };
+const rialzo = (n) => { if (!n) return null; for (const k in RIALZA) if (n.startsWith(k)) return RIALZA[k]; return null; };
+function aTerraAncora(p, r) {
+  if (p.i === 0 && /^para_/.test(p.fx)) return p.st === 'dive' || p.st === 'down';
+  const d = (GESTI[r] || {}).durata || .75;
+  return p.st === 'slide' || (p.st === 'down' && p.stT < DOWN.pl - d) || (!!p.fallen && p.stun > d);
+}
+/** Una clip di GameplayFootball che parte da un punto (secondi) a velocità normale: scivolate, cadute, esultanze. */
+function clipGF(p, nome, da = 0, sp = 1) { if (!hasFx(nome) || !p.fig.skinned) return false; p.fxFermo = false; p.fx = nome; p.fxT = da / sp; p.fxDa = da; p.fxSp = sp; p.fxNew = true; return true; }
+/** Caduta dopo un fallo: in avanti se arriva da dietro o di fronte, di lato se arriva di fianco. */
+function cade(o, d) {
+  sporca(o, 'caduta');
+  let nome = 'cade';
+  if (d) { const dx = d.x - o.x, dz = d.z - o.z, l = hyp(dx, dz) || 1, lat = (dx * Math.cos(o.dir) - dz * Math.sin(o.dir)) / l; if (Math.abs(lat) > .6) nome = lat > 0 ? 'cade_lato_dx' : 'cade_lato'; }
+  if (!clipGF(o, nome)) azione(o, 'caduta');
+}
 /** Spallata persa: chi perde palla si sbilancia dalla parte da cui arriva l'avversario (davanti, dietro, di lato). */
 function sbilancia(o, d) {
   const dx = d.x - o.x, dz = d.z - o.z, av = dx * Math.sin(o.dir) + dz * Math.cos(o.dir), sx = dx * Math.cos(o.dir) - dz * Math.sin(o.dir); // sx > 0: arriva da sinistra
@@ -384,6 +402,7 @@ async function loadModel() {
     }
     if (!MODEL.fx.idle || !MODEL.fx.walk || !MODEL.fx.run) throw new Error('mancano le animazioni di base');
     if (MODEL.fx.scivolata) DOWN.pl = .81; if (MODEL.fx.tuffoS) DOWN.gk = 1.1; if (MODEL.fx.caduta) DOWN.fall = 1.35;
+    if (MODEL.fx.scivola && MODEL.fx.rialza_schiena) DOWN.pl = .85; if (MODEL.fx.cade && MODEL.fx.rialza) DOWN.fall = 1.6; // scivolata e caduta di GameplayFootball, poi ci si rialza (0,72-0,76 s)
     if (MODEL.fx.rialza) DOWN.gk = .65; // dopo il tuffo c'è l'animazione per rialzarsi (0,76 s): a terra si resta meno, il tempo totale è quello di prima
   } catch (e) { console.warn('modello 3D non caricato', e); MODEL = null; }
 }
@@ -756,6 +775,33 @@ function piede(p) {
   if (d <= 1.6 && b.y < 1.2 && !(p.i === 0 && b.owner === p)) return { x: b.x, y: BR, z: b.z };
   return { x: p.x + Math.sin(p.dir) * .8, y: BR, z: p.z + Math.cos(p.dir) * .8 };
 }
+/* Rimessa laterale con le mani (clip di GameplayFootball): chi la batte si mette sulla linea, prende il pallone sopra la
+   testa, si gira verso il compagno e lo lancia quando le braccia arrivano in avanti (il «tocco» della clip). Corta sui
+   piedi fino a 14 m, poi lunga e più alta. Niente fuorigioco (G.noOff resta acceso dalla ripresa fino al lancio). */
+const RIMESSA = { linea: HW - .25, max: 28, lunga: 14, fermo: .08, pensa: [.4, .9] }; // fermo: il secondo della clip in cui si tiene il pallone dietro la testa; pensa: quanto aspetta dopo il fischio
+function lanciaRimessa(p, m) {
+  const b = G.ball, d0 = hyp(m.x - p.x, m.z - p.z), nome = d0 > RIMESSA.lunga ? 'rimessa_lunga' : 'rimessa', i = GESTI[nome];
+  p.dir = Math.atan2(m.x - p.x, m.z - p.z);
+  const via = () => {
+    const h = traLeMani(p) || { x: b.x, y: 2.1, z: b.z }, tx = clamp(m.x + m.vx * .45, -HL + 1, HL - 1), tz = clamp(m.z + m.vz * .45, -HW + 1, HW - 1), d = hyp(tx - h.x, tz - h.z);
+    const T = clamp(d / (d > RIMESSA.lunga ? 16 : 13), .45, 1.5), v = FIS.mira({ x: h.x, y: h.y, z: h.z }, { x: tx, y: .35, z: tz }, T, 0, 0);
+    b.owner = null; b.x = h.x; b.y = h.y; b.z = clamp(h.z, -HW + .05, HW - .05); b.vx = v.vx; b.vy = clamp(v.vy, -2, 9); b.vz = v.vz; b.c = b.t = 0; b.resto = 0;
+    G.calcioT = G.t; p.cool = .5; G.lastTouch = G.lastKicker = p; G.intended = m; G.lastPass = p; p.s.pa++; G.poss = p.team; G.rimessa = null; markOffside(p); AU.calcio(7, 'passaggio');
+    if (p.team.human) setCtrl(m);
+  };
+  // dalla posa tenuta (pallone dietro la testa) parte il lancio: il pallone esce quando la clip arriva al «tocco»
+  if (i && !p.carica && clipGF(p, nome, RIMESSA.fermo)) p.carica = { t: Math.max(0, i.tocco - RIMESSA.fermo), calcio: via }; else via();
+}
+/** Mentre si batte la rimessa il pallone sta tra le mani, sopra la testa. */
+function palloneInMano() {
+  const r = G.rimessa, b = G.ball; if (!r) return; const k = r.chi;
+  if (G.state !== 'restart' && G.state !== 'play') { G.rimessa = null; return; }
+  if (G.state === 'restart' && !r.mani) { const q = postoBattitore(k, b); if (hyp(k.x - q[0], k.z - q[1]) < .6) r.mani = true; else return; } // lo prende quando arriva sulla linea
+  if (G.state === 'play' && b.owner !== k) { G.rimessa = null; return; }
+  if (!k.carica && !(k.fx === 'rimessa' && k.fxFermo)) { k.dir = Math.atan2(0, -sgn(k.z)); if (clipGF(k, 'rimessa', RIMESSA.fermo)) k.fxFermo = true; } // rivolto al campo, pallone dietro la testa
+  const h = traLeMani(k) || { x: k.x + Math.sin(k.dir) * .1, y: 2.1, z: k.z + Math.cos(k.dir) * .1 };
+  b.x = h.x; b.y = Math.max(h.y, 1.2); b.z = clamp(h.z, -HW + .05, HW - .05); b.vx = b.vy = b.vz = 0;
+}
 function kick(p, vx, vy, vz, anim = 'passaggio', c = 0, tp = 0) {
   const b = G.ball, o = piede(p); b.owner = null; b.x = o.x; b.z = o.z; b.y = BR;
   b.vx = vx; b.vy = vy; b.vz = vz; b.c = c; b.t = tp; b.resto = 0; G.calcioT = G.t; p.cool = .45;
@@ -789,6 +835,7 @@ function crossTarget(p, voglio) {
 const canCross = (p) => Math.abs(p.z) > AIR.wide && p.x * p.team.side > HL - AIR.deep;
 // Traversone: pallone alto che scende ad altezza di testa davanti al compagno
 function cross(p, m, pow = null, tipo = 'cross') {
+  if (G.rimessa && G.ball.owner === p && G.rimessa.chi === p) return lanciaRimessa(p, m);
   const s = p.team.side, e = 1.5 * qf(p) * (userDrives(p) ? .7 : diffOf(p).err);
   const tx = clamp((m.x + m.vx * .5) * s + 1, -HL, HL - 2.5) * s + rnd(-1, 1) * e, tz = m.z + m.vz * .5 + rnd(-1, 1) * e;
   let ttx = tx, ttz = tz; const o = piede(p);
@@ -802,6 +849,12 @@ function cross(p, m, pow = null, tipo = 'cross') {
 // parare), con la forza presa dal cross; più impreciso se c'è un difensore addosso. In difesa: lontano dalla porta e verso
 // la fascia, alto e lungo, o a un compagno libero in quella direzione. Altrimenti di sponda, al compagno messo meglio
 // davanti. Chi è guidato dall'utente sceglie con la levetta: verso la porta tira, altrove passa.
+// Il colpo di testa di GameplayFootball adatto: in corsa, in salto se il pallone è alto, o da fermo. Parte poco prima del
+// contatto, così la testa arriva sul pallone col fotogramma giusto. Se la clip manca resta quello di prima.
+function testaGF(p, b) {
+  const v = hyp(p.vx, p.vz), nome = v > 3.5 ? 'testa_corsa' : b.y > 2.05 ? 'testa_salto' : 'testa_fermo', i = GESTI[nome];
+  if (!i || !clipGF(p, nome, Math.max(0, i.tocco - .1))) azione(p, 'testa'); else sporca(p, 'testa');
+}
 function header(p) {
   if (G.offs && G.offs.includes(p)) return offside(p);
   const t = p.team, s = t.side, b = G.ball, gx = s * HL, dG = hyp(gx - p.x, p.z), D = diffOf(p), arriva = hyp(b.vx, b.vy, b.vz);
@@ -830,7 +883,7 @@ function header(p) {
       const zt = sgn(p.z || rnd(-1, 1)) * rnd(GH + 3, GH + 14), xt = -s * (HL + 3), dl = hyp(xt - b.x, zt - b.z) || 1, sp = rnd(8, 12); vx = (xt - b.x) / dl * sp; vz = (zt - b.z) / dl * sp; vy = rnd(2.5, 5);
     } else { const fuori = sgn(p.z || rnd(-1, 1)), ux = dir ? dir[0] : s * .8, uz = dir ? dir[1] : fuori * .6, l = hyp(ux, uz) || 1, sp = rnd(13, 17); vx = ux / l * sp; vz = uz / l * sp; vy = rnd(6.5, 9); } // spazzata: lontano, verso la fascia
   }
-  b.vx = vx; b.vy = vy; b.vz = vz; b.c = b.t = 0; G.calcioT = G.t; p.cool = .5; p.dir = Math.atan2(vx, vz); G.lastTouch = G.lastKicker = p; G.poss = t; AU.calcio(hyp(vx, vz), 'testa'); azione(p, 'testa'); markOffside(p);
+  b.vx = vx; b.vy = vy; b.vz = vz; b.c = b.t = 0; G.calcioT = G.t; p.cool = .5; p.dir = Math.atan2(vx, vz); G.lastTouch = G.lastKicker = p; G.poss = t; AU.calcio(hyp(vx, vz), 'testa'); testaGF(p, b); markOffside(p);
 }
 /**
  * Chi vince il pallone alto: tra chi ci arriva, conta la distanza, ma anche lo stacco (più alto chi è più alto e più forte
@@ -954,6 +1007,7 @@ function bestPass(p, ix, iz, voglio) {
   bestPass.punteggio = bs; return best;
 }
 function pass(p, m, pow = null) {
+  if (G.rimessa && G.ball.owner === p && G.rimessa.chi === p) return lanciaRimessa(p, m);
   const o = piede(p), pt = puntoIncontro(p, m); let dx = pt.x - o.x, dz = pt.z - o.z; const d = hyp(dx, dz) || 1;
   { const e = rnd(-1, 1) * .035 * qf(p) * (userDrives(p) ? .6 : diffOf(p).err) * (pt.spazio ? 1.25 : 1), c = Math.cos(e), n = Math.sin(e), x = dx * c - dz * n; dz = dx * n + dz * c; dx = x; } // imprecisione (un po' di più sul filtrante)
   const lob = d > 18 && laneBlocked(p, m, pt.x, pt.z);
@@ -997,11 +1051,14 @@ function spallata(r) {
 }
 // Scivolata: parte almeno a SCIVOLATA.v0 e la frena l'erba; chi la comanda l'utente viene aiutato a puntare il pallone se è
 // già più o meno nella sua direzione (entro 40°). Cosa colpisce lo decide scivolate(), con la gamba tesa del modello.
+const SCIVOLA_DA = .18; // secondi della clip saltati: la rincorsa
 function slide(p, mira = false) {
   if (p.st !== 'run' || p.stun > 0) return;
   const b = G.ball;
   if (mira) { const tx = b.x + b.vx * .3, tz = b.z + b.vz * .3, d = hyp(tx - p.x, tz - p.z), a = Math.atan2(tx - p.x, tz - p.z); let da = a - p.dir; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; if (d < 6 && Math.abs(da) < .7) p.dir = a; }
-  p.st = 'slide'; p.stT = 0; p.slPalla = null; p.slColpiti = []; p.slideV0 = Math.max(hyp(p.vx, p.vz) * URTO.SCIVOLATA.spinta, URTO.SCIVOLATA.v0); azione(p, 'scivolata'); AU.scivolata();
+  p.st = 'slide'; p.stT = 0; p.slPalla = null; p.slColpiti = []; p.slideV0 = Math.max(hyp(p.vx, p.vz) * URTO.SCIVOLATA.spinta, URTO.SCIVOLATA.v0); AU.scivolata();
+  // la scivolata di GameplayFootball dal momento in cui si butta giù (prima c'è la rincorsa, che qui ha già fatto), col piede dalla parte del pallone
+  { const b = G.ball, sx = (b.x - p.x) * Math.cos(p.dir) - (b.z - p.z) * Math.sin(p.dir) < 0; sporca(p, 'scivolata'); if (!clipGF(p, sx ? 'scivola_sx' : 'scivola', SCIVOLA_DA)) azione(p, 'scivolata'); }
 }
 // Ogni fotogramma, per chi sta scivolando: se la gamba tocca prima il pallone è un intervento pulito (la palla schizza via
 // nella direzione della gamba, chi l'aveva può cadere); se prende prima l'avversario è fallo, più grave da dietro o in ritardo.
@@ -1019,7 +1076,7 @@ function scivolate() {
       if (o.st === 'down' || o.stun > 0 || d.slColpiti.includes(o) || !URTO.toccaUomo(d, o)) continue;
       d.slColpiti.push(o);
       const vicino = b.owner === o || hyp(b.x - o.x, b.z - o.z) < 2.2;
-      if (d.slPalla) { if (vicino) { o.stun = DOWN.fall; o.cool = Math.max(.8, DOWN.fall); o.fallen = true; azione(o, 'caduta'); } continue; } // prima la palla: pulito, l'avversario può cadere
+      if (d.slPalla) { if (vicino) { o.stun = DOWN.fall; o.cool = Math.max(.8, DOWN.fall); o.fallen = true; cade(o, d); } continue; } // prima la palla: pulito, l'avversario può cadere
       const dietro = URTO.daDietro(d, o), ritardo = !vicino;
       return foul(d, o, true, dietro || ritardo, dietro && ritardo);
     }
@@ -1241,7 +1298,7 @@ function think(p, dt) {
       else { const h = homeOf(p); p.tx = h[0]; p.tz = h[1]; }
     } else if (G.state === 'restart') {
       const fk = G.fk, w = fk && fk.wall && fk.wall.find((q) => q.p === p);
-      if (p === G.taker) { p.tx = b.x - s * .6; p.tz = b.z; p.sprint = true; }
+      if (p === G.taker) { const q = postoBattitore(p, b, .1); p.tx = q[0]; p.tz = q[1]; p.sprint = true; }
       else if (fk && fk.pen) { const q = penSpot(p); p.tx = q[0]; p.tz = q[1]; p.sprint = true; }
       else if (w) { p.tx = w.x; p.tz = w.z; p.sprint = true; }
       else if (fk && fk.pos && fk.pos.has(p)) { const q = fk.pos.get(p); p.tx = q[0]; p.tz = q[1]; p.sprint = true; }
@@ -1385,6 +1442,11 @@ function ownerThink(p, dt) {
   if (p.fkShot) { // punizione diretta: fermo sul pallone, poi tiro sopra la barriera
     p.tx = p.x; p.tz = p.z; p.thinkT -= dt; if (p.thinkT > 0) return; p.fkShot = false;
     return shoot(p, sgn(rnd(-1, 1)) * GH * rnd(.5, .9), rnd(.62, .8), D.err);
+  }
+  if (G.rimessa && G.rimessa.chi === p) { // rimessa laterale: fermo sulla linea, poi lancia con le mani al compagno migliore entro 28 m
+    p.tx = p.x; p.tz = p.z; p.thinkT -= dt; if (p.thinkT > 0) return;
+    let m = bestPass(p); if (!m || hyp(m.x - p.x, m.z - p.z) > RIMESSA.max) { let bd = 1e9; for (const o of t.players) { if (o === p || o.i === 0) continue; const d = hyp(o.x - p.x, o.z - p.z), sc = d - Math.min(openness(o), 6) * 2; if (d > 4 && d < RIMESSA.max && sc < bd) { bd = sc; m = o; } } }
+    if (m) return lanciaRimessa(p, m); p.thinkT = .3; return;
   }
   if (p.cornerKick) { // calcio d'angolo: fermo sul pallone, poi traversone
     p.tx = p.x; p.tz = p.z; p.thinkT -= dt; if (p.thinkT > 0) return; p.cornerKick = false;
@@ -1530,7 +1592,7 @@ function step(dt) {
     // sul calcio d'angolo, posto sul rigore) ci è arrivato correndo. Si aspetta al massimo tre secondi in più, sette sul
     // rigore (chi lo batte può essere dall'altra parte del campo), ma sempre col battitore sul pallone. Prima venivano
     // spostati di colpo, anche di 4 metri, e si vedeva il salto: ora allo scadere si sistema solo chi è a pochi centimetri.
-    const accanto = () => { const k = G.taker; return !!k && hyp(k.x - (b.x - k.team.side * .5), k.z - b.z) <= .45; };
+    const accanto = () => { const k = G.taker; if (!k) return false; const q = postoBattitore(k, b); return hyp(k.x - q[0], k.z - q[1]) <= .45; };
     const pronti = () => { const k = G.taker, fk = G.fk, far = fk ? FOUL.wall : 6; if (!accanto()) return false;
       if (fk && fk.pen) return all().every((o) => o === k || hyp(o.x - penSpot(o)[0], o.z - penSpot(o)[1]) < .6); // rigore: tutti al loro posto
       if (fk && fk.wall && fk.wall.some((w) => hyp(w.p.x - w.x, w.p.z - w.z) > .5)) return false;
@@ -1538,7 +1600,7 @@ function step(dt) {
       return !k.team.opp.players.some((o) => !(fk && fk.wall && fk.wall.some((w) => w.p === o)) && hyp(o.x - b.x, o.z - b.z) < far); };
     const sposta = (o, x, z) => { if (hyp(o.x - x, o.z - z) < .45) { o.x = x; o.z = z; o.vx = o.vz = 0; } };
     if (G.stateT > G.wait && (pronti() || (G.stateT > G.wait + (G.fk && G.fk.pen ? 7 : 3) && accanto()) || G.stateT > G.wait + 15)) { // dopo 15 s si batte comunque
-      const k = G.taker, fk = G.fk; k.x = b.x - k.team.side * .5; k.z = b.z; k.vx = k.vz = 0;
+      const k = G.taker, fk = G.fk, q = postoBattitore(k, b); k.x = q[0]; k.z = q[1]; k.vx = k.vz = 0; if (G.rimessa) k.dir = Math.atan2(0, -sgn(b.z)); // la rimessa: rivolto verso il campo
       if (fk && fk.pen) { // rigore: tutti fuori dall'area, portiere sulla linea
         for (const o of all()) if (o !== k) { const q = penSpot(o); sposta(o, q[0], q[1]); }
         gain(k); k.shield = 9; G.pen = true; setState('play');
@@ -1549,7 +1611,7 @@ function step(dt) {
         if (fk && fk.wall) for (const w of fk.wall) sposta(w.p, w.x, w.z);
         if (fk && fk.pos) for (const [o, q] of fk.pos) sposta(o, q[0], q[1]);
         for (const o of k.team.opp.players) { if (fk && fk.wall && fk.wall.some((w) => w.p === o)) continue; const d = hyp(o.x - b.x, o.z - b.z); if (d < far) sposta(o, b.x + (o.x - b.x) / (d || 1) * far, b.z + (o.z - b.z) / (d || 1) * far); }
-        gain(k); k.shield = 1; setState('play');
+        gain(k); k.shield = 1; setState('play'); if (G.rimessa) k.thinkT = rnd(...RIMESSA.pensa) * diffOf(k).think / .4; // la rimessa si batte presto
         if (fk && fk.direct && !userDrives(k)) { k.fkShot = true; k.thinkT = .45; k.shield = 1.5; }
         if (fk && fk.corner && !userDrives(k)) { k.cornerKick = true; k.thinkT = .4; k.shield = 1.5; }
       }
@@ -1575,10 +1637,10 @@ function step(dt) {
   for (const p of ps) movePlayer(p, dt);
   for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) { // non si attraversano; tra avversari in corsa è un duello spalla a spalla
     const a = ps[i], c = ps[j], dx = c.x - a.x, dz = c.z - a.z, d = hyp(dx, dz);
-    if (a.team !== c.team && G.state === 'play' && a.st !== 'down' && c.st !== 'down' && a.st !== 'slide' && c.st !== 'slide') { const r = URTO.duello(a, c, dt); if (r && r.perde) spallata(r); continue; }
+    if (a.team !== c.team && G.state === 'play' && !(G.rimessa && (G.rimessa.chi === a || G.rimessa.chi === c)) && a.st !== 'down' && c.st !== 'down' && a.st !== 'slide' && c.st !== 'slide') { const r = URTO.duello(a, c, dt); if (r && r.perde) spallata(r); continue; }
     if (d < .8 && d > .001) { const k = (.8 - d) / 2 / d; a.x -= dx * k; a.z -= dz * k; c.x += dx * k; c.z += dz * k; }
   }
-  moveBall(dt);
+  moveBall(dt); palloneInMano();
   if (G.state === 'play') { scivolate(); if (G.state === 'play') contacts(dt); if (G.state === 'play') bounds(); }
   // cambio automatico se il giocatore scelto resta lontano e fermo
   if (G.state === 'play' && G.ctrl && !G.auto && b.owner !== G.ctrl) {
@@ -1609,7 +1671,8 @@ function movePlayer(p, dt) {
   if (p.st === 'slide') { const k = URTO.velScivolata(p.slideV0 || URTO.SCIVOLATA.v0, p.stT); if (p.stT < .55 && rnd() < dt * 30) { const fx = Math.sin(p.dir), fz = Math.cos(p.dir); PART.emetti('erba', p.x + fx * .9, .05, p.z + fz * .9, 2, k * .35, fx, fz); if (rnd() < .5) PART.emetti('polvere', p.x + fx * .6, .1, p.z + fz * .6, 1, 1.2, fx, fz); } p.vx = Math.sin(p.dir) * k; p.vz = Math.cos(p.dir) * k; if (p.stT > URTO.SCIVOLATA.durata) { p.st = 'down'; p.stT = 0; } }
   else if (p.st === 'dive') { const k = Math.max(0, 1 - p.stT / .5) * (p.diveV || 8); p.vx *= Math.pow(.8, dt * 60); p.vz = p.diveS * k; if (p.stT > .5) { p.st = 'down'; p.stT = 0; } }
   else if (p.st === 'down') { const f = Math.pow(.7, dt * 60); p.vx *= f; p.vz *= f; if (p.stT > (p.i === 0 ? DOWN.gk : DOWN.pl)) { p.st = 'run'; p.stT = 0; } }
-  else if (p.fx === 'rialza' && p.fxT < .45) { const f = Math.pow(.8, dt * 60); p.vx *= f; p.vz *= f; } // si sta rialzando: parte solo quando è quasi in piedi
+  else if (/^rialza/.test(p.fx || '') && p.fxT < .45) { const f = Math.pow(.8, dt * 60); p.vx *= f; p.vz *= f; } // si sta rialzando: parte solo quando è quasi in piedi
+  else if (G.rimessa && G.rimessa.chi === p && G.state === 'play' && b.owner === p) { p.vx = p.vz = 0; } // la rimessa: dopo il fischio fermo sulla linea col pallone in mano (prima ci torna se lo spostano)
   else return corri(p, dt);
   p.x = clamp(p.x + p.vx * dt, -HL - 3.5, HL + 3.5); p.z = clamp(p.z + p.vz * dt, -HW - 3, HW + 3);
 }
@@ -1664,9 +1727,9 @@ function traLeMani(p) {
 }
 function moveBall(dt) {
   const b = G.ball, o = b.owner;
-  if (G.state === 'play') { calciCaricati(dt); if (b.owner && b.owner.i) prevediTocco(b.owner, b); else if (!b.owner) prevediStop(b); } // i gesti con la palla, a tempo col tocco
+  if (G.state === 'play') { calciCaricati(dt); if (b.owner && b.owner.i && !G.rimessa) prevediTocco(b.owner, b); else if (!b.owner) prevediStop(b); } // i gesti con la palla, a tempo col tocco
   else for (const p of all()) p.carica = null; // a gioco fermo nessun calcio resta in sospeso
-  if (o && o.i !== 0 && G.state === 'play') { // dribbling: tocchi in avanti, la palla è libera tra un tocco e l'altro
+  if (o && o.i !== 0 && G.state === 'play' && !(G.rimessa && G.rimessa.chi === o)) { // dribbling: tocchi in avanti, la palla è libera tra un tocco e l'altro
     { let dm = 9; for (const q of o.team.opp.players) dm = Math.min(dm, hyp(q.x - o.x, q.z - o.z)); o.pressato = dm < 1.8; } // con un avversario addosso i tocchi si accorciano
     const r = FIS.conduci(b, o, dt, tecnica(o) * (o.sbil > 0 ? .4 : 1), Math.random, { x: o.tx - o.x, z: o.tz - o.z });
     if (r === 'perso') { b.owner = null; G.lastTouch = o; }
@@ -1748,8 +1811,8 @@ function contacts(dt) {
     }
     return gain(p);
   }
-  // contrasti
-  if (own.shield > 0) return;
+  // contrasti (non su chi batte la rimessa col pallone in mano)
+  if (own.shield > 0 || (G.rimessa && G.rimessa.chi === own)) return;
   const fx = Math.sin(own.dir), fz = Math.cos(own.dir), lontana = hyp(b.x - own.x, b.z - own.z);
   if (own.i !== 0 && lontana > .95 && b.y < 1) for (const d of own.team.opp.players) { // tra un tocco e l'altro: chi arriva prima sul pallone
     if (d.stun > 0 || d.st === 'down' || d.cool > 0 || d.st === 'slide') continue;
@@ -1798,6 +1861,8 @@ function bounds() {
     restart(t, clamp(b.x, -HL + 1.5, HL - 1.5), sgn(b.z) * (HW - .5), 'Rimessa laterale');
   }
 }
+/** Dove si mette chi batte: sulla linea laterale col pallone in mano per la rimessa, appena dietro il pallone per il resto. */
+function postoBattitore(k, b, oltre = 0) { return G.rimessa && G.rimessa.chi === k ? [b.x, sgn(b.z) * (RIMESSA.linea + oltre)] : [b.x - k.team.side * (.5 + oltre), b.z]; }
 function restart(team, x, z, label, taker) {
   const b = G.ball; b.owner = null; b.x = x; b.z = z; b.y = BR; b.vx = b.vy = b.vz = 0; b.c = b.t = 0; G.charge = -1;
   G.fk = null; G.wait = 1.1; G.offs = null; G.noOff = true; G.pen = false; G.penWait = 0; for (const p of all()) p.fkShot = p.cornerKick = false;
@@ -1805,6 +1870,7 @@ function restart(team, x, z, label, taker) {
   G.next = team; G.poss = team; G.intended = null; G.taker = taker || nearestTo(team, x, z);
   if (team.human) setCtrl(G.taker); else setCtrl(nearestTo(G.teams[0], x, z));
   setState('restart'); banner('', label, 900); const fi = { Punizione: 'fallo', Fuorigioco: 'fuorigioco' }[label]; if (fi) AU.fischio(fi); // rimesse, angoli e fondo: l'arbitro non fischia
+  G.rimessa = label === 'Rimessa laterale' && G.taker ? { chi: G.taker } : null;
 }
 // Punizione per `team`. Se è a tiro dalla porta, tre avversari fanno barriera e chi calcia (se lo guida l'IA) tira in porta
 function freeKick(team, x, z, label, skip) {
@@ -1865,7 +1931,7 @@ function foul(d, own, sliding, behind, grave = false) {
     return banner('', c ? `Vantaggio · ammonito ${d.name}` : 'Vantaggio', 1300, c);
   }
   b.owner = null; G.lastPass = null;
-  own.stun = sliding ? DOWN.fall : .5; own.cool = Math.max(.8, own.stun); if (sliding) { own.fallen = true; azione(own, 'caduta'); }
+  own.stun = sliding ? DOWN.fall : .5; own.cool = Math.max(.8, own.stun); if (sliding) { own.fallen = true; cade(own, d); }
   const male = own.i !== 0 && !own.inj && t.bench.length > 0 && rnd() < FOUL.inj[sliding ? 1 : 0]; if (male) { own.inj = true; G.stats.inj[t.idx]++; } // infortunio: resta in campo ma va piano; solo se c'è una panchina da cui sostituire
   if (inBox) penalty(t); else freeKick(t, x, z, 'Punizione', sliding || male ? own : null);
   if (male && !c) { banner(inBox ? 'Rigore!' : '', `Infortunio · ${own.name}`, 2300); G.wait += .6; }
@@ -1937,19 +2003,31 @@ function poseSkinned(p, dt) {
   // l'azione registrata in corso (tiro, scivolata, tuffo…)
   if (p.fxNew) { p.fxNew = false; startFx(f, p.fx, p.fxDa || 0, p.fxSp); }
   let on = false;
-  if (p.fx && f.act) {
+  if (p.fx && f.act && p.fxFermo) { f.act.timeScale = 0; on = true; } // posa tenuta (la rimessa col pallone sopra la testa)
+  else if (p.fx && f.act) {
     p.fxT += dt; const c = FX[p.fx] || { sp: 1 }, g = !!GESTI[p.fx], dur = f.act.getClip().duration / (p.fxSp || c.sp);
     if (p.fxT >= dur - .03) {
       // il tuffo resta a terra finché il portiere è giù (in volo e poi a terra), poi si rialza con la sua animazione: prima
       // la posa sdraiata sfumava in quella in piedi e a metà strada il corpo finiva sotto l'erba (e veniva sollevato)
-      if (/^para_/.test(p.fx) && (p.st === 'dive' || p.st === 'down')) on = true;
-      else if (/^para_/.test(p.fx) && GESTI.rialza) { p.fx = null; gesto(p, 'rialza', 0); on = true; }
+      const r = rialzo(p.fx);
+      if (r && aTerraAncora(p, r)) on = true;
+      else if (r && GESTI[r]) { p.fx = null; gesto(p, r, 0); on = true; }
       else if (c.next && hasFx(c.next)) { p.fx = c.next; p.fxT = 0; p.fxSp = null; startFx(f, p.fx); on = true; } else p.fx = null; }
     else on = p.fxT < (g ? dur - .05 : c.cut || dur - .12); // i gesti brevi restano pieni fin quasi alla fine
   }
   f.fxW += ((on ? 1 : 0) - f.fxW) * Math.min(1, dt * (on ? 16 : 6)); f.oldW += (0 - f.oldW) * Math.min(1, dt * 9);
   if (f.act) { f.act.setEffectiveWeight(f.fxW); if (!p.fx && f.fxW < .02) { f.act.stop(); f.act = null; f.fxW = 0; } }
   if (f.old) { f.old.setEffectiveWeight(f.oldW); if (f.oldW < .02) { f.old.stop(); f.old = null; f.oldW = 0; } }
+  // Dopo un gol (clip di GameplayFootball): chi ha segnato, appena si ferma, fa l'esultanza scatenata e poi quella normale
+  // a ripetizione, ognuno col suo ritmo. I compagni fanno quella normale appena arrivano. Chi l'ha subito, una volta, la delusione.
+  if (G.state === 'goal' && G.scorer && p.i !== 0 && !p.fx && hasFx('esulta') && v < 1.5 && !REGIA.figure()) {
+    const ng = G.goals.length;
+    if (p.team === G.scorer.team) {
+      const scatenata = p === G.scorer && p.esultaGol !== ng && hasFx('esulta_corsa');
+      clipGF(p, scatenata ? 'esulta_corsa' : 'esulta', 0, p === G.scorer ? 1 : .85 + (p.i % 4) * .08); if (p === G.scorer) p.esultaGol = ng;
+    }
+    else if (p.deluso !== ng && hasFx('delusione')) { p.deluso = ng; clipGF(p, 'delusione', 0, .7); }
+  }
   // attesa, camminata, corsetta e corsa secondo la velocità; esultanza dopo un gol
   const tg = { idle: 0, walk: 0, run: 0, jog: 0, gkIdle: 0, esulta: 0, passoS: 0, passoD: 0, aereo: 0 }; let by = 0;
   const festa = G.state === 'goal' && G.scorer && p.team === G.scorer.team && p.i !== 0 && v < 5 && f.fxW < .25;
@@ -2102,7 +2180,7 @@ function draw(dt) {
   updateCamera(dt); REGIA.dopo(dt); seguiOmbre(); dettagliFigure(); if (RESA) RESA.disegna(); else renderer.render(scene, cam);
 }
 const REGIA = creaRegia({ scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, ring, arrow, camPos, camLook, boards, img, cdist, lum,
-  makeSkinned, pickKits, paintBoards, updateCamera, offsideLine, model: () => MODEL, crest: () => CREST });
+  makeSkinned, pickKits, paintBoards, updateCamera, offsideLine, hasFx, model: () => MODEL, crest: () => CREST });
 window.__regia = REGIA;
 
 /* ------------------------------------------------------------------ HUD */
