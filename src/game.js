@@ -17,6 +17,7 @@ import { creaBordoCampo } from './grafica/bordocampo.js';
 import { creaAudio } from './audio.js';
 import { creaPrestazioni } from './prestazioni.js';
 import { creaResa } from './grafica/resa.js';
+import { creaPiedi } from './grafica/piedi.js';
 
 (() => {
 const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
@@ -218,6 +219,7 @@ const DOWN = { pl: .38, gk: .5, fall: .7 };
 /** Le azioni registrate: velocità, da che secondo cominciano a sfumare (se manca: alla fine), cosa viene dopo. */
 const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.55 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 }, rinvio: { sp: 1.15 }, testa: { sp: 1.3, cut: .45 }, bandiera: { sp: 1 } };
 const hasFx = (n) => !!(MODEL && MODEL.fx && MODEL.fx[n]);
+const bloccaPiedi = creaPiedi(T); // piedi piantati sull'erba (src/grafica/piedi.js)
 function azione(p, name) { if (hasFx(name) && p.fig.skinned) { p.fxFermo = false; p.fx = name; p.fxT = 0; p.fxNew = true; p.fxSp = null; p.fxDa = 0; } sporca(p, name); }
 /* Gesti con la palla: animazioni brevi di GameplayFootball (public/anim-gf.js, scripts/gfootball.mjs) col fotogramma in cui
    il piede tocca la palla. Si fanno partire in anticipo, dal punto giusto e alla velocità del giocatore, così che quel
@@ -2061,6 +2063,10 @@ function poseSkinned(p, dt) {
     f.alza = giu > (f.alza || 0) ? giu : (f.alza || 0) + (giu - (f.alza || 0)) * Math.min(1, dt * 20); // sale subito, scende morbido
   } else f.alza = (f.alza || 0) * Math.max(0, 1 - dt * 12);
   f.body.position.y = by + (f.alza || 0);
+  // piedi piantati (src/grafica/piedi.js, applicati dopo l'inclinazione del corpo in draw): non nelle azioni a terra, non
+  // nei tuffi e non dopo uno spostamento di colpo
+  const salto = f.ultimo ? hyp(p.x - f.ultimo[0], p.z - f.ultimo[1]) > .6 : true; f.ultimo = [p.x, p.z];
+  f.piediAttivi = dt > 0 && !salto && (p.st === 'run' || p.st === 'kick') && !aTerra(f.act, f.fxW) && !aTerra(f.old, f.oldW) && !/^(para_|presa_)/.test(p.fx || '');
 }
 function pose(p, dt) {
   if (p.fig.skinned) return poseSkinned(p, dt);
@@ -2161,7 +2167,7 @@ function folla(dt) {
 function draw(dt) {
   const b = G.ball;
   if (b) {
-    if (!REGIA.figure()) for (const p of all()) { allinea(p, dt); pose(p, dt); inclina(p, dt); } // durante il replay le figure le mette in posa la regia
+    if (!REGIA.figure()) for (const p of all()) { allinea(p, dt); pose(p, dt); inclina(p, dt); if (p.fig.skinned && !G.senzaPiedi) bloccaPiedi(p.fig, dt, !!p.fig.piediAttivi); } // durante il replay le figure le mette in posa la regia
     else for (const p of all()) p.fig.root.rotation.x = p.fig.root.rotation.z = 0;
     const sp = hyp(b.vx, b.vz);
     ballMesh.position.set(b.x, b.y, b.z); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; ballMesh.rotation.y += (b.c || 0) * dt * 25; }
@@ -2762,6 +2768,7 @@ function qualita(dt) {
   else scene.traverse((o) => { if (o.material && o.material.isMeshStandardMaterial) { o.material.normalMap = o.material.roughnessMap = null; } if (o.isSpotLight) o.visible = false; }); // di notte restano i fasci e la luce dall'alto, non i faretti
   // per primi se ne vanno i dettagli della folla e le ombre del bordo campo, poi (al livello 3) steward e fotografi
   if (SPALTI) SPALTI.dettaglio(QUAL.livello < 1); if (BORDO) BORDO.qualita(QUAL.livello);
+  if (QUAL.livello >= 2) G.senzaPiedi = true; // dal livello 2 anche i piedi piantati (mezzo millisecondo a fotogramma sul processore)
   scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; });
   pienone();
 }

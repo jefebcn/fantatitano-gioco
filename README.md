@@ -43,6 +43,7 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 | `scripts/simula.cjs` | Gioca partite simulate e stampa gol, tiri, possesso, inserimenti e scivolate: serve per tarare l'IA (richiede Playwright). Stampa anche falli, fuorigioco, rigori, cartellini, angoli, cross e colpi di testa |
 | `scripts/prove/partita.cjs` | Rete di sicurezza: partite intere computer contro computer con tutti i controlli (giocatori che saltano, gesti bloccati, corpi nell'erba, palla abbandonata, errori nella pagina) e le misure di gioco confrontate con gli obiettivi. `npm run partite` dopo `npm run build`; `RAPPORTO=prima.json` salva tutto per confrontare prima e dopo una modifica |
 | `scripts/prove/rigori.cjs` | Sei rigori fischiati con i giocatori sparsi: tutti arrivano al loro posto correndo (nessun salto oltre 60 cm), il tiro parte e il gioco riprende |
+| `scripts/prove/fluidita.cjs` | Fluidità dei movimenti: quanto scivola il piede in appoggio e quanti scatti ha la posa (`PIEDI=0` per confrontare senza i piedi piantati) |
 | `.github/workflows/prove.yml` | A ogni PR: compilazione, `npm run controlla`, `npm run prova`, tre partite simulate e i rigori. Un'anomalia ferma la PR; le misure di gioco si leggono nel registro |
 | `scripts/analizza.mjs` | Misura le clip di un pacchetto Mixamo, per scegliere quali usare e dove ritagliarle |
 
@@ -203,6 +204,11 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   avversari spesso lo manda in angolo, di testa con l'attaccante addosso anche; la respinta del portiere può finire in
   angolo. Un attaccante su tre ogni tanto resta oltre la linea di un metro o due e chi passa non vede il fuorigioco di poco.
   Su 8 partite a normale (4 minuti di gioco l'una): 1,4 angoli, 0,13 fuorigioco, 4,4 rimesse laterali, 1,1 dal fondo.
+- **Piedi piantati** (`src/grafica/piedi.js`). Quando un piede tocca terra resta fermo dov'è sceso e la gamba si piega
+  (cinematica inversa a due ossa) finché l'animazione non lo rialza; se l'animazione lo porta più lontano di 28 cm, il punto
+  si fa trascinare invece di staccarsi di colpo. Piede in appoggio che scivola, mediana: camminata 0,94→0,50 m/s, corsetta
+  0,88→0,43, corsa 0,76→0,37, durante i gesti 3,95→1,92. Scatti della posa invariati (meno di uno su mille fotogrammi).
+  Costa circa mezzo millisecondo a fotogramma; dal livello di qualità 2 si spegne (`G.senzaPiedi`).
 - **Colori delle maglie** da `src/data.js` dell'app; il secondo colore è scelto a occhio dagli
   stemmi (`scripts/genera-dati.py`). Qualche divisa non combacia col suo stemma.
 - **Nomi dei calciatori**: sono quelli del listone dell'app. Verificare che l'accordo con
