@@ -59,7 +59,7 @@ function partita([seme, diffi, casa, ospiti]) {
     g.step(1 / 60); draw(1 / 60);
     const b = G.ball, o = b.owner, st = G.state;
     if (st !== stato) {
-      if (st === 'restart') { const k = G.fk ? (G.fk.pen ? 'rigore' : 'punizione') : ((document.querySelector('#banner') || {}).textContent || 'ripresa').trim().toLowerCase(); ripartenze[k] = (ripartenze[k] || 0) + 1; }
+      if (st === 'restart') { const k = G.fk ? (G.fk.pen ? 'rigore' : 'punizione') : (G.tipoFermo || (document.querySelector('#banner') || {}).textContent || 'ripresa').trim().toLowerCase(); ripartenze[k] = (ripartenze[k] || 0) + 1; }
       stato = st;
     }
     if (!Number.isFinite(b.x + b.y + b.z + b.vx + b.vy + b.vz)) nota('palla con numeri impossibili', '');

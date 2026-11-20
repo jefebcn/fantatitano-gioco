@@ -11,7 +11,11 @@ export const HL = 52.5, HW = 34, GH = 3.66, GT = 2.44, BR = 0.11, GRAV = 20;
 export const ALTEZZA = { min: 1.70, max: 1.95, media: 1.80, portiere: 1.84 };
 // Le linee: area di rigore 16,5 × 40,32, area piccola 5,5 × 18,32, dischetto a 11 m, cerchio di centrocampo e lunetta 9,15
 export const LINEE = { area: [16.5, 40.32], piccola: [5.5, 18.32], dischetto: 11, cerchio: 9.15 };
-export const HALF_SECS = 120;
+// Ritmo come Dream League: il cronometro corre `gioco` volte il tempo vero quando si gioca (90 minuti in 4 minuti veri) e
+// `fermo` volte durante le palle ferme, dopo i gol e al calcio d'inizio. Conduzione: velocità di corsa col pallone (senza
+// scatto) in m/s, stima dai video da tarare
+export const RITMO = { gioco: 22.5, fermo: 3.5, conduzione: 4.5 };
+export const HALF_SECS = 45 * 60 / RITMO.gioco;
 export const DIFF = {
   facile:    { spd: .88, steal: .7,  save: .58, err: 1.7, think: .6, wait: 1.2, slide: 1.5 },
   normale:   { spd: .97, steal: 1.25, save: .7, err: 1.0, think: .4, wait: 1.0, slide: 4 },
@@ -34,7 +38,7 @@ export const FOUL = { stand: [.08, .3], rate: [.45, 1.2], yellow: [.1, .4], wall
 export const VOTE = { g: 1.1, a: .7, kp: .12, sot: .15, tk: .2, int: .08, sv: .4, pass: 1.2, fl: -.15, og: -1, yel: -.4, red: -1.5, clean: .6, concGk: -.35, concD: -.22, win: .25 };
 // Gioco aereo: fin dove si arriva di testa, quanto si deve essere vicini, da dove si crossa (larghezza e profondità),
 // velocità oltre la quale il pallone non si prende di testa (i tiri passano), probabilità che l'IA crossi quando può,
-// distanza massima per tirare di testa, quante respinte del portiere finiscono in angolo, da quanti metri chi attacca va incontro
+// distanza massima per tirare di testa, da quanti metri chi attacca va incontro
 // al cross e quanto più lontano arriva staccando in corsa
 // Calci piazzati che nascono dal gioco: il difensore che devia in area un pallone degli avversari lo manda in angolo con
 // probabilità deviaAngolo; di testa, in area e con l'attaccante addosso, testaAngolo; la respinta del portiere può finire in
@@ -43,7 +47,7 @@ export const VOTE = { g: 1.1, a: .7, kp: .12, sot: .15, tk: .2, int: .08, sv: .4
 export const CALCI = { deviaAngolo: .4, testaAngolo: .35, respintaLato: 3.2, vedeFuori: 1.4, distratto: .35, oltre: [.8, 2] };
 // (altezze per giocatori di 1,80 m: salto è l'altezza oltre cui si stacca per colpire, bersaglio quella a cui mira un cross,
 // intercetta e stop fin dove un giocatore arriva sul pallone con la testa e col petto, scende l'altezza minima di un pallone che cade forte)
-export const AIR = { low: 1.05, top: 2.4, reach: .8, salto: 1.5, bersaglio: 1.4, intercetta: 1.5, stop: 1.15, scende: .7, fast: 22.6, wide: 13, deep: 24, cross: .5, shot: 15, behind: .55, attacca: 6, stacco: .1 };
+export const AIR = { low: 1.05, top: 2.4, reach: .8, salto: 1.5, bersaglio: 1.4, intercetta: 1.5, stop: 1.15, scende: .7, fast: 22.6, wide: 13, deep: 24, cross: .5, shot: 15, attacca: 6, stacco: .1 };
 // Moduli: dove sta ciascuno degli undici e che compito ha (P portiere, D difensore, C centrocampista, A attaccante).
 // Nei dati l'ordine è sempre portiere, quattro difensori, tre centrocampisti, tre attaccanti: cambiando modulo qualcuno cambia compito
 export const FORMS = {
@@ -61,27 +65,66 @@ for (const f of Object.values(FORMS)) f.pos = f.pos.map(([x, z]) => [x * HL / 50
 // il secondo uomo raddoppia quando il primo è a meno di `primo` metri dal portatore e lui a meno di `raggio`, stringendo a
 // `stretto` metri
 export const PRESSING = { da: 18, primo: 3.5, raggio: 16, stretto: 2.2 };
-export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
+export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['In difesa', 'Equilibrata', 'In attacco'], push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
 
 /* ---------------------------------------------------------------- telecamera di gioco */
-// Misure prese da Alex sui suoi screenshot di riferimento. alto e dietro: dove sta la telecamera rispetto al punto
-// inquadrato, in metri (dietro è verso la linea laterale vicina). inclina: gradi verso il basso, fissi. campoOriz: angolo
+// Misure di Alex (dai video DLS, corrette il 20/11): alto e dietro dove sta la telecamera rispetto al punto inquadrato, in
+// metri (dietro, in pianta, è verso la linea laterale vicina: 39 m in linea d'aria). inclina: gradi verso il basso, fissi:
+// così il punto inquadrato (il pallone) sta a circa il 40% dell'altezza dello schermo dall'alto. campoOriz: angolo
 // orizzontale in gradi, uguale su ogni schermo (su un telefono 19,5:9 in orizzontale sono 28° in verticale). seguiX e
-// seguiZ: quanto il punto inquadrato segue il pallone lungo il campo e in profondità. Scelte nostre, da confrontare coi
-// video: molla è la prontezza con cui segue (più alta, meno ritardo) e bordoX i metri dalla linea di fondo a cui si ferma.
-export const CAMERA = { alto: 12.5, dietro: 37, inclina: 21, campoOriz: 56.8, seguiX: 1, seguiZ: .45, molla: 6, bordoX: 16 };
+// seguiZ: quanto il punto inquadrato segue il pallone lungo il campo e in profondità (tutto: il pallone resta al 40%).
+// Scelte nostre, da confrontare coi video: molla è la prontezza con cui segue (più alta, meno ritardo), bordoX i metri dalla
+// linea di fondo a cui si ferma, zMax fin dove arriva verso la tribuna vicina (oltre ci entrerebbe: col pallone negli ultimi
+// metri verso la tribuna vicina il pallone scende un po' sullo schermo)
+export const CAMERA = { alto: 12.5, dietro: 36.9, inclina: 21.3, campoOriz: 56.8, seguiX: 1, seguiZ: 1, molla: 6, bordoX: 16, zMax: 56 };
 
-/* ---------------------------------------------------------------- comandi dell'utente */
-// Come nei giochi di calcio col joystick: poco inclinata si cammina, a metà si corricchia, tutta si corre (lo scatto è un tasto).
+/* ---------------------------------------------------------------- comandi dell'utente (come Dream League, docs/dls-gameplay.md) */
+// La levetta: base fissa (un cerchio di `raggio` px), la levetta si muove dentro. Poco inclinata si cammina, poi si corre;
+// oltre `scatto` (parte del raggio) si scatta da soli: non c'è un tasto per lo scatto. Sulla tastiera le frecce sono la levetta
+// tutta inclinata (scatto): tenendo Maiusc si corre senza scattare, a `tastieraCorsa`.
+export const LEVETTA = { raggio: 52, scatto: .87, tastieraCorsa: .8 };
+// Andatura dalla levetta: sotto `morta` fermi, poi si cammina, a metà si corricchia, da `piena` si corre (prima dello scatto).
 // Tra un'andatura e l'altra il passaggio è morbido, così si può dosare la velocità vicino all'avversario.
-export const ANDATURA = { morta: .15, cammina: .3, corsetta: .62 };
+export const ANDATURA = { morta: .15, cammina: .3, corsetta: .62, piena: .78 };
+// Senza palla: «Pressing» (tasto B tenuto) porta il giocatore addosso al portatore, puntando dove sarà fra `anticipo`
+// secondi; a meno di `vicino` metri rallenta e prova il contrasto in piedi. «Calcio forte» è una scivolata verso la levetta
+export const PRESSIONE = { anticipo: .25, vicino: 1.6 };
+// Passaggio (Calcio basso), da confermare con DLS: con `assistito` va al compagno nella direzione della levetta e la durata
+// della pressione cambia solo un po' la velocità (± `dosa`, da un tocco a tutta carica). Senza, la potenza decide anche quanto
+// lontano si passa (DIST)
+export const PASSAGGIO = { assistito: true, dosa: .15 };
 // Passa, Cross e Tira si tengono premuti: la barra sotto il giocatore si riempie (in 0,8 s) e al rilascio parte il colpo
 // con quella potenza. Un tocco veloce su Passa o Cross fa il passaggio dosato da solo, come prima.
 export const CARICA = { piena: .8, tocco: .12, max: .95 };
 // distanza a cui si vuole arrivare con una certa potenza (passaggio e lancio), e potenza giusta per una distanza
 export const DIST = { pass: [5, 45], cross: [12, 30], lancio: [15, 40] };
+// Segni in campo: X gialla dove scende un pallone alto (lanci, cross, rimesse), larga `x` metri: il pallone è «alto» se
+// sale oltre `alto` metri. Il segnalino grigio sul compagno che si prenderebbe con «Cambia giocatore» si ricalcola ogni
+// `cambio` secondi. La barra della potenza diventa rossa da `rosso` (parte della carica piena). `scala`: grandezza dei segni
+// sopra le teste (parte dell'altezza dello schermo)
+export const SEGNI = { x: 1.1, alto: 1.6, cambio: .2, rosso: .8, scala: .12 };
 // Secondi tra l'inizio del gesto e il momento in cui il piede colpisce il pallone (passaggio, tiro, lancio)
 export const CARICO = { passa: .1, calcia: .14, lancia: .14 };
+
+/* ---------------------------------------------------------------- palle ferme e sequenza del gol (come Dream League) */
+// Palle ferme: i comandi tornano `comandi` secondi dopo il fischio della rimessa laterale; la dissolvenza scura della rimessa
+// dura `buio` secondi (a metà la telecamera stacca sul punto di battuta). Una palla ferma che arriva entro `occasione` secondi
+// da una grande occasione (parata, tiro deviato, palo, tiro fuori di poco: entro `fuori` metri dal palo) è preceduta dal
+// replay (RIVEDI). Sull'angolo un compagno si offre per batterlo corto, a `corto` = [metri dalla linea di fondo, metri dalla
+// linea laterale]
+export const FERMI = { comandi: 2, buio: .5, occasione: 4, fuori: 2.5, corto: [7, 7] };
+// Gol, in secondi veri dal pallone in rete: da `lento` per `durataLento` secondi un leggero rallentatore (a velocità `vel`),
+// con gli avversari fermi a disperarsi per `fermi` secondi e l'arbitro che indica il centro; a `stacco` la telecamera passa
+// al primo piano del marcatore: alta `camAlt` metri, a `camDist` metri da lui, con un difensore deluso in primo piano
+// Il deluso sta a `deluso` = [parte della distanza dalla telecamera, metri di lato]
+export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.7, camDist: 4.6, deluso: [.55, 1.7] };
+
+/* ---------------------------------------------------------------- replay e stacchi */
+// Replay automatico e breve (da confermare con DLS): dopo un gol e alla prima palla ferma dopo una grande occasione rivede gli
+// ultimi `secs` secondi registrati a velocità `vel` (circa 3,5 s veri), tra due stacchi col logo di `stacco` secondi. Si salta
+// toccando lo schermo o il pulsante in basso a destra. Sotto `min` secondi registrati non parte
+export const RIVEDI = { secs: 3, vel: .85, stacco: .3, min: 1.5 };
+
 
 /* ---------------------------------------------------------------- IA col pallone, passaggi, scatti */
 /* Col pallone (l'IA). Regola presa da GameplayFootball (elizacontroller.cpp): si passa solo se il compagno sta meglio di
@@ -100,11 +143,23 @@ export const PASSA = { addosso: 1.6, cono: 40, scavalca: 3.6 };
 // portiere) e riprende a scattare solo sopra il 40%. Così nel finale nessuno resta a secco e le squadre restano corte.
 export const RISERVA = { soglia: .25, riparte: .4 };
 
+// Come Dream League: quando un compagno conduce verso l'area (negli ultimi `da` metri, andando verso la porta ad almeno
+// `corsa` m/s, o sulla fascia) da 3 a 4 compagni (`quanti`) si inseriscono in area. Sui calci d'angolo `angolo` attaccanti
+// in area (4 o 5). In difesa, col pallone a meno di `vicino` metri dalla propria porta, la squadra si stringe a `stretta`
+// della sua larghezza normale e la linea scala verso la porta
+export const AREA_IA = { da: 30, corsa: 1.5, quanti: [3, 4], angolo: [4, 5], vicino: 35, stretta: .62 };
+
 /* ---------------------------------------------------------------- portiere */
 // Sotto queste altezze del pallone, in metri, cambia il gesto. tuffo: rasoterra, mezza altezza, busto e oltre alto. presa al
 // centro: a terra, al ginocchio, al busto e oltre alta. uscita: da che altezza un cross è una presa alta. lancio: da che
 // altezza parte il pallone lanciato con le mani. rinvio: a che altezza arriva il rinvio lungo
 export const PARATA = { tuffo: [.3, .8, 1.25], presa: [.25, .6, 1.2], uscita: .9, lancio: 1.9, rinvio: 1.1 };
+// Come Dream League: sta sulla linea (`linea` metri davanti) e segue il pallone di lato. Quando l'attaccante col pallone entra
+// in area (`area` metri dalla linea di fondo) esce verso il palo vicino: `palo` = [metri davanti alla linea, metri dentro dal
+// palo]. Reagisce al tiro dopo `reazione` secondi (il più bravo il primo numero, il meno bravo il secondo), poi si tuffa.
+// Sulle parate: tiene il pallone solo con probabilità `presa` quando potrebbe; delle respinte, `davanti` lo lascia in area
+// (poi va a riprenderlo), `angolo` lo manda di lato oltre la linea di fondo (più spesso vicino al palo)
+export const PORTIERE = { linea: .9, area: 16.5, palo: [2.4, 1.5], reazione: [.18, .3], presa: .6, davanti: .3, angolo: .4 };
 // Il portiere col pallone in mano. attesa: secondi prima di rimetterlo in gioco; braccio e piede: quanto prima parte
 // l'animazione del lancio e del rinvio. corto: fin dove lancia con le mani, in metri. limite: quanto può avanzare dalla linea
 export const RINVIO = { attesa: [1.3, 2.1], braccio: .63, piede: .3, corto: 30, limite: 14 };
