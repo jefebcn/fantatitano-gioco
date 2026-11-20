@@ -199,6 +199,10 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   18 m oltre la metà campo, e il secondo uomo raddoppia quando il primo è sul portatore (come Kickoff di Yuka). Su 8
   partite a normale, prima e dopo: tenuta palla 0,43→0,94 s, contrasti vinti 0,25→6,8, falli 0→0,8, portatore libero
   55→33%, tiri 8,9→8,8. Si misura con `npm run partite` (le misure fuori obiettivo sono segnate con ✗).
+- **Calci piazzati dal gioco e fuorigioco** (`CALCI` in `src/game.js`). Il difensore che in area devia un pallone degli
+  avversari spesso lo manda in angolo, di testa con l'attaccante addosso anche; la respinta del portiere può finire in
+  angolo. Un attaccante su tre ogni tanto resta oltre la linea di un metro o due e chi passa non vede il fuorigioco di poco.
+  Su 8 partite a normale (4 minuti di gioco l'una): 1,4 angoli, 0,13 fuorigioco, 4,4 rimesse laterali, 1,1 dal fondo.
 - **Colori delle maglie** da `src/data.js` dell'app; il secondo colore è scelto a occhio dagli
   stemmi (`scripts/genera-dati.py`). Qualche divisa non combacia col suo stemma.
 - **Nomi dei calciatori**: sono quelli del listone dell'app. Verificare che l'accordo con
