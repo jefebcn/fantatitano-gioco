@@ -18,57 +18,10 @@ import { creaAudio } from './audio.js';
 import { creaPrestazioni } from './prestazioni.js';
 import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
+import { HL, HW, GH, GT, BR, GRAV, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA } from './config.js';
 
 (() => {
-const HL = 50, HW = 32, GH = 4.2, GT = 2.7, BR = 0.26, GRAV = 20;
-FIS.FIS.g = GRAV; FIS.FIS.r = BR; // la fisica del pallone usa le stesse misure del campo
-const HALF_SECS = 120;
-const DIFF = {
-  facile:    { spd: .88, steal: .7,  save: .58, err: 1.7, think: .6, wait: 1.2, slide: 1.5 },
-  normale:   { spd: .97, steal: 1.25, save: .7, err: 1.0, think: .4, wait: 1.0, slide: 4 },
-  difficile: { spd: 1.04, steal: 1.9, save: .87, err: .6, think: .26, wait: .6, slide: 6 },
-};
-const MATE = { spd: 1, steal: .95, save: .72, err: 1, think: .4, wait: .9, slide: 4 };
-// `wait`: secondi in cui chi difende temporeggia prima di andare sul pallone; `slide`: scivolate al secondo quando ce n'è l'occasione
-// Inserimenti senza palla: ogni quanti secondi si valuta, quanti insieme, quanto durano, punteggio minimo per partire, profondità in metri,
-// probabilità del dai e vai dopo un passaggio e di cercare chi si inserisce
-const RUN = { every: 1.55, max: 2, life: 2.8, min: 8.5, depth: 13, oneTwo: .35, thru: .3 };
-// Difesa a tre distanze dal portatore: oltre `far` ci si avvicina, fino a `near` si temporeggia, sotto si va sul pallone.
-// `danger` è la distanza dalla propria porta sotto cui non si aspetta più; `slide` l'intervallo utile per la scivolata
-const DEF = { far: 8.5, near: 2.4, hold: 2.3, danger: 24, slide: [1.6, 3.4] };
-// Falli: probabilità che un contrasto riuscito in piedi sia fallo [di fronte, da dietro], in scivolata lo decide la gamba tesa. Falli al secondo mentre si sta addosso
-// al portatore [di fronte, da dietro]; probabilità del giallo [in piedi, in scivolata];
-// distanza della barriera; quanto para il portiere su rigore rispetto a un tiro normale; quante volte l'arbitro lascia correre
-// quando chi subisce il fallo resta in piedi con campo davanti; probabilità di infortunio [in piedi, in scivolata] e quanto va piano chi si fa male
-const FOUL = { stand: [.08, .3], rate: [.45, 1.2], yellow: [.1, .4], wall: 9.15, penSave: .42, adv: .75, inj: [.03, .12], limp: .72 };
-// Peso di ogni evento nel voto in pagella (si parte da 6)
-const VOTE = { g: 1.1, a: .7, kp: .12, sot: .15, tk: .2, int: .08, sv: .4, pass: 1.2, fl: -.15, og: -1, yel: -.4, red: -1.5, clean: .6, concGk: -.35, concD: -.22, win: .25 };
-// Gioco aereo: fin dove si arriva di testa, quanto si deve essere vicini, da dove si crossa (larghezza e profondità),
-// velocità oltre la quale il pallone non si prende di testa (i tiri passano), probabilità che l'IA crossi quando può,
-// distanza massima per tirare di testa, quante respinte del portiere finiscono in angolo, da quanti metri chi attacca va incontro
-// al cross e quanto più lontano arriva staccando in corsa
-// Calci piazzati che nascono dal gioco: il difensore che devia in area un pallone degli avversari lo manda in angolo con
-// probabilità deviaAngolo; di testa, in area e con l'attaccante addosso, testaAngolo; la respinta del portiere può finire in
-// angolo se il pallone arriva a meno di respintaLato metri dal palo; chi passa non vede il fuorigioco sotto vedeFuori metri;
-// un attaccante su tre, a tratti di 2-5 s, resta oltre la linea di `oltre` metri
-const CALCI = { deviaAngolo: .4, testaAngolo: .35, respintaLato: 3.2, vedeFuori: 1.4, distratto: .35, oltre: [.8, 2] };
-const AIR = { low: 1.55, top: 2.6, reach: 1.05, fast: 22.6, wide: 13, deep: 24, cross: .5, shot: 15, behind: .55, attacca: 6, stacco: .1 };
-// Moduli: dove sta ciascuno degli undici e che compito ha (P portiere, D difensore, C centrocampista, A attaccante).
-// Nei dati l'ordine è sempre portiere, quattro difensori, tre centrocampisti, tre attaccanti: cambiando modulo qualcuno cambia compito
-const FORMS = {
-  '4-3-3': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-13, -14], [-17, 0], [-13, 14], [7, -19], [11, 0], [7, 19]], roles: 'PDDDDCCCAAA' },
-  '4-4-2': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-15, -7], [-15, 7], [-11, -21], [-11, 21], [9, -6], [9, 6]], roles: 'PDDDDCCCCAA' },
-  '3-5-2': { pos: [[-46, 0], [-33, -12], [-35, 0], [-33, 12], [-16, -23], [-18, 0], [-9, -9], [-9, 9], [-16, 23], [9, -6], [9, 6]], roles: 'PDDDCCCCCAA' },
-  '4-2-3-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-19, -7], [-19, 7], [-3, 0], [1, -20], [11, 0], [1, 20]], roles: 'PDDDDCCCAAA' },
-};
-// Mentalità (-1, 0, 1): quanti metri in più si sale quando si attacca, quanto restano alti gli attaccanti quando si difende
-// (con la difensiva rientrano), quanto spesso ci si inserisce, quanto prima si va sul pallone con l'offensiva;
-// con la difensiva: a quanti metri dal portatore sta il secondo uomo in copertura, quanti metri prima si smette di temporeggiare
-// Pressing senza palla: da dove (metri dalla metà campo verso la porta avversaria, mentalità equilibrata) si va sul portatore;
-// il secondo uomo raddoppia quando il primo è a meno di `primo` metri dal portatore e lui a meno di `raggio`, stringendo a
-// `stretto` metri
-const PRESSING = { da: 18, primo: 3.5, raggio: 16, stretto: 2.2 };
-const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
+// i valori di gioco (campo, tempi, difficoltà, IA, comandi, fisica) stanno tutti in src/config.js
 function setTactics(t, name, ment) {
   t.formName = FORMS[name] ? name : '4-3-3'; const f = FORMS[t.formName]; t.form = f.pos; if (ment !== undefined) t.ment = ment;
   for (const p of t.players.concat(t.off)) p.role = f.roles[p.i];
@@ -214,8 +167,6 @@ function makeFigure(kit, seed, num) {
 }
 /* --- figure con scheletro e animazioni registrate (modello GLB): se il modello non si carica restano quelle a blocchi --- */
 let MODEL = null;
-/** Quanto si resta a terra dopo una scivolata, un tuffo o un contrasto subito: si allunga se ci sono le clip registrate. */
-const DOWN = { pl: .38, gk: .5, fall: .7 };
 /** Le azioni registrate: velocità, da che secondo cominciano a sfumare (se manca: alla fine), cosa viene dopo. */
 const FX = { tiro: { sp: 1.2, cut: .42 }, passaggio: { sp: 1.2, cut: .3 }, scivolata: { sp: 1.55 }, caduta: { sp: 1.25 }, tuffoS: { sp: 1.5 }, tuffoD: { sp: 1.5 }, presa: { sp: 1.1, cut: .7 }, rinvio: { sp: 1.15 }, testa: { sp: 1.3, cut: .45 }, bandiera: { sp: 1 } };
 const hasFx = (n) => !!(MODEL && MODEL.fx && MODEL.fx[n]);
@@ -256,7 +207,6 @@ function taglio(o, b) {
  * il piede con cui comincia la clip, appena appoggiato (entro MOVI.passo del passo): se no si aspetta al massimo
  * MOVI.attesa secondi, intanto il giocatore frena e la velocità minima scende a MOVI.corsaAttesa.
  */
-const MOVI = { fermo: .6, parte: 2, giro: 35, corsa: 2.4, inverti: -.35, scatto: 5.3, pausa: .3, passo: .2, attesa: .35, corsaAttesa: 1.2 };
 function movimento(p, v) {
   if (p.i === 0 || p.st !== 'run' || G.ball.owner === p || p.fx || p.carica || !p.fig.skinned || (p.movT || 0) > G.t || G.state === 'goal') return;
   const M = MOVI, w = hyp(p.wx || 0, p.wz || 0), vr = v / (p.fig.alt || 1); let nome = null, verso = p.dir;
@@ -309,7 +259,6 @@ function prevediTocco(o, b) {
  * destra il sinistro. Se nel frattempo il giocatore perde palla, il calcio non parte. Fuori dal gioco aperto, o se il gesto
  * non si può fare, il calcio parte subito come prima.
  */
-const CARICO = { passa: .1, calcia: .14, lancia: .14 };
 // il tiro potente resta quello di Mixamo, più ampio: il destro colpisce a 0,067 s dall'inizio della clip (misurato sul piede)
 GESTI.tiro = GESTI.tiro || { v: 0, tocco: .067, durata: .733 };
 function prepara(p, tipo, bx, bz, calcio, forte = false) {
@@ -705,8 +654,6 @@ function clearMatch() {
   if (MODEL) { for (const t of MODEL.divise.values()) t.dispose(); MODEL.divise.clear(); for (const m of MODEL.corpi) m.dispose(); MODEL.corpi.length = 0; }
   G.teams = [];
 }
-// Panchina: quante sostituzioni a partita, quante ne fa l'IA, da che punto della partita comincia e ogni quanto ne fa un'altra
-const SUB = { max: 5, ai: 3, from: .55, every: .12 };
 // il capitano: per la mia squadra quello scelto in carriera, per le altre il migliore in campo (portiere escluso)
 function capitanoDi(club, mia) {
   if (mia && K && K.mio && K.mio.capitano && club.xi.some((x) => x[0] === K.mio.capitano)) return K.mio.capitano;
@@ -818,7 +765,6 @@ function piede(p) {
 /* Rimessa laterale con le mani (clip di GameplayFootball): chi la batte si mette sulla linea, prende il pallone sopra la
    testa, si gira verso il compagno e lo lancia quando le braccia arrivano in avanti (il «tocco» della clip). Corta sui
    piedi fino a 14 m, poi lunga e più alta. Niente fuorigioco (G.noOff resta acceso dalla ripresa fino al lancio). */
-const RIMESSA = { linea: HW - .25, max: 28, lunga: 14, fermo: .08, pensa: [.4, .9] }; // fermo: il secondo della clip in cui si tiene il pallone dietro la testa; pensa: quanto aspetta dopo il fischio
 function lanciaRimessa(p, m) {
   const b = G.ball, d0 = hyp(m.x - p.x, m.z - p.z), nome = d0 > RIMESSA.lunga ? 'rimessa_lunga' : 'rimessa', i = GESTI[nome];
   p.dir = Math.atan2(m.x - p.x, m.z - p.z);
@@ -1051,9 +997,6 @@ function avversarioAddosso(p, o, ux, uz) {
   for (const q of p.team.opp.players) { if (q.stun > 0 && q.st === 'down') continue; const dx = q.x - o.x, dz = q.z - o.z, d = hyp(dx, dz); if (d < PASSA.addosso && (dx * ux + dz * uz) / (d || 1) > Math.cos(PASSA.cono * Math.PI / 180)) return true; }
   return false;
 }
-// Al momento del calcio (dopo il caricamento del gesto, 0,1-0,27 s dalla decisione) l'avversario può essersi messo davanti al
-// pallone: allora l'IA cambia compagno se ce n'è uno con la linea libera, se no (e per l'utente) alza un pallonetto corto
-const PASSA = { addosso: 1.6, cono: 40, scavalca: 3.6 };
 function pass(p, m, pow = null, rivisto = false) {
   if (G.rimessa && G.ball.owner === p && G.rimessa.chi === p) return lanciaRimessa(p, m);
   const o = piede(p), pt = puntoIncontro(p, m); let dx = pt.x - o.x, dz = pt.z - o.z; const d = hyp(dx, dz) || 1;
@@ -1167,14 +1110,9 @@ function switchCtrl() { const m = migliorDifensore(G.teams[0], G.ctrl); if (m) s
 
 /* comandi dell'utente */
 function inputWorld() { return [G.in.jx, G.in.jy]; }
-// Passa, Cross e Tira si tengono premuti: la barra sotto il giocatore si riempie (in 0,8 s) e al rilascio parte il colpo
-// con quella potenza. Un tocco veloce su Passa o Cross fa il passaggio dosato da solo, come prima.
-const CARICA = { piena: .8, tocco: .12, max: .95 };
 const potenza = () => clamp(G.charge / CARICA.piena, 0, 1);
 function caricaInizio(tipo) { G.charge = 0; G.caricaTipo = tipo; G.caricaIdeale = -1; }
 function direzioneUtente(c) { const [jx, jz] = inputWorld(), l = hyp(jx, jz); return l > .3 ? [jx / l, jz / l] : [Math.sin(c.dir), Math.cos(c.dir)]; }
-// distanza a cui si vuole arrivare con una certa potenza (passaggio e lancio), e potenza giusta per una distanza
-const DIST = { pass: [5, 45], cross: [12, 30], lancio: [15, 40] };
 const distDa = (tipo, pow) => DIST[tipo][0] + pow * DIST[tipo][1];
 const powPer = (tipo, d) => clamp((d - DIST[tipo][0]) / DIST[tipo][1], 0, 1);
 function pressA(down = true) {
@@ -1481,15 +1419,6 @@ function conduzione(p, pressato) {
   }
   return best || { ux: s, uz: 0, sc: 0 };
 }
-/* Col pallone (l'IA). Regola presa da GameplayFootball (elizacontroller.cpp): si passa solo se il compagno sta meglio di
-   chi ha la palla di una certa soglia; altrimenti si porta palla. Così il computer tiene palla uno o due secondi invece di
-   giocare tutto di prima. primo: attesa prima della prima decisione dopo lo stop (secondi, per think 0,4: si scala con la
-   difficoltà); pensa: tra una decisione e l'altra; addosso: avversario a meno di questo tempo dal pallone, si scarica
-   subito se c'è un passaggio sensato (punteggio oltre scarico); primoAddosso: la prima decisione quando lo stop arriva
-   con l'avversario a meno di 2,5 m; soglia: di quanto il passaggio deve battere il portare palla; diPrima: in
-   più, se la palla è appena arrivata (passaggio di prima solo verso un compagno davvero libero); negli ultimi `area` metri
-   si decide al più ogni `inArea` secondi. */
-const TENUTA = { primo: [1.2, 2], primoAddosso: .5, pensa: [1.2, 2], addosso: .45, scarico: 5, soglia: 6, diPrima: 8, appena: .4, area: 28, inArea: .25 };
 function ownerThink(p, dt) {
   if (p.carica) return; // sta già calciando
   p.hold += dt;
@@ -1532,9 +1461,6 @@ function ownerThink(p, dt) {
  * mani proprio quando il braccio, o il piede, arriva in fondo. Se è il portiere dell'utente, Passa e Cross anticipano
  * (lancio verso la levetta, o rinvio lungo).
  */
-const RINVIO = { attesa: [1.3, 2.1], braccio: .63, piede: .3, corto: 30, limite: 14 };
-/** Portiere col pallone in mano. peso: quanto le braccia che lo tengono contano rispetto alla corsa (9 = nove decimi). */
-const MANO = { peso: 9 };
 function scegliRinvio(p, tipo, dir) {
   const t = p.team, s = t.side; let m = null, bs = -1e9;
   if (tipo !== 'piede') for (const o of t.players) { // a chi lanciarla con le mani: libero, entro 30 m, il passaggio arriva
@@ -1705,9 +1631,6 @@ function step(dt) {
     if (G.idle > 1.2 && hyp(c.x - b.x, c.z - b.z) > 22 && G.intended !== c) { const m = migliorDifensore(G.teams[0]); if (m && m.p !== c) setCtrl(m.p); }
   }
 }
-// L'IA dosa gli scatti: sotto un quarto di energia scatta solo quando conta davvero (palla da prendere, chi ha la palla, il
-// portiere) e riprende a scattare solo sopra il 40%. Così nel finale nessuno resta a secco e le squadre restano corte.
-const RISERVA = { soglia: .25, riparte: .4 };
 function dosa(p) {
   if (!p.sprint || G.state !== 'play' || p.i === 0 || p === G.intended || p === p.team.chaser || (G.ball && p === G.ball.owner)) return;
   if (p.en < RISERVA.soglia || (p.riserva && p.en < RISERVA.riparte)) { p.sprint = false; p.riserva = true; } else p.riserva = false;
@@ -1733,9 +1656,6 @@ function movePlayer(p, dt) {
   else return corri(p, dt);
   p.x = clamp(p.x + p.vx * dt, -HL - 3.5, HL + 3.5); p.z = clamp(p.z + p.vz * dt, -HW - 3, HW + 3);
 }
-// Come nei giochi di calcio col joystick: poco inclinata si cammina, a metà si corricchia, tutta si corre (lo scatto è un tasto).
-// Tra un'andatura e l'altra il passaggio è morbido, così si può dosare la velocità vicino all'avversario.
-const ANDATURA = { morta: .15, cammina: .3, corsetta: .62 };
 function andatura(l) {
   const A = ANDATURA, liscio = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
   if (!(l > A.morta)) return 0;

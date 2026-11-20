@@ -230,6 +230,9 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   risultati), al centro classifica, la sagoma del Titano sopra lo stadio 3D e le coppe, a destra squadra, mercato, sfide
   e club. I ritratti (mister e capitano) li disegna `ritratto()` dal modello 3D del gioco, una volta sola. Le misure sono
   in px per un telefono in orizzontale; sugli schermi più grandi tutto si ingrandisce con `zoom` (`--zh`).
+- **Valori di gioco in un file solo** (`src/config.js`): campo, tempi, difficoltà, IA, comandi, portiere, riprese, fisica di
+  pallone, giocatori e contrasti. `game.js` e `src/fisica/*` li importano da lì (i moduli di fisica li riesportano). I numeri
+  ancora scritti dentro le funzioni passano nel file man mano che si lavora su quella parte.
 - **Colori delle maglie** da `src/data.js` dell'app; il secondo colore è scelto a occhio dagli
   stemmi (`scripts/genera-dati.py`). Qualche divisa non combacia col suo stemma.
 - **Nomi dei calciatori**: sono quelli del listone dell'app. Verificare che l'accordo con

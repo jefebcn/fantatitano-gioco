@@ -7,21 +7,9 @@
 
    Ogni passo è diviso in passi brevi (al massimo 1/120 di secondo), così il risultato è lo stesso a 30, 60 o 144 fotogrammi. */
 
-export const FIS = {
-  g: 20, // gravità del gioco (più alta del vero: le parabole sono più brevi e leggibili sul telefono)
-  r: 0.26, // raggio del pallone in campo (ingrandito per vederlo)
-  aria: 0.0075, // resistenza dell'aria: decelerazione = aria · velocità² (a 30 m/s circa 6,8 m/s²)
-  magnus: 0.2, // curva: accelerazione laterale = magnus · effetto · velocità orizzontale
-  top: 0.12, // rotazione in avanti: accelerazione verso il basso = top · t · velocità orizzontale
-  giroAria: 0.3, // quanto si perde l'effetto al secondo in volo
-  giroErba: 3.5, // e quando rotola
-  rotola: 1.2, // attrito dell'erba quando rotola: frenata costante in m/s²
-  viscoso: 0.22, // più una frenata che cresce con la velocità (erba alta, piccoli saltelli)
-  rimbalzo: 0.55, // quanta velocità verticale resta dopo un rimbalzo
-  strisciaRimbalzo: 0.86, // quanta velocità orizzontale resta dopo un rimbalzo
-  minRimbalzo: 1.8, // sotto questa velocità verticale non rimbalza più: si appoggia e rotola
-  passoMax: 1 / 120,
-};
+// i valori stanno in src/config.js
+import { FIS, COND } from '../config.js';
+export { FIS, COND };
 
 const hyp = Math.hypot;
 
@@ -171,22 +159,6 @@ export function controlla(b, p, q = 0.5, caso = Math.random, verso = null) {
   const sp = hyp(p.vx, p.vz) * 0.9 + 1 + vin * 0.12 * sporco, c = Math.cos(e), s = Math.sin(e);
   b.vx = (ux * c - uz * s) * sp; b.vz = (ux * s + uz * c) * sp; b.vy = Math.min(b.vy, 0.5); b.c = 0; b.t = 0; p.tocco = COND.pausa;
 }
-
-/**
- * Il dribbling: chi ha palla non se la porta incollata, la spinge avanti di un tocco quando la raggiunge e la rincorre.
- * Il tocco è più lungo in scatto e per chi ha meno tecnica: la palla resta più a lungo lontana dal piede e un avversario
- * può arrivarci prima. Da fermo (o quasi) la palla resta sotto la suola.
- *  vicino:  sotto questa distanza "davanti al piede" scatta il tocco successivo
- *  passo:   tocco normale = velocità di corsa · passo; scatto: passoScatto
- *  perde:   oltre questa distanza dal giocatore la palla non è più sua
- *  fermo:   sotto questa velocità si tiene la palla sotto la suola
- *  errore:  di quanto (radianti) può andare storto un tocco per chi ha la tecnica più bassa
- *  pausa:   tempo minimo tra due tocchi
- *  stretto: con un avversario addosso (p.pressato) il tocco si accorcia: la palla resta più vicina al piede
- *  ritmo:   col passo (p.ritmo, vedi corpo.js) il tocco parte quando un piede sta per scendere, anche un po' prima (fino a
- *           vicino + ritmo); tra un passo e l'altro aspetta, a meno che la palla non sia già sotto i piedi (forza)
- */
-export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.35, vicino: 0.75, passo: 1.12, passoScatto: 1.2, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6 };
 
 /**
  * Un passo di conduzione per il giocatore p (x, z, vx, vz, dir, sprint) con tecnica q da 0 a 1. Cambia solo la velocità del

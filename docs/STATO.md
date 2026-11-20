@@ -21,6 +21,15 @@
 7. Stadio come requisito di promozione.
 Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 
+## Modalità partita «come DLS» (richiesta di Alex del 20/11 sera)
+- Obiettivo: gameplay il più possibile uguale a Dream League nelle meccaniche; aspetto tutto Fantatitano.
+- Fonti: quello che descrive Alex e i suoi video; l'analisi che ha fatto lui resta fuori dal repository e vale solo
+  come elenco di categorie. Mai codice, valori, asset, interfaccia, testi o nomi loro. Se un comportamento non è noto: chiedere.
+- Passo 1 FATTO: valori di gioco in `src/config.js` (partite identiche prima e dopo).
+- Prossimi passi, uno per PR: comandi e gesti, telecamera, ritmo e peso di passaggi e tiri, IA e compagni, portiere, flusso.
+  Prima di ognuno servono le risposte di Alex (meglio un video dello schermo).
+- Prestazioni: 60 fps su iPhone nella webview dell'app, minimo 30.
+
 ## Decisioni recenti di Alex ancora valide
 - "Merge fallo sempre tu": PR → controlli verdi + anteprima Vercel → squash merge → verifica produzione.
 - Il gioco non è pubblico finché non lo dice lui (PR #114 dell'app non va unita).
