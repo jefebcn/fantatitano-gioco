@@ -14,3 +14,4 @@
 - Stato letto prima di una callback ritardata (calci caricati): rileggerlo dopo, se no il passatore conduce il pallone appena calciato.
 - Vettori temporanei riusati come bersaglio (IK in `src/grafica/piedi.js`): un vettore per ruolo.
 - Spostare giocatori di colpo alle riprese si vede: aspettare che arrivino, sistemare solo chi è a pochi centimetri.
+- Una clip che parte in mezzo alla corsa col piede sbagliato dà scatti; il suo ultimo fotogramma fermo sotto un corpo che corre fa strisciare i piedi: entrare col piede giusto, uscire svelti.

@@ -212,6 +212,14 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   si fa trascinare invece di staccarsi di colpo. Piede in appoggio che scivola, mediana: camminata 0,94→0,50 m/s, corsetta
   0,88→0,43, corsa 0,76→0,37, durante i gesti 3,95→1,92. Scatti della posa invariati (meno di uno su mille fotogrammi).
   Costa circa mezzo millisecondo a fotogramma; dal livello di qualità 2 si spegne (`G.senzaPiedi`).
+- **Movimenti senza palla** (`movimento` e `MOVI` in `src/game.js`, clip `parte_*`, `inverti_*`, `frena_scatto` da
+  GameplayFootball). Chi parte da fermo verso una direzione girata (45°, 90°, 135°, 180°) fa la partenza col perno, chi
+  inverte la corsa pianta il piede e si gira, chi smette di scattare frena a passi corti; il corpo gira insieme al gesto e
+  poi aspetta che il corpo fisico lo raggiunga. In corsa il gesto parte solo col piede giusto a terra (`appoggio`, misurato
+  dal convertitore), entra più piano ed esce più svelto degli altri gesti. Solo grafica: le regole non cambiano, ma la posa
+  delle mani del portiere e di chi batte la rimessa si legge dallo scheletro, quindi a parità di seme la partita prende
+  presto un'altra strada. Su 90 s di gioco: piede che scivola (mediana) camminata 0,55→0,38 m/s, corsetta 0,49→0,42,
+  corsa e scatto invariate (0,36-0,38); scatti della posa circa 1 per mille fotogrammi come prima.
 - **Colori delle maglie** da `src/data.js` dell'app; il secondo colore è scelto a occhio dagli
   stemmi (`scripts/genera-dati.py`). Qualche divisa non combacia col suo stemma.
 - **Nomi dei calciatori**: sono quelli del listone dell'app. Verificare che l'accordo con
@@ -222,6 +230,7 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   ossa diversi): `scripts/animazioni.mjs` applica ogni clip al manichino sorgente, legge di quanto ogni osso
   è ruotato nel mondo rispetto alla posa a T e applica la stessa rotazione all'osso corrispondente del
   calciatore. Nei file di Mixamo ogni osso compare due volte con lo stesso nome: conta quello esterno.
+- **Controllare una clip a occhio**: `node scripts/prove/fotogrammi.cjs <cartella> <clip>…` salva sei pose per clip.
 - **Rigenerare in ordine.** Se cambia il modello: `npm run modello` (modello, poi maschera, poi base64) e
   di nuovo le animazioni. La maschera va rifatta dal modello alleggerito, se no gli orli vengono strappati.
 - **Il repository resta privato**: `modelli/animazioni-base.glb` e le clip vengono da Mixamo.
