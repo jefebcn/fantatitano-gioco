@@ -4,6 +4,7 @@
 // step() legge G.goalEnd, think() legge G.cine per la corsa del marcatore. Tutto il resto lo capisce da sola guardando G.
 // La grafica (scheda, scritte, transizione) la crea qui, senza toccare index.html.
 
+import { SEGNI, RIVEDI, GOLSEQ } from './config.js';
 import { Vector3, Quaternion, CanvasTexture, Sprite, SpriteMaterial, SRGBColorSpace, Group, Mesh, CylinderGeometry, PlaneGeometry, MeshBasicMaterial, MeshLambertMaterial, DoubleSide } from 'three';
 
 export function creaRegia(X) {
@@ -11,7 +12,7 @@ export function creaRegia(X) {
   const extra = () => [S.arb, ...S.ass].filter(Boolean); // arbitro e guardalinee
 
   // Numeri da ritoccare
-  const SEQ = { vivo: 1, festa: 3.4, tenda: .32 };                    // secondi: azione che finisce, primo piano, metà della transizione
+  const SEQ = { festa: 3.4, tenda: .32 };                             // secondi: primo piano, metà della transizione (l'azione dal vivo dura fino a GOLSEQ.stacco)
   const REP = { hz: 30, secs: 6.5, prima: 3.6, dopo: 1, vel: .8, min: 1.2 }; // replay: quanto si registra, quanto si rivede, a che velocità
   const ARB = { dist: 8, v: 6.2 };                                    // arbitro: quanto sta lontano dal pallone, quanto corre
   const ASS = { fuori: 1.4, v: 7, band: 2 };                          // guardalinee: quanto fuori dalla linea, quanto corrono, secondi di bandierina alzata
@@ -37,7 +38,11 @@ export function creaRegia(X) {
 #salta{position:absolute;left:50%;bottom:3.5%;transform:translateX(-50%);font:900 10px Lato,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.8);text-shadow:0 1px 4px #000;opacity:0;transition:opacity .3s;pointer-events:none}
 #salta.su{opacity:1}
 #rep{position:absolute;right:14px;bottom:14px;font-family:Anton;font-size:15px;letter-spacing:.1em;background:var(--lime);color:var(--ink);padding:5px 13px 4px;border-radius:8px;opacity:0;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.4)}
-#rep.su{opacity:1}#rep::before{content:'⟲ '}
+#rep.su{opacity:1;pointer-events:auto}#rep::before{content:'⟲ '}
+#stacco{position:absolute;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;z-index:21}
+#stacco img{height:32%}#stacco.va{animation:stacco var(--d) linear both}
+@keyframes stacco{0%{opacity:0}35%,65%{opacity:1}100%{opacity:0}}
+#hud.cine #replay{display:none!important}
 #tenda{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:20}
 #tenda i{position:absolute;top:-10%;bottom:-10%;left:-30%;width:160%;transform:translateX(-135%) skewX(-16deg);display:flex;align-items:center;justify-content:center;
   background:linear-gradient(90deg,var(--lime) 0 3%,var(--viola) 3% 50%,var(--ink) 50% 97%,var(--lime) 97%)}
@@ -51,6 +56,9 @@ export function creaRegia(X) {
   const salta = el('salta', 'Tocca per saltare'), rep = el('rep', 'Replay');
   const tenda = el('tenda', '<i><img src="img/corona-lime.png" alt=""></i>');
   const passa = () => { tenda.classList.remove('va'); void tenda.offsetWidth; tenda.classList.add('va'); };
+  // stacco col logo Fantatitano (replay, angoli dopo una grande occasione): il logo copre lo schermo a metà dello stacco
+  const stacco = el('stacco', '<img src="img/corona-lime.png" alt="">');
+  const staccoLogo = (d) => { stacco.style.setProperty('--d', `${d}s`); stacco.classList.remove('va'); void stacco.offsetWidth; stacco.classList.add('va'); };
   const esc = (s) => String(s).replace(/[<>&]/g, '');
 
   /* ---------------------------------------------------------------- registrazione per il replay */
@@ -100,21 +108,50 @@ export function creaRegia(X) {
   const casella = (k) => ((REC.i - REC.len + k) % REC.n + REC.n) % REC.n * REC.stride; // dove sta il k-esimo fotogramma registrato
   function recMostra(fr) { const k = clamp(Math.floor(fr), 0, REC.len - 1), k2 = Math.min(k + 1, REC.len - 1); recLeggi(REC.data, casella(k), REC.data, casella(k2), clamp(fr - k, 0, 1)); }
 
-  /* ---------------------------------------------------------------- segnaposto col nome */
-  const [pc, px] = (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 128; return [c, c.getContext('2d')]; })();
-  const ptex = new CanvasTexture(pc); ptex.colorSpace = SRGBColorSpace;
-  const pin = new Sprite(new SpriteMaterial({ map: ptex, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false }));
-  pin.center.set(.5, 0); pin.renderOrder = 50; pin.visible = false; scene.add(pin);
-  function pinNome(p) {
-    px.clearRect(0, 0, 256, 128);
-    px.font = '900 34px Lato, system-ui, sans-serif'; px.textAlign = 'center'; px.textBaseline = 'middle'; px.lineJoin = 'round';
-    let n = p.name.length <= 13 ? p.name : p.name.split(' ').slice(-1)[0]; if (n.length > 13) n = n.slice(0, 12) + '.';
-    px.shadowColor = 'rgba(0,0,0,.65)'; px.shadowBlur = 6; px.shadowOffsetY = 1; px.fillStyle = '#fff'; px.fillText(n, 128, 30); px.shadowColor = 'transparent';
-    // la goccia: tonda in alto, a punta in basso, verde con il bordo chiaro e un foro bianco
-    px.beginPath(); px.arc(128, 78, 18, Math.PI * .78, Math.PI * 2.22); px.quadraticCurveTo(136, 104, 128, 124); px.quadraticCurveTo(120, 104, 113.6, 89.6); px.closePath();
-    px.fillStyle = '#2fd66b'; px.strokeStyle = 'rgba(235,255,240,.95)'; px.lineWidth = 4; px.stroke(); px.fill();
-    px.beginPath(); px.arc(128, 78, 7, 0, 7); px.fillStyle = '#ffffff'; px.fill();
+  /* ---------------------------------------------------------------- segni sopra le teste */
+  // Come Dream League: sul giocatore che si comanda nome e segnalino verde, e tra i due la barra della potenza mentre si
+  // tiene premuto un tasto di calcio (bianca, rossa verso il massimo). sull'avversario col pallone solo il nome, bianco,
+  // in difesa un segnalino grigio semitrasparente sul compagno che si prenderebbe con «Cambia giocatore».
+  const tela2 = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; return [c, c.getContext('2d'), t]; };
+  const sprite = (t, cy) => { const s = new Sprite(new SpriteMaterial({ map: t, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false })); s.center.set(.5, cy); s.renderOrder = 50; s.visible = false; scene.add(s); return s; };
+  const [pc, px, ptex] = tela2(256, 160), pin = sprite(ptex, 4 / 160);
+  const [ac, ax, atex] = tela2(256, 48), pinAvv = sprite(atex, 0);
+  const [gc, gx, gtex] = tela2(64, 80), pinGrigio = sprite(gtex, 2 / 80);
+  const nomeCorto = (p) => { let n = p.name.length <= 13 ? p.name : p.name.split(' ').slice(-1)[0]; if (n.length > 13) n = n.slice(0, 12) + '.'; return n; };
+  function scritta(x, n, cx, cy) {
+    x.font = '900 34px Lato, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
+    x.shadowColor = 'rgba(0,0,0,.65)'; x.shadowBlur = 6; x.shadowOffsetY = 1; x.fillStyle = '#fff'; x.fillText(n, cx, cy); x.shadowColor = 'transparent';
+  }
+  // la goccia: tonda in alto, a punta in basso, col bordo chiaro e un foro bianco: (cx, cy) è il centro della parte tonda
+  function goccia(x, cx, cy, colore, bordo) {
+    x.beginPath(); x.arc(cx, cy, 18, Math.PI * .78, Math.PI * 2.22); x.quadraticCurveTo(cx + 8, cy + 26, cx, cy + 46); x.quadraticCurveTo(cx - 8, cy + 26, cx - 14.4, cy + 11.6); x.closePath();
+    x.fillStyle = colore; x.strokeStyle = bordo; x.lineWidth = 4; x.stroke(); x.fill();
+    x.beginPath(); x.arc(cx, cy, 7, 0, 7); x.fillStyle = 'rgba(255,255,255,.95)'; x.fill();
+  }
+  let pinChiave = '';
+  function pinNome(p, pow) {
+    const k = p.name + '|' + (pow < 0 ? -1 : Math.round(pow * 50)); if (k === pinChiave) return; pinChiave = k;
+    px.clearRect(0, 0, 256, 160); scritta(px, nomeCorto(p), 128, 30);
+    if (pow >= 0) { // la barra: fondo scuro, si riempie di bianco e verso il massimo diventa rossa
+      const w = 128, x0 = 64, y0 = 52, r = SEGNI.rosso, u = pow < r ? 0 : (pow - r) / (1 - r);
+      px.fillStyle = 'rgba(10,10,12,.72)'; px.fillRect(x0 - 3, y0 - 3, w + 6, 16);
+      px.fillStyle = `rgb(255,${Math.round(255 - 178 * u)},${Math.round(255 - 178 * u)})`; px.fillRect(x0, y0, w * pow, 10);
+    }
+    goccia(px, 128, 92, '#2fd66b', 'rgba(235,255,240,.95)');
     ptex.needsUpdate = true;
+  }
+  let avvDi = null;
+  function nomeAvv(p) { if (avvDi === p) return; avvDi = p; ax.clearRect(0, 0, 256, 48); scritta(ax, nomeCorto(p), 128, 24); atex.needsUpdate = true; }
+  gx.clearRect(0, 0, 64, 80); gx.globalAlpha = .55; goccia(gx, 32, 30, '#9a9aa6', 'rgba(255,255,255,.8)'); gx.globalAlpha = 1; gtex.needsUpdate = true;
+  const sopraTesta = (s, p, alzo) => s.position.set(p.x, 2.72 * ((p.fig && p.fig.alt) || 1) + alzo, p.z); // il giocatore è alto 2,72
+  function segni(cine) {
+    const c = G.ctrl, b = G.ball, h = 2 * Math.tan(cam.fov * Math.PI / 360) * (cam.aspect < 1 ? SEGNI.scala * .55 : SEGNI.scala), on = !!G.segno && !cine;
+    pin.visible = on && !!c;
+    if (pin.visible) { pinNome(c, X.potenza()); pin.scale.set(h * 2, h * 1.25, 1); sopraTesta(pin, c, .3 + Math.sin(G.t * 6) * .05); }
+    const o = b && b.owner; pinAvv.visible = on && !!o && o.team !== G.teams[0] && G.state === 'play';
+    if (pinAvv.visible) { nomeAvv(o); pinAvv.scale.set(h * 2, h * .375, 1); sopraTesta(pinAvv, o, .35); }
+    const g = G.prossimo; pinGrigio.visible = on && !!g && g !== c && G.state === 'play';
+    if (pinGrigio.visible) { pinGrigio.scale.set(h * .5, h * .625, 1); sopraTesta(pinGrigio, g, .3); }
   }
 
   /* ---------------------------------------------------------------- arbitro */
@@ -215,6 +252,10 @@ export function creaRegia(X) {
     let dx = tx - b.x, dz = tz - b.z, d = hyp(dx, dz);
     if (d < ARB.dist) { if (d < .5) { dx = a.x - b.x; dz = a.z - b.z; d = hyp(dx, dz) || 1; } tx = b.x + dx / d * ARB.dist; tz = b.z + dz / d * ARB.dist; }
     tx = clamp(tx, -HL + 3, HL - 3); tz = clamp(tz, -HW + 3, HW - 3);
+    // dopo un gol si ferma, guarda il centro del campo e alza il braccio verso il centro (clip del guardalinee)
+    if (G.state === 'goal' && S.arbGol !== G.goals.length) { S.arbGol = G.goals.length; a.indicaT = GOLSEQ.fermi; a.vx = a.vz = 0; if (X.hasFx('bandiera')) { a.fx = 'bandiera'; a.fxNew = true; a.fxT = 0; a.fxSp = 1; a.fxDa = 0; } }
+    a.indicaT = (a.indicaT || 0) - dt;
+    if (a.indicaT > 0) { let da = Math.atan2(-a.x, -a.z) - a.dir; da = Math.atan2(Math.sin(da), Math.cos(da)); a.dir += da * Math.min(1, dt * 6); return; }
     const ex = tx - a.x, ez = tz - a.z, e = hyp(ex, ez), fermo = G.state !== 'play' || a.cartT > 0, v = fermo || e < 1.5 ? 0 : Math.min(ARB.v, e * 1.3), k = Math.min(1, dt * 3);
     a.vx += ((e ? ex / e * v : 0) - a.vx) * k; a.vz += ((e ? ez / e * v : 0) - a.vz) * k; a.x += a.vx * dt; a.z += a.vz * dt;
     // cartellino: si ferma, guarda chi l'ha preso e alza il braccio col cartellino in mano (GameplayFootball)
@@ -248,14 +289,35 @@ export function creaRegia(X) {
   // c2 fine del replay (uguale a c1 se il replay non c'è). step() dà il calcio d'inizio quando G.stateT supera G.goalEnd.
   const S = { squadra: null, arb: null, ass: [], offs: 0, visti: 0, on: false, c0: 0, c1: 0, c2: 0, rp: false, f0: 0, f1: 0, t1: false, t2: false, salvato: false, a0: 0, prima: '', scatto: false, pinDi: null, guarda: new Vector3(), var: 0, porta: 1 };
   const inReplay = () => S.on && S.rp && G.state === 'goal' && G.stateT >= S.c1;
+  // Replay a gioco fermo (pulsante in alto a destra, angolo dopo una grande occasione): il gioco si ferma (G.rivede), stacco
+  // col logo, gli ultimi secondi registrati rivisti da una telecamera bassa, stacco, e si riparte da dov'era. RV.t è in
+  // secondi veri: sotto zero c'è la prima metà dello stacco, da 0 a dur il replay. Si salta col pulsante REPLAY.
+  const RV = { on: false, t: 0, f0: 0, f1: 0, dur: 0, poi: null, salvato: false, esce: false, guarda: new Vector3() };
+  const inRivedi = () => RV.on && RV.t >= 0;
+  function rivedi(opz = {}) {
+    if (RV.on || S.on || !REC.data || REC.len < RIVEDI.min * REP.hz || G.auto || G.noRegia || !G.ball) return false;
+    const secs = Math.min(opz.secs || RIVEDI.secs, REC.len / REP.hz);
+    Object.assign(RV, { on: true, t: -RIVEDI.stacco / 2, f1: REC.len - 1, poi: opz.poi || null, salvato: false, esce: false });
+    RV.f0 = Math.max(0, RV.f1 - secs * REP.hz); RV.dur = Math.max(.5, (RV.f1 - RV.f0) / REP.hz / RIVEDI.vel); RV.guarda.set(NaN, 0, 0);
+    G.rivede = true; staccoLogo(RIVEDI.stacco); hud.classList.add('cine'); return true;
+  }
+  function fineRivedi() {
+    if (RV.salvato) recLeggi(REC.vivo, 0, REC.vivo, 0, 0); // le ossa tornano come dal vivo
+    RV.on = false; G.rivede = false; S.scatto = true; rep.classList.remove('su'); if (!S.on) hud.classList.remove('cine');
+    const f = RV.poi; RV.poi = null; if (f) f();
+  }
+  rep.addEventListener('pointerdown', (e) => { if (!RV.on) return; e.preventDefault(); e.stopPropagation(); if (RV.t < RV.dur - RIVEDI.stacco / 2) RV.t = RV.dur - RIVEDI.stacco / 2; });
   const inFesta = () => S.on && G.state === 'goal' && G.stateT >= S.c0 && G.stateT < S.c1;
 
   function inizio() {
     const g = G.goals[G.goals.length - 1], sc = G.scorer; S.visti = G.goals.length;
     if (!g || !sc || !sc.fig.skinned || G.noRegia) return;
     const t = sc.team, auto = /^Autogol/.test(g.name);
-    S.on = true; S.t1 = S.t2 = S.salvato = false; S.c0 = SEQ.vivo; S.c1 = S.c0 + SEQ.festa; S.var = G.goals.length % 2; S.porta = sgn(G.ball.x) || 1;
-    S.rp = !!REC.data && REC.len + REP.hz * SEQ.vivo >= REP.hz * REP.min;
+    // lo stacco sul primo piano arriva a GOLSEQ.stacco secondi veri: col rallentatore (G.stateT va più piano) un po' prima in G.stateT
+    const v = G.auto ? 1 : GOLSEQ.vel, L = GOLSEQ;
+    S.on = true; S.t1 = S.t2 = S.salvato = S.cut = false; S.c0 = L.lento + L.durataLento * v + Math.max(0, L.stacco - L.lento - L.durataLento); S.c1 = S.c0 + SEQ.festa; S.var = G.goals.length % 2; S.porta = sgn(G.ball.x) || 1;
+    S.rp = !!REC.data && REC.len + REP.hz * S.c0 >= REP.hz * REP.min;
+    hud.classList.add('cine'); $('#banner').classList.remove('su'); // levetta, tasti e minimappa spariscono subito
     S.c2 = S.rp ? S.c1 + (REP.prima + REP.dopo) / REP.vel : S.c1; G.goalEnd = S.c2;
     // il marcatore corre una decina di metri verso la bandierina più vicina e lì esulta
     const cx = sgn(sc.x || 1) * (HL - 7), cz = sgn(sc.z || 1) * (HW - 7), d = hyp(cx - sc.x, cz - sc.z) || 1, m = Math.min(d, 10);
@@ -268,23 +330,36 @@ export function creaRegia(X) {
     golc.querySelector('.as').innerHTML = as ? `Assist · <b>${esc(as)}</b>` : ''; golc.querySelector('.cl').textContent = t.club.name;
     tabelloniGol(auto ? t.club.name : sc.name, t.club.c1, X.lum(t.club.c1) > .55 ? '#0A0A0C' : '#fff');
   }
+  // Il difensore deluso in primo piano: il più vicino al marcatore tra chi ha subito il gol, messo tra la telecamera e il punto
+  // dell'esultanza, un po' di lato, rivolto verso la telecamera. Si fa allo stacco (cambio di inquadratura): non si vede spostarsi
+  function delusoDavanti(C, a) {
+    const sc = G.scorer; if (!sc || G.auto) return; let d = null, dd = 1e9;
+    for (const o of sc.team.opp.players) { if (!o.i || o.st !== 'run') continue; const k = hyp(o.x - sc.x, o.z - sc.z); if (k < dd) { dd = k; d = o; } }
+    if (!d) return; const ux = Math.sin(a), uz = Math.cos(a), k = GOLSEQ.camDist * .42;
+    d.x = C.fx + ux * k + uz * .9; d.z = C.fz + uz * k - ux * .9; d.vx = d.vz = 0; d.dir = Math.atan2(ux, uz); d.deluso = -1; d.fx = null;
+    G.delusoGol = d; G.delusoPunto = [d.x, d.z];
+  }
   function fine() {
     if (S.salvato) recLeggi(REC.vivo, 0, REC.vivo, 0, 0); // le ossa tornano com'erano prima del replay, se no le animazioni ripartono storte
-    S.on = S.salvato = false; G.cine = null; G.goalEnd = 0; S.scatto = true; REC.len = 0;
+    S.on = S.salvato = false; G.cine = null; G.goalEnd = 0; G.delusoGol = null; S.scatto = true; REC.len = 0;
     hud.classList.remove('cine'); golc.classList.remove('su'); salta.classList.remove('su'); rep.classList.remove('su');
     tabelloniNormali();
   }
   window.addEventListener('pointerdown', (e) => {
-    if (!S.on || G.paused || G.state !== 'goal' || (e.target.closest && e.target.closest('#pausa,#audio'))) return;
+    if (!S.on || G.paused || G.state !== 'goal' || (e.target.closest && e.target.closest('#pausa,#audio,#replay'))) return;
     const t = G.stateT;
     if (t > S.c0 + .5 && t < S.c1 - SEQ.tenda) G.stateT = S.c1 - SEQ.tenda;
     else if (S.rp && t > S.c1 + .4 && t < S.c2 - SEQ.tenda) G.stateT = S.c2 - SEQ.tenda;
   });
 
   return {
-    S, REC, SEQ, REP,
+    S, REC, SEQ, REP, rivedi, RV,
     /** Chiamata da draw() prima delle pose: se è in corso il replay mette lei in posa le figure e risponde true. */
     figure() {
+      if (inRivedi()) {
+        if (!RV.salvato) { recScrivi(REC.vivo, 0); RV.salvato = true; } // la scena dal vivo messa da parte
+        recMostra(RV.f0 + clamp(RV.t / RV.dur, 0, 1) * (RV.f1 - RV.f0)); return true;
+      }
       if (S.on && G.state !== 'goal') fine();
       if (!inReplay()) return false;
       if (!S.salvato) { // primo fotogramma del replay: si mette da parte la scena dal vivo e si sceglie cosa rivedere
@@ -297,12 +372,12 @@ export function creaRegia(X) {
     },
     /** Chiamata da draw() dopo la telecamera normale: tutto il resto. */
     dopo(dt) {
-      if (!G.teams.length || !G.ball) { if (S.on) fine(); for (const a of extra()) { scene.remove(a.fig.root); if (a.flag) scene.remove(a.flag); if (a.carta) scene.remove(a.carta); } S.arb = null; S.ass = []; S.squadra = null; pin.visible = false; return; }
+      if (!G.teams.length || !G.ball) { if (S.on) fine(); for (const a of extra()) { scene.remove(a.fig.root); if (a.flag) scene.remove(a.flag); if (a.carta) scene.remove(a.carta); } S.arb = null; S.ass = []; S.squadra = null; pin.visible = pinAvv.visible = pinGrigio.visible = false; return; }
       if (G.teams[0] !== S.squadra) { // partita nuova
         for (const a of extra()) { scene.remove(a.fig.root); if (a.flag) scene.remove(a.flag); if (a.carta) scene.remove(a.carta); }
         S.squadra = G.teams[0]; const kit = kitArbitro(); S.arb = creaArbitro(kit); S.ass = creaGuardalinee(kit); S.offs = 0; S.cart = G.cards ? G.cards.length : 0; pubblico(); S.visti = 0; S.on = false; S.pinDi = null; G.cine = null; G.goalEnd = 0; recInit();
       }
-      const st = G.state, t = G.stateT, replay = inReplay(); if (replay) palla();
+      const st = G.state, t = G.stateT, replay = inReplay() || inRivedi(); if (replay) palla();
       if (st === 'goal' && !S.on && G.goals.length !== S.visti) inizio();
       if (st === 'play' && S.prima !== 'play') REC.len = 0; // dopo un calcio da fermo le figure sono state spostate di colpo: il replay riparte da qui
       S.prima = st;
@@ -310,26 +385,32 @@ export function creaRegia(X) {
       if (!replay) {
         if (S.arb) { muoviArbitro(dt); pose(S.arb, dt); }
         if (S.ass.length) { muoviGuardalinee(dt); for (const a of S.ass) pose(a, dt); }
-        if (REC.data && (st === 'play' || (st === 'goal' && t < SEQ.vivo))) {
+        if (REC.data && (st === 'play' || (st === 'goal' && t < S.c0))) {
           REC.acc += dt;
           if (REC.acc >= 1 / REP.hz) { REC.acc %= 1 / REP.hz; recScrivi(REC.data, REC.i * REC.stride); REC.i = (REC.i + 1) % REC.n; REC.len = Math.min(REC.n, REC.len + 1); }
         }
       }
 
       bandiere(); carta(); saltano(dt);
-      // segnaposto col nome al posto della freccia
-      const c = G.ctrl, cine = S.on && t >= S.c0; arrow.visible = false; pin.visible = ring.visible && !!c && !cine;
-      if (cine) ring.visible = false;
-      if (pin.visible) {
-        if (S.pinDi !== c) { S.pinDi = c; pinNome(c); }
-        const h = 2 * Math.tan(cam.fov * Math.PI / 360) * (cam.aspect < 1 ? .055 : .1); pin.scale.set(h * 2, h, 1); pin.position.set(c.x, 2.72 * ((c.fig && c.fig.alt) || 1) + .3 + Math.sin(G.t * 6) * .05, c.z); // la punta sopra la testa (il giocatore è alto 2,72)
-      }
+      // segni sopra le teste (al posto dell'anello e della freccia)
+      segni(S.on && t >= S.c0);
 
       if (S.scatto) { S.scatto = false; X.updateCamera(9); } // dopo la sequenza la telecamera torna al suo posto di colpo, sotto la transizione
+      if (RV.on) {
+        RV.t += dt; rep.classList.toggle('su', RV.t >= 0 && RV.t < RV.dur - .15);
+        if (!RV.esce && RV.t >= RV.dur - RIVEDI.stacco / 2) { RV.esce = true; staccoLogo(RIVEDI.stacco); }
+        if (RV.t >= RV.dur) fineRivedi();
+        else if (RV.t >= 0 && !G.dbgCam) { // telecamera bassa dal lato lontano, che segue il pallone
+          const bp = ballMesh.position; if (Number.isNaN(RV.guarda.x)) RV.guarda.copy(bp); else RV.guarda.lerp(bp, 1 - Math.exp(-6 * dt));
+          cam.position.set(RV.guarda.x - 9, 3, -(HW + 4)); const lontano = cam.position.distanceTo(RV.guarda);
+          cam.fov = clamp(2 * Math.atan(7 / lontano) * 180 / Math.PI, 15, 40) * (cam.aspect < 1 ? 1.5 : 1); cam.lookAt(RV.guarda.x, Math.max(.9, RV.guarda.y * .8), RV.guarda.z); cam.updateProjectionMatrix();
+        }
+        return;
+      }
       if (!S.on) {
         // vicino alle porte la telecamera guarda in diagonale, così la porta si vede
         // (non sui piazzati, che hanno la loro inquadratura)
-        if (!G.dbgCam && st !== 'menu' && !G.portrait && !G.inquadra) { cam.position.x -= camLook.x * DIAG; cam.lookAt(camLook.x, 1, camLook.z); }
+        if (!G.dbgCam && st !== 'menu' && !G.portrait && !G.inquadra) { cam.position.x -= camLook.x * DIAG; cam.lookAt(camLook.x, camLook.y, camLook.z); }
         return;
       }
 
@@ -352,10 +433,12 @@ export function creaRegia(X) {
         const lontano = cam.position.distanceTo(S.guarda); cam.fov = clamp(2 * Math.atan((S.var ? 8 : 6.5) / lontano) * 180 / Math.PI, 15, 40) * (stretto ? 1.5 : 1);
         cam.lookAt(S.guarda.x, Math.max(.9, S.guarda.y * .8), S.guarda.z); cam.updateProjectionMatrix();
       } else if (t >= S.c0) {
-        // parte stretta sul marcatore e si allarga mentre arrivano i compagni
-        const sc = G.scorer, u = t - S.c0, w = Math.min(u, 2.2), a = S.a0 + u * .18, R = 6.2 + w * .7;
-        cam.position.set(sc.x + Math.sin(a) * R, 2 + w * .35, sc.z + Math.cos(a) * R); cam.fov = stretto ? 52 : 34;
-        cam.lookAt(sc.x, 1.75, sc.z); cam.updateProjectionMatrix(); // si guarda un po' sopra la testa: così il marcatore resta sotto il tabellino e sopra la scheda
+        // primo piano come Dream League: telecamera bassa (GOLSEQ.camAlt) a pochi metri dal punto dell'esultanza, che avanza appena;
+        // tra lei e il marcatore, un po' di lato, il difensore deluso (messo lì allo stacco, quando nessuno lo vede)
+        const sc = G.scorer, u = t - S.c0, C = G.cine || { fx: sc.x, fz: sc.z }, a = S.a0 + u * .05, R = GOLSEQ.camDist + .6 - Math.min(u, 2) * .3;
+        if (!S.cut) { S.cut = true; delusoDavanti(C, S.a0); }
+        cam.position.set(C.fx + Math.sin(a) * R, GOLSEQ.camAlt, C.fz + Math.cos(a) * R); cam.fov = stretto ? 52 : 34;
+        cam.lookAt(sc.x, 1.45, sc.z); cam.updateProjectionMatrix();
       }
     },
   };

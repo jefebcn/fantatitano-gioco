@@ -26,8 +26,11 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Fonti: quello che descrive Alex e i suoi video; l'analisi che ha fatto lui resta fuori dal repository e vale solo
   come elenco di categorie. Mai codice, valori, asset, interfaccia, testi o nomi loro. Se un comportamento non è noto: chiedere.
 - Passo 1 FATTO: valori di gioco in `src/config.js` (partite identiche prima e dopo).
-- Prossimi passi, uno per PR: comandi e gesti, telecamera, ritmo e peso di passaggi e tiri, IA e compagni, portiere, flusso.
-  Prima di ognuno servono le risposte di Alex (meglio un video dello schermo).
+- Passo 2 FATTO (20/11, notte): i dati di Alex da 4 video in `docs/dls-gameplay.md`, applicati: comandi (levetta fissa, scatto
+  automatico, tre tasti col possesso, pressing), segni in campo, telecamera fissa, interfaccia (tabellone a sinistra,
+  minimappa e mentalità a frecce, replay), ritmo (cronometro lento a gioco fermo, conduzione 4,5 m/s), IA in area, portiere,
+  palle ferme e sequenza del gol. Domande aperte in fondo a `docs/dls-gameplay.md`.
+- Prossimo: risposte di Alex alle domande aperte; tarare la conduzione (4,5 m/s è una stima) e il portiere.
 - Prestazioni: 60 fps su iPhone nella webview dell'app, minimo 30.
 
 ## Decisioni recenti di Alex ancora valide
