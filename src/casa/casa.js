@@ -8,7 +8,7 @@ import { DISEGNI } from '../divisa.js';
 import * as CLOUD from '../cloud.js';
 import * as CAR from '../carriera.js';
 import { ECONOMIA, DIFF, FORMS, PASSAGGIO } from '../config.js';
-import { aiForm, $, rnd, clamp, hash, IMGX, img, G, renderer, cv, SCARPE_NEGOZIO, stemmi3d, makeSkinned, FIGURE, formaMaglia, pickKits, PALLONI, kitsFor, AU, tactics, club, startMatch, toMenu, CREST, loadImg, MODEL } from '../game.js';
+import { aiForm, $, rnd, clamp, hash, IMGX, img, G, renderer, cv, SCARPE_NEGOZIO, stemmi3d, makeSkinned, FIGURE, formaMaglia, pickKits, PALLONI, kitsFor, AU, tactics, club, chiudiPonte, startMatch, toMenu, CREST, loadImg, MODEL } from '../game.js';
 import HTML_CASA from './casa.html';
 import CSS_CASA from './casa.css';
 
@@ -571,7 +571,7 @@ function buildMenu() {
   $('#tClub').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) clubAz(b.dataset.club); });
   $('#campoA').addEventListener('click', tapRosa);
   $('#tRosa').onclick = () => { rXi = rPan = -1; sel.mia = K.club; sel.loro = CLUBS.find((c) => c.id !== K.club).id; G.comp = { tipo: 'rosa' }; showPre(); };
-  $('#panInd').onclick = casa; $('#continua').onclick = () => { toMenu(); };
+  $('#panInd').onclick = casa; $('#continua').onclick = () => { const fine = chiudiPonte(true); toMenu(); if (fine) fine(); };
   // i cursori del volume (impostazioni): musica ed effetti separati, salvati sul dispositivo
   $('#panC').addEventListener('input', (e) => { const r = e.target.closest('input[data-vol]'); if (!r) return; AU.init(); AU.volume(r.dataset.vol, r.value / 100); r.nextElementSibling.textContent = r.value; if (r.dataset.vol === 'effetti') AU.calcio(12, 'passaggio'); });
   $('#panC').addEventListener('click', async (e) => {
@@ -629,4 +629,4 @@ function buildMenu() {
 function caricaCarriera() { K = CAR.carica(); if (K && !club(K.club)) K = null; CAR.applica(K, CLUBS); applicaMio(); }
 
 // quello che la partita (src/game.js) prende da qui
-export { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera };
+export { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera };

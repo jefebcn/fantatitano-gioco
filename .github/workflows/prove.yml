@@ -32,5 +32,7 @@ jobs:
         run: node scripts/prove/partita.cjs 3 normale
       - name: Rigori
         run: node scripts/prove/rigori.cjs
+      - name: Ponte tra home e partita (una partita avviata da una richiesta, esito alla fine)
+        run: node scripts/prove/ponte.cjs
       - name: Inquadratura al calcio d'inizio (misure di riferimento, margine 2 punti)
         run: node scripts/prove/inquadratura.cjs
