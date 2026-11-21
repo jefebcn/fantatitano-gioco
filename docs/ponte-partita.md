@@ -241,3 +241,10 @@ import { ponte, SA_FARE } from './ponte.js';
 const risposta = ponte.avviaPartita({ versione: 1, tipo: 'campionato', squadre: [casa, ospite], allaFine: (esito) => { /* conti e schermata */ } });
 if (!risposta.ok) console.warn(risposta.errori);
 ```
+
+### 8.2 Passo 4 fatto: i quattro moduli nuovi (21/11)
+In `FORMS` (`src/config.js`) ci sono ora anche **4-3-1-2, 5-3-2, 4-1-4-1 e 3-4-3**, accanto ai quattro di prima. La home
+li trova leggendo le chiavi di `FORMS`. Li usa chi gioca e la squadra avversaria quando la richiesta li chiede
+(`modulo`); le squadre del computer, da sole, restano sui primi quattro. Provati in partite intere tra computer con
+`MODULO=5-3-2 node scripts/prove/partita.cjs 4`: nessuna anomalia. La pausa della partita mostra gli otto moduli.
+

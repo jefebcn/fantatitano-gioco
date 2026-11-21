@@ -103,7 +103,8 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   contrastate, anelli a metà), pubblico smorzato e vario con tribune più scure (`src/grafica/spalti.js`),
   `GOLSEQ.riquadro` = 0 (provvisorio: Alex non ha scelto). Partite simulate identiche.
 - Il punto 9 (giocatori MPFB2) era già fatto con la PR #63.
-- Da fare: moduli nuovi (4-3-1-2, 5-3-2, 4-1-4-1, 3-4-3), scenario del ponte, poi tutorial e allenamenti; ritarare gol e tiri.
+- Moduli nuovi FATTI: 4-3-1-2, 5-3-2, 4-1-4-1, 3-4-3 in `FORMS`; si provano con `MODULO=… node scripts/prove/partita.cjs`.
+- Da fare: scenario del ponte (minuto e punteggio di partenza), poi tutorial e allenamenti; ritarare gol e tiri.
 
 ## Due sessioni insieme (dal 21/11)
 - Questa sessione lavora sulla **partita** (campo, giocatori, IA, comandi). Un'altra lavora su **home, menu e sezioni**:
