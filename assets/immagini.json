@@ -1,7 +1,7 @@
 {
   "nota": "Elenco delle illustrazioni del gioco. Misure in pixel alla grandezza 3x (quella che serve all'iPhone più grande); alfa = sfondo trasparente. Descrizioni e prompt in docs/immagini-da-generare.md. Lo legge scripts/importa_immagini.py.",
   "immagini": [
-    { "nome": "sfondo-home", "w": 2796, "h": 1290, "alfa": false, "priorita": "A" },
+    { "nome": "sfondo-home", "w": 3840, "h": 1800, "alfa": false, "priorita": "A", "ingrandisci": true},
     { "nome": "trofeo-campionato", "w": 1024, "h": 1024, "alfa": true, "priorita": "A" },
     { "nome": "coppa-titano", "w": 1024, "h": 1024, "alfa": true, "priorita": "A" },
     { "nome": "trofeo-castelli", "w": 1024, "h": 1024, "alfa": true, "priorita": "A" },

@@ -67,12 +67,12 @@ export function disegnaHome() {
   const sfide = carta({ rotta: 'sfide', titolo: t('home.sfide'), colore: 'blu', bollino: st.daRiscuotere > 0, classe: 'c-piccola c-sfide',
     corpo: anello(...st.conti.d, 'sfide.oggi') + anello(...st.conti.w, 'sfide.settimana') + anello(...st.conti.c, 'sfide.carriera') + anello(...st.conti.s, 'sfide.stagione') });
 
-  // squadra: il capitano (o il migliore, se non c'è) con ritratto, fascia «C», nome, ruolo e valutazione
+  // squadra: il capitano (o il migliore, se non c'è) con la sua carta, la fascia «C», il nome e il ruolo
   const mioCap = K.mio && me.xi.find((x) => x[0] === K.mio.capitano), cap = mioCap || me.xi.slice().sort((a, b) => DATI.valore(b[1], b[3]) - DATI.valore(a[1], a[3]))[0], sc = DATI.scheda(cap, K.club);
   const foto = ritratto(K.club, cap[0], cap[2], cap[1] === 'P');
   const squadra = carta({ rotta: 'squadra', titolo: t('home.squadra'), colore: 'blu', classe: 'c-piccola c-squadra',
-    corpo: `<span class="ritr">${foto ? `<img src="${foto}" alt="">` : icona('segnaposto-giocatore')}${mioCap ? '<em class="fasciaC">C</em>' : ''}</span>`
-      + `<span class="testo"><i class="su">${t(mioCap ? 'squadra.capitano' : 'squadra.migliore')}</i><b data-adatta data-due-righe>${esc(cap[0])}</b><span class="gDati"><u>${sc.ruolo}</u><em class="val ${sc.fascia}">${sc.val}</em></span></span>` });
+    corpo: `<span class="conC">${miniCarta({ val: sc.val, fascia: sc.fascia, foto })}${mioCap ? '<em class="fasciaC">C</em>' : ''}</span>`
+      + `<span class="testo"><i class="su">${t(mioCap ? 'squadra.capitano' : 'squadra.migliore')}</i><b data-adatta data-due-righe>${esc(cap[0])}</b><span class="gDati"><u>${sc.ruolo}</u></span></span>` });
 
   // mercato: il giocatore in evidenza con la sua carta, il nome, il ruolo, lo stemma della sua squadra e il prezzo
   const c = consigliato(), cs = c && DATI.scheda(c.x, c.c.id);

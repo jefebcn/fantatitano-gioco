@@ -9,11 +9,11 @@ import { icona, stelline } from './icone.js';
 import { adatta } from './carte.js';
 import { nomiDi } from '../dati/squadre.js';
 import { t } from './testi.js';
-import { apri, indietro, livello, quandoCambia } from './nav.js';
+import { apri, indietro, livello, cima, quandoCambia } from './nav.js';
 
 document.getElementById('vs').insertAdjacentHTML('beforebegin', `<div id="barraF" class="nas">
   <button class="bt" id="bCasa"></button><button class="bt" data-vai="impostazioni" aria-label="${t('barra.impostazioni')}">${icona('impostazioni')}</button><button class="bt" data-vai="info" aria-label="${t('barra.info')}">${icona('info')}</button>
-  <span class="molla"></span>
+  <b class="titolo nas" id="bTitolo"></b><span class="molla"></span>
   <button class="pil" data-vai="sfide" data-par="w" aria-label="${t('barra.settimana')}">${icona('calendario')}<b id="bSettT"></b><i id="bSettP"></i><em class="bollino nas" id="bSettB">!</em></button>
   <button class="pil" data-vai="percorso" aria-label="${t('barra.premi')}">${icona('premi')}<b id="bPremiL"></b><span class="barretta"><i id="bPremiP"></i></span><em class="bollino nas" id="bPremiB">!</em></button>
   <span class="molla"></span>
@@ -22,6 +22,8 @@ document.getElementById('vs').insertAdjacentHTML('beforebegin', `<div id="barraF
   <button class="prof" data-vai="profilo" aria-label="${t('barra.profilo')}"><img id="bStemma" alt=""><span><b id="bNome" data-adatta data-due-righe></b><i id="bClub" data-adatta></i><span id="bStelle"></span></span></button>
 </div>`);
 const el = (id) => document.getElementById(id);
+// le schermate che hanno il loro titolo nella barra (al posto del percorso premi, che lì non serve)
+const TITOLI = { squadra: 'squadra.titolo' };
 // Il saldo nella barra: col punto delle migliaia fino a 99.999, poi in migliaia («120 K») e in milioni («1,2 M»)
 const saldo = (n) => (n < 1e5 ? mon(n) : n < 1e6 ? `${Math.floor(n / 1e3)} K` : `${(Math.floor(n / 1e5) / 10).toLocaleString('it-IT')} M`);
 el('barraF').addEventListener('click', (e) => {
@@ -39,6 +41,7 @@ export function mostraBarra(si) {
 export function aggiornaBarra() {
   if (!K || el('barraF').classList.contains('nas')) return;
   const oggi = new Date(), st = CAR.statoSfide(K, oggi), pe = CAR.statoPercorso(K), me = club(K.club), inHome = !livello();
+  const titolo = TITOLI[cima()]; el('bTitolo').textContent = titolo ? t(titolo) : ''; el('bTitolo').classList.toggle('nas', !titolo); el('barraF').classList.toggle('conTitolo', !!titolo);
   const casa = el('bCasa'); casa.innerHTML = icona(inHome ? 'home' : 'indietro'); casa.classList.toggle('acceso', inHome); casa.setAttribute('aria-label', t(inHome ? 'barra.home' : 'barra.indietro'));
   el('bSettT').textContent = fmtTempo(CAR.fineSettimana(oggi) - oggi); el('bSettP').textContent = `${st.conti.w[0]}/${st.conti.w[1]}`;
   el('bSettB').classList.toggle('nas', !st.w.some((x) => x.fatto && !x.preso) && !(st.bonus.w && st.bonus.w.fatto && !st.bonus.w.preso));

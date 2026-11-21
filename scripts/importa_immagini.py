@@ -37,10 +37,11 @@ def importa(file):
         w, h = (round(im.height * voluto), im.height) if avuto > voluto else (im.width, round(im.width / voluto))
         x, y = (im.width - w) // 2, (im.height - h) // 2
         im = im.crop((x, y, x + w, y + h)); note.append(f'ritagliata a {w} × {h}')
-    if im.width < v['w'] * MINIMO:
+    # un'immagine segnata «ingrandisci» nell'elenco si accetta anche piccola: viene portata alla misura piena
+    if im.width < v['w'] * MINIMO and not v.get('ingrandisci'):
         return f'✗ {file}: troppo piccola ({im.width} px di larghezza, ne servono almeno {round(v["w"] * MINIMO)})'
     if im.width < v['w']:
-        note.append(f'più piccola del pieno ({im.width} su {v["w"]} px): va bene, ma a 3x è ingrandita')
+        note.append(f'più piccola del pieno ({im.width} su {v["w"]} px): ' + ('ingrandita alla misura piena' if im.width < v['w'] * MINIMO else 'va bene, ma a 3x è ingrandita'))
     os.makedirs(USCITA, exist_ok=True)
     for k in (1, 2, 3):
         m = im.resize((round(v['w'] * k / 3), round(v['h'] * k / 3)), Image.LANCZOS)
