@@ -13,6 +13,8 @@ import { ILLUSTRAZIONI } from './illustrazioni.js';
 import { icona, stelline } from './icone.js';
 import { adatta, attrNome } from './carte.js';
 import { cartaCampo, riempiRitratti } from './giocatore.js';
+import { disponi, erba } from './campo.js';
+import { incarichi } from './rosa.js';
 import { finestra } from './finestra.js';
 import { t } from './testi.js';
 import { apri, ridisegna, indietro } from './nav.js';
@@ -22,49 +24,18 @@ const radice = document.getElementById('sfida');
 // la partita che si sta preparando: tipo ('camp', 'coppa', 'castelli', 'amichevole'), le due squadre, se si gioca fuori, se
 // in caso di parità si va ai rigori, e (senza carriera, quando la barra in alto non c'è) come si torna a scegliere le squadre
 let S = null;
-const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 // è una partita della carriera, giocata col proprio club: contano energia, riscaldamento, risultato
 const diCarriera = () => !!K && !!S && S.tipo !== 'amichevole' && S.mia === K.club;
 const TIPO_PONTE = { camp: 'campionato', coppa: 'coppa', castelli: 'castelli', amichevole: 'amichevole' };
 
-// La disposizione sui campi. Le linee di un modulo si staccano dove tra un giocatore e il successivo, dalla difesa
-// all'attacco, ci sono più di STACCO metri: ogni linea ha la sua fascia di campo, il portiere in basso e le punte in alto.
-// La carta è larga al più un LARGO-esimo del campo e alta quanto la fascia consente: lo scudo è alto ALTO volte la sua
-// larghezza, sotto ci sono la barretta dell'energia (BARRA) e il nome: alto NOME[1] se lo scudo resta largo almeno
-// GRANDE, se no NOME[0]. Per il nome ogni carta ha un posto largo POSTO volte lo scudo, e mai meno di NOME_LARGO (ci sta
-// un cognome di undici lettere). In alto il campo si stringe: da 50 a STRETTO per cento di mezza larghezza. Chi nel modulo
-// sta a FASCIA metri dal centro, o più, va sul bordo del campo.
-const STACCO = 5, LARGO = 8.5, ALTO = 1.19, BARRA = 3, NOME = [12, 14], GRANDE = 34, POSTO = 1.7, NOME_LARGO = 58, STRETTO = 43, FASCIA = 25;
-function linee(posti) {
-  const por = Math.max(0, posti.findIndex((p) => p.ruolo === 'POR')), altri = posti.map((p, i) => ({ i, x: p.x, z: p.z })).filter((g) => g.i !== por).sort((a, b) => a.x - b.x || a.z - b.z);
-  const out = [[{ i: por, x: posti[por].x, z: 0 }]];
-  altri.forEach((g, k) => { if (!k || g.x - altri[k - 1].x > STACCO) out.push([]); out[out.length - 1].push(g); });
-  return out;
-}
-// dove va ogni carta su un campo largo W e alto H: il centro, e quanto è largo il suo posto. Sulla stessa linea i giocatori
-// tengono la distanza che hanno nel modulo; se così i nomi si toccherebbero si allargano tutti insieme, e se non basta si
-// mettono a distanze uguali
-function disponi(posti, W, H) {
-  const ll = linee(posti), fascia = H / ll.length, larga = (nome) => Math.floor(Math.min(W / LARGO, (fascia - BARRA - nome) / ALTO));
-  const grande = larga(NOME[1]) >= GRANDE, scritta = NOME[grande ? 1 : 0], gw = Math.max(20, larga(scritta)), dove = [];
-  ll.forEach((linea, k) => {
-    const y = H - (k + .5) * fascia, mezzo = (STRETTO + (50 - STRETTO) * y / H) / 100 * W, n = linea.length, posto = Math.min(Math.max(POSTO * gw, NOME_LARGO), 2 * mezzo / n), lim = mezzo - posto / 2;
-    linea.sort((a, b) => a.z - b.z);
-    let xs = linea.map((g) => clamp(g.z / FASCIA, -1, 1) * lim);
-    const stretto = Math.min(...xs.slice(1).map((x, j) => x - xs[j]));
-    if (stretto < posto) { const f = stretto > 0 ? posto / stretto : 0; xs = f && Math.max(-xs[0], xs[n - 1]) * f <= lim + .5 ? xs.map((x) => x * f) : xs.map((x, j) => (j - (n - 1) / 2) * posto); }
-    linea.forEach((g, j) => { dove[g.i] = { x: W / 2 + xs[j], y, posto }; });
-  });
-  return { gw, scritta, dove };
-}
 // riempie un campo con le undici carte: chi gioca dove, con energia, fascia di capitano e avviso di fuori ruolo
 function campo(el, c, modulo, mio) {
   const posti = postiModulo(modulo), r = el.getBoundingClientRect(); if (!r.width) return;
-  const d = disponi(posti, r.width, r.height);
+  const d = disponi(posti, r.width, r.height), schede = c.xi.map((x) => DATI.scheda(x, c.id)), inc = mio ? incarichi(K, CLUBS, schede) : {};
   el.style.setProperty('--gw', `${d.gw}px`); el.style.setProperty('--gf', `${d.scritta}px`);
-  el.innerHTML = '<span class="erbaP"></span>' + c.xi.map((x, i) => {
-    const sc = DATI.scheda(x, c.id), q = d.dove[i];
-    return cartaCampo(sc, { club: c.id, energia: mio ? CAR.energiaDi(K, x[0]) : 100, capitano: mio && K.mio && K.mio.capitano === x[0], fuori: adatto(sc.ruolo, posti[i].ruolo), migliorato: mio && ((K.allen || {})[x[0]] || 0) > 0, stile: `left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px;width:${Math.floor(q.posto - 2)}px` });
+  el.innerHTML = erba() + c.xi.map((x, i) => {
+    const sc = schede[i], q = d.dove[i];
+    return cartaCampo(sc, { club: c.id, energia: mio ? CAR.energiaDi(K, x[0]) : 100, capitano: inc.capitano === x[0], fuori: adatto(sc.ruolo, posti[i].ruolo), migliorato: mio && ((K.allen || {})[x[0]] || 0) > 0, stile: `left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px;width:${Math.floor(q.posto - 2)}px` });
   }).join('');
 }
 // la striscia sotto il campo: stemma, nome, stelle, modulo e la maglia che la squadra userà in questa partita
@@ -129,9 +100,11 @@ function squadraPonte(c, modulo, utente, mio) {
   const posti = postiModulo(modulo);
   const g = (x, i) => { const sc = DATI.scheda(x, c.id); return { id: `${sc.origine}/${x[0]}`, nome: x[0], numero: x[2], reparto: x[1], ruolo: sc.ruolo, forza: x[3], energia: mio ? CAR.energiaDi(K, x[0]) : 100, altezza: sc.altezza, piede: sc.piede, fuoriRuolo: i < 0 ? 0 : adatto(sc.ruolo, posti[i].ruolo) }; };
   const ha = (tipo) => (mio && K.scelte && CAR.possiede(K, tipo, K.scelte[tipo]) ? K.scelte[tipo] : null);
+  // capitano e incaricati di rigori, punizioni e angoli: quelli scelti nella Squadra, o i più adatti tra i titolari
+  const inc = mio ? incarichi(K, CLUBS, c.xi.map((x) => DATI.scheda(x, c.id))) : {};
   return { id: c.id, nome: c.name, sigla: c.short, stemma: c.id, utente, modulo, mentalita: utente ? sel.ment : 0,
     maglia: { tipo: 'prima', c1: c.c1, c2: c.c2, stile: c.st || '', colletto: c.col || '', raglan: !!c.rag }, magliaPortiere: null,
-    scarpini: ha('scarpini'), pallone: !S.fuori && ha('pallone') ? ha('pallone') : 'classico', capitano: mio && K.mio ? K.mio.capitano || null : null,
+    scarpini: ha('scarpini'), pallone: !S.fuori && ha('pallone') ? ha('pallone') : 'classico', capitano: inc.capitano || null, rigorista: inc.rigori || null, punizioni: inc.punizioni || null, angoli: inc.angoli || null,
     titolari: c.xi.map((x, i) => g(x, i)), panchina: (c.pan || []).slice(0, 8).map((x) => g(x, -1)) };
 }
 /** La richiesta per il ponte (docs/ponte-partita.md §3): la prima squadra è quella di casa. */

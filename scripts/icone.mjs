@@ -87,19 +87,27 @@ const COLORI = {
     + '<path d="M2 9.500h20M6.5 3.5 9 9.500l3 12M17.5 3.5 15 9.500l-3 12M9 9.500l3-6 3 6" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width=".8" stroke-linejoin="round"/>',
 };
 
-// cornice della carta del giocatore: scudo 120 × 160, tre fasce di valutazione
-const FASCE = { bronzo: ['#E0A070', '#9C5A2E', '#5A2F14'], argento: ['#E6F4FF', '#8FB8D8', '#3C5F82'], oro: ['#FFE9A6', '#E8B64C', '#8A5A12'] };
-const carta = ([a, b, c], id) => `<defs><linearGradient id="c${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset=".5" stop-color="${b}"/><stop offset="1" stop-color="${c}"/></linearGradient></defs>`
-  + `<path d="M10 6h100a6 6 0 0 1 6 6v96c0 20-22 36-56 48C26 144 4 128 4 108V12a6 6 0 0 1 6-6z" fill="url(#c${id})" stroke="${c}" stroke-width="2"/>`
-  + `<path d="M14 12h92a3 3 0 0 1 3 3v92c0 16-19 30-49 41-30-11-49-25-49-41V15a3 3 0 0 1 3-3z" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.5"/>`;
+// Cornice della carta del giocatore, ricostruita sul modello di Alex (docs/riferimenti/modello-carte.png): scudo con gli
+// angoli in alto smussati e la punta in basso, bordo scuro, corpo sfumato con due riflessi in diagonale, una riga chiara
+// dentro. Tre fasce di valutazione. Disegno 100 × 150 che si adatta alla forma del suo posto: la carta grande è più alta,
+// quella piccola dei campi più bassa. Per ogni fascia: chiaro, medio, scuro, bordo, riga interna.
+const FASCE = { bronzo: ['#DCA584', '#B4775A', '#8A5239', '#5B3322', '#F3CBB1'], argento: ['#F6F9FC', '#CBD6E3', '#A2B3C6', '#73859B', '#FFFFFF'], oro: ['#FCE99C', '#EBC552', '#CFA02C', '#94701A', '#FFF7CC'] };
+const carta = ([chiaro, medio, scuro, bordo, riga], id) => `<defs><linearGradient id="c${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${chiaro}"/><stop offset=".55" stop-color="${medio}"/><stop offset="1" stop-color="${scuro}"/></linearGradient>`
+  + `<clipPath id="k${id}"><path d="M12 4.500h76l7.500 7.500v108L50 145.500 4.500 120V12z"/></clipPath></defs>`
+  + `<path d="M11 2h78l9 9v110.500L50 149 2 121.500V11z" fill="${bordo}"/>`
+  + `<path d="M12 4.500h76l7.500 7.500v108L50 145.500 4.500 120V12z" fill="url(#c${id})"/>`
+  + `<g clip-path="url(#k${id})"><path d="M44 0h56v78z" fill="#fff" fill-opacity=".16"/><path d="M0 66 66 0H34L0 34z" fill="#fff" fill-opacity=".1"/><path d="M0 96l50 28 50-28v54H0z" fill="#000" fill-opacity=".12"/></g>`
+  + `<path d="M13.500 8h73l5.500 5.500v104.500L50 141.500 8 118V13.500z" fill="none" stroke="${riga}" stroke-opacity=".6" stroke-width="1"/>`;
 
 // segnaposto puliti per i ritratti che ancora non ci sono (giocatore e manager): busto di tre quarti, senza volto
 const busto = (extra) => `<rect width="120" height="120" rx="14" fill="#0E1C3D"/><circle cx="60" cy="44" r="20" fill="#27407A"/><path d="M18 120c2-28 18-42 42-42s40 14 42 42z" fill="#27407A"/>${extra}`;
 const GRANDI = {
   'segnaposto-giocatore': ['0 0 120 120', busto('<path d="M48 80l12 10 12-10" fill="none" stroke="#3FC6FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>')],
+  // la sagoma senza fondo, per le carte: prende il colore del testo
+  sagoma: ['0 0 120 120', '<circle cx="60" cy="46" r="22" fill="currentColor"/><path d="M14 120c2-30 20-44 46-44s44 14 46 44z" fill="currentColor"/>'],
   'segnaposto-manager': ['0 0 120 120', busto('<path d="M52 80l8 12 8-12M60 92v28" fill="none" stroke="#E8B64C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>')],
 };
-for (const [n, col] of Object.entries(FASCE)) GRANDI[`carta-${n}`] = ['0 0 120 160', carta(col, n[0])];
+for (const [n, col] of Object.entries(FASCE)) GRANDI[`carta-${n}`] = ['0 0 100 150', carta(col, n[0]), ' preserveAspectRatio="none"'];
 
 const TR = 'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
 const icone = {};
@@ -111,8 +119,9 @@ Object.assign(icone, GRANDI);
 const dir = 'public/img/icone';
 mkdirSync(dir, { recursive: true });
 for (const f of readdirSync(dir)) if (f.endsWith('.svg')) unlinkSync(`${dir}/${f}`);
-for (const [n, [vb, d]] of Object.entries(icone)) writeFileSync(`${dir}/${n}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${d}</svg>\n`);
-writeFileSync('public/img/icone.svg', `<svg xmlns="http://www.w3.org/2000/svg">\n${Object.entries(icone).map(([n, [vb, d]]) => `<symbol id="i-${n}" viewBox="${vb}">${d}</symbol>`).join('\n')}\n</svg>\n`);
+// il terzo valore di un'icona, quando c'è, sono attributi in più: le cornici delle carte si adattano alla forma del posto
+for (const [n, [vb, d, piu = '']] of Object.entries(icone)) writeFileSync(`${dir}/${n}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}"${piu}>${d}</svg>\n`);
+writeFileSync('public/img/icone.svg', `<svg xmlns="http://www.w3.org/2000/svg">\n${Object.entries(icone).map(([n, [vb, d, piu = '']]) => `<symbol id="i-${n}" viewBox="${vb}"${piu}>${d}</symbol>`).join('\n')}\n</svg>\n`);
 console.log(`icone: ${Object.keys(icone).length} (${Object.keys(ALIAS).length} sono lo stesso disegno con un altro nome)`);
 
 // pagina di controllo: tutte le icone col nome, su blu notte, in oro, bianco e azzurro

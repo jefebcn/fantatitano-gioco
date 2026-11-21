@@ -36,7 +36,7 @@ Stato di tutte, oggi: **segnaposto**.
 
 | # | File | Dove si usa | Misure | Formato | Pr. |
 |---|---|---|---|---|---|
-| 1 | `sfondo-home` | sfondo della home e, scurito, di tutte le sezioni | 2796 × 1290 | JPG o PNG | A |
+| 1 | `sfondo-home` | sfondo della home e, scurito, di tutte le sezioni | 3840 × 1800 (se è più piccola viene ingrandita) | JPG o PNG | A |
 | 2 | `trofeo-campionato` | carta Carriera, classifica, fine stagione | 1024 × 1024 | PNG trasparente | A |
 | 3 | `coppa-titano` | carta Carriera, tabellone della Coppa Titano, Sfida | 1024 × 1024 | PNG trasparente | A |
 | 4 | `trofeo-castelli` | carta Carriera, gironi del Trofeo dei Castelli, Sfida | 1024 × 1024 | PNG trasparente | A |

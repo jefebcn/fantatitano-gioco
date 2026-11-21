@@ -6,6 +6,7 @@ import { SCALA, CARTE, FORMS } from '../src/config.js';
 import { scala, creaDati, statistiche, moduli, postiModulo, adatto, fascia, hash } from '../src/dati/scala.js';
 import { GIOCATORI } from '../src/dati/giocatori.js';
 import { SQUADRE, nomeBreve, nomiDi } from '../src/dati/squadre.js';
+import { resa, squadraMigliore } from '../src/casa/rosa.js';
 
 const src = readFileSync(new URL('../public/data.js', import.meta.url), 'utf8');
 const clubs = JSON.parse(src.slice(src.indexOf('['), src.lastIndexOf(']') + 1));
@@ -87,6 +88,28 @@ for (const c of clubs) {
 for (const [nome, breve] of [['Sporting Serravalle U', 'Sp. Serravalle'], ['Titani FC', 'Titani FC'], ['Libera Acquaviva', 'Lib. Acquaviva'], ['Polisportiva Tre Castelli', 'Tre Castelli'], ['Unione Sportiva Montegiardino', 'Montegiardino'], ['Atletico Fiorentino Calcio', 'Fiorentino']]) assert.equal(nomeBreve(nome), breve);
 for (const nome of ['Real Montale', 'Atletico Borgo', 'Rocca United', 'Guaita Calcio 1921', 'Sporting Serravalle', 'Real Sporting Borgo Maggiore']) { const b = nomeBreve(nome); assert.ok(b.length <= 14 && b.split(' ').every((p) => nome.includes(p.replace(/\.$/, ''))), `«${nome}» → «${b}»`); }
 assert.deepEqual(nomiDi({ id: 'academy', name: 'Supercalifragilistico', short: 'SUP' }), { nome: 'Supercalifragilistico', breve: 'SUP', sigla: 'SUP' });
+
+// «Squadra migliore»: per ogni squadra e ogni modulo sceglie undici giocatori diversi con un portiere in porta, non rende
+// mai meno della formazione di partenza, e rifatta sul suo risultato non cambia più niente
+for (const c of clubs) for (const m of moduli()) {
+  const posti = postiModulo(m), rosa = c.xi.concat(c.pan || []).map((x) => ({ x, sc: D.scheda(x, c.id), energia: 100 })), r = squadraMigliore(rosa, posti);
+  const tot = (ordine) => ordine.reduce((s, i, k) => s + resa(rosa[i].sc, posti[k].ruolo, rosa[i].energia), 0);
+  assert.equal(new Set(r.ordine.concat(r.fuori)).size, rosa.length, `${c.id} ${m}: giocatori ripetuti o persi`); assert.equal(r.ordine.length, 11);
+  r.ordine.forEach((i, k) => assert.equal(rosa[i].sc.reparto === 'P', posti[k].ruolo === 'POR', `${c.id} ${m}: portiere fuori posto`));
+  assert.ok(tot(r.ordine) >= tot(rosa.map((_, i) => i).slice(0, 11)) - 1e-9, `${c.id} ${m}: la squadra migliore rende meno di quella di partenza`);
+  const di = r.ordine.concat(r.fuori).map((i) => rosa[i]); assert.equal(squadraMigliore(di, posti).cambiata, false, `${c.id} ${m}: rifatta, cambia ancora`);
+}
+// un titolare senza energia lascia il posto a una riserva del suo ruolo, quando in panchina ce n'è una quasi forte come lui
+{
+  let provati = 0;
+  for (const c of clubs) {
+    const posti = postiModulo('4-3-3'), rosa = c.xi.concat(c.pan || []).map((x) => ({ x, sc: D.scheda(x, c.id), energia: 100 })), prima = squadraMigliore(rosa, posti);
+    const ord = prima.ordine.concat(prima.fuori).map((i) => rosa[i]), k = ord.findIndex((g, i) => i > 0 && i < 11 && ord.slice(11).some((r) => r.sc.ruolo === g.sc.ruolo && r.sc.val >= g.sc.val - 6));
+    if (k < 0) continue;
+    ord[k].energia = 0; const dopo = squadraMigliore(ord, posti); assert.ok(dopo.cambiata && !dopo.ordine.includes(k), `${c.id}: il titolare stremato resta in campo`); provati++;
+  }
+  assert.ok(provati > 3, 'troppo pochi casi per provare il cambio di un titolare stremato');
+}
 
 const conta = {}; for (const t of tutti) conta[t.s.ruolo] = (conta[t.s.ruolo] || 0) + 1;
 console.log(`dati: ${n} giocatori, valutazioni 55-82, ${alti} da 76 in su; ruoli ${JSON.stringify(conta)}`);

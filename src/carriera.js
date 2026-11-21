@@ -560,6 +560,57 @@ export function riscaldamento(C, clubs, tipo) {
   return { ok: true, monete: st.monete, bonus: st.bonus };
 }
 
+/** Il fisioterapista: quanti punti di energia mancano a tutta la rosa, quanto costa ridarli, se si può pagare. */
+export function statoFisio(C, clubs) {
+  const F = ECONOMIA.energia.fisio, mio = clubs.find((c) => c.id === C.club), rosa = mio ? mio.xi.concat(mio.pan || []) : [];
+  const manca = rosa.reduce((s, x) => s + 100 - energiaDi(C, x[0]), 0), monete = manca ? Math.max(F.minimo, Math.round(manca * F.monete / 10) * 10) : 0;
+  return { manca, monete, puo: C.monete >= monete };
+}
+/** Fisioterapista: tutta la rosa torna al massimo dell'energia, per monete. */
+export function fisioterapia(C, clubs) {
+  const st = statoFisio(C, clubs);
+  if (!st.manca) return { ok: false, motivo: 'pieni' };
+  if (!st.puo) return { ok: false, motivo: 'monete', monete: st.monete };
+  C.energia = {}; muovi(C, -st.monete, 0, 'fisioterapista', 'Fisioterapista: tutta la rosa al massimo');
+  return { ok: true, monete: st.monete };
+}
+
+/* ---------- la rosa del club: chi gioca e dove, gli incarichi ---------- */
+/**
+ * Mette in campo e in panchina i giocatori del club nell'ordine dato. Devono essere gli stessi di prima: undici titolari,
+ * il primo è un portiere e gli altri no (il posto di ogni titolare è quello del modulo, nello stesso ordine).
+ */
+export function schiera(C, clubs, xi, pan) {
+  const mio = clubs.find((c) => c.id === C.club); if (!mio) return { ok: false, motivo: 'squadra' };
+  const nomi = (l) => l.map((x) => x[0]).sort().join('|');
+  if (xi.length !== 11 || nomi(xi.concat(pan)) !== nomi(mio.xi.concat(mio.pan || []))) return { ok: false, motivo: 'giocatore' };
+  if (xi[0][1] !== 'P' || xi.slice(1).some((x) => x[1] === 'P')) return { ok: false, motivo: 'portiere' };
+  C.rose[mio.id] = xi.map((x) => x.slice()); C.panchine = C.panchine || {}; C.panchine[mio.id] = pan.map((x) => x.slice()); applica(C, clubs);
+  return { ok: true };
+}
+/** Scambia di posto due giocatori del club: a e b dicono dove ('xi' titolari, 'pan' panchina) e quale (i). */
+export function spostaGiocatori(C, clubs, a, b) {
+  const mio = clubs.find((c) => c.id === C.club); if (!mio) return { ok: false, motivo: 'squadra' };
+  const liste = { xi: mio.xi.map((x) => x.slice()), pan: (mio.pan || []).map((x) => x.slice()) }, ga = liste[a.dove] && liste[a.dove][a.i], gb = liste[b.dove] && liste[b.dove][b.i];
+  if (!ga || !gb || ga === gb) return { ok: false, motivo: 'giocatore' };
+  liste[a.dove][a.i] = gb; liste[b.dove][b.i] = ga;
+  return schiera(C, clubs, liste.xi, liste.pan);
+}
+/** Gli incarichi che si possono dare a un titolare. */
+export const INCARICHI = ['capitano', 'rigori', 'punizioni', 'angoli'];
+/** Dà un incarico (capitano, rigori, punizioni, angoli) a un titolare del club. */
+export function assegnaIncarico(C, clubs, tipo, nome) {
+  const mio = clubs.find((c) => c.id === C.club);
+  if (!mio || !INCARICHI.includes(tipo) || !mio.xi.some((x) => x[0] === nome)) return false;
+  if (tipo === 'capitano') C.mio = { ...(C.mio || {}), capitano: nome }; else C.incarichi = { ...(C.incarichi || {}), [tipo]: nome };
+  return true;
+}
+/** Chi ha un incarico, se è ancora tra i titolari (altrimenti niente: lo sceglie la schermata tra i più adatti). */
+export function incaricato(C, clubs, tipo) {
+  const mio = clubs.find((c) => c.id === C.club), nome = tipo === 'capitano' ? (C.mio || {}).capitano : (C.incarichi || {})[tipo];
+  return mio && nome && mio.xi.some((x) => x[0] === nome) ? nome : null;
+}
+
 /* ---------- orario e tempo di una partita (solo da mostrare, più giorno o notte in campo) ---------- */
 /** Orario, cielo e gradi della prossima partita di `tipo`: sempre gli stessi per la stessa partita. */
 export function meteoPartita(C, tipo) {

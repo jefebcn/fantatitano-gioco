@@ -271,6 +271,17 @@ Nell'esito cambia questo:
 Una richiesta con lo scenario sbagliato (minuto fuori misura, punteggio mancante) viene rifiutata con `{ ok: false, errori }`.
 Prova: `node scripts/prove/ponte.cjs` gioca anche uno scenario dal 70' sullo 0-1.
 
+## Dalla home, 21/11: Sfida e Squadra nuove
+
+- La home ora avvia tutte le partite dal ponte (Sfida nuova, `src/casa/vista-sfida.js`): campionato, coppa, Trofeo dei
+  Castelli e amichevole. Alla fine registra il risultato, salva l'energia con cui i giocatori sono usciti e la riporta
+  come `energia` iniziale alla partita dopo (più il recupero e l'eventuale riscaldamento).
+- Dalla Squadra nuova l'utente sceglie `capitano`, `rigorista`, `punizioni` e `angoli`: nella richiesta ci sono sempre
+  (quelli scelti, o i più adatti tra i titolari). Oggi la partita li ignora: quando li usa, i nomi sono quelli dei
+  `titolari`.
+- I titolari arrivano nell'ordine dei posti del modulo e possono essere fuori ruolo (un difensore in un posto da
+  centrocampista): `fuoriRuolo` lo dice. Il primo è sempre un portiere e nessun altro titolare lo è.
+
 ## 9. Nota per la sessione della home: saldo sul telefono o sul server (21/11)
 Alex ha deciso che per ora **non si applica niente al database** dell'app: saldo e storico restano sul telefono. Ha
 chiesto però che passare al server sia «un solo cambio». Il file `supabase/002-lapartita-economia.sql` è pronto (non
@@ -287,7 +298,6 @@ Il codice del saldo è tuo (`src/carriera.js`, `src/casa/`), quindi la proposta 
 - le schermate chiamano sempre la cassa, mai direttamente `K.monete` o `K.diamanti` per scrivere.
 
 Dalla partita non serve niente: l'esito del ponte ha già `secondiVeri`, che il server usa per accettare il premio.
-
 
 ## 10. Nota per la sessione della home: il logo
 

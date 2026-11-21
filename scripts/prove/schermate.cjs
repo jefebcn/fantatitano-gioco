@@ -15,7 +15,7 @@ const mime = { '.html': 'text/html', '.js': 'text/javascript', '.webp': 'image/w
 const srv = http.createServer((q, r) => { const u = q.url.split('?')[0], f = path.join(root, u === '/' ? 'index.html' : decodeURIComponent(u)); fs.readFile(f, (e, d) => { if (e) { r.writeHead(404); r.end(); } else { r.writeHead(200, { 'content-type': mime[path.extname(f)] || 'application/octet-stream' }); r.end(d); } }); });
 const MISURE = [[667, 375], [844, 390], [932, 430]];
 // le parti della pagina già rifatte secondo le regole di qualità: qui si controlla ogni elemento
-const RIFATTE = ['#barraF', '#casa', '#carriera', '#sfida', '#finestra'];
+const RIFATTE = ['#barraF', '#casa', '#carriera', '#sfida', '#squadra', '#schedaG', '#finestra'];
 
 // Gira nella pagina: elenca le regole di qualità non rispettate dentro le parti rifatte che si vedono
 function qualita(radici) {
@@ -33,6 +33,8 @@ function qualita(radici) {
       const unaRiga = st.whiteSpace === 'nowrap', gen = e.parentElement.getBoundingClientRect();
       if (testo && st.overflow !== 'visible' && (unaRiga ? e.scrollWidth > e.clientWidth + 1 : e.scrollHeight > e.clientHeight + 2)) guai.push(`testo tagliato: ${dice(e)}`);
       if (testo && st.position !== 'absolute' && (r.right > gen.right + 1.5 || r.left < gen.left - 1.5)) guai.push(`testo che esce dal suo posto: ${dice(e)}`);
+      // anche senza taglio: un testo su una riga più largo della sua scatola finisce sopra quello che ha accanto
+      if (testo && unaRiga && st.overflow === 'visible' && st.display !== 'inline' && e.scrollWidth > e.clientWidth + 1) guai.push(`testo più largo del suo posto: ${dice(e)}`);
       // dentro una carta ogni testo sta nella sua parte (fascia, corpo o fascia in basso): non la supera e non tocca le altre
       const parte = e.closest('.carta .fascia, .carta .corpo, .carta .piede');
       if (testo && parte && parte !== e && st.position !== 'absolute') { const q = parte.getBoundingClientRect(); if (r.right > q.right + 1 || r.left < q.left - 1 || r.bottom > q.bottom + 1.5 || r.top < q.top - 1.5) guai.push(`testo fuori dalla sua parte della carta: ${dice(e)}`); }
@@ -45,7 +47,7 @@ function qualita(radici) {
     carte.forEach((a, i) => carte.slice(i + 1).forEach((b) => { if (sopra(a, b)) guai.push('due carte sovrapposte'); }));
     // sui campi della Sfida nessun giocatore copre lo scudo, la valutazione o il nome di un altro, e tutti stanno dentro il
     // campo (del nome contano la larghezza del testo scritto e l'altezza della sua riga)
-    for (const campo of radice.querySelectorAll('.sCampo')) {
+    for (const campo of radice.querySelectorAll('.sCampo, .qCampo')) {
       const q = campo.getBoundingClientRect(), scritto = (e) => { const g = document.createRange(); g.selectNodeContents(e); const t = g.getBoundingClientRect(), r = e.getBoundingClientRect(); return { left: t.left, right: t.right, top: r.top, bottom: r.bottom }; };
       const pezzi = [...campo.querySelectorAll('.gC')].map((c) => ({ nome: c.querySelector('.gNome').textContent, parti: [c.querySelector('.gS').getBoundingClientRect(), scritto(c.querySelector('.gNome')), c.querySelector('.gVal').getBoundingClientRect()] }));
       pezzi.forEach((a, i) => { for (const r of a.parti) if (r.left < q.left - 1 || r.right > q.right + 1 || r.top < q.top - 1 || r.bottom > q.bottom + 1) guai.push(`giocatore fuori dal campo: ${a.nome}`); pezzi.slice(i + 1).forEach((b) => { if (a.parti.some((x) => b.parti.some((y) => sopra(x, y)))) guai.push(`giocatori sovrapposti sul campo: ${a.nome} e ${b.nome}`); }); });
@@ -93,7 +95,31 @@ srv.listen(0, async () => {
     await vai('#casa .c-percorso', 'percorso');
     await vai('#casa .c-amichevole', 'amichevole', async () => { await tocca('.sq', 1); await tocca('.sq', 7); await tocca('#inizio'); await foto('sfida-amichevole'); await tocca('#sfida [data-az="cambia"]'); });
     await vai('#casa .c-sfide', 'sfide-d', async () => { for (const t of ['w', 'c', 's']) { await tocca(`[data-stab="${t}"]`); await foto(`sfide-${t}`); } });
-    await vai('#casa .c-squadra', 'squadra', async () => { await tocca('#campoA [data-x]', 1); await foto('squadra-tocco'); });
+    // la Squadra: scelta e scambio a tocchi, il portiere solo in porta, incarichi, modulo, squadra migliore, scheda, trascinamento
+    await vai('#casa .c-squadra', 'squadra', async () => {
+      const rosa = () => pg.evaluate(() => { const g = window.__g, K = g.carriera(), c = g.club(K.club); return { xi: c.xi.map((x) => x[0]), pan: c.pan.map((x) => x[0]), salvata: JSON.parse(localStorage.getItem('fantatitano-carriera')).rose[c.id].map((x) => x[0]), inc: K.incarichi || {}, cap: (K.mio || {}).capitano, form: g.sel.form, monete: K.monete, allen: K.allen }; });
+      const carta = (g) => `#squadra .gC[data-g="${g}"]`, centro = async (g) => { const r = await (await pg.$(carta(g))).boundingBox(); return [r.x + r.width / 2, r.y + r.height / 2]; };
+      const r0 = await rosa();
+      await tocca(carta('xi:5')); await foto('squadra-scelto'); await tocca(carta('pan:3')); await foto('squadra-scambio');
+      const r1 = await rosa(); if (r1.xi[5] !== r0.pan[3] || r1.pan[3] !== r0.xi[5] || r1.salvata[5] !== r0.pan[3]) errori.push(`${w}: lo scambio tra titolare e panchina non è riuscito o non è salvato`);
+      await tocca(carta('xi:0')); await tocca(carta('xi:3')); const r2 = await rosa(); if (r2.xi[0] !== r1.xi[0]) errori.push(`${w}: un giocatore di movimento è finito in porta`);
+      await tocca('#squadra [data-inc="rigori"]'); await foto('squadra-incarico'); await tocca(carta('xi:9')); const r3 = await rosa(); if (r3.inc.rigori !== r2.xi[9]) errori.push(`${w}: il rigorista non è stato assegnato`);
+      await tocca('#squadra [data-inc="capitano"]'); await tocca(carta('xi:4')); const r4 = await rosa(); if (r4.cap !== r2.xi[4]) errori.push(`${w}: il capitano non è stato assegnato`);
+      await tocca('#squadra [data-az="modulo"]'); await foto('finestra-modulo'); await tocca('#finS [data-scelta="4-2-3-1"]'); await foto('squadra-4231');
+      if ((await rosa()).form !== '4-2-3-1') errori.push(`${w}: il modulo non è cambiato`);
+      await tocca('#squadra [data-az="modulo"]'); await tocca('#finS [data-scelta="4-3-3"]');
+      await tocca('#squadra [data-az="migliore"]'); await foto('squadra-migliore');
+      if (!(await pg.evaluate(() => document.querySelector('#squadra .qMigliore').classList.contains('ottima')))) errori.push(`${w}: dopo «Squadra migliore» la formazione non risulta la migliore`);
+      // trascinamento: una carta della panchina portata sopra un titolare
+      const r5 = await rosa(), [ax, ay] = await centro('pan:1'), [bx, by] = await centro('xi:7');
+      await pg.mouse.move(ax, ay); await pg.mouse.down(); await pg.mouse.move(ax + 20, ay + 6, { steps: 3 }); await pg.mouse.move(bx, by, { steps: 6 }); await foto('squadra-trascina'); await pg.mouse.up();
+      const r6 = await rosa(); if (r6.xi[7] !== r5.pan[1] || r6.pan[1] !== r5.xi[7]) errori.push(`${w}: il trascinamento non ha scambiato i due giocatori`);
+      // tocco lungo: si apre la scheda; da lì un allenamento costa monete e resta scritto
+      const [cx2, cy2] = await centro('xi:8'); await pg.mouse.move(cx2, cy2); await pg.mouse.down(); await pg.waitForTimeout(700); await pg.mouse.up(); await foto('scheda-giocatore');
+      if (await pg.evaluate(() => document.querySelector('#schedaG').classList.contains('nas'))) errori.push(`${w}: il tocco lungo non apre la scheda del giocatore`);
+      else { await tocca('#schedaG [data-az="allena"]'); await foto('scheda-allenato'); const r7 = await rosa(); if (r7.monete >= r6.monete || !r7.allen[r6.xi[8]]) errori.push(`${w}: l'allenamento dalla scheda non è riuscito`); await tocca('#schedaG [data-az="chiudi"]'); }
+      await foto('squadra-alla-fine');
+    });
     await vai('#casa .c-mercato', 'mercato', async () => { if (await tocca('#panC [data-p]', 0)) await foto('mercato-scelto'); });
     await vai('#casa .c-club', 'club', async () => { const tab = await pg.$$eval('#panC [data-ctab]', (l) => l.map((b) => b.dataset.ctab)); for (const t of tab) { await tocca(`#panC [data-ctab="${t}"]`); await foto(`club-${t}`); } });
     // dalla barra
@@ -128,7 +154,13 @@ srv.listen(0, async () => {
     await tocca('#carriera .k-prossima'); await foto('sfida-stanchi'); await tocca('#sfida [data-az="riscaldamento"]'); await foto('finestra-riscaldamento'); await tocca('#finSi'); await foto('sfida-riscaldati');
     const risc = await pg.evaluate(() => { const g = window.__g, K = g.carriera(); return { monete: K.monete, spento: document.querySelector('#sfida .azione.risc').classList.contains('spento') }; });
     if (risc.monete >= dopo.monete || !risc.spento) errori.push(`${w}: riscaldamento ${JSON.stringify(risc)} (prima ${dopo.monete} monete)`);
-    await tocca('#bCasa');
+    // il fisioterapista: tutta la rosa torna al massimo, per monete
+    const mf = await pg.evaluate(() => { const K = window.__g.carriera(); K.monete += 3000; return K.monete; });
+    await tocca('#sfida [data-az="squadra"]'); await foto('squadra-stanchi');
+    await tocca('#squadra [data-az="fisio"]'); await foto('finestra-fisioterapista'); await tocca('#finSi'); await foto('squadra-curati');
+    const fis = await pg.evaluate(() => { const K = window.__g.carriera(); return { monete: K.monete, stanchi: Object.keys(K.energia || {}).length }; });
+    if (fis.monete >= mf || fis.stanchi) errori.push(`${w}: fisioterapista ${JSON.stringify(fis)} (prima ${mf} monete)`);
+    await tocca('#bCasa'); await tocca('#bCasa');
     // fine del campionato: le altre giornate giocate a tavolino, poi la carta diventa «Nuova stagione» con la finestra di conferma
     await pg.evaluate(() => { const g = window.__g, K = g.carriera(); window.__seme(600); while (g.CAR.prossima(K)) g.CAR.giocaCampionato(K, window.CLUBS, 1, 1, []); g.salvaK(); });
     await tocca('#carriera .scorc[data-vai="sfide"]'); await tocca('#bCasa'); await foto('carriera-fine-campionato');

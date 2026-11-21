@@ -289,6 +289,37 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
   assert.ok(visti.size > 5, 'il tempo non cambia da una partita all\'altra'); assert.ok(K.meteoPartita(null, 'amichevole').orario);
   K.applica(null, cl);
 }
+// ---------- la rosa: scambi di posto, portiere solo in porta, incarichi, fisioterapista
+{
+  const { ECONOMIA: E } = await import('../src/config.js');
+  const cl = JSON.parse(JSON.stringify(clubs)), N = K.nuova(cl, 'r', 'academy', rnd, { nome: 'Rosa', sigla: 'ROS', c1: '#111111', c2: '#ffffff' });
+  K.applica(N, cl); const mio = cl.find((c) => c.id === N.club), nomi = () => [mio.xi.map((x) => x[0]), mio.pan.map((x) => x[0])];
+  const [xi0, pan0] = nomi(), j = mio.pan.findIndex((x) => x[1] !== 'P'), jp = mio.pan.findIndex((x) => x[1] === 'P');
+  // un titolare e uno della panchina, anche di ruoli diversi: si scambiano e resta scritto nella carriera
+  assert.ok(K.spostaGiocatori(N, cl, { dove: 'xi', i: 5 }, { dove: 'pan', i: j }).ok); assert.equal(mio.xi[5][0], pan0[j]); assert.equal(mio.pan[j][0], xi0[5]); assert.equal(N.rose[mio.id][5][0], pan0[j]);
+  // due titolari si scambiano il posto; due della panchina pure
+  assert.ok(K.spostaGiocatori(N, cl, { dove: 'xi', i: 2 }, { dove: 'xi', i: 9 }).ok); assert.equal(mio.xi[2][0], xi0[9]); assert.equal(mio.xi[9][0], xi0[2]);
+  // in porta va solo un portiere, e un portiere gioca solo in porta
+  const prima = JSON.stringify(nomi());
+  assert.equal(K.spostaGiocatori(N, cl, { dove: 'xi', i: 0 }, { dove: 'xi', i: 3 }).motivo, 'portiere'); assert.equal(K.spostaGiocatori(N, cl, { dove: 'xi', i: 0 }, { dove: 'pan', i: j }).motivo, 'portiere');
+  if (jp >= 0) { assert.equal(K.spostaGiocatori(N, cl, { dove: 'xi', i: 4 }, { dove: 'pan', i: jp }).motivo, 'portiere'); assert.equal(JSON.stringify(nomi()), prima); assert.ok(K.spostaGiocatori(N, cl, { dove: 'xi', i: 0 }, { dove: 'pan', i: jp }).ok); assert.equal(mio.xi[0][1], 'P'); }
+  // posti che non esistono, lo stesso giocatore due volte, una rosa con un giocatore in meno: niente
+  assert.equal(K.spostaGiocatori(N, cl, { dove: 'xi', i: 20 }, { dove: 'pan', i: 0 }).motivo, 'giocatore'); assert.equal(K.spostaGiocatori(N, cl, { dove: 'xi', i: 3 }, { dove: 'xi', i: 3 }).motivo, 'giocatore');
+  assert.equal(K.schiera(N, cl, mio.xi, mio.pan.slice(1)).motivo, 'giocatore'); assert.equal(K.schiera(N, cl, mio.xi.slice(0, 10), mio.pan.concat([mio.xi[10]])).motivo, 'giocatore');
+  // incarichi: solo ai titolari; chi finisce in panchina lo perde
+  const tit = mio.xi[6][0]; assert.ok(K.assegnaIncarico(N, cl, 'rigori', tit)); assert.equal(K.incaricato(N, cl, 'rigori'), tit);
+  assert.ok(K.assegnaIncarico(N, cl, 'capitano', tit)); assert.equal(N.mio.capitano, tit); assert.equal(N.mio.nome, 'Rosa');
+  assert.ok(!K.assegnaIncarico(N, cl, 'angoli', mio.pan[j][0])); assert.ok(!K.assegnaIncarico(N, cl, 'portiere', tit)); assert.equal(K.incaricato(N, cl, 'angoli'), null);
+  K.spostaGiocatori(N, cl, { dove: 'xi', i: 6 }, { dove: 'pan', i: j }); assert.equal(K.incaricato(N, cl, 'rigori'), null); assert.equal(K.incaricato(N, cl, 'capitano'), null);
+  // fisioterapista: niente da fare se tutti sono al massimo; poi costa secondo i punti che mancano e riporta tutti a 100
+  assert.equal(K.statoFisio(N, cl).manca, 0); assert.equal(K.fisioterapia(N, cl).motivo, 'pieni');
+  K.energiaDopoPartita(N, cl, mio.xi.map((x, i) => ({ nome: x[0], energia: 10 + i * 4 })));
+  const st = K.statoFisio(N, cl), manca = mio.xi.concat(mio.pan).reduce((s, x) => s + 100 - K.energiaDi(N, x[0]), 0);
+  assert.equal(st.manca, manca); assert.equal(st.monete, Math.max(E.energia.fisio.minimo, Math.round(manca * E.energia.fisio.monete / 10) * 10));
+  N.monete = st.monete - 1; assert.equal(K.fisioterapia(N, cl).motivo, 'monete'); N.monete = st.monete + 40;
+  assert.ok(K.fisioterapia(N, cl).ok); assert.equal(N.monete, 40); assert.equal(N.storico[0].c, 'fisioterapista'); assert.ok(mio.xi.concat(mio.pan).every((x) => K.energiaDi(N, x[0]) === 100));
+  K.applica(null, cl);
+}
 // ---------- il listino del server (supabase/002-lapartita-economia.sql) dice gli stessi numeri del gioco
 {
   const { ECONOMIA: E } = await import('../src/config.js');

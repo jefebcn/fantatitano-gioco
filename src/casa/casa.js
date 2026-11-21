@@ -19,6 +19,10 @@ import { mostraBarra, aggiornaBarra } from './barra.js';
 import { disegnaHome } from './home.js';
 import { disegnaCarriera } from './vista-carriera.js';
 import { disegnaSfida } from './vista-sfida.js';
+import { apriSquadra } from './vista-squadra.js';
+import { cartaCampo, riempiRitratti } from './giocatore.js';
+import { adatta, attrNome } from './carte.js';
+import { nomiDi } from '../dati/squadre.js';
 import { t } from './testi.js';
 
 // le schermate della home e i loro stili entrano nella pagina prima di tutto il resto, nel punto dov'erano
@@ -26,8 +30,8 @@ document.head.insertAdjacentHTML('beforeend', `<style id="casaStili">${CSS_CASA}
 document.getElementById('vs').insertAdjacentHTML('beforebegin', HTML_CASA);
 
 // le schermate in cui si vede la barra in alto, quando c'è una carriera (in partita e nel benvenuto non c'è)
-const CON_BARRA = ['#casa', '#carriera', '#sfida', '#pan', '#scelta', '#pre', '#nuovo'];
-const show = (id) => { for (const s of ['#home', '#nuovo', '#casa', '#carriera', '#sfida', '#pan', '#scelta', '#pre', '#vs', '#stop', '#cambi', '#fine']) $(s).classList.toggle('nas', s !== id); mostraBarra(!!K && CON_BARRA.includes(id)); };
+const CON_BARRA = ['#casa', '#carriera', '#sfida', '#squadra', '#pan', '#scelta', '#pre', '#nuovo'];
+const show = (id) => { for (const s of ['#home', '#nuovo', '#casa', '#carriera', '#sfida', '#squadra', '#pan', '#scelta', '#pre', '#vs', '#stop', '#cambi', '#fine']) $(s).classList.toggle('nas', s !== id); mostraBarra(!!K && CON_BARRA.includes(id)); };
 const sel = { mia: null, loro: null, diff: 'normale', form: '4-3-3', ment: 0, ora: 'giorno', qual: 'auto', assistito: PASSAGGIO.assistito };
 const SAVE = 'fantatitano-partita';
 try { const v = JSON.parse(localStorage.getItem(SAVE) || '{}'); if (FORMS[v.form]) sel.form = v.form; if ([-1, 0, 1].includes(v.ment)) sel.ment = v.ment; if (DIFF[v.diff]) sel.diff = v.diff; if (v.ora === 'notte' || v.ora === 'giorno') sel.ora = v.ora; if (['auto', 'alta', 'media', 'bassa'].includes(v.qual)) sel.qual = v.qual; if (typeof v.assistito === 'boolean') sel.assistito = v.assistito; } catch (e) { /* si parte dai valori di base */ }
@@ -182,7 +186,7 @@ const COLLETTI = [['giro', 'Girocollo'], ['v', 'Scollo a V'], ['polo', 'Polo']];
 // I nove candidati di «Ingaggia il tuo capitano»: tra 70 e 78, nove ruoli diversi, un punto forte ciascuno (src/dati/scala.js)
 function candidatiCapitano() { return DATI.candidatiCapitano(POSTO).map((c) => ({ c: club(c.club), x: c.x, i: c.i, v: c.s.val, s: c.s })); }
 const classeStat = (v) => ({ verde: 'a', giallo: 'b', rosso: 'c' })[coloreStat(v)];
-const cartaGiocatore = (c, scelto) => `<button class="cap${scelto ? ' sel' : ''}" data-cap="${c.c.id}:${c.i}"><div class="cn">${esc(c.x[0])}<small>${esc(c.c.name)}</small></div><div class="at">${c.s.stat.map(([k, v]) => `<span${k === c.s.forte ? ' class="forte"' : ''}><i>${k}</i><b class="${classeStat(v)}">${v}</b></span>`).join('')}</div><div class="sc"><em>${c.v}</em>${mini(c.c.id)}<b>${c.x[2]}</b><u>${c.s.ruolo}</u></div></button>`;
+const cartaGiocatore = (c, scelto) => `<button class="cap${scelto ? ' sel' : ''}" data-cap="${c.c.id}:${c.i}"><div class="cn"><b>${esc(c.x[0])}</b><small ${attrNome(nomiDi(c.c))}>${esc(c.c.name)}</small></div><div class="at">${c.s.stat.map(([k, v]) => `<span${k === c.s.forte ? ' class="forte"' : ''}><i>${k}</i><b class="${classeStat(v)}">${v}</b></span>`).join('')}</div><div class="cartaCap">${cartaCampo(c.s, { club: c.c.id, grande: true, ferma: true, stemma: img(c.c.id + '-mini') })}</div></button>`;
 function mioDaModulo() { const nome = ($('#nvClub').value.trim() || NOMI[0]).slice(0, 22), sg = ($('#nvSigla').value.trim() || sigla(nome)).slice(0, 3).toUpperCase(); return { nome, sigla: sg, c1: COLORI[NV.col][0], c2: COLORI[NV.col][1], stile: NV.stile, colletto: NV.colletto, raglan: NV.raglan }; }
 function anteprimaClub() { const m = mioDaModulo(); $('#nvStemma').src = disegnaStemma(m, 160); $('#nvMaglia').innerHTML = maglia(m.c1, m.c2, m.stile, m.colletto, m.raglan); for (const b of $('#nvCol').children) b.classList.toggle('on', +b.dataset.col === NV.col); for (const b of $('#nvStile').children) b.classList.toggle('on', b.dataset.stile === NV.stile); for (const b of $('#nvColletto').children) b.classList.toggle('on', b.dataset.colletto ? b.dataset.colletto === NV.colletto : NV.raglan); }
 function drawNuovo() {
@@ -204,6 +208,9 @@ function drawNuovo() {
     const cand = candidatiCapitano();
     el.innerHTML = `<div class="testaCap"><button class="indietro" id="nvInd">‹ Il club</button><h2 class="h">Ingaggia il tuo capitano</h2><button class="btn ingaggia" id="nvAvanti" ${NV.cap ? '' : 'disabled'}>${NV.cap ? t('capitano.ingaggia', esc(club(NV.cap.split(':')[0]).xi[+NV.cap.split(':')[1]][0])) : t('capitano.tocca')}</button></div>
       <div class="caps">${cand.map((c) => cartaGiocatore(c, NV.cap === `${c.c.id}:${c.i}`)).join('')}</div>`;
+    adatta(el); riempiRitratti(el);
+    // i caratteri dei titoli possono arrivare un attimo dopo e allargare i nomi: allora si rifà la misura
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (NV.passo === 2) adatta(el); });
   }
 }
 function apriNuovo(modifica = false) { Object.assign(NV, { passo: 1, modifica, cap: null }); if (!modifica) { NV.col = 0; NV.stile = ''; NV.colletto = 'giro'; NV.raglan = false; } drawNuovo(); show('#nuovo'); }
@@ -528,7 +535,7 @@ function buildMenu() {
   rotta('mercato', () => { mPreso = null; panMercato(); });
   rotta('club', (tab) => panClubMio(tab)); rotta('negozio', (tab) => panNegozio(tab)); rotta('personalizza', () => apriNuovo(true));
   rotta('amichevole', vai); rotta('sfidaLibera', () => { show('#sfida'); disegnaSfida({ tipo: 'amichevole', mia: sel.mia, loro: sel.loro, fuori: false, rigori: false }); });
-  rotta('squadra', () => { rXi = rPan = -1; sel.mia = K.club; sel.loro = CLUBS.find((c) => c.id !== K.club).id; G.comp = { tipo: 'rosa' }; showPre(); });
+  rotta('squadra', () => { show('#squadra'); apriSquadra(); });
   rotta('sfida', (tipo, avv, titolo, fuori, rigori) => { show('#sfida'); disegnaSfida({ tipo, mia: K.club, loro: avv, fuori: !!fuori, rigori: !!rigori }); });
   $('#indietro').onclick = casa;
   $('#inizio').onclick = () => { if (K) return apri('sfidaLibera'); show('#sfida'); disegnaSfida({ tipo: 'amichevole', mia: sel.mia, loro: sel.loro, fuori: false, rigori: false, indietro: () => { show('#scelta'); refresh(); } }); }; $('#preInd').onclick = () => { if (G.comp) casa(); else { show('#scelta'); refresh(); } };

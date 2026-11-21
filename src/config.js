@@ -300,7 +300,8 @@ export const ATTACCO = { sullaLinea: 1.2, massimo: 44 };
 // finanze: fino a quante monete vale ogni giudizio. storico: quanti movimenti si tengono.
 // scenario: quanti diamanti dà uno scenario vinto (g).
 // energia: quanta energia, su 100, recupera ogni giocatore del club tra una partita e l'altra. Riscaldamento: quanta ne
-// aggiunge ai titolari prima di una partita e quante monete costa.
+// aggiunge ai titolari prima di una partita e quante monete costa. Fisio: quante monete costa ogni punto di energia che
+// il fisioterapista ridà alla rosa, e quanto costa come minimo.
 // negozio: quanto costa un oggetto di ogni tipo (m monete, g diamanti). Solo aspetto e comodità, niente che aiuti in
 // partita. Quali oggetti esistono e quali si hanno dall'inizio sta in NEGOZIO, in src/carriera.js.
 export const ECONOMIA = {
@@ -314,7 +315,7 @@ export const ECONOMIA = {
   finanze: [[500, 'Scarse'], [2000, 'Discrete'], [6000, 'Buone'], [Infinity, 'Eccellenti']],
   storico: 120,
   scenario: { g: 15 },
-  energia: { recupero: 35, riscaldamento: { bonus: 10, monete: 150 } },
+  energia: { recupero: 35, riscaldamento: { bonus: 10, monete: 150 }, fisio: { monete: 1.5, minimo: 50 } },
   negozio: {
     avatar: { g: 10 }, cornice: { g: 10 }, scarpini: { g: 10 }, pallone: { g: 10 }, disegno: { g: 20 }, terza: { g: 30 }, rinnovo: { g: 5 },
     stemma: { m: 300 }, stemmaRaro: { g: 5 },
@@ -348,6 +349,8 @@ export const SCALA = {
 // posto: come si legge il ruolo di un posto dalle posizioni del modulo (FORMS, campo di 100 × 64): oltre `largo` di
 //   lato è un esterno (`largoC` per i centrocampisti), un esterno di centrocampo più indietro di `basso` è un terzino,
 //   un centrocampista più indietro di `cdc` è un mediano e più avanti di `coc` un trequartista.
+// migliore: come «Squadra migliore» sceglie gli undici. Dalla valutazione toglie `vicino` punti a chi gioca in un ruolo
+//   vicino al suo, `fuori` a chi è fuori ruolo, ed `energia` per ogni punto di energia che gli manca.
 export const CARTE = {
   chiavi: { P: ['PAR', 'RIF', 'POS', 'USC', 'PRE', 'RIN', 'PAS', 'VEL'], G: ['VEL', 'ACC', 'RES', 'POT', 'CON', 'PAS', 'TIR', 'DIF'] },
   ruoli: {
@@ -365,6 +368,7 @@ export const CARTE = {
   simili: [['TS', 'TD'], ['AS', 'AD'], ['DC', 'CDC'], ['CDC', 'CC'], ['CC', 'COC'], ['TS', 'AS'], ['TD', 'AD'], ['COC', 'AS'], ['COC', 'AD'], ['COC', 'ATT'], ['AS', 'ATT'], ['AD', 'ATT']],
   posto: { largo: 15, largoC: 17, basso: -14, cdc: -16.5, coc: -5 },
   sinistri: .24,
+  migliore: { vicino: 2, fuori: 8, energia: .12 },
 };
 
 // Orario e tempo delle partite, mostrati nella Sfida. orari: a che ora si gioca e se in campo è giorno o notte.
