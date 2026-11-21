@@ -438,11 +438,14 @@ function aggiornaCloud() {
   const s = $('#accStato'); if (s) s.textContent = testoCloud(a.stato);
   if (!$('#home').classList.contains('nas')) drawHome();
 }
+// La copia sull'account conta solo se è una carriera che si può continuare: quelle di prima delle divisioni no, e la
+// copia del telefono prende il loro posto
+const daContinuare = (o) => (o && o.dati && o.dati.v === 2 ? o.dati : null);
 async function sincronizza(forza = false) {
   if (!K || !CLOUD.info().utente) return;
   const r = await CLOUD.salva(K, forza);
   if (r.conflitto) { // un altro dispositivo ha salvato dopo: si sceglie quale tenere
-    const o = await CLOUD.carica().catch(() => null), q = CLOUD.scegli(K, o && o.dati);
+    const o = await CLOUD.carica().catch(() => null), q = CLOUD.scegli(K, daContinuare(o));
     if (q === 'online') adotta(o.dati, 'Ripresa la copia più avanti dal tuo account'); else if (q === 'chiedi') chiediQuale(o.dati); else await CLOUD.salva(K, true);
   }
 }
@@ -454,7 +457,7 @@ function adotta(dati, msg) {
 // Dopo l'accesso (o all'avvio con la sessione già aperta): si confronta la copia del telefono con quella dell'account
 async function allAccesso() {
   let o = null; try { o = await CLOUD.carica(); } catch (e) { return; }
-  const q = CLOUD.scegli(K, o && o.dati);
+  const q = CLOUD.scegli(K, daContinuare(o));
   if (q === 'online') adotta(o.dati, 'Carriera ritrovata dal tuo account'); else if (q === 'locale') sincronizza(true); else if (q === 'chiedi') chiediQuale(o.dati);
 }
 function chiediQuale(online) {
