@@ -486,6 +486,8 @@ function stiliCapelli(hair, scene, hInv) {
 const ACCONCIATURE_N = [null, 'Hair_Corti', 'Hair_Folti', 'Hair_Ciuffo', 'Hair_Cresta', 'Hair_Ricci', 'Hair_Lunghi', 'Hair_Riga'];
 const ACCONCIATURE = [null, 'Hair_Buzzed', 'Hair_SimpleParted', 'Hair_Buzzed', 'Hair_SimpleParted', 'ricci', 'cresta', 'codino', 'folti', 'ricci', 'folti'];
 // scarpini: tomaia e suola
+// Gli scarpini del negozio: colore della scarpa e della suola, uguali per tutta la squadra
+const SCARPE_NEGOZIO = { neri: ['#16161a', '#F3F3F3'], bianchi: ['#F3F3F3', '#16161a'], oro: ['#E8B64C', '#16161a'], azzurri: ['#3FC6FF', '#F3F3F3'], lime: ['#D9F51F', '#16161a'], arancio: ['#FF5A1F', '#F3F3F3'], rosa: ['#E91E8C', '#16161a'] };
 const SCARPINI = [['#16161a', '#F3F3F3'], ['#F3F3F3', '#16161a'], ['#D9F51F', '#16161a'], ['#FF5A1F', '#F3F3F3'], ['#1E6FB5', '#F3F3F3'], ['#E91E8C', '#16161a'], ['#16161a', '#D9F51F'], ['#C9CDD6', '#E8542A']];
 /** La texture di una divisa: si disegna una volta per partita e la usano tutti quelli con la stessa maglia. */
 function divisaTex(kit) {
@@ -699,11 +701,21 @@ const freccia = (() => {
   const m = new T.Mesh(g, new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .8, depthWrite: false })); m.visible = false; m.renderOrder = 2; scene.add(m); return m;
 })();
 const arrow = new T.Mesh(GEO.tri, new T.MeshBasicMaterial({ color: 0xD9F51F })); arrow.rotation.x = Math.PI; arrow.visible = false; scene.add(arrow);
+// I palloni del negozio: colore di fondo e colori dei pentagoni. Quello classico è di tutti, gli altri si comprano e si
+// vedono nelle partite in casa.
+const PALLONI = {
+  classico: ['#fafafa', ['#111', '#111', '#4B06FC', '#111', '#D9F51F', '#111']], oro: ['#FFF6DC', ['#111', '#C4922F', '#111', '#E8B64C', '#111', '#C4922F']],
+  azzurro: ['#F2FAFF', ['#0D1733', '#3FC6FF', '#0D1733', '#3FC6FF', '#0D1733', '#17408F']], notte: ['#17255C', ['#fafafa', '#E8B64C', '#fafafa', '#E8B64C', '#fafafa', '#3FC6FF']],
+  arancio: ['#FF8A1F', ['#111', '#111', '#fafafa', '#111', '#111', '#fafafa']],
+};
 const ballMesh = (() => {
-  const [c, x] = cv(256, 128); x.fillStyle = '#fafafa'; x.fillRect(0, 0, 256, 128);
-  const cols = ['#111', '#111', '#4B06FC', '#111', '#D9F51F', '#111'];
-  for (let i = 0; i < 12; i++) { x.fillStyle = cols[i % cols.length]; x.beginPath(); const px = (i % 6) * 43 + 20 + (i > 5 ? 21 : 0), py = i > 5 ? 88 : 38; for (let k = 0; k < 5; k++) { const a = k * 1.2566 - 1.57; x.lineTo(px + Math.cos(a) * 13, py + Math.sin(a) * 15); } x.fill(); }
-  const m = new T.Mesh(new T.SphereGeometry(BR, 18, 14), new T.MeshLambertMaterial({ map: ctex(c) })); m.visible = false; m.castShadow = true; scene.add(m);
+  const [c, x] = cv(256, 128), m = new T.Mesh(new T.SphereGeometry(BR, 18, 14), new T.MeshLambertMaterial({ map: ctex(c) })); m.visible = false; m.castShadow = true; scene.add(m);
+  m.userData.colora = (nome) => {
+    if (m.userData.nome === nome) return; m.userData.nome = nome; const [fondo, cols] = PALLONI[nome] || PALLONI.classico; x.fillStyle = fondo; x.fillRect(0, 0, 256, 128);
+    for (let i = 0; i < 12; i++) { x.fillStyle = cols[i % cols.length]; x.beginPath(); const px = (i % 6) * 43 + 20 + (i > 5 ? 21 : 0), py = i > 5 ? 88 : 38; for (let k = 0; k < 5; k++) { const a = k * 1.2566 - 1.57; x.lineTo(px + Math.cos(a) * 13, py + Math.sin(a) * 15); } x.fill(); }
+    m.material.map.needsUpdate = true;
+  };
+  m.userData.colora('classico');
   return m;
 })();
 // ombra del pallone, con un materiale suo: cambia con l'altezza
@@ -767,8 +779,12 @@ const kitsFor = (mia, loro, fuori) => { if (!fuori) return pickKits(mia, loro); 
 function newMatch(home, away) {
   clearMatch();
   const fuori = !!(G.comp && G.comp.fuori), [kh, ka, g1, g2, arb] = kitsFor(home, away, fuori); G.arbKit = arb;
+  // dal negozio: gli scarpini scelti per tutta la squadra dell'utente e, in casa, il suo pallone
+  const scarpe = K && K.scelte && SCARPE_NEGOZIO[K.scelte.scarpini] && CAR.possiede(K, 'scarpini', K.scelte.scarpini) ? SCARPE_NEGOZIO[K.scelte.scarpini] : null;
+  ballMesh.userData.colora(K && K.scelte && !fuori && !G.auto && CAR.possiede(K, 'pallone', K.scelte.pallone) ? K.scelte.pallone : 'classico');
   const mk = (club, side, human, kit, gkit) => {
     const t = { club, side, human, score: 0, players: [], off: [], idx: side > 0 ? 0 : 1, chaser: null, cover: null, ment: 0 };
+    if (human && scarpe && !G.auto) { kit = { ...kit, boots: scarpe[0], suola: scarpe[1] }; gkit = { ...gkit, boots: scarpe[0], suola: scarpe[1] }; }
     t.kit = kit; t.gkit = gkit; t.capitano = capitanoDi(club, human); t.bench = (club.pan || []).map(([name, role, num, q]) => ({ name, role, num, q, used: false })); t.subs = 0; t.out = [];
     club.xi.forEach((rec, i) => t.players.push(creaGiocatore(t, i, rec)));
     setTactics(t, human ? sel.form : aiForm(club), human ? sel.ment : 0);
@@ -2472,9 +2488,29 @@ const COLORI = [['#4B06FC', '#D9F51F'], ['#C0392B', '#FFFFFF'], ['#111111', '#D9
 const STILI = [['', 'Tinta unita'], ['righe', 'Righe'], ['righine', 'Righine'], ['fasce', 'Fasce'], ['onde', 'Onde'], ['banda', 'Banda'], ['diagonale', 'Diagonale'], ['meta', 'Metà'], ['quarti', 'Quarti'], ['terzi', 'Terzi'], ['scacchi', 'Scacchi'], ['v', 'V'], ['chevron', 'Chevron'], ['petto', 'Fascia sul petto'], ['spalle', 'Spalle'], ['maniche', 'Maniche'], ['fianchi', 'Fianchi'], ['sfumata', 'Sfumata'], ['mimetica', 'Mimetica'], ['pennellata', 'Pennellata']];
 const NOMI = ['Titani FC', 'Real Montale', 'Atletico Borgo', 'Sporting Serravalle', 'Libera Acquaviva', 'Rocca United', 'Guaita Calcio', 'Cesta FC', 'Dogana Stars', 'Chiesanuova FC', 'Torri Unite', 'Olimpia Titano'];
 const sigla = (n) => (String(n).replace(/[^A-Za-zÀ-ÿ ]/g, '').split(/\s+/).filter((w) => w.length > 2 && !/^(fc|real|united|calcio)$/i.test(w))[0] || String(n) || 'MIO').slice(0, 3).toUpperCase();
-// Lo stemma del club: uno scudo coi colori e il disegno scelti, la sigla e la corona di Fantatitano
+/* Lo stemma del club è fatto a pezzi (NEGOZIO in src/carriera.js): una forma, un simbolo in cima e un bordo, più i colori e
+   il disegno scelti e la sigla. Le forme sono tracciati nello spazio 240 × 283; i simboli stanno in cima, attorno a (120, 20). */
+const FORME_STEMMA = {
+  scudo: (x, k) => { x.moveTo(20 * k, 34 * k); x.lineTo(220 * k, 34 * k); x.lineTo(220 * k, 150 * k); x.quadraticCurveTo(220 * k, 238 * k, 120 * k, 278 * k); x.quadraticCurveTo(20 * k, 238 * k, 20 * k, 150 * k); },
+  tondo: (x, k) => { x.arc(120 * k, 158 * k, 110 * k, 0, Math.PI * 2); },
+  stendardo: (x, k) => { x.moveTo(28 * k, 34 * k); x.lineTo(212 * k, 34 * k); x.lineTo(212 * k, 236 * k); x.lineTo(120 * k, 278 * k); x.lineTo(28 * k, 236 * k); },
+  rombo: (x, k) => { x.moveTo(120 * k, 34 * k); x.lineTo(226 * k, 156 * k); x.lineTo(120 * k, 278 * k); x.lineTo(14 * k, 156 * k); },
+  esagono: (x, k) => { x.moveTo(120 * k, 34 * k); x.lineTo(220 * k, 92 * k); x.lineTo(220 * k, 218 * k); x.lineTo(120 * k, 278 * k); x.lineTo(20 * k, 218 * k); x.lineTo(20 * k, 92 * k); },
+};
+const torre = (x, k, cx, alta, larga) => { x.rect((cx - larga / 2) * k, (38 - alta) * k, larga * k, alta * k); for (const d of [-1, 0, 1]) x.rect((cx + d * larga * .36 - larga * .13) * k, (38 - alta - 7) * k, larga * .26 * k, 8 * k); };
+const SIMBOLI_STEMMA = {
+  nessuno: () => {},
+  corona: (x, k) => { for (const [px, py] of [[78, 30], [86, 4], [104, 20], [120, 0], [136, 20], [154, 4], [162, 30]]) x.lineTo(px * k, py * k); },
+  stella: (x, k) => { for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 11 : 26; x.lineTo((120 + Math.cos(a) * r) * k, (26 + Math.sin(a) * r) * k); } },
+  pallone: (x, k) => { x.arc(120 * k, 24 * k, 22 * k, 0, Math.PI * 2); },
+  torre: (x, k) => torre(x, k, 120, 30, 30),
+  fulmine: (x, k) => { for (const [px, py] of [[130, 0], [100, 26], [118, 26], [108, 50], [142, 20], [124, 20]]) x.lineTo(px * k, py * k); },
+  tretorri: (x, k) => { torre(x, k, 84, 20, 22); torre(x, k, 120, 31, 24); torre(x, k, 156, 20, 22); },
+  alloro: (x, k) => { for (const s of [-1, 1]) for (let i = 0; i < 5; i++) { const a = .5 + i * .42, px = 120 + s * Math.sin(a) * 46, py = 44 - Math.cos(a) * 40; x.save(); x.translate(px * k, py * k); x.rotate(s * (a + .7)); x.moveTo(0, -11 * k); x.quadraticCurveTo(7 * k, 0, 0, 11 * k); x.quadraticCurveTo(-7 * k, 0, 0, -11 * k); x.restore(); } },
+};
 function disegnaStemma(m, w) {
-  const h = Math.round(w * 1.18), [c, x] = cv(w, h), k = w / 240, sh = () => { x.beginPath(); x.moveTo(20 * k, 34 * k); x.lineTo(220 * k, 34 * k); x.lineTo(220 * k, 150 * k); x.quadraticCurveTo(220 * k, 238 * k, 120 * k, 278 * k); x.quadraticCurveTo(20 * k, 238 * k, 20 * k, 150 * k); x.closePath(); };
+  const h = Math.round(w * 1.18), [c, x] = cv(w, h), k = w / 240, forma = FORME_STEMMA[m.forma] || FORME_STEMMA.scudo, bordo = m.bordo || 'semplice';
+  const sh = () => { x.beginPath(); forma(x, k); x.closePath(); };
   x.save(); sh(); x.clip(); x.fillStyle = m.c1; x.fillRect(0, 0, w, h); x.fillStyle = m.c2;
   if (m.stile === 'righe') for (let i = 0; i < 4; i++) x.fillRect((44 + i * 48) * k, 0, 24 * k, h);
   else if (m.stile === 'banda') { x.beginPath(); x.moveTo(0, 80 * k); x.lineTo(w, 180 * k); x.lineTo(w, 240 * k); x.lineTo(0, 140 * k); x.fill(); }
@@ -2482,12 +2518,18 @@ function disegnaStemma(m, w) {
   else if (m.stile === 'fasce') for (let i = 0; i < 5; i++) x.fillRect(0, (40 + i * 56) * k, w, 28 * k);
   else if (m.stile === 'scacchi') for (let i = 0; i < 6; i++) for (let j = 0; j < 7; j++) if ((i + j) & 1) x.fillRect(i * 40 * k, j * 40 * k, 40 * k, 40 * k);
   else if (m.stile === 'v') { x.beginPath(); x.moveTo(0, 60 * k); x.lineTo(120 * k, 150 * k); x.lineTo(w, 60 * k); x.lineTo(w, 100 * k); x.lineTo(120 * k, 190 * k); x.lineTo(0, 100 * k); x.fill(); }
-  x.restore(); sh(); x.lineWidth = 12 * k; x.strokeStyle = m.stile ? '#FFFFFF' : m.c2; x.stroke();
-  x.fillStyle = '#D9F51F'; x.strokeStyle = '#0A0A0C'; x.lineWidth = 4 * k; x.beginPath(); // corona
-  for (const [px, py] of [[78, 30], [86, 4], [104, 20], [120, 0], [136, 20], [154, 4], [162, 30]]) x.lineTo(px * k, py * k);
-  x.closePath(); x.stroke(); x.fill();
-  x.font = `${Math.round(78 * k)}px Anton, Impact, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
-  x.lineWidth = 14 * k; x.strokeStyle = 'rgba(10,10,12,.55)'; x.strokeText(m.sigla || 'MIO', 120 * k, 152 * k); x.fillStyle = '#FFFFFF'; x.fillText(m.sigla || 'MIO', 120 * k, 152 * k);
+  // bordo doppio: un filo chiaro dentro, a un passo dal bordo
+  if (bordo === 'doppio') { x.translate(120 * k, 158 * k); x.scale(.86, .86); x.translate(-120 * k, -158 * k); sh(); x.lineWidth = 5 * k; x.strokeStyle = 'rgba(255,255,255,.85)'; x.stroke(); }
+  x.restore(); sh(); const chiaro = m.stile ? '#FFFFFF' : m.c2;
+  if (bordo === 'oro') { const g = x.createLinearGradient(0, 30 * k, 0, 280 * k); g.addColorStop(0, '#F6D684'); g.addColorStop(.5, '#C4922F'); g.addColorStop(1, '#F6D684'); x.lineWidth = 14 * k; x.strokeStyle = g; }
+  else { x.lineWidth = (bordo === 'sottile' ? 6 : 12) * k; x.strokeStyle = chiaro; if (bordo === 'punti') { x.setLineDash([3 * k, 16 * k]); x.lineCap = 'round'; } }
+  x.stroke(); x.setLineDash([]); x.lineCap = 'butt';
+  // il simbolo in cima: lime come la corona di Fantatitano, col contorno scuro (il pallone è bianco coi pentagoni)
+  const simbolo = m.simbolo || 'corona';
+  x.fillStyle = simbolo === 'pallone' ? '#FFFFFF' : '#D9F51F'; x.strokeStyle = '#0A0A0C'; x.lineWidth = 4 * k; x.beginPath(); (SIMBOLI_STEMMA[simbolo] || SIMBOLI_STEMMA.corona)(x, k); x.closePath(); x.stroke(); x.fill();
+  if (simbolo === 'pallone') { x.fillStyle = '#0A0A0C'; x.beginPath(); for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + i * Math.PI * .4; x.lineTo((120 + Math.cos(a) * 9) * k, (24 + Math.sin(a) * 9) * k); } x.fill(); }
+  x.font = `${Math.round((m.forma === 'rombo' ? 62 : 78) * k)}px Anton, Impact, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
+  x.lineWidth = 14 * k; x.strokeStyle = 'rgba(10,10,12,.55)'; x.strokeText(m.sigla || 'MIO', 120 * k, 156 * k); x.fillStyle = '#FFFFFF'; x.fillText(m.sigla || 'MIO', 120 * k, 156 * k);
   return c.toDataURL('image/png');
 }
 const forzaClub = (c) => clamp(Math.round((c.xi.reduce((s, x) => s + ovr(x[1], x[3]), 0) / c.xi.length - 58) / 5), 1, 5);
@@ -2496,7 +2538,8 @@ function applicaMio() {
   const c = club(POSTO); if (!c) return;
   if (!c.orig) c.orig = { name: c.name, short: c.short, c1: c.c1, c2: c.c2, st: c.st, col: c.col, rag: c.rag, str: c.str };
   const m = K && K.club === POSTO && K.mio && K.mio.nome ? K.mio : null;
-  if (m) { Object.assign(c, { name: m.nome, short: m.sigla, c1: m.c1, c2: m.c2, st: m.stile || undefined, col: m.colletto || undefined, rag: m.colletto ? !!m.raglan : undefined }); c.str = forzaClub(c); IMGX[POSTO] = disegnaStemma(m, 240); IMGX[POSTO + '-mini'] = disegnaStemma(m, 96); }
+  if (m) { const d = m.indossa === 'terza' && m.terza && CAR.possiede(K, 'terza', 'terza') ? m.terza : m; // la divisa che si indossa: la prima o la terza maglia (negozio)
+    Object.assign(c, { name: m.nome, short: m.sigla, c1: d.c1, c2: d.c2, st: d.stile || undefined, col: m.colletto || undefined, rag: m.colletto ? !!m.raglan : undefined }); c.str = forzaClub(c); IMGX[POSTO] = disegnaStemma(m, 240); IMGX[POSTO + '-mini'] = disegnaStemma(m, 96); }
   else { Object.assign(c, c.orig); delete IMGX[POSTO]; delete IMGX[POSTO + '-mini']; }
   stemmi3d.delete(POSTO); loadImg(img(POSTO + '-mini')).then((i) => { CREST[POSTO] = i; stemmi3d.delete(POSTO); });
 }
@@ -2517,8 +2560,10 @@ function tramaMaglia(c1, c2, st) {
   }
   x.putImageData(im, 0, 0); const u = c.toDataURL(); _maglie.set(chiave, u); return u;
 }
-function maglia(c1, c2, st, colletto = 'giro', raglan = false) {
-  const id = 'mg' + hash(c1 + c2 + st + colletto + raglan), f = 'M30 5 L42 2 Q50 9 58 2 L70 5 L95 22 L84 40 L74 34 L74 88 L26 88 L26 34 L16 40 L5 22 Z', u = tramaMaglia(c1, c2, st);
+// dove: una sigla per chi la disegna. Due maglie uguali in due schermate avrebbero lo stesso ritaglio, e quello della
+// schermata nascosta non vale: la maglia uscirebbe senza forma
+function maglia(c1, c2, st, colletto = 'giro', raglan = false, dove = '') {
+  const id = 'mg' + hash(c1 + c2 + st + colletto + raglan) + dove, f = 'M30 5 L42 2 Q50 9 58 2 L70 5 L95 22 L84 40 L74 34 L74 88 L26 88 L26 34 L16 40 L5 22 Z', u = tramaMaglia(c1, c2, st);
   const dis = u ? `<image href="${u}" width="100" height="90"/>` : '';
   const rag = raglan ? `<path d="M42 2 L30 5 L5 22 L16 40 L26 34 Z M58 2 L70 5 L95 22 L84 40 L74 34 Z" fill="${c2}"/><path d="M42 3 L26 34 M58 3 L74 34" stroke="rgba(0,0,0,.25)" stroke-width="1"/>` : '';
   const collo = colletto === 'v' ? `<path d="M41 2 L50 19 L59 2 Z" fill="rgba(0,0,0,.45)"/><path d="M40 1 L50 19 L60 1" fill="none" stroke="${c2}" stroke-width="4"/>`
@@ -2534,6 +2579,8 @@ const TORRI = '<svg viewBox="0 0 64 64" class="icona"><path d="M2 60 L14 40 L22 
 
 /* --- ingresso: il club (nome, colori, stemma) e poi il capitano. Lo stesso modulo serve a «Personalizza» dal mio club */
 const NV = { passo: 1, modifica: false, col: 0, stile: '', colletto: 'giro', raglan: false, cap: null };
+// I disegni della divisa che si possono scegliere: quelli di serie, più gli speciali comprati al negozio
+const stiliMiei = () => STILI.filter(([k]) => !CAR.NEGOZIO.disegno.tutti.includes(k) || (K && K.mio && CAR.possiede(K, 'disegno', k)));
 const COLLETTI = [['giro', 'Girocollo'], ['v', 'Scollo a V'], ['polo', 'Polo']];
 function candidatiCapitano() { // nove tra i migliori, uno per squadra: un portiere, due difensori, tre centrocampisti, tre attaccanti
   const tutti = []; for (const c of CLUBS) if (c.id !== POSTO) c.xi.forEach((x, i) => tutti.push({ c, x, i, v: ovr(x[1], x[3]) }));
@@ -2554,7 +2601,7 @@ function drawNuovo() {
         <label>Nome del club<span class="riga"><input id="nvClub" maxlength="22" autocomplete="off" placeholder="${NOMI[0]}"><button id="nvDado" aria-label="Nome a caso">🎲</button></span></label>
         <label>Sigla<input id="nvSigla" maxlength="3" autocomplete="off" placeholder="TIT"></label>
         <div class="lbl">Colori</div><div class="col" id="nvCol">${COLORI.map(([a, b], i) => `<button data-col="${i}" style="background:linear-gradient(135deg,${a} 50%,${b} 50%)"></button>`).join('')}</div>
-        <div class="lbl">Disegno</div><div class="seg" id="nvStile">${STILI.map(([k, n]) => `<button data-stile="${k}">${n}</button>`).join('')}</div>
+        <div class="lbl">Disegno</div><div class="seg" id="nvStile">${stiliMiei().map(([k, n]) => `<button data-stile="${k}">${n}</button>`).join('')}</div>
         <div class="lbl">Colletto e maniche</div><div class="seg" id="nvColletto">${COLLETTI.map(([k, n]) => `<button data-colletto="${k}">${n}</button>`).join('')}<button data-raglan="1">Maniche raglan</button></div></div>
       <div class="ante"><img id="nvStemma" alt=""><div id="nvMaglia"></div></div></div>
       <button class="btn" id="nvAvanti">${NV.modifica ? 'Salva' : 'Avanti: il capitano'}</button>`;
@@ -2620,7 +2667,7 @@ function drawHub() {
   // il mio club: stadio, allenatore, stemma e finanze, col punto esclamativo dove c'è un miglioramento che ci si può permettere
   const puo = (v) => (note.some((n) => n.vai === v) ? ' class="nuovo"' : '');
   $('#tClub').innerHTML = `<h4>Il mio club</h4><button data-club="stadio"><i${puo('stadio')}>Stadio</i><span>${K.stadio}</span></button><button data-club="allenatore"><i${puo('allenatore')}>Allenatore</i><span>${CAR.votoAllenatore(K)}</span></button><button data-club="personalizza"><i>Stemma</i><span>${stemmaFatto()}%</span></button><button data-club="finanze"><i>Finanze</i><span>${CAR.finanze(K)}</span></button>`;
-  $('#hFoto').src = ritratto(K.club, avatarNome(K.avatar), '', false, true);
+  $('#hFoto').src = ritratto(K.club, avatarNome(K.avatar), '', false, true); $('#hFoto').className = `foto cor-${K.scelte && CAR.possiede(K, 'cornice', K.scelte.cornice) ? K.scelte.cornice : 'semplice'}`;
   aggiornaCloud();
 }
 /** Gli ultimi n risultati del campionato del club dell'utente, dal più vecchio: 'v', 'n' o 'p'. */
@@ -2666,7 +2713,9 @@ function ritratto(clubId, nome, num, portiere, mister = false) {
 function consigliato() {
   const me = club(K.club), debole = {}; for (const x of me.xi) { const v = ovr(x[1], x[3]); if (!debole[x[1]] || v < debole[x[1]]) debole[x[1]] = v; }
   const tutti = []; for (const c of CLUBS) if (c.id !== K.club) c.xi.forEach((x, i) => { const v = ovr(x[1], x[3]); if (v > debole[x[1]]) tutti.push({ c, x, i, v, costo: CAR.costoScambio(v, debole[x[1]]) }); });
-  return tutti.filter((t) => t.costo <= K.monete).sort((a, b) => b.v - a.v)[0] || tutti.sort((a, b) => a.costo - b.costo)[0] || null;
+  // chi si può permettere, dal più forte. Ogni rinnovo comprato al negozio passa al successivo
+  const posso = tutti.filter((t) => t.costo <= K.monete).sort((a, b) => b.v - a.v); if (posso.length) return posso[(K.consigli || 0) % posso.length];
+  return tutti.sort((a, b) => a.costo - b.costo)[(K.consigli || 0) % Math.max(1, Math.min(tutti.length, 5))] || null;
 }
 function pan(titolo, html) { $('#panT').textContent = titolo; $('#panC').innerHTML = html; show('#pan'); }
 const riga = (a, b, r, rg) => `<div class="${a === K.club || b === K.club ? 'io' : ''}"><span>${esc(club(a).name)} – ${esc(club(b).name)}</span><b>${r[0]}-${r[1]}${rg ? ` (${rg[0]}-${rg[1]} rig.)` : ''}</b></div>`;
@@ -2708,7 +2757,7 @@ let cTab = 'stadio';
 function panClubMio(tab, msg) {
   if (tab) cTab = tab;
   const me = club(K.club), s = CAR.STADIO[K.stadio - 1], prox = CAR.STADIO[K.stadio], borsa = borsaHtml();
-  const tabs = `<div class="seg">${[['stadio', 'Stadio'], ['allenatore', 'Allenatore'], ['allenamento', 'Allenamento'], ['finanze', 'Finanze']].map(([k, n]) => `<button data-ctab="${k}" class="${k === cTab ? 'on' : ''}">${n}</button>`).join('')}<button data-club="personalizza">Personalizza</button><button data-club="amichevole">Amichevole</button></div>`;
+  const tabs = `<div class="seg">${[['stadio', 'Stadio'], ['allenatore', 'Allenatore'], ['allenamento', 'Allenamento'], ['finanze', 'Finanze']].map(([k, n]) => `<button data-ctab="${k}" class="${k === cTab ? 'on' : ''}">${n}</button>`).join('')}<button data-ntab="stemma">Negozio</button><button data-club="personalizza">Personalizza</button><button data-club="amichevole">Amichevole</button></div>`;
   let corpo;
   if (cTab === 'stadio') {
     corpo = `<div class="stadio"><div class="liv">${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= K.stadio ? 'on' : ''}"></i>`).join('')}</div><b>Livello ${K.stadio} di 5 · ${mon(s.posti)} posti</b><span>+${mon(s.bonus)} monete a ogni partita in casa</span>`
@@ -2740,17 +2789,17 @@ function accountHtml() {
 }
 function panProfilo() {
   const st = K ? K.stat : null, top = K && CAR.capocannoniere(K), d = (v, e) => `<div><b>${v}</b><span>${e}</span></div>`;
-  pan(K ? K.nome : 'Account', (K ? `<div class="sez">Avatar del manager</div><div class="avat">${Array.from({ length: AVATAR }, (_, n) => `<button data-avatar="${n}" class="${n === (K.avatar || 0) ? 'on' : ''}"><img src="${ritratto(K.club, avatarNome(n), '', false, true)}" alt=""></button>`).join('')}</div><div class="seg"><button data-club="personalizza">Personalizza il club: nome, colori, stemma</button></div>` : '') + `<div class="sez">Account</div>${accountHtml()}` + (K ? `<div class="sez">${esc(club(K.club).name)}</div><div class="dati">${d(K.stagione, 'Stagione')}${d(st.g, 'Partite')}${d(`${st.v}-${st.n}-${st.p}`, 'Vinte-pari-perse')}${d(`${st.gf}-${st.gs}`, 'Gol fatti-subiti')}</div>`
+  pan(K ? K.nome : 'Account', (K ? `<div class="sez">Avatar del manager</div><div class="avat">${CAR.NEGOZIO.avatar.tutti.filter((n) => CAR.possiede(K, 'avatar', n)).map((n) => `<button data-avatar="${n}" class="${n === (K.avatar || 0) ? 'on' : ''}"><img src="${ritratto(K.club, avatarNome(n), '', false, true)}" alt=""></button>`).join('')}</div><div class="seg"><button data-club="personalizza">Personalizza il club: nome, colori, disegno</button><button data-ntab="manager">Altri avatar e cornici</button><button data-ntab="stemma">Pezzi dello stemma</button></div>` : '') + `<div class="sez">Account</div>${accountHtml()}` + (K ? `<div class="sez">${esc(club(K.club).name)}</div><div class="dati">${d(K.stagione, 'Stagione')}${d(st.g, 'Partite')}${d(`${st.v}-${st.n}-${st.p}`, 'Vinte-pari-perse')}${d(`${st.gf}-${st.gs}`, 'Gol fatti-subiti')}</div>`
     + `<div class="sez">Capocannoniere</div><p class="vuoto">${top ? `${esc(top.nome)} · ${top.gol} gol` : 'Ancora nessun gol'}</p>`
     + `<div class="sez">Trofei</div><p class="vuoto">${K.trofei.length ? K.trofei.map((t) => `${t.tipo} (stagione ${t.stagione})`).join(' · ') : 'Ancora nessuno'}</p>`
     + `<div class="sez">Mercato</div><p class="vuoto">${K.movimenti.length ? K.movimenti.slice(0, 6).map((m) => `${esc(m.preso)} per ${esc(m.ceduto)} (${esc(club(m.da).name)})`).join(' · ') : 'Ancora nessuno scambio'}</p>` : ''));
 }
 /* --- pannelli della home nuova (docs/home-spec.md) */
 const borsaHtml = () => `<div class="borsa"><i class="mo">●</i> <b>${mon(K.monete)}</b><i class="di">◆</i> <b>${K.gemme}</b></div>`;
-// L'avatar del manager: un busto generico disegnato dal modello 3D, scelto tra otto (cambia il seme, quindi faccia e capelli)
-const AVATAR = 8, avatarNome = (n) => `${K.nome}${n ? `#${n}` : ''}`;
-// Quanto è personalizzato lo stemma: quello di serie vale 40, poi 20 per il club con nome proprio, 20 per i colori scelti, 20 per il disegno
-const stemmaFatto = () => (K.mio && K.club === POSTO ? 80 + (K.mio.stile ? 20 : 0) : 40);
+// L'avatar del manager: un busto generico disegnato dal modello 3D, scelto tra quelli del negozio (cambia il seme, quindi faccia e capelli)
+const avatarNome = (n) => `${K.nome}${n ? `#${n}` : ''}`;
+// Quanti pezzi dello stemma si hanno, in percentuale (NEGOZIO in src/carriera.js)
+const stemmaFatto = () => CAR.pezziStemma(K);
 const premioTesto = (m, g) => [m ? `● ${mon(m)}` : '', g ? `◆ ${g}` : ''].filter(Boolean).join(' ');
 /** Percorso premi della stagione: venti livelli, si sale coi punti di partite e sfide, ogni livello ha un premio da ritirare. */
 function panPercorso(msg) {
@@ -2769,15 +2818,71 @@ function panGuadagna() {
     ['Percorso premi (tutti i livelli)', premioTesto(ECONOMIA.percorso.premi.reduce((t, x) => t + (x.m || 0), 0), ECONOMIA.percorso.premi.reduce((t, x) => t + (x.g || 0), 0))]];
   const giorno = (t) => new Date(t).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }), segno = (n) => (n > 0 ? `+${mon(n)}` : `−${mon(-n)}`);
   const mov = (K.storico || []).slice(0, 40).map((x) => `<div class="${x.m + x.g * 100 < 0 ? 'meno' : 'piu'}"><span>${giorno(x.t)} · ${esc(x.d || x.c)}</span><b>${[x.m ? `${segno(x.m)} ●` : '', x.g ? `${segno(x.g)} ◆` : ''].filter(Boolean).join(' ')}</b></div>`).join('');
-  pan('Monete e diamanti', `${borsaHtml()}<div class="info"><div><div class="sez">Come si guadagnano</div><div class="ris2">${fonti.map(([t, v]) => riga(t, v)).join('')}</div><p class="nota2">Monete e diamanti non si comprano: si guadagnano solo giocando partite e completando sfide e obiettivi.</p></div>`
+  pan('Monete e diamanti', `${borsaHtml()}<div class="info"><div><div class="sez">Come si guadagnano</div><div class="ris2">${fonti.map(([t, v]) => riga(t, v)).join('')}</div><p class="nota2">Monete e diamanti non si comprano: si guadagnano solo giocando partite e completando sfide e obiettivi.</p><div class="seg"><button data-ntab="stemma">Negozio: dove spenderli</button></div></div>`
     + `<div><div class="sez">Ultimi movimenti</div>${mov ? `<div class="ris2 mov">${mov}</div>` : '<p class="vuoto">Ancora nessun movimento: gioca una partita.</p>'}</div></div>`);
+}
+/* --- il negozio: quello che si compra con diamanti e monete. Solo aspetto e comodità, niente che aiuti in partita
+   (docs/home-spec.md, §5.5). Una cosa non ancora presa si compra in due tocchi: il primo mostra «Conferma», il secondo paga. */
+const NOMI_NEGOZIO = {
+  cornice: { semplice: 'Semplice', oro: 'Oro', azzurra: 'Azzurra', lime: 'Lime', fuoco: 'Fuoco' },
+  scarpini: { misti: 'Ognuno i suoi', neri: 'Neri', bianchi: 'Bianchi', oro: 'Oro', azzurri: 'Azzurri', lime: 'Lime', arancio: 'Arancio', rosa: 'Rosa' },
+  pallone: { classico: 'Classico', oro: 'Oro', azzurro: 'Azzurro', notte: 'Notte', arancio: 'Arancio' },
+  forma: { scudo: 'Scudo', tondo: 'Tondo', stendardo: 'Stendardo', rombo: 'Rombo', esagono: 'Esagono' },
+  simbolo: { corona: 'Corona', stella: 'Stella', pallone: 'Pallone', torre: 'Torre', nessuno: 'Nessuno', fulmine: 'Fulmine', tretorri: 'Tre torri', alloro: 'Alloro' },
+  bordo: { semplice: 'Semplice', doppio: 'Doppio', sottile: 'Sottile', punti: 'A punti', oro: 'Oro' },
+};
+let nTab = 'stemma', nArmato = '';
+function panNegozio(tab, msg) {
+  if (tab) { nTab = tab; nArmato = ''; }
+  const m = K.mio && K.club === POSTO ? K.mio : null, sc = K.scelte || (K.scelte = {}), me = club(K.club);
+  const voce = (tipo, cosa, nome, scelto, dentro = '') => {
+    const ho = CAR.possiede(K, tipo, cosa), c = CAR.costoOggetto(tipo, cosa), id = `${tipo}:${cosa}`, arm = nArmato === id, caro = K.monete < c.monete || K.gemme < c.gemme;
+    return `<button class="ogg${scelto ? ' on' : ''}${ho ? '' : ' chiuso'}${arm ? ' arm' : ''}" data-ogg="${id}" ${!ho && caro ? 'disabled' : ''}>${dentro}<b>${nome}</b><u>${ho ? (scelto ? 'In uso' : 'Usa') : arm ? `Conferma ${premioTesto(c.monete, c.gemme)}` : premioTesto(c.monete, c.gemme)}</u></button>`;
+  };
+  const fila = (titolo, tipo, scelto, dentro) => `<div class="sez">${titolo}</div><div class="oggetti">${CAR.NEGOZIO[tipo].tutti.map((x) => voce(tipo, x, NOMI_NEGOZIO[tipo] ? NOMI_NEGOZIO[tipo][x] : x, x === scelto, dentro ? dentro(x) : '')).join('')}</div>`;
+  const tabs = `<div class="seg">${[['stemma', 'Stemma'], ['divisa', 'Divisa'], ['manager', 'Manager'], ['squadra', 'Squadra']].map(([k, n]) => `<button data-ntab="${k}" class="${k === nTab ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+  const soloMio = '<p class="vuoto">Stemma e divisa si personalizzano col club creato da te all\'inizio della carriera.</p>';
+  let corpo;
+  if (nTab === 'stemma') {
+    corpo = m ? `<div class="negozio"><img class="ante" src="${disegnaStemma(m, 200)}" alt=""><div><p class="nota2">Hai il ${CAR.pezziStemma(K)}% dei pezzi. I pezzi semplici costano monete, quelli rari diamanti: una volta presi restano tuoi.</p>`
+      + fila('Forma', 'forma', m.forma || 'scudo') + fila('Simbolo in cima', 'simbolo', m.simbolo || 'corona') + fila('Bordo', 'bordo', m.bordo || 'semplice') + '</div></div>' : soloMio;
+  } else if (nTab === 'divisa') {
+    const terza = CAR.possiede(K, 'terza', 'terza'), t3 = m && m.terza;
+    corpo = m ? `<div class="negozio"><div class="ante">${maglia(me.c1, me.c2, me.st, m.colletto || 'giro', !!m.raglan, 'n')}</div><div>`
+      + fila('Disegni speciali della prima maglia', 'disegno', m.stile, (x) => `<i class="mg">${maglia(m.c1, m.c2, x, m.colletto || 'giro', !!m.raglan, 'n')}</i>`).replace(/>(onde|chevron|sfumata|mimetica|pennellata)</g, (_, k) => `>${STILI.find(([s]) => s === k)[1]}<`)
+      + `<div class="sez">Terza maglia</div>` + (terza && t3
+        ? `<div class="seg"><button data-indossa="prima" class="${m.indossa === 'terza' ? '' : 'on'}">In partita: prima maglia</button><button data-indossa="terza" class="${m.indossa === 'terza' ? 'on' : ''}">In partita: terza maglia</button></div>`
+          + `<div class="col">${COLORI.map(([a, b], i) => `<button data-tcol="${i}" class="${a === t3.c1 && b === t3.c2 ? 'on' : ''}" style="background:linear-gradient(135deg,${a} 50%,${b} 50%)"></button>`).join('')}${COLORI.map(([a, b], i) => `<button data-tcol="${i + COLORI.length}" class="${b === t3.c1 && a === t3.c2 ? 'on' : ''}" style="background:linear-gradient(135deg,${b} 50%,${a} 50%)"></button>`).join('')}</div>`
+          + `<div class="seg">${stiliMiei().map(([k, n]) => `<button data-tstile="${k}" class="${(t3.stile || '') === k ? 'on' : ''}">${n}</button>`).join('')}</div>`
+        : `<div class="oggetti">${voce('terza', 'terza', 'Una divisa in più, coi colori che vuoi', false)}</div>`) + '</div></div>' : soloMio;
+  } else if (nTab === 'manager') {
+    corpo = fila('Avatar del manager', 'avatar', K.avatar || 0, (n) => `<img src="${ritratto(K.club, avatarNome(n), '', false, true)}" alt="">`).replace(/<b>\d<\/b>/g, '<b></b>')
+      + fila('Cornice del ritratto', 'cornice', CAR.possiede(K, 'cornice', sc.cornice) ? sc.cornice : 'semplice', (x) => `<i class="tondo cor-${x}"></i>`);
+  } else {
+    const co = consigliato();
+    corpo = fila('Scarpini della squadra', 'scarpini', CAR.possiede(K, 'scarpini', sc.scarpini) ? sc.scarpini : 'misti', (x) => `<i class="tondo" style="background:${SCARPE_NEGOZIO[x] ? SCARPE_NEGOZIO[x][0] : 'conic-gradient(#16161a,#F3F3F3,#D9F51F,#FF5A1F,#1E6FB5,#16161a)'}"></i>`)
+      + fila('Pallone delle partite in casa', 'pallone', CAR.possiede(K, 'pallone', sc.pallone) ? sc.pallone : 'classico', (x) => `<i class="tondo" style="background:radial-gradient(circle at 50% 50%,${PALLONI[x][1][1]} 0 28%,${PALLONI[x][0]} 30%)"></i>`)
+      + `<div class="sez">Mercato</div><div class="seg"><button data-az="rinnovo" class="${K.gemme < ECONOMIA.negozio.rinnovo.g ? 'no' : ''}">Cambia il giocatore consigliato${co ? ` (ora: ${esc(co.x[0])})` : ''} · ◆ ${ECONOMIA.negozio.rinnovo.g}</button></div>`;
+  }
+  pan('Negozio', `${borsaHtml()}${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}<p class="nota2">Qui si comprano solo aspetto e comodità: niente di quello che c'è nel negozio rende più forte la squadra.</p>`);
+}
+/** Mette in uso un oggetto del negozio che si ha già. */
+function usaOggetto(tipo, cosa) {
+  const m = K.mio && K.club === POSTO ? K.mio : null; K.scelte = K.scelte || {};
+  if (tipo === 'avatar') K.avatar = cosa;
+  else if (tipo === 'cornice' || tipo === 'scarpini' || tipo === 'pallone') K.scelte[tipo] = cosa;
+  else if (!m) return;
+  else if (tipo === 'disegno') m.stile = cosa;
+  else if (tipo === 'terza') { if (!m.terza) m.terza = { c1: m.c2, c2: m.c1, stile: '' }; m.indossa = 'terza'; }
+  else m[tipo] = cosa;
+  applicaMio();
 }
 /** Notifiche: quello che c'è da ritirare o da fare, calcolato dai dati. Ogni riga porta alla sua schermata. */
 function panNotifiche() {
   const note = CAR.notifiche(K);
   pan('Notifiche', note.length ? `<div class="lista note">${note.map((n) => `<button class="gioc" data-vai="${n.vai}"><b>${esc(n.t)}</b><u>›</u></button>`).join('')}</div>` : '<p class="vuoto">Niente di nuovo: tutto ritirato e nessuna partita di coppa in attesa.</p>');
 }
-const vaiA = { sfide: () => panSfide(), percorso: () => panPercorso(), coppa: () => panCoppa(), castelli: () => panCastelli(), stadio: () => panClubMio('stadio'), allenatore: () => panClubMio('allenatore') };
+const vaiA = { negozio: () => panNegozio(), sfide: () => panSfide(), percorso: () => panPercorso(), coppa: () => panCoppa(), castelli: () => panCastelli(), stadio: () => panClubMio('stadio'), allenatore: () => panClubMio('allenatore') };
 // Mercato: si sceglie un titolare di un'altra squadra, poi chi cedere in cambio tra i propri dello stesso ruolo
 let mRuolo = 'T', mPreso = null;
 function panMercato(msg) {
@@ -2909,6 +3014,19 @@ function buildMenu() {
     if (b.dataset.vai) return (vaiA[b.dataset.vai] || casa)();
     if (b.dataset.ritira || b.dataset.az === 'ritiraTutto') { const q = CAR.ritiraPercorso(K, +(b.dataset.ritira || 0)); if (q.ok) salvaK(); return panPercorso(q.ok ? `Ritirato: ${premioTesto(q.monete, q.gemme)}` : ''); }
     if (b.dataset.az === 'guadagna') return panGuadagna();
+    if (b.dataset.ntab) return panNegozio(b.dataset.ntab);
+    if (b.dataset.ogg) {
+      const [tipo, cosa0] = b.dataset.ogg.split(':'), cosa = tipo === 'avatar' ? +cosa0 : cosa0; let detto = '';
+      if (!CAR.possiede(K, tipo, cosa)) {
+        if (nArmato !== b.dataset.ogg) { nArmato = b.dataset.ogg; return panNegozio(); }
+        const q = CAR.compraOggetto(K, tipo, cosa); nArmato = ''; if (!q.ok) return panNegozio(null, 'Servono più monete o diamanti'); detto = `Comprato: ${premioTesto(q.monete, q.gemme)}`;
+      }
+      nArmato = ''; usaOggetto(tipo, cosa); salvaK(); return panNegozio(null, detto);
+    }
+    if (b.dataset.az === 'rinnovo') { const q = CAR.rinnovaConsigli(K); if (q.ok) salvaK(); return panNegozio(null, q.ok ? 'Giocatore consigliato cambiato: lo trovi nella home, alla voce Trasferimenti' : 'Servono più diamanti'); }
+    if (b.dataset.indossa && K.mio) { K.mio.indossa = b.dataset.indossa; applicaMio(); salvaK(); return panNegozio(); }
+    if (b.dataset.tcol && K.mio && K.mio.terza) { const i = +b.dataset.tcol, [a, c2] = COLORI[i % COLORI.length]; Object.assign(K.mio.terza, i < COLORI.length ? { c1: a, c2 } : { c1: c2, c2: a }); applicaMio(); salvaK(); return panNegozio(); }
+    if (b.dataset.tstile !== undefined && K.mio && K.mio.terza) { K.mio.terza.stile = b.dataset.tstile; applicaMio(); salvaK(); return panNegozio(); }
     if (b.dataset.avatar) { K.avatar = +b.dataset.avatar; salvaK(); return panProfilo(); }
     if (b.dataset.az === 'allenatore') { const q = CAR.miglioraAllenatore(K); if (q.ok) salvaK(); return panClubMio('allenatore', q.ok ? `Allenatore migliorato: valutazione ${CAR.votoAllenatore(K)}` : q.motivo === 'massimo' ? 'L\'allenatore è già al massimo' : 'Servono più monete o diamanti'); }
     if (b.dataset.q) { sel.qual = b.dataset.q; save(); return panImp(); }

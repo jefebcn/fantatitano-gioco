@@ -85,7 +85,7 @@ export function nuova(clubs, nome, clubId, rnd = Math.random, mio = null) {
   const ids = clubs.map((c) => c.id);
   return { v: 1, id: idCarriera(), rev: 0, agg: Date.now(), nome: String(nome || 'Mister').slice(0, 18), club: clubId, mio, stagione: 1, giornata: 0, cal: calendario(ids, rnd), ris: [], coppa: nuovaCoppa(ids, rnd),
     castelli: nuoviCastelli(ids, rnd), stat: { g: 0, v: 0, n: 0, p: 0, gf: 0, gs: 0, marc: {} }, trofei: [], campione: null, monete: PREMI.inizio, gemme: PREMI.gemme,
-    stadio: 1, allen: {}, sfide: nuoveSfide(), rose: {}, panchine: {}, movimenti: [], allenatore: 1, avatar: 0, storico: [], percorso: { stagione: 1, punti: 0, presi: [] } };
+    stadio: 1, allen: {}, sfide: nuoveSfide(), rose: {}, panchine: {}, movimenti: [], allenatore: 1, avatar: 0, storico: [], percorso: { stagione: 1, punti: 0, presi: [] }, oggetti: {}, scelte: {}, consigli: 0 };
 }
 
 export function nuovaStagione(C, clubs, rnd = Math.random) {
@@ -105,6 +105,10 @@ export function completa(C, clubs = null, rnd = Math.random) {
   // prima della home nuova: allenatore, avatar, storico di entrate e uscite, percorso premi
   if (!C.allenatore) C.allenatore = 1; if (typeof C.avatar !== 'number') C.avatar = 0; if (!Array.isArray(C.storico)) C.storico = [];
   if (!C.percorso || C.percorso.stagione !== C.stagione) C.percorso = { stagione: C.stagione, punti: 0, presi: [] };
+  // prima del negozio: oggetti comprati e scelte. Chi aveva già un avatar o un disegno poi diventati a pagamento se li tiene
+  if (!C.oggetti || typeof C.oggetti !== 'object') C.oggetti = {}; if (!C.scelte || typeof C.scelte !== 'object') C.scelte = {}; if (typeof C.consigli !== 'number') C.consigli = 0;
+  if (!NEGOZIO.avatar.gratis.includes(C.avatar) && NEGOZIO.avatar.tutti.includes(C.avatar) && !(C.oggetti.avatar || []).includes(C.avatar)) (C.oggetti.avatar = C.oggetti.avatar || []).push(C.avatar);
+  if (C.mio && NEGOZIO.disegno.tutti.includes(C.mio.stile) && !(C.oggetti.disegno || []).includes(C.mio.stile)) (C.oggetti.disegno = C.oggetti.disegno || []).push(C.mio.stile);
   return C;
 }
 export function carica(store = globalThis.localStorage) {
@@ -166,6 +170,53 @@ export function ritiraPercorso(C, livello = 0) {
     tot.ok = true; tot.monete += x.monete; tot.gemme += x.gemme; tot.n++;
   }
   return tot;
+}
+
+/* ---------- negozio: quello che si compra con diamanti e monete (docs/home-spec.md, §5.5) ---------- */
+/**
+ * Gli oggetti del negozio, per tipo. `tutti` sono i codici che esistono, `gratis` quelli che si hanno dall'inizio, `rari`
+ * (solo nei pezzi dello stemma) quelli che costano diamanti invece di monete. Sono cose da vedere, non da vincere: nessun
+ * oggetto cambia la forza della squadra.
+ */
+export const NEGOZIO = {
+  avatar: { nome: 'Avatar del manager', tutti: [0, 1, 2, 3, 4, 5, 6, 7], gratis: [0, 1, 2, 3] },
+  cornice: { nome: 'Cornice del ritratto', tutti: ['semplice', 'oro', 'azzurra', 'lime', 'fuoco'], gratis: ['semplice'] },
+  scarpini: { nome: 'Scarpini della squadra', tutti: ['misti', 'neri', 'bianchi', 'oro', 'azzurri', 'lime', 'arancio', 'rosa'], gratis: ['misti'] },
+  pallone: { nome: 'Pallone di casa', tutti: ['classico', 'oro', 'azzurro', 'notte', 'arancio'], gratis: ['classico'] },
+  disegno: { nome: 'Disegno speciale della divisa', tutti: ['onde', 'chevron', 'sfumata', 'mimetica', 'pennellata'], gratis: [] },
+  terza: { nome: 'Terza maglia', tutti: ['terza'], gratis: [] },
+  forma: { nome: 'Forma dello stemma', tutti: ['scudo', 'tondo', 'stendardo', 'rombo', 'esagono'], gratis: ['scudo', 'tondo', 'stendardo'], rari: [] },
+  simbolo: { nome: 'Simbolo dello stemma', tutti: ['corona', 'stella', 'pallone', 'torre', 'nessuno', 'fulmine', 'tretorri', 'alloro'], gratis: ['corona', 'stella', 'pallone', 'torre', 'nessuno'], rari: ['tretorri', 'alloro'] },
+  bordo: { nome: 'Bordo dello stemma', tutti: ['semplice', 'doppio', 'sottile', 'punti', 'oro'], gratis: ['semplice', 'doppio', 'sottile'], rari: ['oro'] },
+};
+const STEMMA = ['forma', 'simbolo', 'bordo'];
+const oggettiDi = (C) => (C.oggetti && typeof C.oggetti === 'object' ? C.oggetti : (C.oggetti = {}));
+/** Vero se la carriera ha quell'oggetto (gratis o comprato). */
+export function possiede(C, tipo, cosa) { const N = NEGOZIO[tipo]; return !!N && N.tutti.includes(cosa) && (N.gratis.includes(cosa) || (oggettiDi(C)[tipo] || []).includes(cosa)); }
+/** Quanto costa: { monete, gemme }. I pezzi dello stemma costano monete, quelli rari diamanti. */
+export function costoOggetto(tipo, cosa) {
+  const N = NEGOZIO[tipo]; if (!N || !N.tutti.includes(cosa) || N.gratis.includes(cosa)) return { monete: 0, gemme: 0 };
+  const c = STEMMA.includes(tipo) ? ECONOMIA.negozio[N.rari.includes(cosa) ? 'stemmaRaro' : 'stemma'] : ECONOMIA.negozio[tipo];
+  return { monete: c.m || 0, gemme: c.g || 0 };
+}
+/** Compra un oggetto: si paga una volta sola e resta per sempre. */
+export function compraOggetto(C, tipo, cosa) {
+  const N = NEGOZIO[tipo]; if (!N || !N.tutti.includes(cosa)) return { ok: false, motivo: 'cosa' };
+  if (possiede(C, tipo, cosa)) return { ok: false, motivo: 'presa' };
+  const c = costoOggetto(tipo, cosa); if (C.monete < c.monete || C.gemme < c.gemme) return { ok: false, motivo: 'soldi', ...c };
+  muovi(C, -c.monete, -c.gemme, 'negozio', `${N.nome}: ${cosa}`); const O = oggettiDi(C); (O[tipo] = O[tipo] || []).push(cosa);
+  return { ok: true, ...c };
+}
+/** Quanti pezzi dello stemma si hanno, in percentuale su tutti quelli che esistono. */
+export function pezziStemma(C) {
+  let ho = 0, tot = 0; for (const t of STEMMA) for (const x of NEGOZIO[t].tutti) { tot++; if (possiede(C, t, x)) ho++; }
+  return Math.round(ho / tot * 100);
+}
+/** Cambia subito il giocatore consigliato al mercato: costa diamanti, conta solo quante volte è stato fatto. */
+export function rinnovaConsigli(C) {
+  const g = ECONOMIA.negozio.rinnovo.g; if (C.gemme < g) return { ok: false, motivo: 'soldi', gemme: g };
+  muovi(C, 0, -g, 'negozio', 'Nuovo giocatore consigliato'); C.consigli = (C.consigli || 0) + 1;
+  return { ok: true };
 }
 
 /* ---------- sfide ---------- */

@@ -270,6 +270,8 @@ export const ATTACCO = { sullaLinea: 1.2, massimo: 44 };
 // (m monete, g diamanti). allenatore: i cinque livelli (valutazione mostrata e costo per arrivarci). Ogni livello oltre il
 // primo dà `sedute` sedute di allenamento in più per giocatore e toglie `sconto` dal prezzo delle sedute.
 // finanze: fino a quante monete vale ogni giudizio. storico: quanti movimenti si tengono.
+// negozio: quanto costa un oggetto di ogni tipo (m monete, g diamanti). Solo aspetto e comodità, niente che aiuti in
+// partita. Quali oggetti esistono e quali si hanno dall'inizio sta in NEGOZIO, in src/carriera.js.
 export const ECONOMIA = {
   prezzo: .4,
   percorso: {
@@ -280,4 +282,8 @@ export const ECONOMIA = {
   allenatore: { livelli: [{ voto: 60 }, { voto: 70, monete: 2000, gemme: 0 }, { voto: 80, monete: 5000, gemme: 0 }, { voto: 90, monete: 10000, gemme: 15 }, { voto: 99, monete: 20000, gemme: 30 }], sedute: 1, sconto: .05 },
   finanze: [[500, 'Scarse'], [2000, 'Discrete'], [6000, 'Buone'], [Infinity, 'Eccellenti']],
   storico: 120,
+  negozio: {
+    avatar: { g: 10 }, cornice: { g: 10 }, scarpini: { g: 10 }, pallone: { g: 10 }, disegno: { g: 20 }, terza: { g: 30 }, rinnovo: { g: 5 },
+    stemma: { m: 300 }, stemmaRaro: { g: 5 },
+  },
 };

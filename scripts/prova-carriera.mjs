@@ -223,6 +223,30 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
   // prezzi: un giocatore forte costa più o meno un campionato di chi gioca in modo normale
   assert.equal(K.prezzo(85), 4900); assert.equal(K.prezzo(72), 1940);
 }
+// ---------- negozio: oggetti gratis e a pagamento, pezzi dello stemma, giocatore consigliato
+{
+  const { ECONOMIA: E } = await import('../src/config.js');
+  const cl = JSON.parse(JSON.stringify(clubs)), N = K.nuova(cl, 'n', 'academy', rnd), g0 = N.gemme, m0 = N.monete;
+  // quello che è gratis si ha subito e non si compra; il resto no
+  assert.ok(K.possiede(N, 'avatar', 0) && K.possiede(N, 'forma', 'scudo') && K.possiede(N, 'simbolo', 'corona') && !K.possiede(N, 'avatar', 6) && !K.possiede(N, 'bordo', 'oro') && !K.possiede(N, 'terza', 'terza'));
+  assert.equal(K.compraOggetto(N, 'avatar', 0).motivo, 'presa'); assert.equal(K.compraOggetto(N, 'avatar', 99).motivo, 'cosa'); assert.equal(K.compraOggetto(N, 'boh', 'x').motivo, 'cosa');
+  // si paga il prezzo del tipo, una volta sola, e resta scritto nello storico
+  assert.deepEqual(K.costoOggetto('avatar', 6), { monete: 0, gemme: E.negozio.avatar.g }); assert.ok(K.compraOggetto(N, 'avatar', 6).ok); assert.equal(N.gemme, g0 - E.negozio.avatar.g);
+  assert.ok(K.possiede(N, 'avatar', 6)); assert.equal(K.compraOggetto(N, 'avatar', 6).motivo, 'presa'); assert.equal(N.storico[0].c, 'negozio'); assert.equal(N.storico[0].g, -E.negozio.avatar.g);
+  // senza diamanti non si compra e il saldo non cambia
+  N.gemme = 3; assert.equal(K.compraOggetto(N, 'terza', 'terza').motivo, 'soldi'); assert.equal(N.gemme, 3); assert.equal(K.rinnovaConsigli(N).motivo, 'soldi');
+  N.gemme = 40; assert.ok(K.rinnovaConsigli(N).ok); assert.equal(N.consigli, 1); assert.equal(N.gemme, 40 - E.negozio.rinnovo.g);
+  // pezzi dello stemma: i semplici a monete, i rari a diamanti; la percentuale parte alta (base gratis ricca) e arriva a 100
+  assert.deepEqual(K.costoOggetto('forma', 'rombo'), { monete: E.negozio.stemma.m, gemme: 0 }); assert.deepEqual(K.costoOggetto('bordo', 'oro'), { monete: 0, gemme: E.negozio.stemmaRaro.g });
+  const p0 = K.pezziStemma(N); assert.ok(p0 >= 50 && p0 < 100, `pezzi dello stemma all'inizio: ${p0}%`);
+  N.monete = 99999; N.gemme = 999; for (const tipo of ['forma', 'simbolo', 'bordo']) for (const x of K.NEGOZIO[tipo].tutti) if (!K.possiede(N, tipo, x)) assert.ok(K.compraOggetto(N, tipo, x).ok);
+  assert.equal(K.pezziStemma(N), 100); assert.ok(m0 > 0);
+  // ogni tipo del catalogo ha un prezzo, e i gratis esistono davvero
+  for (const [tipo, o] of Object.entries(K.NEGOZIO)) { for (const x of o.gratis) assert.ok(o.tutti.includes(x), `${tipo}: ${x} gratis ma non in elenco`); for (const x of o.tutti) { const c = K.costoOggetto(tipo, x); assert.ok(o.gratis.includes(x) ? c.monete + c.gemme === 0 : c.monete + c.gemme > 0, `${tipo}: ${x} senza prezzo`); } }
+  // una carriera salvata prima del negozio si tiene l'avatar e il disegno che aveva
+  const V = K.completa({ ...JSON.parse(JSON.stringify(K.nuova(cl, 'v', 'academy', rnd, { nome: 'X', sigla: 'X', c1: '#111111', c2: '#ffffff', stile: 'onde' }))), avatar: 7, oggetti: undefined, scelte: undefined, consigli: undefined }, cl, rnd);
+  assert.ok(K.possiede(V, 'avatar', 7) && K.possiede(V, 'disegno', 'onde') && !K.possiede(V, 'disegno', 'mimetica') && V.consigli === 0);
+}
 // ---------- il listino del server (supabase/002-lapartita-economia.sql) dice gli stessi numeri del gioco
 {
   const { ECONOMIA: E } = await import('../src/config.js');
@@ -236,6 +260,7 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
   for (const g of Object.keys(K.SFIDE)) for (const x of K.SFIDE[g]) { if (x.monete) vale(`sfida_${x.id}`, 'monete', x.monete); if (x.gemme) vale(`sfida_${x.id}`, 'diamanti', x.gemme); }
   for (const g of Object.keys(K.BONUS)) vale(`sfida_${g}_tutte`, 'diamanti', K.BONUS[g].gemme);
   E.percorso.premi.forEach((x, i) => vale(`percorso_${i + 1}`, x.m ? 'monete' : 'diamanti', x.m || x.g));
+  for (const [k, c] of Object.entries(E.negozio)) vale(`negozio_${k.replace('stemmaRaro', 'stemma_raro')}`, c.m ? 'monete' : 'diamanti', -(c.m || c.g));
   vale('allenamento_base', 'numero', K.ALLENA.base); vale('allenamento_passo', 'numero', K.ALLENA.passo); vale('allenamento_sedute', 'numero', K.ALLENA.max); vale('allenatore_sconto', 'numero', Math.round(E.allenatore.sconto * 100));
 }
 assert.equal(K.carica({ getItem: () => '{rotto' }), null); assert.equal(K.carica({ getItem: () => null }), null);
