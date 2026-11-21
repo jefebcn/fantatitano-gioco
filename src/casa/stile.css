@@ -43,8 +43,8 @@ body{--barra:48px}
 @container (max-width:720px){#barraF .pil .barretta{display:none}#barraF{gap:4px}#barraF .pil{padding:0 7px}#barraF .prof .stelline{display:none}}
 
 /* con la barra le schermate di prima lasciano lo spazio in alto e non mostrano i loro «Indietro» né la barra vecchia */
-body.conBarra #hub,body.conBarra #pan,body.conBarra #scelta,body.conBarra #pre,body.conBarra #nuovo{padding-top:calc(var(--barra) + 6px)}
-body.conBarra .indietro,body.conBarra #hub .barra{display:none}
+body.conBarra #pan,body.conBarra #scelta,body.conBarra #pre,body.conBarra #nuovo{padding-top:calc(var(--barra) + 6px)}
+body.conBarra .indietro{display:none}
 
 /* ---------- carte di navigazione ---------- */
 .carta{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;padding:0;text-align:left;color:#fff;border-radius:12px;border:1px solid rgba(63,198,255,.5);
@@ -149,3 +149,68 @@ body.conBarra .indietro,body.conBarra #hub .barra{display:none}
 /* e «Gioca» sta fisso in basso a destra, sempre in vista: le scelte di modulo e mentalità gli lasciano il posto */
 body.conBarra #pre #gioca{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));z-index:6;margin:0;min-width:0;min-height:44px;padding:8px 30px}
 body.conBarra #pre .tatt{align-self:stretch;align-items:flex-start;padding-right:150px}
+
+/* ---------- Carriera: prossima partita e classifica, le due coppe, le scorciatoie ---------- */
+#carriera{--notte:#0B1530;--oro:#E8B64C;--azz:#3FC6FF;font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff;
+  display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:minmax(0,1.4fr) minmax(0,1fr) 44px;gap:6px;align-items:stretch;justify-items:stretch;overflow:hidden;
+  padding:calc(var(--barra) + 6px) max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));
+  background:radial-gradient(ellipse at 34% 34%,rgba(232,182,76,.2),rgba(232,182,76,0) 28%),radial-gradient(ellipse at 62% 80%,rgba(63,198,255,.22),rgba(63,198,255,0) 34%),linear-gradient(180deg,#070E24,#0E2150 58%,#060B1C)}
+#carriera.illustrata{background:linear-gradient(rgba(6,11,28,.45),rgba(6,11,28,.7)),image-set(url(img/illustrazioni/sfondo-home@1x.webp) 1x,url(img/illustrazioni/sfondo-home@2x.webp) 2x,url(img/illustrazioni/sfondo-home@3x.webp) 3x) center/cover}
+#carriera .k-prossima{grid-column:span 7}
+#carriera .k-classifica{grid-column:span 5}
+#carriera .k-coppa{grid-column:span 6}
+.carta .fascia .nota{margin-left:auto;font:800 12px Montserrat,sans-serif;font-style:normal;letter-spacing:.05em;opacity:.9;white-space:nowrap}
+.carta .stemma{height:80%;max-height:76px;width:auto;flex:none}
+.carta .chi{flex:1 1 0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:3px;align-content:center}
+.carta .chi b{font:400 26px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.04em;line-height:1;white-space:nowrap;overflow:hidden}
+.carta .chi .stelline{font-size:14px}
+.k-prossima .quando{flex:none;display:grid;gap:4px;justify-items:end}
+.k-prossima .quando b{font:800 14px Montserrat,sans-serif;white-space:nowrap}
+.k-prossima .quando i{display:flex;align-items:center;gap:5px;font:600 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.84);white-space:nowrap}
+.k-prossima .quando .ico{width:14px;height:14px;color:#E8B64C}
+/* classifica: cinque righe più l'intestazione; la nostra riga in oro; medaglie ai primi tre */
+.k-classifica .corpo{padding:3px 6px;align-items:stretch}
+.tabella{flex:1 1 0;min-width:0;display:grid;grid-auto-rows:minmax(0,1fr)}
+.rigaC{display:grid;grid-template-columns:22px 18px minmax(0,1fr) 32px 28px;align-items:center;column-gap:6px;min-height:0;padding:0 5px;border-radius:6px;font:600 12px Montserrat,sans-serif}
+.rigaC.testa i{font:800 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.6);text-transform:uppercase}
+.rigaC.testa i:nth-child(3){text-align:left}
+.rigaC img{width:18px;height:18px;object-fit:contain}
+.rigaC b{font:800 13px Montserrat,sans-serif;white-space:nowrap;overflow:hidden}
+.rigaC i{font-style:normal;text-align:center;color:rgba(255,255,255,.86)}
+.rigaC em{font:800 13px Montserrat,sans-serif;font-style:normal;text-align:center}
+.rigaC.io{background:rgba(232,182,76,.18);box-shadow:inset 0 0 0 1px rgba(232,182,76,.65)}
+.rigaC.io b,.rigaC.io em{color:#E8B64C}
+.rigaC .pos{display:grid;place-items:center;width:18px;height:18px;justify-self:center;border-radius:50%;font:800 12px Montserrat,sans-serif;color:#fff}
+.rigaC .pos.med{color:#0B1530}
+.rigaC .pos.m1{background:linear-gradient(160deg,#FFE9A6,#E8B64C)}
+.rigaC .pos.m2{background:linear-gradient(160deg,#F1F6FA,#9FB4C4)}
+.rigaC .pos.m3{background:linear-gradient(160deg,#E8B089,#A8683A)}
+/* le coppe: stemma, colonna con etichetta, nome, stelle e fase, trofeo */
+.k-coppa .stemma{height:74%;max-height:60px}
+.k-coppa .chi{gap:1px}
+.k-coppa .chi b{font-size:22px}
+.k-coppa .chi .su{font:800 12px Montserrat,sans-serif;font-style:normal;letter-spacing:.06em;text-transform:uppercase;color:#3FC6FF;white-space:nowrap}
+.k-coppa .chi .fase{font:600 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.84);white-space:nowrap;overflow:hidden}
+.k-coppa .chi .stelline{font-size:12px}
+.carta .trofeo{flex:none;height:70%;max-height:56px;width:auto;color:#E8B64C}
+.carta .ico.trofeo{width:44px;height:44px}
+/* scorciatoie */
+.scorciatoie{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.scorc{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 8px;border-radius:12px;border:1px solid rgba(63,198,255,.45);
+  background:linear-gradient(165deg,rgba(23,54,122,.95),rgba(9,20,52,.95));color:#fff;font:800 13px Montserrat,sans-serif;transition:transform .08s,filter .08s}
+.scorc:active{transform:scale(.97);filter:brightness(1.25)}
+.scorc .ico{width:20px;height:20px;color:#3FC6FF}
+.scorc b{font-weight:800;white-space:nowrap}
+.scorc .bollino{top:-5px;right:-4px}
+
+/* ---------- finestre di conferma e pulsanti ---------- */
+#finestra{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:14px;background:rgba(3,7,20,.74);font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff}
+#finestra .foglio{position:relative;width:min(430px,100%);max-height:100%;overflow:auto;padding:14px 18px 14px;border-radius:14px;border:1px solid rgba(232,182,76,.7);background:linear-gradient(170deg,#12244F,#0A1330);box-shadow:0 18px 50px rgba(0,0,0,.6)}
+#finestra h3{margin:0 40px 8px 0;font:400 24px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.05em;color:#E8B64C}
+#finestra p{margin:0 0 14px;font:600 13px/1.45 Montserrat,sans-serif;color:rgba(255,255,255,.9)}
+#finestra .chiudi{position:absolute;top:0;right:0;width:44px;height:44px;display:grid;place-items:center;background:none;color:#fff}
+#finestra .chiudi .ico{width:20px;height:20px}
+#finestra .azioni{display:flex;gap:10px;justify-content:flex-end}
+.bottone{min-height:44px;padding:0 22px;border-radius:12px;font:400 20px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.06em;color:#0B1530;background:linear-gradient(180deg,#F2CC6B,#D9A63E);box-shadow:0 4px 0 #8E6A1E}
+.bottone:active{transform:translateY(3px);box-shadow:0 1px 0 #8E6A1E}
+.bottone.secondo{color:#fff;background:rgba(255,255,255,.12);box-shadow:0 4px 0 rgba(0,0,0,.45)}

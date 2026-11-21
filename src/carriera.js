@@ -132,7 +132,9 @@ export function classifica(C, clubs) {
     A.g++; B.g++; A.gf += res[0]; A.gs += res[1]; B.gf += res[1]; B.gs += res[0];
     if (res[0] > res[1]) { A.v++; A.pt += 3; B.p++; } else if (res[0] < res[1]) { B.v++; B.pt += 3; A.p++; } else { A.n++; B.n++; A.pt++; B.pt++; }
   }));
-  return Object.values(T).sort((x, y) => y.pt - x.pt || (y.gf - y.gs) - (x.gf - x.gs) || y.gf - x.gf || x.id.localeCompare(y.id));
+  // a parità di punti: differenza reti, poi gol fatti, poi il nome della squadra
+  const nome = {}; for (const c of clubs) nome[c.id] = c.name;
+  return Object.values(T).sort((x, y) => y.pt - x.pt || (y.gf - y.gs) - (x.gf - x.gs) || y.gf - x.gf || nome[x.id].localeCompare(nome[y.id], 'it'));
 }
 
 /* ---------- monete e diamanti ---------- */
