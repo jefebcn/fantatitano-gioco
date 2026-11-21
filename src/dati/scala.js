@@ -1,6 +1,7 @@
 // Valutazioni e statistiche mostrate: una sola conversione (scala) per tutti i numeri delle carte dei giocatori.
 // La forza usata in partita (la quotazione nei dati delle squadre) non si tocca: qui si decide solo cosa si vede.
-// I numeri stanno in src/config.js (SCALA e CARTE); i ruoli precisi, il piede e l'altezza in src/dati/giocatori.js.
+// I numeri stanno in src/config.js, alle voci SCALA e CARTE. I ruoli precisi, il piede e l'altezza stanno in
+// src/dati/giocatori.js.
 import { SCALA, CARTE, FORMS, HL, HW } from '../config.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

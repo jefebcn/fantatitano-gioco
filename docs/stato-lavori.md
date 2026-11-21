@@ -56,7 +56,8 @@ Un'altra sessione lavora sulla partita: questa non tocca i suoi file senza averl
 | 1 | `docs/navigazione.md`: albero, da dove si entra, dove porta Indietro | fatto |
 | 2 | `docs/immagini-da-generare.md` (26 illustrazioni coi prompt), `scripts/importa_immagini.py`, icone SVG (`scripts/icone.mjs`, `public/img/icone/`), logo senza scritta (`public/img/logo-fantatitano.png`) | fatto |
 | 3 | Scala delle valutazioni e file di dati: `SCALA` e `CARTE` in `src/config.js`, `src/dati/scala.js` (una sola conversione), `src/dati/giocatori.js` (ruolo, piede, altezza), `scripts/genera-giocatori.mjs`, `scripts/prova-dati.mjs`; `docs/ponte-partita.md` | pronto e provato, **non ancora collegato alle schermate** (si collega col trasloco) |
-| 4–11 | Barra, carte, Home, Carriera, Sfida, Squadra, Mercato, Il mio club, Sfide | da fare: cominciano col trasloco del codice della home in `src/casa/`, quando Alex conferma che la sessione «partita» è ferma |
+| trasloco | Il codice della home è in `src/casa/` (`casa.js`, `casa.html`, `casa.css`): righe spostate così com'erano da `src/game.js` e `src/pagina.html`. Verifica: 153 foto delle schermate identiche a prima, tre partite simulate identiche | fatto |
+| 4–11 | Barra, carte, Home, Carriera, Sfida, Squadra, Mercato, Il mio club, Sfide | da fare, ora tutto in `src/casa/` |
 | 12 | Database dell'economia | da fare (condizioni in `docs/home-spec.md` §8.1) |
 
 Immagini: tutte le 26 illustrazioni sono **segnaposto** (nessuna consegnata); icone e cornici **definitive**; ritratti:

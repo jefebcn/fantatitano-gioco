@@ -7,6 +7,7 @@
 ## Regole
 - Meccaniche come Dream League sì; grafica, file, marchi e codice di First Touch Games mai. Fonti libere: GameplayFootball (Unlicense), Mixamo (non ridistribuire gli FBX), Poly Haven.
 - Modalità partita: il gameplay deve somigliare il più possibile a Dream League (comandi, telecamera, ritmo, peso di passaggi e tiri, IA, portiere, flusso). Se non si sa come si comporta DLS si chiede ad Alex, non si inventa. Di Fantatitano restano grafica, interfaccia, animazioni, nomi.
+- Due sessioni: la partita lavora in `src/game.js`, `src/pagina.html`, `src/regia.js`, `src/fisica/`, `src/grafica/`; la home in `src/casa/`, `src/dati/`, `src/carriera.js`. Ognuna tocca i file dell'altra solo dopo averlo detto ad Alex. Cosa si scambiano: i due `import` tra `src/game.js` e `src/casa/casa.js`, e `docs/ponte-partita.md`.
 - I valori di gioco stanno solo in `src/config.js` (niente numeri nuovi sparsi nel codice); piccoli passi, ognuno spiegato ad Alex con come provarlo.
 - Ogni modifica a gioco o IA si misura con `npm run partite` sugli stessi semi, prima e dopo; un'anomalia blocca la PR.
 - Commenti in italiano sopra il codice, non in coda alla riga: `npm run controlla` li verifica (frasi con «(...);» vengono scambiate per codice).
