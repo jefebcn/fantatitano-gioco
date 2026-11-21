@@ -2,7 +2,7 @@
    orizzontale: 667 × 375, 844 × 390 e 932 × 430. Il giro è ripetibile (numeri casuali e data fissi, animazioni ferme,
    campo 3D nascosto): due giri sullo stesso codice danno le stesse foto, quindi si può confrontare prima e dopo una
    modifica. Accanto alle foto salva il contenuto di ogni schermata (misura-testi.json).
-   Nelle schermate rifatte (barra in alto, Home, Carriera e finestre, per ora) controlla anche le regole di qualità: testo
+   Nelle schermate rifatte (barra in alto, Home, Carriera, Sfida e finestre, per ora) controlla anche le regole di qualità: testo
    mai sotto 12 px, niente testo tagliato, niente fuori dallo schermo, pulsanti alti e larghi almeno 44 px. Esce con errore
    se una regola non è rispettata o se la pagina dà errori.
    Uso: npm run build && node scripts/prove/schermate.cjs cartella-di-uscita   (serve Playwright, come partita.cjs)
@@ -15,7 +15,7 @@ const mime = { '.html': 'text/html', '.js': 'text/javascript', '.webp': 'image/w
 const srv = http.createServer((q, r) => { const u = q.url.split('?')[0], f = path.join(root, u === '/' ? 'index.html' : decodeURIComponent(u)); fs.readFile(f, (e, d) => { if (e) { r.writeHead(404); r.end(); } else { r.writeHead(200, { 'content-type': mime[path.extname(f)] || 'application/octet-stream' }); r.end(d); } }); });
 const MISURE = [[667, 375], [844, 390], [932, 430]];
 // le parti della pagina già rifatte secondo le regole di qualità: qui si controlla ogni elemento
-const RIFATTE = ['#barraF', '#casa', '#carriera', '#finestra'];
+const RIFATTE = ['#barraF', '#casa', '#carriera', '#sfida', '#finestra'];
 
 // Gira nella pagina: elenca le regole di qualità non rispettate dentro le parti rifatte che si vedono
 function qualita(radici) {
@@ -41,7 +41,15 @@ function qualita(radici) {
     }
     // nessuna carta sopra un'altra
     const carte = [...radice.querySelectorAll('.carta')].filter(vista).map((c) => c.getBoundingClientRect());
-    carte.forEach((a, i) => carte.slice(i + 1).forEach((b) => { if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1) guai.push('due carte sovrapposte'); }));
+    const sopra = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+    carte.forEach((a, i) => carte.slice(i + 1).forEach((b) => { if (sopra(a, b)) guai.push('due carte sovrapposte'); }));
+    // sui campi della Sfida nessun giocatore copre lo scudo, la valutazione o il nome di un altro, e tutti stanno dentro il
+    // campo (del nome contano la larghezza del testo scritto e l'altezza della sua riga)
+    for (const campo of radice.querySelectorAll('.sCampo')) {
+      const q = campo.getBoundingClientRect(), scritto = (e) => { const g = document.createRange(); g.selectNodeContents(e); const t = g.getBoundingClientRect(), r = e.getBoundingClientRect(); return { left: t.left, right: t.right, top: r.top, bottom: r.bottom }; };
+      const pezzi = [...campo.querySelectorAll('.gC')].map((c) => ({ nome: c.querySelector('.gNome').textContent, parti: [c.querySelector('.gS').getBoundingClientRect(), scritto(c.querySelector('.gNome')), c.querySelector('.gVal').getBoundingClientRect()] }));
+      pezzi.forEach((a, i) => { for (const r of a.parti) if (r.left < q.left - 1 || r.right > q.right + 1 || r.top < q.top - 1 || r.bottom > q.bottom + 1) guai.push(`giocatore fuori dal campo: ${a.nome}`); pezzi.slice(i + 1).forEach((b) => { if (a.parti.some((x) => b.parti.some((y) => sopra(x, y)))) guai.push(`giocatori sovrapposti sul campo: ${a.nome} e ${b.nome}`); }); });
+    }
   }
   return guai;
 }
@@ -64,6 +72,7 @@ srv.listen(0, async () => {
     let n = 0; const testi = {};
     const dove = () => pg.evaluate(() => { const s = [...document.querySelectorAll('.scr')].find((e) => !e.classList.contains('nas')); return s ? s.id : 'nessuna'; });
     const foto = async (nome) => {
+      await pg.waitForFunction(() => !document.querySelector('.scr:not(.nas) img[data-ritr]:not([src])'), null, { timeout: 60000, polling: 100 });
       await pg.waitForTimeout(350); const f = `${String(++n).padStart(2, '0')}-${nome}`; await pg.screenshot({ path: path.join(OUT, `${w}-${f}.png`) });
       testi[f] = await pg.evaluate(() => { const pulisci = (t) => t.replace(/src="data:[^"]+"/g, 'src="data"').replace(/url\(&quot;data:[^)]*\)/g, 'url(data)'), s = [...document.querySelectorAll('.scr')].find((e) => !e.classList.contains('nas')), b = document.querySelector('#barraF'); return (s ? s.id + '|' + pulisci(s.innerHTML) : 'nessuna') + (b && !b.classList.contains('nas') ? '|barra|' + pulisci(b.innerHTML) : ''); });
       for (const g of await pg.evaluate(qualita, RIFATTE)) regole.push(`${w} ${f}: ${g}`);
@@ -75,13 +84,14 @@ srv.listen(0, async () => {
 
     // senza carriera: benvenuto, amichevole libera, creazione del club, capitano
     await foto('benvenuto');
-    await tocca('#vai'); await foto('scelta'); await tocca('.sq', 0); await tocca('.sq', 5); await foto('scelta-pronta'); await tocca('#inizio'); await foto('sfida-libera'); await tocca('#preInd'); await tocca('#indietro');
+    await tocca('#vai'); await foto('scelta'); await tocca('.sq', 0); await tocca('.sq', 5); await foto('scelta-pronta'); await tocca('#inizio'); await foto('sfida-libera'); await tocca('#sfida [data-az="cambia"]'); await tocca('#indietro');
     await tocca('#carr'); await foto('club'); await tocca('#nvDado'); await tocca('#nvCol button', 2); await tocca('#nvStile button', 3); await foto('club-scelto');
     await tocca('#nvAvanti'); await foto('capitano'); await tocca('.cap', 6); await foto('capitano-scelto'); await tocca('#nvAvanti'); await pg.waitForTimeout(1200);
     // la Home e le sezioni che apre
     await foto('home');
     await tocca('#casa .c-scenario');
-    await vai('#casa .c-percorso', 'percorso'); await vai('#casa .c-amichevole', 'amichevole');
+    await vai('#casa .c-percorso', 'percorso');
+    await vai('#casa .c-amichevole', 'amichevole', async () => { await tocca('.sq', 1); await tocca('.sq', 7); await tocca('#inizio'); await foto('sfida-amichevole'); await tocca('#sfida [data-az="cambia"]'); });
     await vai('#casa .c-sfide', 'sfide-d', async () => { for (const t of ['w', 'c', 's']) { await tocca(`[data-stab="${t}"]`); await foto(`sfide-${t}`); } });
     await vai('#casa .c-squadra', 'squadra', async () => { await tocca('#campoA [data-x]', 1); await foto('squadra-tocco'); });
     await vai('#casa .c-mercato', 'mercato', async () => { if (await tocca('#panC [data-p]', 0)) await foto('mercato-scelto'); });
@@ -102,12 +112,23 @@ srv.listen(0, async () => {
     // dal profilo a «Personalizza»: due livelli sotto la Carriera
     await tocca('#barraF [data-vai="profilo"]'); await vai('#panC [data-club="personalizza"]', 'personalizza'); await tocca('#bCasa');
     // partita: si entra dal campionato, si gioca a passi fissi, poi pausa, sostituzioni e fine; «Continua» torna alla Carriera
-    await tocca('#carriera .k-prossima'); await tocca('#gioca'); await pg.waitForTimeout(400); await foto('vs'); await pg.evaluate(() => window.__seme(500)); await pg.waitForTimeout(1900);
+    await tocca('#carriera .k-prossima'); await tocca('#sfida [data-az="riscaldamento"]'); await tocca('#sfida [data-az="squadra"]'); await foto('squadra-dalla-sfida'); await tocca('#bCasa');
+    if (await dove() !== 'sfida') errori.push(`${w}: dalla Squadra aperta nella Sfida Indietro porta a «${await dove()}»`);
+    await tocca('#sfida [data-az="gioca"]'); await pg.waitForTimeout(400); await foto('vs'); await pg.evaluate(() => window.__seme(500)); await pg.waitForTimeout(1900);
     const stato = await pg.evaluate(() => { const g = window.__g; window.__seme(501); for (let i = 0; i < 900; i++) g.step(1 / 60); g.pause(true); return [g.G.state, g.G.teams[0].score, g.G.teams[1].score]; });
     await foto('pausa'); if (await tocca('#apriCambi')) { await foto('cambi'); await tocca('#cambiL [data-o]', 3); await foto('cambi-tocco'); await tocca('#cambiOk'); }
     const fine = await pg.evaluate(() => { const g = window.__g; window.__seme(502); g.pause(false); let i = 0; for (; i < 40000 && g.G.state !== 'full'; i++) g.step(1 / 30); for (let k = 0; k < 400; k++) g.step(1 / 30); return [g.G.state, i, g.G.teams[0].score, g.G.teams[1].score, !document.querySelector('#fine').classList.contains('nas')]; });
-    await foto('fine'); if (await tocca('#continua')) await foto('carriera-dopo-la-partita');
+    await foto('fine'); if (await tocca('#continua')) await foto('dopo-la-partita');
     if (await dove() !== 'carriera') errori.push(`${w}: dopo la partita si è in «${await dove()}» invece che nella Carriera`);
+    // il risultato è registrato, l'energia con cui si è usciti dal campo è salvata, e la finestra dice cosa si è guadagnato
+    const dopo = await pg.evaluate(() => { const g = window.__g, K = g.carriera(), en = Object.values(K.energia || {}); return { giocate: K.giornata, stanchi: en.filter((x) => x < 100).length, finestra: !document.querySelector('#finestra').classList.contains('nas'), monete: K.monete }; });
+    if (dopo.giocate !== 1 || !dopo.stanchi || !dopo.finestra) errori.push(`${w}: dopo la partita ${JSON.stringify(dopo)}`);
+    await tocca('#finSi'); await foto('carriera-dopo-la-partita');
+    // la partita dopo: i titolari sono stanchi, il riscaldamento costa monete e dà energia, una volta sola
+    await tocca('#carriera .k-prossima'); await foto('sfida-stanchi'); await tocca('#sfida [data-az="riscaldamento"]'); await foto('finestra-riscaldamento'); await tocca('#finSi'); await foto('sfida-riscaldati');
+    const risc = await pg.evaluate(() => { const g = window.__g, K = g.carriera(); return { monete: K.monete, spento: document.querySelector('#sfida .azione.risc').classList.contains('spento') }; });
+    if (risc.monete >= dopo.monete || !risc.spento) errori.push(`${w}: riscaldamento ${JSON.stringify(risc)} (prima ${dopo.monete} monete)`);
+    await tocca('#bCasa');
     // fine del campionato: le altre giornate giocate a tavolino, poi la carta diventa «Nuova stagione» con la finestra di conferma
     await pg.evaluate(() => { const g = window.__g, K = g.carriera(); window.__seme(600); while (g.CAR.prossima(K)) g.CAR.giocaCampionato(K, window.CLUBS, 1, 1, []); g.salvaK(); });
     await tocca('#carriera .scorc[data-vai="sfide"]'); await tocca('#bCasa'); await foto('carriera-fine-campionato');

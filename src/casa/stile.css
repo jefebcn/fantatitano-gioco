@@ -261,3 +261,72 @@ body.conBarra #pre .tatt{align-self:stretch;align-items:flex-start;padding-right
 .bottone{min-height:44px;padding:0 22px;border-radius:12px;font:400 20px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.06em;color:#0B1530;background:linear-gradient(180deg,#F2CC6B,#D9A63E);box-shadow:0 4px 0 #8E6A1E}
 .bottone:active{transform:translateY(3px);box-shadow:0 1px 0 #8E6A1E}
 .bottone.secondo{color:#fff;background:rgba(255,255,255,.12);box-shadow:0 4px 0 rgba(0,0,0,.45)}
+
+/* ---------- Sfida: due campi in prospettiva con le carte, la competizione al centro, i club sotto, i pulsanti ---------- */
+#sfida{--oro:#E8B64C;--azz:#3FC6FF;font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff;
+  display:grid;grid-template-columns:minmax(0,1fr) 98px minmax(0,1fr);grid-template-rows:minmax(0,1fr) 34px 44px;gap:4px 6px;align-items:stretch;justify-items:stretch;overflow:hidden;
+  padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));
+  background:radial-gradient(ellipse 85% 75% at 50% 46%,rgba(0,0,0,0) 52%,rgba(2,5,16,.62) 100%),radial-gradient(ellipse 70% 60% at 50% 38%,rgba(34,72,150,.55),rgba(11,21,48,0) 72%),linear-gradient(180deg,#0A1738,#0B1530 52%,#050A1C)}
+body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
+#sfida.illustrata{background:linear-gradient(rgba(6,11,28,.5),rgba(6,11,28,.72)),image-set(url(img/illustrazioni/sfondo-sfida@1x.webp) 1x,url(img/illustrazioni/sfondo-sfida@2x.webp) 2x,url(img/illustrazioni/sfondo-sfida@3x.webp) 3x) center/cover}
+.sCampo{position:relative;min-width:0;min-height:0}
+.sCampo.sx{grid-area:1/1}
+.sCampo.dx{grid-area:1/3}
+.sClub.sx{grid-area:2/1}
+.sClub.dx{grid-area:2/3}
+/* l'erba in prospettiva: più stretta in alto, a strisce, con l'area in basso e mezzo cerchio di centrocampo in alto */
+.erbaP{position:absolute;inset:0;clip-path:polygon(7% 0,93% 0,100% 100%,0 100%);border-radius:4px;background:repeating-linear-gradient(0deg,#2a8339 0 12.5%,#31994a 12.5% 25%)}
+.erbaP::before{content:"";position:absolute;left:30%;right:30%;bottom:0;height:20%;border:2px solid rgba(255,255,255,.5);border-bottom:0}
+.erbaP::after{content:"";position:absolute;left:36%;right:36%;top:-16%;height:30%;border:2px solid rgba(255,255,255,.5);border-radius:50%}
+/* la carta da campo: scudo col ritratto, valutazione in alto a sinistra, ruolo in basso, energia e nome sotto */
+.gC{position:absolute;transform:translate(-50%,-50%);display:grid;justify-items:center}
+.gS{position:relative;display:block;width:var(--gw,34px);aspect-ratio:.84}
+.gS .scudo{position:absolute;inset:0;width:100%;height:100%}
+.gS .gFoto{position:absolute;left:12%;top:9%;width:76%;height:60%;object-fit:cover;object-position:top;border-radius:3px}
+.gS img.gFoto:not([src]){display:none}
+.gS .gVal{position:absolute;left:-8px;top:-1px;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#0B1530;font:800 12px Montserrat,sans-serif;font-style:normal;color:#E8B64C;box-shadow:0 0 0 1.5px #E8B64C}
+.gC.f-argento .gVal{color:#CFE6F7;box-shadow:0 0 0 1.5px #9FC4DE}
+.gC.f-bronzo .gVal{color:#E8B089;box-shadow:0 0 0 1.5px #B8794A}
+.gS .gRuolo{position:absolute;left:0;right:0;bottom:7%;text-align:center;text-decoration:none;font:800 12px Montserrat,sans-serif;line-height:1;color:#0B1530}
+.gS .fasciaC{left:auto;right:-8px;top:-1px;width:17px;height:17px;font-size:12px}
+.gS .gAvviso{position:absolute;right:-8px;bottom:12%;display:grid;width:15px;height:15px;color:#FF5A5A}
+.gS .gStella{position:absolute;left:-6px;bottom:10%;display:grid;width:11px;height:11px;color:#E8B64C}
+.gS .gAvviso .ico,.gS .gStella .ico{width:100%;height:100%}
+.gEn{display:block;width:calc(var(--gw,34px)*.88);height:3px;border-radius:2px;background:rgba(0,0,0,.6);overflow:hidden}
+.gEn b{display:block;height:100%;background:#5BE37A}
+.gEn.e-m b{background:#F2A93B}
+.gEn.e-b b{background:#FF5A5A}
+.gNome{width:100%;text-align:center;font:400 var(--gf,13px) "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.03em;line-height:1;color:#fff;white-space:nowrap;overflow:hidden;text-shadow:0 1px 2px rgba(0,0,0,.85)}
+/* al centro: la competizione, la fase, casa o trasferta, l'ora e il tempo */
+.sCentro{grid-area:1/2/3/3;display:grid;justify-items:center;align-content:center;gap:3px;min-width:0;text-align:center}
+.sCentro .logo{width:42px;height:42px;object-fit:contain;color:#E8B64C}
+.sCentro b{font:400 19px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.05em;line-height:1}
+.sCentro i{max-width:100%;font:600 12px Montserrat,sans-serif;font-style:normal;line-height:1.2;color:rgba(255,255,255,.86)}
+.sCentro .vs{font:400 24px "Bebas Neue",Anton,Impact,sans-serif;line-height:1;color:#E8B64C}
+.sCentro .luogo{font-weight:800;color:#fff}
+.sCentro .meteo{display:grid;justify-items:center;margin-top:3px}
+.sCentro .meteo .ico{width:17px;height:17px;color:#3FC6FF}
+/* sotto ogni campo: stemma, nome, stelle, modulo e maglia */
+.sClub{display:flex;align-items:center;gap:7px;min-width:0;min-height:0;padding:0 2px}
+.sClub .stemma{height:100%;width:auto;flex:none}
+.sClub .chi{flex:1 1 0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:1px;align-content:center}
+.sClub .chi b{font:400 19px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.04em;line-height:1;white-space:nowrap;overflow:hidden}
+.sClub .chi>span{display:flex;align-items:center;gap:7px}
+.sClub .chi u{text-decoration:none;font:800 12px Montserrat,sans-serif;color:#3FC6FF}
+.sClub .divisa{flex:none;height:100%}
+.sClub .divisa svg{display:block;height:100%;width:auto}
+/* in basso: Squadra, Riscaldamento e Gioca, grande e sempre in vista */
+.sAzioni{grid-area:3/1/4/4;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr);gap:6px}
+.sAzioni.coppia{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.azione{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 10px;border-radius:12px;border:1px solid rgba(63,198,255,.45);
+  background:linear-gradient(165deg,rgba(23,54,122,.95),rgba(9,20,52,.95));color:#fff;font:800 13px Montserrat,sans-serif;transition:transform .08s,filter .08s}
+.azione:active{transform:scale(.97);filter:brightness(1.2)}
+.azione .ico{width:20px;height:20px;color:#3FC6FF}
+.azione b{font-weight:800;white-space:nowrap}
+.azione.risc span{display:grid;justify-items:start;line-height:1.15;min-width:0}
+.azione.risc i{display:flex;align-items:center;gap:3px;font:600 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.84);white-space:nowrap}
+.azione.risc i .ico{width:13px;height:13px}
+.azione.spento{opacity:.6}
+.azione.gioca{border-color:#8E6A1E;background:linear-gradient(180deg,#F2CC6B,#D9A63E);color:#0B1530;box-shadow:0 3px 0 #8E6A1E}
+.azione.gioca b{font:400 27px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.08em;line-height:1}
+.azione.gioca .ico{width:22px;height:22px;color:#0B1530}

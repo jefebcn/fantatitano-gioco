@@ -18,6 +18,7 @@ import { rotta, apri, indietro, ridisegna, tornaSotto, azzera } from './nav.js';
 import { mostraBarra, aggiornaBarra } from './barra.js';
 import { disegnaHome } from './home.js';
 import { disegnaCarriera } from './vista-carriera.js';
+import { disegnaSfida } from './vista-sfida.js';
 import { t } from './testi.js';
 
 // le schermate della home e i loro stili entrano nella pagina prima di tutto il resto, nel punto dov'erano
@@ -25,8 +26,8 @@ document.head.insertAdjacentHTML('beforeend', `<style id="casaStili">${CSS_CASA}
 document.getElementById('vs').insertAdjacentHTML('beforebegin', HTML_CASA);
 
 // le schermate in cui si vede la barra in alto, quando c'è una carriera (in partita e nel benvenuto non c'è)
-const CON_BARRA = ['#casa', '#carriera', '#pan', '#scelta', '#pre', '#nuovo'];
-const show = (id) => { for (const s of ['#home', '#nuovo', '#casa', '#carriera', '#pan', '#scelta', '#pre', '#vs', '#stop', '#cambi', '#fine']) $(s).classList.toggle('nas', s !== id); mostraBarra(!!K && CON_BARRA.includes(id)); };
+const CON_BARRA = ['#casa', '#carriera', '#sfida', '#pan', '#scelta', '#pre', '#nuovo'];
+const show = (id) => { for (const s of ['#home', '#nuovo', '#casa', '#carriera', '#sfida', '#pan', '#scelta', '#pre', '#vs', '#stop', '#cambi', '#fine']) $(s).classList.toggle('nas', s !== id); mostraBarra(!!K && CON_BARRA.includes(id)); };
 const sel = { mia: null, loro: null, diff: 'normale', form: '4-3-3', ment: 0, ora: 'giorno', qual: 'auto', assistito: PASSAGGIO.assistito };
 const SAVE = 'fantatitano-partita';
 try { const v = JSON.parse(localStorage.getItem(SAVE) || '{}'); if (FORMS[v.form]) sel.form = v.form; if ([-1, 0, 1].includes(v.ment)) sel.ment = v.ment; if (DIFF[v.diff]) sel.diff = v.diff; if (v.ora === 'notte' || v.ora === 'giorno') sel.ora = v.ora; if (['auto', 'alta', 'media', 'bassa'].includes(v.qual)) sel.qual = v.qual; if (typeof v.assistito === 'boolean') sel.assistito = v.assistito; } catch (e) { /* si parte dai valori di base */ }
@@ -278,7 +279,6 @@ function panClassifica() {
   pan(`Campionato · stagione ${K.stagione}`, tabella(CAR.classifica(K, CLUBS)) + (g >= 0 ? `<div class="sez">Giornata ${g + 1}: tutti i risultati</div><div class="ris2">${K.cal[g].map(([a, b], i) => riga(a, b, K.ris[g][i])).join('')}</div>` : '')
     + `<div class="sez">Il tuo calendario</div><div class="ris2 cale">${mie}</div>`);
 }
-function gioca(tipo, avv, titolo, fuori, rigori) { sel.mia = K.club; sel.loro = avv; G.comp = { tipo, titolo, fuori: !!fuori, rigori: !!rigori }; showPre(); }
 // Come nelle schermate dei tornei: prima il quadro, e in cima il tasto per giocare la prossima partita
 function giocaCoppa() { const p = CAR.coppaProssima(K); if (p) apri('sfida', 'coppa', p.avv, `Coppa Titano · ${p.nome.toLowerCase()}`, false, true); }
 function giocaCastelli() { const p = CAR.castelliProssima(K); if (p) apri('sfida', 'castelli', p.avv, `Trofeo dei Castelli · ${p.nome.toLowerCase()}`, p.fase === 'gironi' && !p.inCasa, p.fase === 'ko'); }
@@ -527,11 +527,11 @@ function buildMenu() {
   rotta('profilo', panProfilo); rotta('info', panInfo); rotta('impostazioni', () => { armato = false; panImp(); });
   rotta('mercato', () => { mPreso = null; panMercato(); });
   rotta('club', (tab) => panClubMio(tab)); rotta('negozio', (tab) => panNegozio(tab)); rotta('personalizza', () => apriNuovo(true));
-  rotta('amichevole', vai); rotta('sfidaLibera', () => showPre());
+  rotta('amichevole', vai); rotta('sfidaLibera', () => { show('#sfida'); disegnaSfida({ tipo: 'amichevole', mia: sel.mia, loro: sel.loro, fuori: false, rigori: false }); });
   rotta('squadra', () => { rXi = rPan = -1; sel.mia = K.club; sel.loro = CLUBS.find((c) => c.id !== K.club).id; G.comp = { tipo: 'rosa' }; showPre(); });
-  rotta('sfida', (tipo, avv, titolo, fuori, rigori) => gioca(tipo, avv, titolo, fuori, rigori));
+  rotta('sfida', (tipo, avv, titolo, fuori, rigori) => { show('#sfida'); disegnaSfida({ tipo, mia: K.club, loro: avv, fuori: !!fuori, rigori: !!rigori }); });
   $('#indietro').onclick = casa;
-  $('#inizio').onclick = () => (K ? apri('sfidaLibera') : showPre()); $('#preInd').onclick = () => { if (G.comp) casa(); else { show('#scelta'); refresh(); } };
+  $('#inizio').onclick = () => { if (K) return apri('sfidaLibera'); show('#sfida'); disegnaSfida({ tipo: 'amichevole', mia: sel.mia, loro: sel.loro, fuori: false, rigori: false, indietro: () => { show('#scelta'); refresh(); } }); }; $('#preInd').onclick = () => { if (G.comp) casa(); else { show('#scelta'); refresh(); } };
   // ingresso e dashboard
   $('#nuovo').addEventListener('click', tapNuovo);
   $('#nuovo').addEventListener('input', (e) => { if (e.target.id === 'nvSigla') e.target.dataset.mano = 1; if (e.target.id === 'nvClub' && !$('#nvSigla').dataset.mano) $('#nvSigla').value = sigla(e.target.value); if (NV.passo === 1) anteprimaClub(); });
@@ -596,4 +596,4 @@ function buildMenu() {
 function caricaCarriera() { K = CAR.carica(); if (K && !club(K.club)) K = null; CAR.applica(K, CLUBS); applicaMio(); }
 
 // quello che la partita (src/game.js) prende da qui
-export { DATI, fmtTempo, ritratto, consigliato, avviso, ridisegna, show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera };
+export { DATI, fmtTempo, ritratto, consigliato, avviso, ridisegna, maglia, show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera };
