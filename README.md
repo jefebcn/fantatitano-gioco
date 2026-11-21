@@ -24,7 +24,7 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 | `src/game.js` | La partita: scena, motore, IA, comandi, pausa, sostituzioni, fine partita, audio |
 | `src/casa/casa.js`, `casa.html`, `casa.css` | La home, i menu e le schermate fuori dalla partita (ingresso, club, carriera, pannelli, scelta squadre, prima della partita). `casa.js` aggiunge alla pagina schermate e stili all'avvio; con `src/game.js` si scambia solo i nomi elencati nei due `import` |
 | `src/casa/nav.js`, `barra.js`, `carte.js`, `home.js`, `vista-carriera.js`, `finestra.js`, `icone.js`, `testi.js`, `stile.css` | Le schermate nuove della home: navigazione a livelli con Indietro, barra in alto, carte di navigazione, Home a otto carte, Carriera, finestre di conferma, icone, testi in un file solo, stili |
-| `src/dati/scala.js`, `giocatori.js` | Valutazioni e statistiche mostrate (una sola conversione), ruoli precisi, piede e altezza dei giocatori |
+| `src/dati/scala.js`, `giocatori.js`, `squadre.js` | Valutazioni e statistiche mostrate (una sola conversione), ruoli precisi, piede e altezza dei giocatori; i tre nomi di ogni squadra (completo, breve, sigla) |
 | `src/pagina.html` | Pagina, stili comuni e schermate della partita (comandi, VS, pausa, sostituzioni, fine partita). La build la copia in `public/index.html` con la versione negli indirizzi degli script |
 | `src/sw.js` | Service worker: app installabile, avvio dalla memoria e gioco offline. La build lo copia in `public/sw.js` con la versione e i file da precaricare |
 | `src/prestazioni.js` | Risoluzione dinamica e indicatore delle prestazioni (`?debug` nell'indirizzo) |
