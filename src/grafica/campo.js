@@ -82,7 +82,9 @@ float macchie(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
 roughnessFactor = mix(roughnessFactor, 0.62, gLinea);`);
   };
-  const campo = new T.Mesh(new T.PlaneGeometry(W, H), mat); campo.rotation.x = -Math.PI / 2; campo.receiveShadow = true;
+  // il prato è fatto di riquadri di pochi metri: con due soli triangoli grandi come il campo, quando un angolo finisce
+  // dietro la telecamera mezzo prato poteva sparire per un paio di fotogrammi (si vedeva il cemento grigio sotto)
+  const campo = new T.Mesh(new T.PlaneGeometry(W, H, Math.ceil(W / prato.maglia), Math.ceil(H / prato.maglia)), mat); campo.rotation.x = -Math.PI / 2; campo.receiveShadow = true;
   // oltre il bordo del campo: il cemento della pista ai piedi delle tribune e il piazzale fuori dallo stadio (niente prato)
   const fuori = new T.Mesh(new T.PlaneGeometry(700, 700), new T.MeshStandardMaterial({ color: 0x5b5f63, roughness: 1, metalness: 0 }));
   fuori.rotation.x = -Math.PI / 2; fuori.position.y = -0.05; fuori.receiveShadow = true;
