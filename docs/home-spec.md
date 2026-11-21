@@ -1,7 +1,16 @@
 # Home del gioco — specifica (Fase 5)
 
-Stato: **in attesa dell'approvazione di Alex**. Finché non la approva non si scrive codice della home.
+Stato: **in attesa delle risposte di Alex**. Il 21/11 Alex ha chiesto di non fermarsi: la home si costruisce con le scelte
+proposte qui, segnate come provvisorie; ogni risposta diversa si applica dopo. L'unica parte ferma è il database (§4): niente
+tabelle sul progetto Supabase dell'app senza il suo sì esplicito.
 Le cose da decidere sono raccolte in fondo, numerate: basta rispondere punto per punto.
+
+Fatto finora (provvisorio dove c'era una decisione aperta): home in blu notte e oro col gradiente segnaposto, barra nuova,
+carte secondo il disegno, percorso premi, «come guadagnare» con lo storico, notifiche, allenatore, finanze, avatar del
+manager, qualità grafica e passaggio assistito nelle impostazioni, prezzi del mercato della proposta. Saldo e storico
+stanno ancora sul telefono (e nella copia sull'account), passando tutti da una sola funzione (`muovi` in `src/carriera.js`).
+Lo stemma a pezzi da sbloccare non è fatto: la percentuale dice quanto è personalizzato (40 di serie, 80 col club proprio,
+100 con un disegno).
 
 Regole che valgono per tutto il documento:
 - Monete e diamanti non si comprano con soldi veri. Niente acquisti in-app, niente negozio a pagamento, niente pagamenti

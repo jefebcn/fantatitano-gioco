@@ -253,3 +253,21 @@ export const DUELLO = { vicini: 0.63, corsa: 3, paralleli: 0.35, spinta: 14, sbi
 // solo nella parte centrale (da `attiva` a `fine`, in secondi), quando il piede è tutto avanti: lungo la gamba, da `anca` a
 // `piede` metri davanti al bacino, con uno spessore `raggio`. Tempi e misure vengono dall'animazione del modello.
 export const SCIVOLATA = { v0: 8.5, spinta: 1.1, attrito: 2.2, durata: 0.75, attiva: 0.16, fine: 0.62, anca: 0.13, piede: 0.83, raggio: 0.25, giuPalla: 0.5, uomo: 0.33, dopo: 0.12 };
+
+// Economia della carriera (docs/home-spec.md). Monete e diamanti si guadagnano solo giocando: niente acquisti.
+// prezzo: il prezzo di un giocatore è (valutazione meno 50) al quadrato, per questo numero, per dieci monete.
+// percorso: il percorso premi della stagione. Punti per fonte, punti che servono per ogni livello e premio di ogni livello
+// (m monete, g diamanti). allenatore: i cinque livelli (valutazione mostrata e costo per arrivarci). Ogni livello oltre il
+// primo dà `sedute` sedute di allenamento in più per giocatore e toglie `sconto` dal prezzo delle sedute.
+// finanze: fino a quante monete vale ogni giudizio. storico: quanti movimenti si tengono.
+export const ECONOMIA = {
+  prezzo: .4,
+  percorso: {
+    perLivello: 40, punti: { partita: 10, vinta: 10, sfidaD: 5, sfidaW: 15, sfidaS: 20, sfidaC: 20, turno: 15 },
+    premi: [{ m: 200 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 200 }, { g: 10 },
+      { m: 200 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 400 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 400 }, { g: 20 }],
+  },
+  allenatore: { livelli: [{ voto: 60 }, { voto: 70, monete: 2000, gemme: 0 }, { voto: 80, monete: 5000, gemme: 0 }, { voto: 90, monete: 10000, gemme: 15 }, { voto: 99, monete: 20000, gemme: 30 }], sedute: 1, sconto: .05 },
+  finanze: [[500, 'Scarse'], [2000, 'Discrete'], [6000, 'Buone'], [Infinity, 'Eccellenti']],
+  storico: 120,
+};
