@@ -1,13 +1,15 @@
-"""Costruisce la maschera della divisa per il calciatore, dal modello già alleggerito (modelli/calciatore.glb):
+"""CORPO DI RIPIEGO (quello di prima, ?corpo=vecchio): per il corpo in uso vedi scripts/maschera-nuova.py.
+
+Costruisce la maschera della divisa per il calciatore, dal modello già alleggerito (modelli/quaternius-scheletro.glb):
 va rifatta ogni volta che si rigenera il modello, se no gli orli non seguono più i triangoli.
 
 Per ogni punto della texture del corpo dice che cos'è: pelle, maglia, pantaloncini, calzettoni, scarpe,
 avambraccio, mano. Lo decide dalla posizione 3D di quel punto nella posa a T (non triangolo per triangolo),
 così gli orli vengono dritti. Il gioco poi colora le zone coi colori della squadra (src/divisa.js).
 
-Uscite: public/img/divisa-maschera.png  (R = zona x 28, +14 se il punto è sul davanti del corpo; G = posizione sinistra-destra su 1 m,
+Uscite: public/img/vecchio/divisa-maschera.png  (R = zona x 28, +14 se il punto è sul davanti del corpo; G = posizione sinistra-destra su 1 m,
         B = altezza su 1,9 m: servono per righe e fasce; il davanti serve per lo scollo a V e la polo)
-        public/img/pelle.webp, public/img/occhi.webp
+        public/img/vecchio/pelle.webp, public/img/occhi.webp
 Uso: python3 scripts/maschera-divisa.py [lato in pixel, 512]
 """
 import json, struct, sys
@@ -15,7 +17,7 @@ import numpy as np
 from PIL import Image
 
 SRC = 'modelli/quaternius'; N = int(sys.argv[1]) if len(sys.argv) > 1 else 512
-glb = open('modelli/calciatore.glb', 'rb').read(); n0 = struct.unpack('<I', glb[12:16])[0]
+glb = open('modelli/quaternius-scheletro.glb', 'rb').read(); n0 = struct.unpack('<I', glb[12:16])[0]
 j = json.loads(glb[20:20 + n0]); buf = glb[20 + n0 + 8:]
 CT = {5120: np.int8, 5121: np.uint8, 5122: np.int16, 5123: np.uint16, 5125: np.uint32, 5126: np.float32}; NC = {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4}
 def acc(i):
@@ -80,7 +82,7 @@ zona[np.isnan(x)] = SKIN
 davanti = np.nan_to_num(z, nan=-9) > nz + .01  # davanti al collo (il collo sta più indietro del centro del busto)
 out = np.zeros((N, N, 3), np.uint8); out[..., 0] = zona * 28 + davanti * 14
 out[..., 1] = np.clip((np.nan_to_num(xyz[..., 0]) + .5) * 255, 0, 255); out[..., 2] = np.clip(np.nan_to_num(y) / 1.9 * 255, 0, 255)
-Image.fromarray(out).save('public/img/divisa-maschera.png', optimize=True)
-Image.open(f'{SRC}/T_Superhero_Male_Ligh.png').convert('RGB').resize((N, N), Image.LANCZOS).save('public/img/pelle.webp', quality=88)
+Image.fromarray(out).save('public/img/vecchio/divisa-maschera.png', optimize=True)
+Image.open(f'{SRC}/T_Superhero_Male_Ligh.png').convert('RGB').resize((N, N), Image.LANCZOS).save('public/img/vecchio/pelle.webp', quality=88)
 Image.open(f'{SRC}/T_Eye_Brown.png').convert('RGB').resize((128, 128), Image.LANCZOS).save('public/img/occhi.webp', quality=90)
 print('zone (% della texture):', {n: round(float((zona == k).mean() * 100), 1) for k, n in enumerate(['pelle', 'maglia', 'pantaloncini', 'calzettoni', 'scarpe', 'avambraccio', 'mano', 'colletto', 'bordo manica'])})

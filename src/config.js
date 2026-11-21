@@ -124,6 +124,9 @@ export const FERMI = { comandi: 2, buio: .5, occasione: 4, fuori: 2.5, corto: [7
 // Il deluso sta a `deluso` = [parte della distanza dalla telecamera, metri di lato]
 export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.7, camDist: 4.6, deluso: [.55, 1.7] };
 
+// Livelli di dettaglio del calciatore: sotto `vicino` metri dalla telecamera il corpo pieno (circa 4.300 triangoli: primi
+// piani, replay, esultanze), fino a `lontano` quello medio (1.500: la telecamera di gioco), oltre quello leggero (600)
+export const LOD = { vicino: 22, lontano: 62 };
 // Cartelloni LED a bordo campo: scorrono piano di continuo (frazione di tutta la striscia al secondo: 4 pannelli)
 export const LED = { scorre: .02 };
 

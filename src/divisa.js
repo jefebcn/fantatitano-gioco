@@ -89,7 +89,8 @@ export function creaDivisa(maschera, pelle, kit) {
 /**
  * La mappa delle zone per lo shader del calciatore (RGBA, stessa misura della maschera):
  * R pelle (255, oppure 128 per avambraccio e mano, che il portiere copre), G scarpe (255 tomaia, 128 suola),
- * B stoffa sotto (255 pantaloncini, 150 calzettoni), A fascia da capitano (sul braccio sinistro).
+ * B stoffa sotto (255 pantaloncini, 150 calzettoni), A fascia da capitano (255, sul braccio sinistro), capelli e sopracciglia
+ * dipinti (120), barba (60).
  * @param {ImageData} maschera
  * @returns {{ data: Uint8Array, size: number }}
  */
@@ -97,10 +98,13 @@ export function creaZone(maschera) {
   const N = maschera.width, m = maschera.data, d = new Uint8Array(N * N * 4), M = MISURE;
   for (let i = 0; i < d.length; i += 4) {
     const z = Math.floor(m[i] / 28), px = m[i + 1] / 255 - 0.5, h = m[i + 2] / 255 * 1.9;
-    d[i] = z === ZONA.PELLE ? 255 : z === ZONA.AVAMBRACCIO || z === ZONA.MANO ? 128 : 0;
+    // sulla pelle del corpo nuovo la maschera dice anche che cosa c'è sopra (valori sotto 7): 2 capelli, 4 sopracciglia,
+    // 5 barba, 6 occhio. L'occhio non prende il tono della pelle; capelli, sopracciglia e barba vanno nel canale A (120 e 60)
+    const sopra = z === ZONA.PELLE ? m[i] : 0;
+    d[i] = z === ZONA.PELLE ? (sopra === 6 ? 0 : 255) : z === ZONA.AVAMBRACCIO || z === ZONA.MANO ? 128 : 0;
     d[i + 1] = z === ZONA.SCARPE ? (h < M.suola ? 128 : 255) : 0;
     d[i + 2] = z === ZONA.PANTALONCINI ? 255 : z === ZONA.CALZETTONI ? 150 : 0;
-    d[i + 3] = z === ZONA.MAGLIA && h > M.braccio && px > M.fascia[0] && px < M.fascia[1] ? 255 : 0;
+    d[i + 3] = z === ZONA.MAGLIA && h > M.braccio && px > M.fascia[0] && px < M.fascia[1] ? 255 : sopra === 2 || sopra === 4 ? 120 : sopra === 5 ? 60 : 0;
   }
   return { data: d, size: N };
 }

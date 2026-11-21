@@ -35,14 +35,15 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Prossimo: risposte di Alex alle domande aperte; tarare la conduzione (4,5 m/s è una stima) e il portiere.
 - Prestazioni: 60 fps su iPhone nella webview dell'app, minimo 30.
 
-## Giocatori 3D (20/11 notte): punto e scelta in sospeso
-- Oggi: corpo «Superhero» gratuito di Quaternius (CC0), snellito via codice; ~5.600 triangoli a giocatore (corpo 4.522,
-  occhi e sopracciglia 630, capelli ~450), 9 mesh, 8 materiali, 7 texture; 65 ossa, skinning su GPU (three.js). Nessun LOD.
-- Fatto subito: tre corporature (snella, normale, robusta), arbitro rosso e nero, ombre del sole più nette di giorno.
-- Proposte per il corpo nuovo (sceglie Alex): Quaternius «Regular» dal pacchetto Source (CC0, 19,99 $ o Patreon), MakeHuman/
-  MPFB2 in Blender (gratis, licenza CC0 per le esportazioni ufficiali, più lavoro), generazione AI (Meshy Pro 20 $/mese,
-  diritti commerciali, topologia da rifare). Poi: un materiale con atlas e due LOD.
-- Riferimenti DLS: la cartella docs/dls-riferimenti non c'è (né in main né in altri rami).
+## Giocatori 3D: corpo nuovo MPFB (Fase 3 del prompt del 21/11) — FATTO
+- Corpo MakeHuman/MPFB (CC0, viso generico) sullo scheletro che il gioco usava già: animazioni e codice invariati.
+  Tre livelli di dettaglio (4.264 / 1.500 / 600 triangoli, soglie `LOD` in `src/config.js`), forme «snello» e «robusto»,
+  sette capigliature, capelli corti, sopracciglia e barba dipinti nello shader, un materiale solo, modello compresso con
+  Meshopt (`public/modello.js` da 656 a 329 KB). A fotogramma: ~404 mila triangoli contro ~562 mila di prima.
+- Come si rifà: `modelli/mpfb/LEGGIMI.md`. Ripiego: `?corpo=vecchio` nell'indirizzo carica il corpo di Quaternius.
+- Non fatto: texture KTX2. Le texture dei giocatori (divisa, zone, rilievo) sono disegnate dal gioco coi colori della
+  squadra, quindi non c'è un file da comprimere; maschera e pelle sono due immagini piccole (PNG e WebP).
+- Da vedere su iPhone: fps veri con `?debug`.
 
 ## Decisioni recenti di Alex ancora valide
 - "Merge fallo sempre tu": PR → controlli verdi + anteprima Vercel → squash merge → verifica produzione.

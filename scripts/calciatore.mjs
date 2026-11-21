@@ -1,6 +1,7 @@
+// CORPO DI RIPIEGO (quello di prima, ?corpo=vecchio): il corpo in uso lo fanno scripts/blender/calciatore.py e scripts/calciatore-nuovo.py.
 // Prepara il calciatore dal pacchetto «Universal Base Characters» di Quaternius (CC0), in modelli/quaternius/:
-//  - modelli/calciatore.glb: corpo, occhi e sopracciglia senza texture, alleggeriti, con lo scheletro originale
-//  - modelli/capelli.glb: le acconciature (si agganciano all'osso della testa)
+//  - modelli/quaternius-scheletro.glb: corpo, occhi e sopracciglia senza texture, alleggeriti, con lo scheletro originale
+//  - modelli/quaternius-capelli.glb: le acconciature (si agganciano all'osso della testa)
 // Uso: node scripts/calciatore.mjs [rapporto corpo, es. 0.36]
 import { NodeIO } from '@gltf-transform/core';
 import { weld, prune, dedup, mergeDocuments, unpartition, compactPrimitive } from '@gltf-transform/functions';
@@ -43,7 +44,7 @@ await corpo.transform(weld({}));
 alleggerisci(corpo, ratio);
 await corpo.transform(prune({ keepAttributes: true }), dedup());
 console.log('calciatore:', conta(corpo));
-await io.write('modelli/calciatore.glb', corpo);
+await io.write('modelli/quaternius-scheletro.glb', corpo);
 
 const capelli = await leggi('Hair_Buzzed');
 for (const f of ['Hair_SimpleParted', 'Hair_Beard']) mergeDocuments(capelli, await leggi(f));
@@ -54,4 +55,4 @@ await capelli.transform(unpartition(), weld({}));
 alleggerisci(capelli, 0.55);
 await capelli.transform(prune({ keepAttributes: true }), dedup());
 console.log('capelli:', capelli.getRoot().listNodes().map((n) => n.getName()).join(', '), '·', conta(capelli));
-await io.write('modelli/capelli.glb', capelli);
+await io.write('modelli/quaternius-capelli.glb', capelli);
