@@ -1,8 +1,9 @@
 # Ritratti dei giocatori
 
-Stato (21/11): **terzo foglio di prova da 12 mandato ad Alex, in attesa del suo OK**. Gli altri ritratti non si
-generano prima. I ritratti di oggi nel gioco sono ancora quelli vecchi, disegnati al momento dal modello 3D della partita.
-I fogli di prova sono resi a 800 punti di lato; i ritratti definitivi si rendono a 1024.
+Stato (21/11): **Alex ha approvato il terzo foglio di prova**. Tutti i volti sono in generazione (265 giocatori veri +
+150 condivisi) e la home li usa man mano che ci sono: per chi non ha ancora il ritratto nuovo resta quello vecchio,
+disegnato al momento dal modello 3D della partita. I ritratti sono resi a 800 punti di lato, come il foglio approvato
+(nel gioco servono a 512 e a 256).
 
 ## Decisioni di Alex (21/11)
 - **Maglia neutra, colorata dal gioco**: con il mercato i giocatori cambiano squadra, una maglia «stampata» nel ritratto
@@ -33,9 +34,10 @@ prove (accorciare il colletto della polo, cucirne uno sul girocollo) non erano a
 
 Il gioco compone il ritratto in tre passi: disegna la testa; sopra la maglia, cioè il motivo della squadra (tinta unita,
 righe, fasce, banda, metà, scacchi, V) letto dalla mappa e moltiplicato per `luce` (così prende ombre e pieghe), con la
-fascia attorno al collo nel colore del bordo; in cima lo strato `sopra`, se c'è. La stessa regola è scritta in `componi`
-di `scripts/ritratti_webp.py`, che fa anche il foglio di controllo: **il gioco dovrà fare lo stesso conto** (ancora da
-fare, dopo l'OK).
+fascia attorno al collo nel colore del bordo; in cima lo strato `sopra`, se c'è. Nel gioco lo fa `src/casa/ritratti.js`
+(coi numeri di `RITRATTI` in `src/config.js`); la stessa regola è scritta in `componi` di `scripts/ritratti_webp.py`, che
+fa il foglio di controllo. Il gioco usa i **disegni delle maglie della partita** (`DISEGNI` in `src/divisa.js`): il
+ritratto ha la stessa maglia che il giocatore porta in campo, con lo scollo del colletto scelto per la squadra.
 
 La mappa dice dove cade ogni punto **sulla stoffa**, misurato prima delle pieghe: per questo righe e scacchi si piegano
 con la stoffa, come su una maglia vera. È larga il doppio della maglia, a otto bit, senza
@@ -75,15 +77,31 @@ rispetto agli occhi). Va letta punto per punto, senza sfumare.
   n'è uno suo, debole. Il cielo attorno è grigio: se è azzurro si specchia negli occhi e li fa sembrare tutti grigi.
 - **Render**: Cycles, 256 campioni con riduzione del rumore, 1024 × 1024 PNG con sfondo trasparente; poi WebP a 512 e 256.
 
+## Chi ha quale volto
+- **Giocatori veri**: ognuno ha il suo ritratto, `squadra-nome` (per esempio `trefiori-nardi`). Lo tiene anche se cambia
+  squadra: cambia solo la maglia.
+- **Giocatori inventati e del mercato**: prendono uno dei 150 volti condivisi (`volto-001` … `volto-150`), scelto dal
+  nome. La regola di Alex, **mai due facce uguali nella stessa rosa o nella stessa partita**, è in `voltoDi`:
+  - nella mia rosa il volto di ogni giocatore resta scritto nella carriera (`volti`), così non cambia mai faccia, ed è
+    sempre diverso da quello dei compagni;
+  - ogni altra squadra ha volti tutti diversi tra loro e diversi da quelli della mia rosa: così in partita non ci sono
+    doppioni. Se compro un giocatore, in un'altra squadra qualcuno può cambiare volto.
+- L'aspetto di ogni volto (età, pelle, capelli, colore, barba) esce da numeri tirati dal nome del file, in
+  `scripts/aspetti.mjs`: nome e nazionalità del giocatore vero non contano.
+
 ## Come si rifanno
 1. Blender e MPFB (una volta): scaricare Blender 4.2 LTS, poi
    `blender --command extension install-file -r user_default --enable add-on-mpfb-v2.0.18.zip`.
 2. Pacchetti (una volta): scompattare i tre zip in `~/.config/blender/4.2/extensions/.user/user_default/mpfb/data/`.
    Il sito di MakeHuman è lento con una connessione sola: conviene scaricare a pezzi in parallelo.
-3. Render: `blender -b --python scripts/blender/render_ritratti.py -- aspetti.json uscita [campioni] [lato] [id,id]`.
-   Tra gli id, `maglia` rifà i file delle maglie; senza id si fa tutto, e le maglie solo se mancano.
-4. File per il gioco e foglio di controllo:
-   `python3 scripts/ritratti_webp.py uscita public/img/ritratti foglio.jpg aspetti.json`.
+3. Aspetti: `node scripts/aspetti.mjs` scrive `scripts/blender/aspetti.json` (i giocatori veri di `public/data.js` più
+   i volti condivisi). Va rifatto se cambiano le rose vere.
+4. Tutti i ritratti che mancano: `scripts/blender/tutti.sh <blender> <cartella di lavoro> [minuti] [lato]`. Rende a
+   blocchi, scrive i file del gioco in `public/img/ritratti/` e si può fermare e rilanciare: riparte da dove era.
+5. Elenco per il gioco: `node scripts/volti.mjs` scrive `src/dati/volti.json` dai file che ci sono; poi `npm run build`.
+6. Un ritratto solo, o un foglio di controllo:
+   `blender -b --python scripts/blender/render_ritratti.py -- aspetti.json uscita [campioni] [lato] [id,id]` (tra gli id,
+   `maglia` rifà i file delle maglie) e `python3 scripts/ritratti_webp.py uscita cartella foglio.jpg aspetti.json`.
 
 Ogni riga di `aspetti.json` è un volto:
 

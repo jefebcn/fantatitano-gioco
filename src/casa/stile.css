@@ -160,6 +160,7 @@ body.conBarra .indietro{display:none}
 .gCarta{position:relative;flex:none;display:block;height:96%;max-height:88px;aspect-ratio:.72}
 .gCarta .scudo{position:absolute;inset:0;width:100%;height:100%}
 .gCarta .gFoto{position:absolute;left:6%;top:14%;width:88%;height:64%;object-fit:cover;object-position:top;color:rgba(11,21,48,.42)}
+.gCarta img.gFoto:not([src]),.gCarta img.gFoto[src]+.gFoto{display:none}
 .gCarta .gVal{position:absolute;left:7%;top:5%;display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:#1B1D26;font:400 14px "Bebas Neue",Anton,Impact,sans-serif;font-style:normal;line-height:1;color:#F6D768}
 .gCarta.f-argento .gVal{color:#fff}
 .gCarta.f-bronzo .gVal{color:#EBB592}
