@@ -157,6 +157,11 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 #stop{background:rgba(10,10,12,.82);justify-content:center;gap:12px}
 #stop .h{font-size:44px;color:var(--lime)}
 #stop p{margin:0 0 6px;font-size:12px;color:rgba(255,255,255,.7);text-align:center;line-height:1.7;max-width:330px}
+/* pausa sui telefoni: le istruzioni più larghe e più fitte, gli otto moduli su due righe da quattro: tutto sta in una schermata */
+.basso #stop{justify-content:flex-start;gap:5px;padding-top:6px;padding-bottom:8px}.basso #stop .h{font-size:24px}
+.basso #stop p{max-width:min(720px,92%);line-height:1.35;font-size:11px;margin:0}
+#segFormP{display:grid;grid-template-columns:repeat(4,auto);gap:5px}.basso #stop .seg button{padding:5px 11px;font-size:11px}
+.basso #stop .btn{font-size:17px;padding:7px 20px;min-width:0}.basso #stop .btn.sec{font-size:14px;padding:6px 16px}.basso #stop>div:last-of-type,.basso #stop .btn{flex:none}
 #carica{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--ink);font-family:Anton;font-size:22px;color:var(--lime);letter-spacing:.08em}
 </style>
 </head>
