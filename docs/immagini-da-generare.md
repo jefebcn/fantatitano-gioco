@@ -185,9 +185,12 @@ Icone piccole delle competizioni (campionato, coppa, castelli) sono SVG; le copp
 
 ## 4. Logo
 
-`public/img/logo-fantatitano.png`: il file ufficiale (corona lime e scritta FANTATITANO) **ritagliato** sopra la riga
-«PLAY · MANAGE · BELONG», senza ridisegnare niente. Il file intero resta in `public/img/corona-lime.png` (lo usa ancora
-la partita per lo stacco e i cartelloni).
+`public/img/logo-fantatitano.png`: solo la corona gialla, senza scritte, su trasparente (scelta di Alex del 21/11: corona
+gialla su fondo nero). Il disegno è quello del file che ha mandato Alex (controllato: è lo stesso della corona del file
+ufficiale, a meno dell'1% dei punti), nel giallo del file ufficiale (`#D9F51F`), senza ridisegnare niente. È l'unico
+logo del progetto: lo usano la schermata iniziale e lo stacco del replay. Il file con le scritte
+(`corona-lime.png`) è stato tolto. Le icone dell'app (`public/icona-192.png`, `public/icona-512.png`) sono la stessa
+corona su nero.
 
 ## 5. Ritratti e avatar dai modelli 3D (da fare quando ci sono i modelli)
 

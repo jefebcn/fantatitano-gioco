@@ -23,7 +23,7 @@ classifica; 6 classifica completa con calendario; 7 Trofeo dei Castelli e Coppa 
 ## Dopo le risposte di Alex del 21/11
 Le risposte sono nella tabella in fondo a `docs/home-spec.md` (§8). Fatto subito:
 - **Colori** (7B): menu iniziale, scelta squadre, pausa, sostituzioni e fine partita sono in blu notte e oro come la home.
-  Il lime resta accanto alla corona, finché il logo è quello lime. Tabellone e tasti in partita non sono cambiati.
+  Il lime resta accanto alla corona, che è gialla. Tabellone e tasti in partita non sono cambiati.
 - **Negozio** (3A, 6A): quattro schede (stemma, divisa, manager, squadra), acquisto in due tocchi. Stemma a pezzi (forme,
   simboli, bordi) con una base gratis ricca; disegni speciali e terza maglia; avatar e cornici; scarpini della squadra,
   pallone di casa, rinnovo del giocatore consigliato. Elenco e prezzi in `docs/home-spec.md` §5.5.
@@ -66,7 +66,7 @@ modalità Tutorial, Allenamento libero, Calci di punizione e Calci d'angolo.
 | Cosa | Perché non è fatto | Cosa serve |
 |---|---|---|
 | Saldo e storico sul server | deciso da Alex (21/11): **per ora niente sul database**. Il gioco è privato, saldo e storico restano sul telefono. `supabase/002-lapartita-economia.sql` resta pronto | vedi «Prima del lancio» qui sotto |
-| Logo | Alex deve dire se la corona giusta è la lime (quella che c'è) o la viola | la risposta, e il file se è la viola |
+| Logo | **Deciso il 21/11**: corona gialla su fondo nero, senza scritte. Il file con la scritta è stato tolto | niente |
 | Testi in un unico file | fatto per la partita: `src/testi.js` (93 chiavi). La home ha i suoi in `src/casa/testi.js`, con la stessa forma | unire i due file quando la home ha finito di rifare le schermate (è uno spostamento) |
 | Esultanza del capitano (negozio) | nel gioco ci sono solo due esultanze | altre animazioni da Mixamo |
 | Immagine di sfondo della home | la manda Alex | 3840 × 1800 pixel, indicazioni in `docs/home-spec.md` §6; ora c'è un gradiente |

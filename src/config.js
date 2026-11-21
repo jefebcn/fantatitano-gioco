@@ -139,9 +139,9 @@ export const FERMI = { comandi: 2, buio: .5, occasione: 4, fuori: 2.5, corto: [7
 // con gli avversari fermi a disperarsi per `fermi` secondi e l'arbitro che indica il centro; a `stacco` la telecamera passa
 // al primo piano del marcatore: alta `camAlt` metri, a `camDist` metri da lui, con un difensore deluso in primo piano
 // Il deluso sta a `deluso` = [parte della distanza dalla telecamera, metri di lato]
-// `riquadro`: per quanti secondi resta il riquadro in basso col nome di chi ha segnato. 0 = mai, come in Dream League
-// (scelta provvisoria: Alex non ha ancora deciso tra tenerlo, toglierlo o mostrarlo 2 secondi). 9 = per tutta l'esultanza.
-export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.7, camDist: 4.6, deluso: [.55, 1.7], riquadro: 0 };
+// `riquadro`: per quanti secondi si vede la striscia in fondo allo schermo col nome di chi ha segnato (scelta di Alex:
+// piccola, sottile, 2 secondi, in dissolvenza, senza coprire chi esulta). 0 = mai, come in Dream League.
+export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.7, camDist: 4.6, deluso: [.55, 1.7], riquadro: 2 };
 
 // Livelli di dettaglio del calciatore: sotto `vicino` metri dalla telecamera il corpo pieno (circa 4.300 triangoli: primi
 // piani, replay, esultanze), fino a `lontano` quello medio (1.500: la telecamera di gioco), oltre quello leggero (600)
