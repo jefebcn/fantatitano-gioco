@@ -312,12 +312,15 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 #tasti button{position:absolute;pointer-events:auto;border-radius:50%;font-family:Anton;text-transform:uppercase;font-size:13px;letter-spacing:.04em;
   box-shadow:0 4px 12px rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.5)}
 #tasti button.giu{transform:scale(.92);filter:brightness(1.25)}
-/* tre tasti come Dream League: A in basso a destra, B alla sua sinistra, C sopra A; le scritte cambiano col possesso */
-#tasti button{line-height:1.05;padding:0 6px;font-size:12px}
-#bB{width:84px;height:84px;right:0;bottom:0;background:var(--lime);color:var(--ink)}
-#bA{width:74px;height:74px;right:92px;bottom:0;background:var(--viola)}
-#bD{width:74px;height:74px;right:5px;bottom:92px;background:#fff;color:var(--ink)}
-#hud.difesa #bA{background:#2a2a33}#hud.difesa #bD{background:rgba(255,255,255,.82);font-size:11px}
+/* tre tasti come Dream League: A in basso a destra, B alla sua sinistra, C sopra A. Cerchi grigi semitrasparenti, lettera
+   grande al centro, nome dell'azione curvo lungo il bordo alto; il nome cambia col possesso */
+#tasti button{padding:0;background:rgba(150,150,160,.35)!important;border:2px solid rgba(255,255,255,.55);box-shadow:0 2px 10px rgba(0,0,0,.25);color:#fff}
+#tasti svg{width:100%;height:100%;display:block;overflow:visible}
+#tasti .lettera{font-family:Anton,sans-serif;font-size:42px;fill:#fff}
+#tasti .nome{font:900 11.5px Lato,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;fill:#fff}
+#bB{width:86px;height:86px;right:0;bottom:0}
+#bA{width:76px;height:76px;right:94px;bottom:0}
+#bD{width:76px;height:76px;right:5px;bottom:94px}
 #stick.scatto{border-color:rgba(217,245,31,.8)}#stick.scatto i{background:rgba(217,245,31,.45)}
 
 .basso #fine{gap:3px;padding:8px 16px}.basso #fine .esito{font-size:34px}.basso #fine .ris{font-size:42px}.basso #fine .ris img{height:54px}.basso #fine table{margin:2px 0 6px}.basso #fine .tito{position:absolute;right:calc(var(--vw)*5);bottom:0;height:calc(var(--vh)*46)}.basso #stop{gap:7px}.basso #stop .h{font-size:30px}.basso #scelta{padding-top:8px}.basso #scelta h2{font-size:24px;margin:0}.basso #scelta .passo{margin-bottom:6px}.basso .sq{padding:5px 2px 4px}.basso .sq img{height:44px}.basso #barra{flex-direction:row;justify-content:center;margin-top:8px}
@@ -346,7 +349,7 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
   <div id="banner"><div class="t"></div><div class="s"></div></div>
   <canvas id="radar" width="256" height="168"></canvas>
   <div id="stickZona"><div id="stick"><i></i></div></div>
-  <div id="tasti"><button id="bD">Calcio alto</button><button id="bA">Calcio basso</button><button id="bB">Calcio forte</button></div>
+  <div id="tasti"><button id="bD" aria-label="Calcio alto"><svg viewBox="0 0 100 100"><path id="arcobD" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobD" startOffset="50%" text-anchor="middle">Calcio alto</textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">C</text></svg></button><button id="bA" aria-label="Calcio basso"><svg viewBox="0 0 100 100"><path id="arcobA" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobA" startOffset="50%" text-anchor="middle">Calcio basso</textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">B</text></svg></button><button id="bB" aria-label="Calcio forte"><svg viewBox="0 0 100 100"><path id="arcobB" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobB" startOffset="50%" text-anchor="middle">Calcio forte</textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">A</text></svg></button></div>
 </div>
 
 <div id="home" class="scr nas">

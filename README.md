@@ -150,8 +150,8 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
     avanti) e alzano la bandierina per due secondi quando il gioco fischia un fuorigioco nella loro metà (`ASS`).
   - **Pubblico coi colori delle squadre**: la curva dietro la porta a -x è degli ospiti, il resto è di casa; dopo un
     gol salta il pubblico della squadra che ha segnato (`TIFO`).
-  - **Esultanza**: il marcatore corre verso la bandierina a braccia aperte piegandosi di lato (clip `aereo`), poi
-    festeggia coi compagni.
+  - **Esultanza**: il marcatore corre verso la bandierina e festeggia coi compagni (la corsa a braccia aperte è stata tolta:
+    sembrava una posa a T).
   - **Segnaposto col nome** sopra il giocatore che si comanda, al posto della freccia.
   - **Tabelloni** a bordo campo che scorrono con «GOL!» e il nome del marcatore.
   - **Telecamera in diagonale** vicino alle porte (`DIAG`), così la porta si vede; prato tagliato a cerchi.

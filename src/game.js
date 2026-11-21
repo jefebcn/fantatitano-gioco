@@ -1159,6 +1159,7 @@ const powPer = (tipo, d) => clamp((d - DIST[tipo][0]) / DIST[tipo][1], 0, 1);
 function modoAttacco() {
   const b = G.ball, h = G.teams[0]; if (!b || !h) return false;
   if (b.owner) return b.owner.team === h;
+  if ((G.state === 'kickoff' || G.state === 'restart') && G.taker) return G.taker.team === h; // calcio d'inizio e palle ferme: di chi batte
   return !!(G.intended && G.intended.team === h && G.lastKicker && G.lastKicker.team === h);
 }
 // Tasto B: «Calcio basso» (passaggio rasoterra) con la palla, «Pressing» (tenuto) senza
@@ -2302,7 +2303,7 @@ function hud() {
   if (G.ctrl !== lastChi) { lastChi = G.ctrl; $('#chi').innerHTML = G.ctrl ? `<i>${G.ctrl.num}</i>${G.ctrl.name.replace(/[<>&]/g, '')}` : ''; }
   // le scritte dei tre tasti cambiano col possesso (A tiro o scivolata, B passaggio o pressing, C lancio o cambio)
   const att = modoAttacco();
-  if (att !== lastAtt) { lastAtt = att; $('#bA').textContent = att ? 'Calcio basso' : 'Pressing'; $('#bD').textContent = att ? 'Calcio alto' : 'Cambia giocatore'; $('#hud').classList.toggle('difesa', !att); }
+  if (att !== lastAtt) { lastAtt = att; $('#bA textPath').textContent = att ? 'Calcio basso' : 'Pressing'; $('#bD textPath').textContent = att ? 'Calcio alto' : 'Cambia giocatore'; $('#bD .nome').style.fontSize = att ? '' : '9.5px'; $('#hud').classList.toggle('difesa', !att); }
   if (G.ctrl) $('#en').firstElementChild.style.width = `${G.ctrl.en * 100}%`;
   // palle ferme: la scritta col tipo sotto il tabellone, comandi nascosti (tornano quando si può battere). Sui calci piazzati le
   // tre icone in alto a destra (per ora solo lo spazio)
