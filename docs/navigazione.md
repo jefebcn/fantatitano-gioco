@@ -184,8 +184,9 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 
 | Schermata | Stato |
 |---|---|
-| Benvenuto, Crea il club, Ingaggia il capitano | esistono, da adattare (scala nuova, pulsante fuori dalle carte) |
-| Home (8 carte) | da fare |
+| Benvenuto, Crea il club, Ingaggia il capitano | fatti: logo senza scritta, scala nuova, nove candidati con ruoli diversi, pulsante fuori dalle carte. Le carte a scudo arrivano col passo 7 |
+| Barra in alto e navigazione a livelli | fatte: uguali in tutte le schermate, Indietro torna da dove si era arrivati |
+| Home (8 carte) | fatta, coi dati veri; illustrazioni ancora segnaposto |
 | Carriera | esiste come «home» di oggi, da risistemare |
 | Classifica completa, Trofeo dei Castelli, Coppa Titano | esistono |
 | Sfida | esiste come pre-partita con un campo, da rifare |

@@ -352,8 +352,8 @@ export function scegliCapitano(C, clubs, da, iIn) {
 }
 
 /* ---------- mercato: si prende un titolare di un'altra squadra cedendo in cambio un proprio giocatore dello stesso ruolo ---------- */
-/** Prezzo in monete di un giocatore dato il suo valore (55-88): cresce col quadrato, i più forti costano molto di più. */
-export function prezzo(valore) { return Math.round(Math.pow(Math.max(0, valore - 50), 2) * ECONOMIA.prezzo) * 10; }
+/** Prezzo in monete di un giocatore dato il suo valore (55-82): cresce col quadrato, i più forti costano molto di più. */
+export function prezzo(valore) { return Math.round(Math.pow(Math.max(0, valore - ECONOMIA.prezzoDa), 2) * ECONOMIA.prezzo) * 10; }
 /** Quanto si paga (o si incassa, se negativo) prendendo un giocatore di valore vIn e cedendone uno di valore vOut. */
 export function costoScambio(vIn, vOut) { return prezzo(vIn) - Math.round(prezzo(vOut) * PREMI.cessione / 10) * 10; }
 /** Mette nelle squadre le rose della carriera (o quelle di partenza se C è null). La rosa di partenza resta in xi0. */

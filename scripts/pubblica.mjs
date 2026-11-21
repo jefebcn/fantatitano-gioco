@@ -19,7 +19,7 @@ writeFileSync(join(P, 'index.html'), html);
 
 // da precaricare: la pagina, gli script, i font, le texture e le immagini che servono già alla prima schermata e alla
 // prima partita (gli stemmi piccoli, maschera della divisa, pelle e occhi). Gli stemmi grandi si salvano al primo uso.
-const IMG = /^img\/(.*-mini\.webp|corona-lime\.png|divisa-maschera\.png|occhi\.webp|pelle\.webp|saluta\.webp|braccia\.webp|indica\.webp)$/;
+const IMG = /^img\/(.*-mini\.webp|corona-lime\.png|logo-fantatitano\.png|divisa-maschera\.png|occhi\.webp|pelle\.webp|saluta\.webp|braccia\.webp|indica\.webp)$/;
 const file = [...tutti('font'), ...tutti('textures').filter((f) => !f.endsWith('.md')), ...tutti('img').filter((f) => IMG.test(f)), 'manifest.webmanifest', 'icona-192.png', 'icona-512.png'];
 const precarica = ['./', ...script, ...file];
 const versione = hash([html, ...file.map((f) => hash(readFileSync(join(P, f))))].join('|'));

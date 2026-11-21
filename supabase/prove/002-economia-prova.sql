@@ -87,12 +87,12 @@ begin
   for n in 1..4 loop r := public.lapartita_compra('allenamento', 'Rossi'); end loop; perform pg_temp.vero((r->>'ok')::boolean, 'settima seduta con l''allenatore 2');
   r := public.lapartita_compra('allenamento', 'Rossi'); perform pg_temp.vero(r->>'motivo' = 'massimo', 'ottava seduta rifiutata');
 
-  -- mercato: 85 per 65 costa 4.900 meno 630; valutazioni fuori scala rifiutate; cedere uno forte per uno debole fa incassare
+  -- mercato: 80 per 65 costa 4.900 meno 1.120; valutazioni fuori scala rifiutate; cedere uno forte per uno debole fa incassare
   update lapartita.portafogli set monete = 5000 where user_id = 'u1';
-  r := public.lapartita_scambia(85, 65); perform pg_temp.vero((r->>'costo')::int = 4270 and (r->>'monete')::int = 730, 'scambio: ' || r::text);
-  r := public.lapartita_scambia(85, 65); perform pg_temp.vero(r->>'motivo' = 'saldo_insufficiente' and (r->>'costo')::int = 4270, 'scambio senza soldi');
+  r := public.lapartita_scambia(80, 65); perform pg_temp.vero((r->>'costo')::int = 3780 and (r->>'monete')::int = 1220, 'scambio: ' || r::text);
+  r := public.lapartita_scambia(80, 65); perform pg_temp.vero(r->>'motivo' = 'saldo_insufficiente' and (r->>'costo')::int = 3780, 'scambio senza soldi');
   r := public.lapartita_scambia(120, 65); perform pg_temp.vero(r->>'motivo' = 'valutazione', 'valutazione fuori scala');
-  r := public.lapartita_scambia(60, 80); perform pg_temp.vero((r->>'costo')::int = 400 - 2520 and (r->>'monete')::int = 730 + 2120, 'scambio che fa incassare: ' || r::text);
+  r := public.lapartita_scambia(60, 80); perform pg_temp.vero((r->>'costo')::int = 900 - 3430 and (r->>'monete')::int = 1220 + 2530, 'scambio che fa incassare: ' || r::text);
 
   -- lo storico torna col saldo: l'ultima riga di ogni valuta dice il saldo vero
   perform pg_temp.vero((select saldo_dopo from lapartita.movimenti where user_id = 'u1' and valuta = 'monete' order by id desc limit 1) = (select monete from lapartita.portafogli where user_id = 'u1'), 'storico e saldo in monete');
