@@ -154,47 +154,50 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 </style>
 </head>
 <body>
+<!-- I testi non stanno qui ma in src/testi.js: gli elementi portano la chiave (data-t testo, data-th testo con grassetti
+     o a capo, data-t-aria etichetta per chi non vede) e li riempie riempiTesti() in src/game.js all'avvio. Qui restano
+     solo il titolo, la scritta del caricamento, i nomi propri e i simboli. -->
 <canvas id="c"></canvas>
 
 <div id="hud" class="nas">
   <div id="sb"><img id="sbH" alt=""><b id="sbHn"></b><span id="sbS">0 - 0</span><b id="sbAn"></b><img id="sbA" alt=""></div><i id="sbT">00:00</i>
-  <div id="ment"><button data-d="-1" aria-label="Più difensiva">‹</button><span>Equilibrata</span><button data-d="1" aria-label="Più offensiva">›</button></div>
+  <div id="ment"><button data-d="-1" data-t-aria="hud.piuDifensiva">‹</button><span></span><button data-d="1" data-t-aria="hud.piuOffensiva">›</button></div>
   <div id="rig"></div>
   <div id="tipo"></div>
-  <div id="icone"><button aria-label="Portiere"><svg viewBox="0 0 24 24"><path d="M7 21v-8L4 9V5l2-1 1 4h1V3h2v5h1V2h2v6h1V3h2v6l1-2 2 1-2 7v6z" fill="currentColor"/></svg></button><button aria-label="Maglia"><svg viewBox="0 0 24 24"><path d="M8 3l-6 3 2 5 3-1v11h10V10l3 1 2-5-6-3a4 4 0 0 1-8 0z" fill="currentColor"/></svg></button><button aria-label="Pallone"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7l4 3-1.5 5h-5L8 10z" fill="currentColor"/></svg></button></div>
+  <div id="icone"><button data-t-aria="hud.portiere"><svg viewBox="0 0 24 24"><path d="M7 21v-8L4 9V5l2-1 1 4h1V3h2v5h1V2h2v6h1V3h2v6l1-2 2 1-2 7v6z" fill="currentColor"/></svg></button><button data-t-aria="hud.maglia"><svg viewBox="0 0 24 24"><path d="M8 3l-6 3 2 5 3-1v11h10V10l3 1 2-5-6-3a4 4 0 0 1-8 0z" fill="currentColor"/></svg></button><button data-t-aria="hud.pallone"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7l4 3-1.5 5h-5L8 10z" fill="currentColor"/></svg></button></div>
   <div id="buio"></div>
   <div id="chi"></div>
   <div id="en"><i></i></div>
-  <button id="audio" aria-label="Audio">♪</button>
-  <button id="replay" aria-label="Replay">⟲</button>
-  <button id="pausa" aria-label="Pausa">II</button>
+  <button id="audio" data-t-aria="hud.audio">♪</button>
+  <button id="replay" data-t-aria="hud.replay">⟲</button>
+  <button id="pausa" data-t-aria="hud.pausa">II</button>
   <div id="banner"><div class="t"></div><div class="s"></div></div>
   <canvas id="radar" width="256" height="168"></canvas>
   <div id="stickZona"><div id="stick"><i></i></div></div>
-  <div id="tasti"><button id="bD" aria-label="Calcio alto"><svg viewBox="0 0 100 100"><path id="arcobD" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobD" startOffset="50%" text-anchor="middle">Calcio alto</textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">C</text></svg></button><button id="bA" aria-label="Calcio basso"><svg viewBox="0 0 100 100"><path id="arcobA" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobA" startOffset="50%" text-anchor="middle">Calcio basso</textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">B</text></svg></button><button id="bB" aria-label="Calcio forte"><svg viewBox="0 0 100 100"><path id="arcobB" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobB" startOffset="50%" text-anchor="middle">Calcio forte</textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">A</text></svg></button></div>
+  <div id="tasti"><button id="bD" data-t-aria="tasti.calcioAlto"><svg viewBox="0 0 100 100"><path id="arcobD" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobD" startOffset="50%" text-anchor="middle" data-t="tasti.calcioAlto"></textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">C</text></svg></button><button id="bA" data-t-aria="tasti.calcioBasso"><svg viewBox="0 0 100 100"><path id="arcobA" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobA" startOffset="50%" text-anchor="middle" data-t="tasti.calcioBasso"></textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">B</text></svg></button><button id="bB" data-t-aria="tasti.calcioForte"><svg viewBox="0 0 100 100"><path id="arcobB" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobB" startOffset="50%" text-anchor="middle" data-t="tasti.calcioForte"></textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">A</text></svg></button></div>
 </div>
 
 <!-- le schermate della home e dei menu (ingresso, club, carriera, pannelli, scelta squadre, prima della partita) le
      aggiunge qui src/casa/casa.js, da src/casa/casa.html -->
 
 <div id="vs" class="scr nas">
-  <div class="lato"><img id="vsH" alt=""><b id="vsHn"></b></div><div class="x">VS</div><div class="lato"><img id="vsA" alt=""><b id="vsAn"></b></div>
+  <div class="lato"><img id="vsH" alt=""><b id="vsHn"></b></div><div class="x" data-t="contro.vs"></div><div class="lato"><img id="vsA" alt=""><b id="vsAn"></b></div>
 </div>
 
 <div id="stop" class="scr nas">
-  <div class="h">Pausa</div>
-  <p>Levetta: muovi il giocatore, spinta fino al bordo <b>scatta</b><br>Con la palla: <b>Calcio forte</b> tiro · <b>Calcio basso</b> passaggio · <b>Calcio alto</b> lancio o cross<br>(tieni premuto: più a lungo, più forte)<br>Senza palla: <b>Calcio forte</b> scivolata · <b>Pressing</b> (tieni premuto) · <b>Cambia giocatore</b><br>Tastiera: frecce (Maiusc per non scattare), Spazio calcio forte, X calcio basso, C calcio alto<br>In campo: le frecce della mentalità sotto la mappa la cambiano</p>
+  <div class="h" data-t="pausa.titolo"></div>
+  <p data-th="pausa.istruzioni"></p>
   <div class="tatt"><div class="seg" id="segFormP"></div><div class="seg" id="segMentP"></div></div>
-  <button class="btn sec nas" id="apriCambi">Sostituzioni</button>
-  <button class="btn" id="riprendi">Riprendi</button>
-  <button class="btn sec" id="esci">Esci dalla partita</button>
+  <button class="btn sec nas" id="apriCambi" data-t="pausa.sostituzioni"></button>
+  <button class="btn" id="riprendi" data-t="pausa.riprendi"></button>
+  <button class="btn sec" id="esci" data-t="pausa.esci"></button>
 </div>
 
 <div id="cambi" class="scr nas">
-  <h2 class="h" id="cambiT">Sostituzioni</h2>
+  <h2 class="h" id="cambiT" data-t="cambi.sostituzioni"></h2>
   <div class="passo" id="cambiM"></div>
   <div id="cambiL"></div>
-  <button class="btn" id="cambiOk">Fatto</button>
+  <button class="btn" id="cambiOk" data-t="cambi.ok"></button>
 </div>
 
 <div id="fine" class="scr nas">
@@ -203,11 +206,11 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
   <div class="ris"><img id="fH" alt=""><span id="fS"></span><img id="fA" alt=""></div>
   <div class="marc" id="marc"></div>
   <div id="cart"></div>
-  <table><tr><td id="tH"></td><td>Tiri</td><td id="tA"></td></tr><tr><td id="pH"></td><td>Possesso</td><td id="pA"></td></tr><tr><td id="flH"></td><td>Falli</td><td id="flA"></td></tr><tr><td id="fgH"></td><td>Fuorigioco</td><td id="fgA"></td></tr></table>
+  <table><tr><td id="tH"></td><td data-t="fine.tiri"></td><td id="tA"></td></tr><tr><td id="pH"></td><td data-t="fine.possesso"></td><td id="pA"></td></tr><tr><td id="flH"></td><td data-t="fine.falli"></td><td id="flA"></td></tr><tr><td id="fgH"></td><td data-t="fine.fuorigioco"></td><td id="fgA"></td></tr></table>
   <div id="mvp"></div>
-  <details id="pag"><summary>Pagelle</summary><div id="pagL"></div></details>
+  <details id="pag"><summary data-t="fine.pagelle"></summary><div id="pagL"></div></details>
   <img class="tito" id="fTito" alt="Tito">
-  <div class="az"><button class="btn nas" id="continua">Continua</button><button class="btn" id="rivincita">Rivincita</button><button class="btn sec" id="cambia">Cambia squadre</button></div>
+  <div class="az"><button class="btn nas" id="continua" data-t="fine.continua"></button><button class="btn" id="rivincita" data-t="fine.rivincita"></button><button class="btn sec" id="cambia" data-t="fine.cambia"></button></div>
 </div>
 
 <div id="avviso"></div>
