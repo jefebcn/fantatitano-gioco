@@ -15,6 +15,10 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
   campo visivo verticale **28°**; ritoccate di poco (36,8 m, 21,75°, campo visivo orizzontale fisso 58,7°) perché il cerchio
   di centrocampo occupi il **43%** della larghezza, come chiesto il 21/11. Mai girata a destra o sinistra, niente zoom in
   area. Segue il pallone per intero lungo il campo e al 45% in profondità.
+- In profondità il pallone resta sempre tra il **30% e il 70%** dell'altezza dello schermo (`CAMERA.fascia`, 21/11): verso
+  la linea laterale lontana finiva al 19%, sotto il tabellone; ora la telecamera lo segue quanto serve, senza cambiare
+  altezza, inclinazione e campo visivo. Verso la linea vicina si ferma a `zMax` (oltre entrerebbe in tribuna): lì il
+  pallone arriva al 76%.
 - Controllo (`scripts/prove/inquadratura.cjs`, anche nella CI, 844 × 390): cerchio 43,0% (rif. 43), bordo lontano 28,0% (29),
   dischetto 40,0% (40), bordo vicino 58,7% (60), linea laterale lontana 10,0% (10), giocatore 8,2% (9), pallone 1,0% (1).
 - La vista dall'alto è solo di controllo: `?alto` nell'indirizzo.
@@ -162,6 +166,8 @@ non ci si arriva, senza bloccare).
 - Nel codice: `restart()` (scritta, dissolvenza, comandi), `corner()` (replay dopo la grande occasione), `hud()`.
 
 ## 8. Sequenza del gol
+- Riquadro in basso col nome di chi ha segnato: in Dream League non c'è. `GOLSEQ.riquadro` dice per quanti secondi resta:
+  ora **0** (scelta provvisoria, Alex deve ancora decidere tra tenerlo, toglierlo o mostrarlo 2 secondi).
 | tempo | cosa succede |
 |---|---|
 | 0 s | punteggio aggiornato subito; levetta, tasti e minimappa spariscono |

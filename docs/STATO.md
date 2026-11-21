@@ -99,8 +99,11 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   riquadro `?debug`. 32 partite: gol da 2,22 a 1,66, tiri da 9,34 a 6,84, 0 anomalie: da ritarare, vedi `docs/dls-gameplay.md`.
 - 5 FATTO: tocchi più lunghi col passo (palla tra 0,6 e 0,8 m), guinzaglio a 1,5 m (`COND`), disegno con l'avanzo di tempo
   (`avanzo` in `src/game.js`). 32 partite: gol 1,75, tiri 5,88, 0 anomalie.
-- Da fare: 6 telecamera in profondità, 7 erba e pubblico, 8 riquadro del gol (Alex
-  non ha scelto: provvisorio «toglilo come in DLS»), moduli nuovi, scenario del ponte.
+- 6, 7, 8 FATTI: `CAMERA.fascia` (pallone tra 30% e 70% dell'altezza), `PRATO` (verde più pieno, strisce più
+  contrastate, anelli a metà), pubblico smorzato e vario con tribune più scure (`src/grafica/spalti.js`),
+  `GOLSEQ.riquadro` = 0 (provvisorio: Alex non ha scelto). Partite simulate identiche.
+- Il punto 9 (giocatori MPFB2) era già fatto con la PR #63.
+- Da fare: moduli nuovi (4-3-1-2, 5-3-2, 4-1-4-1, 3-4-3), scenario del ponte, poi tutorial e allenamenti; ritarare gol e tiri.
 
 ## Due sessioni insieme (dal 21/11)
 - Questa sessione lavora sulla **partita** (campo, giocatori, IA, comandi). Un'altra lavora su **home, menu e sezioni**:
