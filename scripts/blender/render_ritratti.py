@@ -3,14 +3,17 @@
 # Ogni aspetto dice età, pelle, viso, occhi, capelli, barba, espressione e posa della testa: lo stesso aspetto dà sempre
 # lo stesso ritratto. I volti escono da numeri a caso (il «seme» del viso): nessuno è fatto per somigliare a una persona vera.
 #
-# Il ritratto è fatto di due strati, così la maglia la colora il gioco (un giocatore che cambia squadra cambia maglia):
-#   <id>.png            testa, collo, capelli e barba di quel giocatore, senza maglia;
-#   maglia-luce.png     la maglia bianca con le sue ombre e pieghe, uguale per tutti (il busto è lo stesso per tutti);
-#   maglia-mappa.png    per ogni punto della maglia: rosso = posizione di lato, verde = altezza, blu = colletto e bottoni.
-# Il gioco disegna la maglia coi colori e il disegno della squadra moltiplicandoli per «maglia-luce», e sopra la testa.
+# Il ritratto è fatto a strati, così la maglia la colora il gioco (un giocatore che cambia squadra cambia maglia):
+#   <id>.png                    testa, collo e petto del giocatore con capelli e barba, senza maglia;
+#   <id>-sopra.png              capelli e barba che cadono davanti alla maglia (solo per chi li ha lunghi);
+#   maglia-<scollo>-luce.png    la maglia bianca con le sue ombre e pieghe, uguale per tutti: una per ogni scollo
+#                               (girocollo, scollo a V);
+#   maglia-<scollo>-mappa.png   per ogni punto della maglia: dove cade sulla stoffa (di lato e in altezza) e se è bordo.
+# Il gioco disegna la testa, sopra la maglia coi colori e il disegno della squadra moltiplicati per «luce», e in cima
+# lo strato «sopra».
 #
 # Uso: blender -b --python scripts/blender/render_ritratti.py -- <aspetti.json> <cartella di uscita> [campioni] [lato] [id,id…]
-#      (tra gli id, «maglia» rifà i due file della maglia; senza id si fa tutto, e la maglia solo se manca)
+#      (tra gli id, «maglia» rifà i file delle maglie; senza id si fa tutto, e le maglie solo se mancano)
 # Serve: Blender 4.2 LTS, l'estensione MPFB, i pacchetti «makehuman_system_assets», «skins02» e «shirts01» di MakeHuman
 # (tutti CC0). I WebP per il gioco li fa scripts/ritratti_webp.py.
 import bpy, sys, os, json, math, random, time, mathutils
@@ -31,25 +34,37 @@ os.makedirs(USCITA, exist_ok=True)
 # dove stanno gli occhi, contando dall'alto: poco sotto un terzo, così anche la capigliatura più alta resta tutta dentro;
 # di quanto gli occhi si girano verso la camera (1 = la guardano)
 OBIETTIVO = 85; ALTEZZA = .48; TRE_QUARTI = 22; OCCHI_DALL_ALTO = .38; SGUARDO = 1
-# luce principale calda da sinistra a 45 gradi, riempimento morbido da destra, contorno appena azzurro e debole da dietro:
+# luce principale calda da sinistra a 45 gradi, riempimento morbido da destra, contorno neutro da dietro:
 # [gradi attorno al soggetto rispetto alla camera, distanza, altezza sugli occhi, potenza in watt, colore, lato del pannello]
-LUCI = [[45, 1.5, .45, 42, (1.0, .9, .78), .9], [-55, 1.8, .05, 9, (.93, .96, 1.0), 1.8], [-150, 1.4, .5, 26, (.82, .9, 1.0), .5]]
+LUCI = [[45, 1.5, .45, 42, (1.0, .9, .78), .9], [-55, 1.8, .05, 9, (.93, .96, 1.0), 1.8], [-150, 1.4, .5, 70, (.9, .95, 1.0), .5]]
 # la luce di contorno non tocca capelli e barba: attraversandoli li accende di giallo. Per loro ce n'è una sua, debole.
 CONTORNO_PELI = 5
+# il cielo attorno: grigio appena caldo e debole (se è azzurro si specchia negli occhi e li fa sembrare tutti grigi)
+CIELO = ((.62, .6, .58), .1)
 
 # ---------- il busto: uguale per tutti ----------
-# Dal collo in giù tutti i giocatori hanno lo stesso corpo e la stessa maglia: così la maglia è un'immagine sola e le carte
-# sono allineate. Corporatura da calciatore, non da culturista; la maglia è una polo di MakeHuman (CC0) col colletto vero.
-BUSTO = dict(muscle=.42, weight=.40, proportions=.55, height=.55, eta=25, tratti=(.1, .8, .1)); MAGLIA = 'namuhekam_male_polo_shirt'
+# Dal collo in giù tutti i giocatori hanno lo stesso corpo: così ogni maglia è un'immagine sola e le carte sono
+# allineate. Corporatura da calciatore, non da culturista.
+BUSTO = dict(muscle=.42, weight=.40, proportions=.55, height=.55, eta=25, tratti=(.1, .8, .1))
+# Le maglie, una per scollo. modello: il capo di MakeHuman da cui parte (tutti CC0); bordo: larghezza in metri della
+# fascia attorno al collo che prende il colore del bordo; v: quanto scende la punta dello scollo a V e quanto è largo.
+MAGLIE = {
+    'girocollo': dict(modello='toigo_basic_tucked_t-shirt', bordo=.017),
+    'v':         dict(modello='toigo_basic_tucked_t-shirt', bordo=.015, v=(.048, .062)),
+}
 # il collo: l'asse lungo cui sale (inclinato in avanti di 25 gradi) e, misurando lungo l'asse a partire dagli occhi, dove
 # comincia e dove finisce il tratto che si piega. Sotto c'è il busto uguale per tutti, sopra la testa del giocatore.
 COLLO = dict(gradi=25, da=-.187, a=-.107, perno=(0, -.03))
-# le pieghe della stoffa: larghezza delle onde in metri, quanto sporgono, come sono stirate (più lunghe che larghe) e inclinate
-PIEGHE = dict(larghe=.06, alte=.026, stira=(1.0, 1.0, .32), gradi=22)
+# di quanti metri la stoffa resta staccata dal corpo, come minimo
+MARGINE = .007
+# le pieghe della stoffa: larghezza delle onde in metri, quanto sporgono, quanto sono stirate in altezza (pieghe lunghe
+# che scendono) e di quanti gradi sono inclinate
+PIEGHE = dict(larghe=.035, alte=.022, stira=(1.0, 1.0, 3.6), gradi=20)
 # di quanto la testa è ingrandita rispetto al corpo di MakeHuman (in un busto piccolo si legge meglio)
 TESTA = 1.04
-# la mappa della maglia: i metri coperti dal rosso (di lato, da sinistra a destra) e dal verde (in altezza, rispetto agli occhi)
-MAPPA = dict(x=(-.4, .4), z=(-.5, .1))
+# la mappa della maglia: i metri coperti dal rosso (di lato, da sinistra a destra) e dal verde (in altezza, rispetto
+# agli occhi), misurati sulla stoffa prima delle pieghe
+MAPPA = dict(x=(-.6, .6), z=(-.5, .1))
 # posa della testa, in gradi: quanto gira verso la camera, quanto si inclina di lato, quanto china il mento
 POSA = dict(gira=(4, 14), inclina=(-4, 4), china=(-3, 3))
 # espressioni: le «unità» di MPFB da caricare e quanto. Si sceglie dal seme del viso, se l'aspetto non la dice.
@@ -68,14 +83,27 @@ PELLI = [
     dict(giovane='young_caucasian_male2', adulta='middleage_caucasian_male', tratti=(.03, .94, .03), mescola=((.95, .78, .68), .0), luce=.02, labbra=(0.74, 0.52, 0.44)),
     dict(giovane='young_caucasian_male', adulta='middleage_caucasian_male', tratti=(.06, .88, .06), mescola=((.85, .55, .40), .12), luce=-.01, labbra=(0.7, 0.48, 0.39)),
     dict(giovane='toigo_light_skin_male_bronze', adulta='toigo_light_skin_male_bronze', tratti=(.12, .76, .12), mescola=((.52, .33, .21), .42), luce=-.05, labbra=(0.56, 0.37, 0.28)),
-    dict(giovane='toigo_light_skin_male_bronze', adulta='toigo_light_skin_male_bronze', tratti=(.25, .40, .35), mescola=((.36, .21, .13), .62), luce=-.07, labbra=(0.42, 0.26, 0.19)),
+    dict(giovane='toigo_light_skin_male_bronze', adulta='toigo_light_skin_male_bronze', tratti=(.25, .40, .35), mescola=((.36, .25, .19), .5), luce=-.1, labbra=(0.37, 0.25, 0.2)),
     dict(giovane='young_african_male', adulta='middleage_african_male', tratti=(.08, .22, .70), mescola=((.45, .28, .18), .10), luce=.05, labbra=(0.34, 0.21, 0.16)),
     dict(giovane='young_african_male', adulta='mindfront_skin_male_african_middleage', tratti=(.03, .07, .90), mescola=((.22, .13, .09), .18), luce=-.02, labbra=(0.22, 0.13, 0.1)),
 ]
 LENTIGGINI = 'toigo_light_skin_male_freckles'
+# la resa della pelle: quanta luce passa sotto (traslucenza), quanto si vedono i pori, contrasto del colore, ruvidezza,
+# strato lucido sopra (poco: se no sembra unta)
+PELLE = dict(sotto=.24, pori=.55, contrasto=0, ruvida=.54, lucido=.04)
 # occhi: colore principale e secondario dell'iride
-OCCHI = {'scuri': ((.025, .012, .006), (.05, .025, .012)), 'castani': ((.07, .035, .015), (.14, .075, .03)), 'nocciola': ((.14, .09, .035), (.13, .14, .06)),
-         'verdi': ((.07, .14, .07), (.18, .19, .08)), 'azzurri': ((.07, .16, .30), (.22, .32, .42)), 'grigi': ((.13, .17, .20), (.26, .29, .31))}
+OCCHI = {'scuri': ((.045, .018, .007), (.09, .04, .015)), 'castani': ((.11, .048, .016), (.2, .095, .03)), 'nocciola': ((.2, .12, .04), (.17, .17, .06)),
+         'verdi': ((.08, .17, .07), (.2, .22, .08)), 'azzurri': ((.07, .17, .33), (.24, .36, .46)), 'grigi': ((.15, .2, .24), (.3, .34, .36))}
+# quali occhi per quale pelle, se l'aspetto non lo dice (i numeri sono pesi): azzurri e grigi soprattutto con le pelli
+# chiare, quasi sempre scuri con le pelli scure
+OCCHI_PER_PELLE = [
+    dict(azzurri=4, grigi=2, verdi=2, nocciola=2, castani=3),
+    dict(azzurri=2, grigi=1, verdi=2, nocciola=3, castani=6, scuri=1),
+    dict(verdi=1, nocciola=2, castani=7, scuri=3),
+    dict(nocciola=1, castani=5, scuri=6),
+    dict(castani=2, scuri=8),
+    dict(castani=1, scuri=9),
+]
 # capelli e barba: melanina (0 chiarissimo, 1 nero) e quanto tira al rosso
 COLORI = {'nero': (1.0, .1), 'castano scuro': (.97, .15), 'castano': (.9, .25), 'castano chiaro': (.8, .25), 'biondo': (.55, .22), 'rosso': (.72, .9)}
 
@@ -90,7 +118,7 @@ COLORI = {'nero': (1.0, .1), 'castano scuro': (.97, .15), 'castano': (.9, .25), 
 # stempiato; calvo: nessun capello; chignon: raccolti dietro.
 CAPELLI = {
     'rasato':    dict(sopra=.004, lati=.003, quante=42000, verso=(0, 0, 0), alza=1, piega=.2, strati=.0004, mosso=.08, spessi=.00008),
-    'corto':     dict(sopra=.026, lati=.014, quante=46000, verso=(0, -.7, -.5), alza=.22, piega=.6, strati=.003, mosso=.04, ciuffi=.25, vario=.1, spessi=.00013),
+    'corto':     dict(sopra=.024, lati=.011, quante=46000, verso=(.4, .25, .1), alza=.5, piega=.45, strati=.003, mosso=.05, ciuffi=.3, vario=.15, spessi=.00012),
     'sfumato':   dict(sopra=.034, lati=.0035, quante=32000, verso=(.5, -.6, 0), alza=.5, piega=.45, strati=.004, mosso=.05, ciuffi=.45, vario=.2),
     'ciuffo':    dict(sopra=.036, lati=.009, quante=36000, verso=(.3, .9, .2), alza=.3, piega=.5, strati=.005, mosso=.035, ciuffi=.6, vario=.25, davanti=.9),
     'indietro':  dict(sopra=.085, lati=.035, quante=30000, verso=(0, 1, -.1), alza=.12, piega=.6, strati=.007, mosso=.02, ciuffi=.6, vario=.18, peso=.5),
@@ -102,15 +130,18 @@ CAPELLI = {
     'stempiato': dict(sopra=.018, lati=.009, quante=38000, stempiato=.55, verso=(.2, .5, -.3), alza=.3, piega=.45, strati=.002, mosso=.05, ciuffi=.35, vario=.2),
     'lunghi':    dict(sopra=.15, lati=.13, quante=30000, verso=(.35, .45, -.6), fuori=True, alza=.14, piega=.55, strati=.012, mosso=.015, ciuffi=.7, vario=.14, onda=.005, peso=1.2, spessi=.00009),
 }
+# quanti metri prende l'attaccatura per passare da rada a piena
+ATTACCATURA = .010
 # ---------- barbe: sei tipi, più il viso rasato ----------
 # zone: dove cresce (baffi, mento, guance e mascella, sotto il mento); lunga: lunghezza in metri; quante: peli disegnati.
+# Un aspetto può avere in più «velo»: un'ombra di barba sotto la barba scelta (per esempio sotto i baffi).
 BARBE = {
     'nessuna':  None,
     'ombra':    dict(zone=('baffi', 'mento', 'guance', 'sotto'), lunga=.0018, quante=17000, alza=.9, mosso=.1, spessi=.00005),
     'corta':    dict(zone=('baffi', 'mento', 'guance', 'sotto'), lunga=.007, quante=22000, alza=.6, mosso=.08),
     'piena':    dict(zone=('baffi', 'mento', 'guance', 'sotto'), lunga=.02, quante=26000, alza=.5, mosso=.08, riccio=(.0015, 1.5), ciuffi=.3),
     'pizzetto': dict(zone=('baffi', 'mento'), lunga=.01, quante=10000, alza=.55, mosso=.06),
-    'baffi':    dict(zone=('baffi',), lunga=.01, quante=4500, alza=.35, mosso=.05),
+    'baffi':    dict(zone=('baffi',), lunga=.012, quante=7500, alza=.35, mosso=.05),
     'collare':  dict(zone=('mento', 'guance', 'sotto'), lunga=.008, quante=17000, alza=.6, mosso=.08, sottile=True),
 }
 
@@ -136,7 +167,11 @@ VISO = [('head-fat', -.5, .15), ('head-scale-horiz', -.3, .4), ('head-scale-vert
         ('l-cheek-bones', -.4, .7), ('l-cheek-volume', -.6, .1), ('l-cheek-inner', -.5, .3), ('l-ear-scale', -.6, .6), ('l-ear-wing', -.6, .35), ('l-ear-lobe', -.6, .6),
         ('l-eye-scale', -.45, .05), ('l-eye-height2', -.5, .3), ('l-eye-bag', -.3, .5), ('neck-scale-horiz', .0, .5), ('neck-scale-depth', -.2, .4)]
 FORME = ['head-oval', 'head-rectangular', 'head-square', 'head-triangular', 'head-invertedtriangular', 'head-diamond']
+# le sopracciglia di MPFB fanno solo da guida per la posizione dell'arcata; i peli li fa lo script
 SOPRACCIGLIA = ['eyebrow001', 'eyebrow002', 'eyebrow003', 'eyebrow004', 'eyebrow006', 'eyebrow008', 'eyebrow009', 'eyebrow010', 'eyebrow012']
+# peli per sopracciglio; quanto resta dell'arco della guida (1 = tutto); spessore in metri vicino al naso e alla coda;
+# lunghezza dei peli vicino al naso e alla coda; quanto varia la foltezza da un viso all'altro; raggio di un pelo
+SOPRACCIGLIO = dict(quanti=900, arco=.7, spesso=(.0076, .0034), lunga=(.008, .0055), folto=(.85, 1.2), peli=.000032)
 
 def carica(corpo, nome, peso):
     f = nome if os.path.isabs(nome) else TargetService.target_full_path(nome)
@@ -220,6 +255,14 @@ def oggetto_ciocche(nome, ciocche, raggio, mat, muovi):
     r.data.foreach_set('value', [raggio * (1 - .75 * k / (len(c) - 1)) for c in ciocche for k in range(len(c))])
     o = bpy.data.objects.new(nome, cu); bpy.context.scene.collection.objects.link(o); cu.materials.append(mat); return o
 
+def sulla_maglia(ciocche, muovi, alta):
+    """Vero se qualche ciocca, dopo la posa, può cadere davanti alla maglia: scende sotto il suo punto più alto ed è
+    fuori dal collo (di lato) oppure scende fin quasi allo scollo. La barba sotto il mento, davanti al collo, non conta."""
+    for c in ciocche[::3]:
+        p = muovi(c[-1])
+        if p.z < alta + .01 and (abs(p.x) > .06 or p.z < alta - .04): return True
+    return False
+
 def raccogli(ciocche, guida, quanto, caso):
     """Le ciocche si raccolgono verso la punta attorno alla ciocca guida del loro ciuffo; qualcuna resta libera."""
     if quanto <= 0: return
@@ -237,11 +280,21 @@ def capelli(corpo, a, caso, pelle, facce):
     mat = materiale_capelli('Capelli', a['colore'])
     testa = gruppo(corpo, 'scalp'); z0 = min(v.co.z for v in testa); z1 = max(v.co.z for v in testa); y0 = min(v.co.y for v in testa); y1 = max(v.co.y for v in testa); xm = max(abs(v.co.x) for v in testa)
     alto = z1 - z0; pesi = {}
+    # il bordo della zona dei capelli: i punti che hanno accanto un punto senza capelli
+    dentro = {v.index for v in testa}; sul_bordo = set()
+    for e in corpo.data.edges:
+        a, b = e.vertices
+        if (a in dentro) != (b in dentro): sul_bordo.add(a if a in dentro else b)
+    orlo = KDTree(len(sul_bordo))
+    for i in sul_bordo: orlo.insert(corpo.data.vertices[i].co, i)
+    orlo.balance()
     for v in testa:
         w = 1.0
         # stempiato: l'attaccatura arretra davanti, ai lati della fronte
         if C.get('stempiato'):
             davanti = liscio(y0 + .06, y0 + .005, v.co.y); tempia = liscio(xm * .2, xm * .7, abs(v.co.x)); w = 1 - clamp(C['stempiato'] * davanti * (.3 + tempia) * 1.7, 0, 1)
+        # l'attaccatura: verso il bordo i capelli si diradano e si accorciano, in modo irregolare (non una riga netta)
+        d = orlo.find(v.co)[2]; w *= .12 + .88 * liscio(.0, ATTACCATURA * caso.uniform(.6, 1.4), d)
         if w > .03: pesi[v.index] = w
     nodo = mathutils.Vector((0, y1 - .012, z0 + alto * .70))
     def pettine(p, t):
@@ -285,8 +338,8 @@ def capelli(corpo, a, caso, pelle, facce):
             ciocche.append([nodo + mathutils.Vector((0, .018, .004)) + asse * alt + u * (math.cos(a0 + k * .45) * rr) + v * (math.sin(a0 + k * .45) * rr) for k in range(9)])
     return ('Capelli', ciocche, C.get('spessi', .0001), mat) if ciocche else None
 
-def barba(corpo, a, caso, pelle, facce):
-    B = BARBE[a.get('barba', 'nessuna')]
+def barba(corpo, a, caso, pelle, facce, tipo=None):
+    B = BARBE[tipo or a.get('barba', 'nessuna')]
     if not B: return None
     labbra = gruppo(corpo, 'lips'); orecchie = gruppo(corpo, 'ears'); corpo_v = {v.index for v in gruppo(corpo, 'body')}; no = {v.index for v in labbra} | {v.index for v in orecchie}
     lz1 = max(v.co.z for v in labbra); lz0 = min(v.co.z for v in labbra); ly = min(v.co.y for v in labbra); bocca = max(abs(v.co.x) for v in labbra)
@@ -320,10 +373,41 @@ def barba(corpo, a, caso, pelle, facce):
         lunga = B['lunga'] * caso.uniform(.6, 1.15) * (.5 + .5 * w)
         if caso.random() > w * 1.4 or lunga < .0006: continue
         ciocche.append(cresci(pelle, p, n, lunga, clamp(int(lunga / .004) + 2, 2, 7), giu, B.get('alza', .55), .5, .0006, caso, B.get('mosso', .05), B.get('riccio')))
-    return ('Barba', ciocche, B.get('spessi', .00008), mat) if ciocche else None
+    return ('Barba' + (tipo or ''), ciocche, B.get('spessi', .00008), mat) if ciocche else None
 
 # ---------- il busto standard, la testa del giocatore sopra, la maglia ----------
 ASSE = mathutils.Vector((0, -math.sin(math.radians(COLLO['gradi'])), math.cos(math.radians(COLLO['gradi']))))
+
+def sopracciglia(corpo, guida, a, caso, pelle):
+    """Sopracciglia a peli veri, folte e poco arcuate. `guida` è il sopracciglio di MPFB adattato al viso: dice solo dove
+    sta l'arcata; i peli crescono dalla pelle lungo quella linea, pettinati in fuori."""
+    S = SOPRACCIGLIO; folto = caso.uniform(*S['folto']); ciocche = []
+    for segno in (-1, 1):
+        vs = [v.co for v in guida.data.vertices if v.co.x * segno > 0]; x0 = min(abs(p.x) for p in vs); x1 = max(abs(p.x) for p in vs); passo = (x1 - x0) / 7
+        # la linea dell'arcata: a tratti lungo la larghezza, altezza e profondità medie della guida
+        linea = []
+        for k in range(7):
+            q = [p for p in vs if x0 + k * passo <= abs(p.x) <= x0 + (k + 1) * passo + 1e-6]
+            if q: linea.append(mathutils.Vector((segno * (x0 + (k + .5) * passo), sum(p.y for p in q) / len(q), sum(p.z for p in q) / len(q))))
+        media = sum(p.z for p in linea) / len(linea)
+        # meno arcuate: le altezze si avvicinano alla media
+        for p in linea: p.z = media + (p.z - media) * S['arco']
+        def lungo(t):
+            f = clamp(t, 0, 1) * (len(linea) - 1); i = min(int(f), len(linea) - 2); return linea[i].lerp(linea[i + 1], f - i)
+        for _ in range(int(S['quanti'] * folto)):
+            # più fitte verso il naso, più sottili verso la tempia
+            t = caso.random() ** 1.25; spesso = (S['spesso'][0] + (S['spesso'][1] - S['spesso'][0]) * t) * folto; su = caso.gauss(0, .3)
+            if abs(su) > .62: continue
+            p = lungo(t) + mathutils.Vector((0, 0, su * spesso)); vicino, n, _, _ = pelle.find_nearest(p)
+            if vicino is None: continue
+            # il verso: in su vicino al naso, poi in fuori e appena in giù verso la coda
+            verso = mathutils.Vector((segno * (.35 + .65 * liscio(.05, .4, t)), 0, .9 * (1 - liscio(.0, .35, t)) - .25 * liscio(.5, 1, t) - su * .35))
+            lunga = (S['lunga'][0] + (S['lunga'][1] - S['lunga'][0]) * t) * caso.uniform(.75, 1.15)
+            ciocche.append(cresci(pelle, vicino, n, lunga, 4, lambda q, tt: verso, .14, .6, .0004, caso, .05))
+    mel, rosso = COLORI[a['colore']]; mat = materiale_capelli('Sopracciglia', a['colore'], ruvido=.5); h = mat.node_tree.nodes[0]
+    # appena più scure dei capelli
+    h.inputs['Melanin'].default_value = min(1, mel + .05)
+    return ('Sopracciglia', ciocche, S['peli'], mat)
 
 def umano(macro):
     corpo = HumanService.create_human(mask_helpers=True, detailed_helpers=False, extra_vertex_groups=True, feet_on_ground=True, scale=0.1, macro_detail_dict=macro)
@@ -379,64 +463,117 @@ def liscia(oggetti, fini):
         s = next((m for m in o.modifiers if m.type == 'SUBSURF'), None) or o.modifiers.new('Liscia', 'SUBSURF'); s.levels = 1; s.render_levels = 2 if o in fini else 1
         for p in o.data.polygons: p.use_smooth = True
 
-def tessuto(o):
-    """La stoffa della maglia, bianca: pieghe larghe che scendono dalle spalle e una trama fitta da maglia da gioco.
-    Colletto e bottoni (i pezzi staccati dal resto della polo) stanno nel secondo materiale, per la mappa."""
+def anelli_del_bordo(o):
+    """Gli orli aperti di un capo (collo, maniche, fondo): per ognuno l'elenco dei suoi lati, come coppie di punti."""
     import bmesh
-    bm = bmesh.new(); bm.from_mesh(o.data); bm.verts.ensure_lookup_table(); visti = set(); isole = []
+    bm = bmesh.new(); bm.from_mesh(o.data); visti = set(); anelli = []
+    for e in bm.edges:
+        if not e.is_boundary or e.index in visti: continue
+        pila = [e]; lati = []; visti.add(e.index)
+        while pila:
+            x = pila.pop(); lati.append((x.verts[0].co.copy(), x.verts[1].co.copy()))
+            for v in x.verts:
+                for e2 in v.link_edges:
+                    if e2.is_boundary and e2.index not in visti: visti.add(e2.index); pila.append(e2)
+        anelli.append(lati)
+    bm.free(); return anelli
+
+def isole(o):
+    """I pezzi staccati di un capo, come insiemi di indici di punti, dal più grande."""
+    import bmesh
+    bm = bmesh.new(); bm.from_mesh(o.data); bm.verts.ensure_lookup_table(); visti = set(); out = []
     for v in bm.verts:
         if v.index in visti: continue
-        pila = [v]; isola = []; visti.add(v.index)
+        pila = [v]; isola = set(); visti.add(v.index)
         while pila:
-            a = pila.pop(); isola.append(a)
-            for e in a.link_edges:
-                b = e.other_vert(a)
-                if b.index not in visti: visti.add(b.index); pila.append(b)
-        isole.append(isola)
-    # il pezzo più grande è la maglia; gli altri pezzi che stanno in alto sono colletto e bottoni
-    grande = max(isole, key=len); alto = max(v.co.z for v in grande); bordo = set()
-    for i in isole:
-        if i is not grande and max(v.co.z for v in i) > alto - .15: bordo |= {v.index for v in i}
-    bm.free()
+            x = pila.pop(); isola.add(x.index)
+            for e in x.link_edges:
+                y = e.other_vert(x)
+                if y.index not in visti: visti.add(y.index); pila.append(y)
+        out.append(isola)
+    bm.free(); return sorted(out, key=len, reverse=True)
+
+def dal_lato(p, lati):
+    """Distanza di un punto dall'orlo, e il punto dell'orlo più vicino."""
+    meglio = (1e9, None)
+    for a, b in lati:
+        q = mathutils.geometry.intersect_point_line(p, a, b); t = clamp(q[1], 0, 1); c = a.lerp(b, t); d = (p - c).length
+        if d < meglio[0]: meglio = (d, c)
+    return meglio
+
+def attributo(o, nome, valori):
+    x = o.data.attributes.new(nome, 'FLOAT', 'POINT'); x.data.foreach_set('value', valori)
+
+def maglia_3d(corpo, scollo):
+    """Una maglia sul busto standard: il capo di MakeHuman, lo scollo, la stoffa bianca con le pieghe, e per ogni punto
+    dove cade sulla stoffa (di lato e in altezza, misurati prima delle pieghe) e quanto è lontano dall'orlo del collo."""
+    M = MAGLIE[scollo]; o = pezzo(corpo, 'clothes', M['modello'], 'Clothes', 'MAKESKIN'); V = o.data.vertices
+    grande = isole(o)[0]; posti = {tuple(round(x, 6) for x in V[i].co) for i in grande}
+    # l'orlo del collo: tra gli orli aperti del pezzo grande, quello più in alto
+    collo = max((a for a in anelli_del_bordo(o) if tuple(round(x, 6) for x in a[0][0]) in posti), key=lambda a: sum(p.z + q.z for p, q in a) / len(a))
+    davanti = min(collo, key=lambda l: l[0].y)[0]; bordo = [0.0] * len(V)
+    if M.get('v'):
+        # lo scollo a V: il davanti scende a punta; la stoffa sotto si accorcia un poco per fargli posto
+        fondo, largo = M['v']
+        for v in V:
+            giu = fondo * max(0, 1 - abs(v.co.x) / largo) ** 1.15 * liscio(davanti.y + .07, davanti.y + .025, v.co.y) * clamp(1 - (davanti.z - v.co.z) / .2, 0, 1)
+            v.co.z -= giu
+        collo = [(a + mathutils.Vector((0, 0, -fondo * max(0, 1 - abs(a.x) / largo) ** 1.15 * liscio(davanti.y + .07, davanti.y + .025, a.y))), b + mathutils.Vector((0, 0, -fondo * max(0, 1 - abs(b.x) / largo) ** 1.15 * liscio(davanti.y + .07, davanti.y + .025, b.y)))) for a, b in collo]
+    # la stoffa resta sempre fuori dal corpo di qualche millimetro (lo scollo a V, scendendo, ci entrerebbe)
+    pelle, _ = superficie(corpo)
+    for v in V:
+        vicino, n, _, _ = pelle.find_nearest(v.co)
+        if vicino is not None and (v.co - vicino).dot(n) < MARGINE: v.co = vicino + n * MARGINE
+    collo = [tuple((lambda q: q[0] + q[1] * MARGINE if (x - q[0]).dot(q[1]) < MARGINE else x)(pelle.find_nearest(x)[:2]) for x in lato) for lato in collo]
+    lontano = [dal_lato(v.co, collo) for v in V]
+    # la fascia attorno al collo: vale 1 sull'orlo e sfuma a 0 alla larghezza del bordo
+    bordo = [1 - liscio(M['bordo'] * .8, M['bordo'] * 1.2, d) for d, _ in lontano]
+    # dove cade ogni punto sulla stoffa, misurato adesso che è ancora liscia: di lato e in altezza. Le pieghe vengono
+    # dopo e spostano la stoffa col suo disegno: così righe e scacchi si piegano con lei, come su una maglia vera.
+    attributo(o, 'stoffa_lato', [v.co.x for v in V]); attributo(o, 'stoffa_alta', [v.co.z for v in V]); attributo(o, 'stoffa_bordo', bordo)
     mat = bpy.data.materials.new('Stoffa'); mat.use_nodes = True; n = mat.node_tree.nodes; L = mat.node_tree.links; b = n['Principled BSDF']
     b.inputs['Base Color'].default_value = (.8, .8, .8, 1); b.inputs['Roughness'].default_value = .62
     if 'Sheen Weight' in b.inputs: b.inputs['Sheen Weight'].default_value = .3
     co = n.new('ShaderNodeTexCoord')
-    # le pieghe: onde larghe, storte dal rumore, più strette in altezza che di lato
+    # pieghe piccole in rilievo sopra quelle vere, e una trama fitta da maglia da gioco
     sc = n.new('ShaderNodeMapping'); sc.inputs['Scale'].default_value = (1.0, 1.0, .45); sc.inputs['Rotation'].default_value = (0, math.radians(28), 0); L.new(co.outputs['Object'], sc.inputs['Vector'])
-    pieghe = n.new('ShaderNodeTexNoise'); pieghe.inputs['Scale'].default_value = 9; pieghe.inputs['Detail'].default_value = 2.5; pieghe.inputs['Roughness'].default_value = .45; pieghe.inputs['Distortion'].default_value = 1.2; L.new(sc.outputs['Vector'], pieghe.inputs['Vector'])
-    r1 = n.new('ShaderNodeBump'); r1.inputs['Strength'].default_value = .4; r1.inputs['Distance'].default_value = .015; L.new(pieghe.outputs['Fac'], r1.inputs['Height'])
+    pieghe = n.new('ShaderNodeTexNoise'); pieghe.inputs['Scale'].default_value = 14; pieghe.inputs['Detail'].default_value = 2.5; pieghe.inputs['Roughness'].default_value = .45; pieghe.inputs['Distortion'].default_value = 1.2; L.new(sc.outputs['Vector'], pieghe.inputs['Vector'])
+    r1 = n.new('ShaderNodeBump'); r1.inputs['Strength'].default_value = .5; r1.inputs['Distance'].default_value = .012; L.new(pieghe.outputs['Fac'], r1.inputs['Height'])
     trama = n.new('ShaderNodeTexVoronoi'); trama.feature = 'F1'; trama.inputs['Scale'].default_value = 700; L.new(co.outputs['Object'], trama.inputs['Vector'])
     r2 = n.new('ShaderNodeBump'); r2.inputs['Strength'].default_value = .12; r2.inputs['Distance'].default_value = .0006; L.new(trama.outputs['Distance'], r2.inputs['Height']); L.new(r1.outputs['Normal'], r2.inputs['Normal'])
-    L.new(r2.outputs['Normal'], b.inputs['Normal'])
-    o.data.materials.clear(); o.data.materials.append(mat); o.data.materials.append(mat.copy())
-    for f in o.data.polygons: f.material_index = 1 if all(i in bordo for i in f.vertices) else 0
-    # le pieghe vere: la stoffa si gonfia lungo onde storte, quasi solo in fuori per non entrare nel corpo (non vicino al
-    # colletto, che resta al suo posto)
+    L.new(r2.outputs['Normal'], b.inputs['Normal']); rovescio(mat)
+    o.data.materials.clear(); o.data.materials.append(mat)
+    # le pieghe vere: la stoffa si gonfia lungo onde storte, quasi solo in fuori per non entrare nel corpo, e non vicino
+    # all'orlo del collo, che resta al suo posto
     liscia([o], [o]); g = o.vertex_groups.new(name='Pieghe')
-    for v in o.data.vertices: g.add([v.index], 0 if v.index in bordo else liscio(alto - .035, alto - .12, v.co.z), 'REPLACE')
+    for v, (d, _), x in zip(V, lontano, bordo): g.add([v.index], 0 if x >= 1 else liscio(.02, .09, d), 'REPLACE')
     guida = bpy.data.objects.new('GuidaPieghe', None); bpy.context.scene.collection.objects.link(guida); guida.scale = PIEGHE['stira']; guida.rotation_euler = (0, math.radians(PIEGHE['gradi']), 0)
     tex = bpy.data.textures.new('Pieghe', 'CLOUDS'); tex.noise_scale = PIEGHE['larghe']; tex.noise_depth = 1
     d = o.modifiers.new('Pieghe', 'DISPLACE'); d.texture = tex; d.texture_coords = 'OBJECT'; d.texture_coords_object = guida; d.vertex_group = 'Pieghe'; d.mid_level = .2; d.strength = PIEGHE['alte']
     return o
 
-def mappa(o):
-    """I due materiali della maglia diventano colori piatti: rosso = posizione di lato, verde = altezza, blu = bordo."""
-    for i in (0, 1):
-        m = bpy.data.materials.new(f'Mappa{i}'); m.use_nodes = True; n = m.node_tree.nodes; L = m.node_tree.links; n.clear()
-        co = n.new('ShaderNodeTexCoord'); sep = n.new('ShaderNodeSeparateXYZ'); L.new(co.outputs['Object'], sep.inputs[0]); com = n.new('ShaderNodeCombineXYZ')
-        for asse, (da, a), base in (('X', MAPPA['x'], 0), ('Z', MAPPA['z'], OCCHI_FISSI.z)):
-            r = n.new('ShaderNodeMapRange'); r.inputs['From Min'].default_value = base + da; r.inputs['From Max'].default_value = base + a; L.new(sep.outputs[asse], r.inputs['Value']); L.new(r.outputs[0], com.inputs['X' if asse == 'X' else 'Y'])
-        com.inputs['Z'].default_value = i
-        e = n.new('ShaderNodeEmission'); L.new(com.outputs[0], e.inputs['Color']); u = n.new('ShaderNodeOutputMaterial'); L.new(e.outputs[0], u.inputs[0])
-        o.material_slots[i].material = m
+def rovescio(mat):
+    """Il rovescio della stoffa (l'interno della maglia che si vedrebbe dallo scollo) non si disegna: lì deve vedersi
+    il collo del giocatore, che sta nell'altro strato."""
+    n = mat.node_tree.nodes; L = mat.node_tree.links; u = next(x for x in n if x.type == 'OUTPUT_MATERIAL'); prima = u.inputs[0].links[0].from_socket
+    g = n.new('ShaderNodeNewGeometry'); t = n.new('ShaderNodeBsdfTransparent'); mix = n.new('ShaderNodeMixShader')
+    L.new(g.outputs['Backfacing'], mix.inputs[0]); L.new(prima, mix.inputs[1]); L.new(t.outputs[0], mix.inputs[2]); L.new(mix.outputs[0], u.inputs[0])
 
-def mappa_gioco():
+def mappa(o):
+    """La stoffa diventa colori piatti: rosso = dove cade di lato, verde = in altezza, blu = bordo."""
+    m = bpy.data.materials.new('Mappa'); m.use_nodes = True; n = m.node_tree.nodes; L = m.node_tree.links; n.clear(); com = n.new('ShaderNodeCombineXYZ')
+    for nome, uscita, (da, a) in (('stoffa_lato', 'X', MAPPA['x']), ('stoffa_alta', 'Y', (OCCHI_FISSI.z + MAPPA['z'][0], OCCHI_FISSI.z + MAPPA['z'][1])), ('stoffa_bordo', 'Z', (0, 1))):
+        at = n.new('ShaderNodeAttribute'); at.attribute_name = nome
+        r = n.new('ShaderNodeMapRange'); r.inputs['From Min'].default_value = da; r.inputs['From Max'].default_value = a; L.new(at.outputs['Fac'], r.inputs['Value']); L.new(r.outputs[0], com.inputs[uscita])
+    e = n.new('ShaderNodeEmission'); L.new(com.outputs[0], e.inputs['Color']); u = n.new('ShaderNodeOutputMaterial'); L.new(e.outputs[0], u.inputs[0]); rovescio(m)
+    o.material_slots[0].material = m
+
+def mappa_gioco(nome):
     """Riscrive la mappa in una forma che il gioco legge senza perdere precisione: un'immagine larga il doppio, a otto
     bit e senza trasparenza. Metà sinistra: rosso e verde = posizione di lato (parte grossa e parte fine), blu = bordo.
-    Metà destra: rosso e verde = altezza. La trasparenza della maglia sta in «maglia-luce»."""
+    Metà destra: rosso e verde = altezza. La trasparenza della maglia sta nel file «luce»."""
     import numpy as np
-    f = os.path.join(USCITA, 'maglia-mappa.png'); im = bpy.data.images.load(f); im.colorspace_settings.name = 'Non-Color'; im.alpha_mode = 'STRAIGHT'
+    f = os.path.join(USCITA, nome + '.png'); im = bpy.data.images.load(f); im.colorspace_settings.name = 'Non-Color'; im.alpha_mode = 'STRAIGHT'
     px = np.empty(LATO * LATO * 4, np.float32); im.pixels.foreach_get(px); px = px.reshape(LATO, LATO, 4); bpy.data.images.remove(im)
     def due(v):
         n = np.clip(np.round(v * 65535), 0, 65535); return np.floor(n / 256) / 255, (n % 256) / 255
@@ -475,7 +612,7 @@ def scena(nome, campioni=None, grezzo=False):
                 for x in c.collection_objects: x.light_linking.link_state = 'INCLUDE' if includi else 'EXCLUDE'
             d2 = d.copy(); d2.energy = CONTORNO_PELI; o2 = bpy.data.objects.new('ContornoPeli', d2); sc.collection.objects.link(o2); o2.location = o.location; o2.rotation_euler = o.rotation_euler
             lega(o, False); lega(o2, True)
-        sc.world = bpy.data.worlds.new('Mondo'); sc.world.use_nodes = True; sc.world.node_tree.nodes['Background'].inputs[0].default_value = (.5, .6, .8, 1); sc.world.node_tree.nodes['Background'].inputs[1].default_value = .16
+        sc.world = bpy.data.worlds.new('Mondo'); sc.world.use_nodes = True; sc.world.node_tree.nodes['Background'].inputs[0].default_value = CIELO[0] + (1,); sc.world.node_tree.nodes['Background'].inputs[1].default_value = CIELO[1]
     sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'; sc.cycles.samples = campioni or CAMPIONI; sc.cycles.use_denoising = not grezzo
     sc.cycles.use_adaptive_sampling = not grezzo; sc.cycles.adaptive_threshold = .02
     sc.render.film_transparent = True; sc.render.resolution_x = sc.render.resolution_y = LATO; sc.render.resolution_percentage = 100
@@ -485,16 +622,18 @@ def scena(nome, campioni=None, grezzo=False):
     sc.view_settings.view_transform = 'Raw' if grezzo else 'Filmic'; sc.view_settings.look = 'None' if grezzo else 'Medium High Contrast'
     sc.render.filepath = os.path.join(USCITA, nome + '.png'); bpy.ops.render.render(write_still=True)
 
-def maglia():
-    """I due file della maglia, uguali per tutti: la stoffa bianca con luci, ombre e pieghe, e la mappa per colorarla.
-    Il corpo standard (con la testa) non si vede ma fa la sua ombra sul colletto e sulle spalle."""
-    t0 = time.time(); bpy.ops.wm.read_factory_settings(use_empty=True)
-    corpo = umano(macro_di(BUSTO['eta'], BUSTO['tratti'])); TargetService.bake_targets(corpo)
-    occhi = pezzo(corpo, 'eyes', 'high-poly', 'Eyes', 'PROCEDURAL_EYES'); m = tessuto(pezzo(corpo, 'clothes', MAGLIA, 'Clothes', 'MAKESKIN'))
-    posa([corpo, occhi], occhi, 0, 0, 0); liscia([corpo], [corpo])
-    corpo.visible_camera = False; occhi.hide_render = True
-    scena('maglia-luce'); mappa(m); corpo.hide_render = True; scena('maglia-mappa', 24, True); mappa_gioco()
-    print(f"MAGLIA: fatta in {time.time() - t0:.1f} s", flush=True)
+def maglie():
+    """I file delle maglie, uguali per tutti, uno per scollo: la stoffa bianca con luci, ombre e pieghe, e la mappa per
+    colorarla. Il corpo standard (con la testa) non si vede ma fa la sua ombra sotto il collo e sulle spalle."""
+    for scollo in MAGLIE:
+        t0 = time.time(); bpy.ops.wm.read_factory_settings(use_empty=True)
+        corpo = umano(macro_di(BUSTO['eta'], BUSTO['tratti'])); TargetService.bake_targets(corpo)
+        occhi = pezzo(corpo, 'eyes', 'high-poly', 'Eyes', 'PROCEDURAL_EYES'); m = maglia_3d(corpo, scollo)
+        posa([corpo, occhi], occhi, 0, 0, 0); liscia([corpo], [corpo])
+        # il corpo non si disegna, ma buca la maglia dove le sta davanti (il collo copre il dietro dello scollo)
+        corpo.is_holdout = True; occhi.hide_render = True
+        scena(f'maglia-{scollo}-luce'); mappa(m); scena(f'maglia-{scollo}-mappa', 24, True); mappa_gioco(f'maglia-{scollo}-mappa')
+        print(f"MAGLIA {scollo}: fatta in {time.time() - t0:.1f} s", flush=True)
 
 def ritratto(a):
     t0 = time.time(); bpy.ops.wm.read_factory_settings(use_empty=True); caso = random.Random(a['viso'])
@@ -510,34 +649,38 @@ def ritratto(a):
         if g and 'colorMixIn' in g.inputs:
             g.inputs['colorMixIn'].default_value = P['mescola'][0] + (1,); g.inputs['colorMixInStrength'].default_value = P['mescola'][1]; g.inputs['Brightness'].default_value = P['luce']
             if 'lips' in m.name: g.inputs['colorMixIn'].default_value = P['labbra'] + (1,); g.inputs['colorMixInStrength'].default_value = .45
-            g.inputs['SSS strength'].default_value = .28; g.inputs['Pore strength'].default_value = .3; g.inputs['Roughness'].default_value = .42 if 'lips' not in m.name else .34
+            g.inputs['SSS strength'].default_value = PELLE['sotto']; g.inputs['Pore strength'].default_value = PELLE['pori']; g.inputs['Contrast'].default_value = PELLE['contrasto']; g.inputs['Clearcoat'].default_value = PELLE['lucido']; g.inputs['Roughness'].default_value = PELLE['ruvida'] if 'lips' not in m.name else .34
     # occhi per primi (servono a mettere la testa sul busto standard), poi il resto si adatta al corpo già a posto
     occhi = pezzo(corpo, 'eyes', 'high-poly', 'Eyes', 'PROCEDURAL_EYES'); sul_busto(corpo, occhi)
-    ciglia = [pezzo(corpo, 'eyebrows', caso.choice(SOPRACCIGLIA), 'Eyebrows', 'MAKESKIN'), pezzo(corpo, 'eyelashes', 'eyelashes01', 'Eyelashes', 'MAKESKIN')]
-    polo = tessuto(pezzo(corpo, 'clothes', MAGLIA, 'Clothes', 'MAKESKIN'))
-    # capelli e barba crescono adesso, sulla testa ancora dritta e simmetrica; poi seguono la posa come il resto
-    corpo.data.update(); pelle_alb, facce = superficie(corpo); peli = [capelli(corpo, a, caso, pelle_alb, facce), barba(corpo, a, caso, pelle_alb, facce)]
-    muovi = posa([corpo, occhi] + ciglia, occhi, gira, inclina, china)
-    for x in peli:
-        if x: oggetto_ciocche(*x, muovi)
+    ciglia = pezzo(corpo, 'eyelashes', 'eyelashes01', 'Eyelashes', 'MAKESKIN'); guida = pezzo(corpo, 'eyebrows', caso.choice(SOPRACCIGLIA), 'Eyebrows', 'MAKESKIN')
+    # la maglia qui serve solo a nascondere, nello strato «sopra», i capelli che le passano dietro
+    polo = maglia_3d(corpo, 'girocollo'); alta = max(v.co.z for v in polo.data.vertices); polo.hide_render = True
+    # capelli, barba e sopracciglia crescono adesso, sulla testa ancora dritta e simmetrica; poi seguono la posa
+    corpo.data.update(); pelle_alb, facce = superficie(corpo)
+    peli = [capelli(corpo, a, caso, pelle_alb, facce), barba(corpo, a, caso, pelle_alb, facce), barba(corpo, a, caso, pelle_alb, facce, 'ombra') if a.get('velo') else None,
+            sopracciglia(corpo, guida, a, caso, pelle_alb)]
+    bpy.data.objects.remove(guida)
+    muovi = posa([corpo, occhi, ciglia], occhi, gira, inclina, china)
+    peli = [x for x in peli if x]; fili = [oggetto_ciocche(*x, muovi) for x in peli]
     # occhi: colore dell'iride, cornea lucida, sguardo verso la camera (la testa ha già fatto parte del giro)
-    g = next(x for x in occhi.material_slots[0].material.node_tree.nodes if x.type == 'GROUP'); c1, c2 = OCCHI[a.get('occhi', 'castani')]
-    g.inputs['IrisMajorColor'].default_value = c1 + (1,); g.inputs['IrisMinorColor'].default_value = c2 + (1,); g.inputs['IrisSection4Color'].default_value = tuple(x * .45 for x in c1) + (1,); g.inputs['PupilSize'].default_value = .27; g.inputs['Clearcoat'].default_value = 1
+    g = next(x for x in occhi.material_slots[0].material.node_tree.nodes if x.type == 'GROUP'); c1, c2 = OCCHI[a.get('occhi') or caso.choices(list(OCCHI_PER_PELLE[a['pelle']]), weights=list(OCCHI_PER_PELLE[a['pelle']].values()))[0]]
+    g.inputs['IrisMajorColor'].default_value = c1 + (1,); g.inputs['IrisMinorColor'].default_value = c2 + (1,); g.inputs['IrisSection4Color'].default_value = tuple(x * .45 for x in c1) + (1,); g.inputs['PupilSize'].default_value = .27; g.inputs['Clearcoat'].default_value = .7
     sguardo(occhi, -(TRE_QUARTI - gira) * SGUARDO)
-    # sopracciglia del colore dei capelli (un po' più scure)
-    mel = COLORI[a['colore']][0]; scuro = (.03 + (1 - mel) * .22, .02 + (1 - mel) * .15, .015 + (1 - mel) * .08, 1)
-    ms = ciglia[0].material_slots[0].material; b = next(x for x in ms.node_tree.nodes if x.type == 'BSDF_PRINCIPLED'); b.inputs['Base Color'].default_value = scuro
-    for l in list(b.inputs['Base Color'].links): ms.node_tree.links.remove(l)
     liscia([o for o in bpy.data.objects if o.type == 'MESH' and o is not polo], [corpo])
-    # la maglia qui non si disegna: nasconde quello che le sta dietro e lascia il buco, che il gioco riempie con la sua
-    polo.is_holdout = True
-    t1 = time.time(); scena(a['id'])
-    print(f"RITRATTO {a['id']}: {espressione}, gira {gira:.0f}, preparato in {t1 - t0:.1f} s, reso in {time.time() - t1:.1f} s", flush=True)
+    t1 = time.time(); scena(a['id']); sopra = ''
+    # lo strato «sopra»: solo capelli e barba, dove non sono nascosti dal corpo o dalla maglia. Serve soltanto se
+    # scendono fino alla maglia.
+    if any(sulla_maglia(x[1], muovi, alta) for x in peli if x[0] != 'Sopracciglia'):
+        polo.hide_render = False
+        for o in bpy.data.objects:
+            if o.type == 'MESH': o.is_holdout = True
+        scena(a['id'] + '-sopra'); sopra = ', con strato sopra'
+    print(f"RITRATTO {a['id']}: {espressione}, gira {gira:.0f}{sopra}, preparato in {t1 - t0:.1f} s, reso in {time.time() - t1:.1f} s", flush=True)
 
 STD, OCCHI_STD = standard()
 # dove finiscono gli occhi di tutti: quelli standard, spostati dall'ingrandimento della testa
 OCCHI_FISSI = (lambda perno: perno + (OCCHI_STD - perno) * TESTA)(mathutils.Vector((COLLO['perno'][0], COLLO['perno'][1], (OCCHI_STD.dot(ASSE) + COLLO['da'] - mathutils.Vector((COLLO['perno'][0], COLLO['perno'][1], 0)).dot(ASSE)) / ASSE.z)))
-if (SOLO and 'maglia' in SOLO) or (not SOLO and not os.path.exists(os.path.join(USCITA, 'maglia-luce.png'))): maglia()
+if (SOLO and 'maglia' in SOLO) or (not SOLO and not os.path.exists(os.path.join(USCITA, 'maglia-girocollo-luce.png'))): maglie()
 for a in ASPETTI:
     if SOLO and a['id'] not in SOLO: continue
     ritratto(a)
