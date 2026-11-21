@@ -92,23 +92,30 @@ function corsa(sprint, giro = false, q = .6) {
 
 // ------------------------------------------------------------------ corpo (src/fisica/corpo.js)
 const H = CORPO.passoMax, gioc = (o = {}) => ({ x: 0, z: 0, vx: 0, vz: 0, dir: 0, wy: 0, en: 1, fondo: 1, ...o });
-function muovi(p, wx, wz, T, dt = 1 / 60, vMax = 7.3, o = {}) { // come in partita: accumulo e passi fissi
+function muovi(p, wx, wz, T, dt = 1 / 60, vMax = 7, o = {}) { // come in partita: accumulo e passi fissi
   for (let t = 0; t < T - 1e-9; t += dt) { p.resto = (p.resto || 0) + Math.min(dt, T - t); while (p.resto >= H - 1e-9) { p.resto -= H; spingi(p, wx, wz, H, vMax, o); p.x += p.vx * H; p.z += p.vz * H; } }
   return p;
 }
-const tempoFino = (p, cond, wx, wz, max = 5, o) => { let t = 0; while (t < max && !cond(p)) { spingi(p, wx, wz, H, 7.3, o); p.x += p.vx * H; p.z += p.vz * H; t += H; } return t; };
+const tempoFino = (p, cond, wx, wz, max = 5, o) => { let t = 0; while (t < max && !cond(p)) { spingi(p, wx, wz, H, 7, o); p.x += p.vx * H; p.z += p.vz * H; t += H; } return t; };
 {
-  const a = tempoFino(gioc(), (p) => p.vx >= 6.6, 7.3, 0); // da fermo al 90% di 7,3 m/s
-  const f = gioc({ vx: 7.3 }), tf = tempoFino(f, (p) => p.vx <= 0.01, 0, 0);
-  const u = gioc({ vx: 7.3 }), tu = tempoFino(u, (p) => p.vx <= -6.6, -7.3, 0); // inversione a 180°
-  assert.ok(a > .7 && a < 1.6, `partenza ${a}`); assert.ok(tf > .3 && tf < .7 && f.x < 2.6, `frenata ${tf} ${f.x}`); assert.ok(tu > a && tu < a + .8, `inversione ${tu}`);
-  out.push(`corpo: da fermo a 6,6 m/s in ${a.toFixed(2)} s; frena da 7,3 in ${tf.toFixed(2)} s (${f.x.toFixed(1)} m); inversione completa in ${tu.toFixed(2)} s`);
+  // obiettivi di Alex (21/11): circa un secondo da fermo allo scatto (7 m/s), frenata rapida
+  const a = tempoFino(gioc(), (p) => p.vx >= 6.65, 7, 0); // da fermo al 95% di 7 m/s
+  const f = gioc({ vx: 7 }), tf = tempoFino(f, (p) => p.vx <= 0.01, 0, 0);
+  assert.ok(a > .8 && a < 1.25, `partenza ${a}`); assert.ok(tf > .25 && tf < .5 && f.x < 1.6, `frenata ${tf} ${f.x}`);
+  out.push(`corpo: da fermo a 6,65 m/s in ${a.toFixed(2)} s; frena da 7 in ${tf.toFixed(2)} s (${f.x.toFixed(1)} m)`);
 }
-{ // curva: raggio a velocità normale e in scatto (con la curva più larga)
-  const raggio = (v, o) => { const p = gioc({ vx: v }); let maxZ = 0; for (let t = 0; t < 3; t += H) { const ang = Math.atan2(p.vz, p.vx); if (ang > Math.PI / 2) break; spingi(p, 0, v, H, v, o); p.x += p.vx * H; p.z += p.vz * H; maxZ = Math.max(maxZ, p.x); } return maxZ; };
-  const r7 = raggio(7), r9 = raggio(9, { lat: CORPO.latScatto }), r4 = raggio(4);
-  assert.ok(r4 < r7 && r7 < r9, `raggi ${r4} ${r7} ${r9}`);
-  out.push(`curva a 90°: avanza ${r4.toFixed(1)} m a 4 m/s, ${r7.toFixed(1)} m a 7 m/s, ${r9.toFixed(1)} m in scatto a 9 m/s`);
+{ // cambi di direzione: si perde velocità in proporzione all'angolo, circa metà su un'inversione
+  const resta = (gradi, v = 5) => { const p = gioc({ vx: v }), a = gradi * Math.PI / 180, wx = Math.cos(a) * v, wz = Math.sin(a) * v; let min = v, t = 0; while (t < 1.2) { spingi(p, wx, wz, H, v, {}); min = Math.min(min, hyp(p.vx, p.vz)); t += H; if ((p.vx * wx + p.vz * wz) / (hyp(p.vx, p.vz) * v || 1) > .999) break; } return [min / v, t]; };
+  const [r45] = resta(45), [r90] = resta(90), [r180, t180] = resta(179);
+  assert.ok(r45 > r90 && r90 > r180, `più si gira più si perde: ${r45} ${r90} ${r180}`);
+  assert.ok(r180 > .45 && r180 < .62, `inversione: resta ${r180}`); assert.ok(r90 > .65 && r90 < .8 && r45 > .8, `curve: ${r45} ${r90}`);
+  assert.ok(t180 > .25 && t180 < .6, `tempo dell'inversione ${t180}`);
+  out.push(`cambi di direzione a 5 m/s: a 45° resta il ${Math.round(r45 * 100)}% della velocità, a 90° il ${Math.round(r90 * 100)}%, sull'inversione il ${Math.round(r180 * 100)}% (in ${t180.toFixed(2)} s)`);
+  // in scatto la curva è più larga: per girare di 90° si avanza di più
+  const raggio = (v, o) => { const p = gioc({ vx: v }); let maxX = 0; for (let t = 0; t < 3; t += H) { if (Math.atan2(p.vz, p.vx) > Math.PI / 2 - .01) break; spingi(p, 0, v, H, v, o); p.x += p.vx * H; p.z += p.vz * H; maxX = Math.max(maxX, p.x); } return maxX; };
+  const r5 = raggio(5), r7 = raggio(7, { lat: CORPO.latScatto }), r3 = raggio(3);
+  assert.ok(r3 < r5 && r5 < r7, `raggi ${r3} ${r5} ${r7}`);
+  out.push(`curva a 90°: avanza ${r3.toFixed(1)} m a 3 m/s, ${r5.toFixed(1)} m a 5 m/s, ${r7.toFixed(1)} m in scatto a 7 m/s`);
 }
 { // rotazione del busto: niente scatti, niente oscillazioni
   const p = gioc(); let t = 0, max = 0; while (t < 1) { ruota(p, Math.PI - .01, H, 0); max = Math.max(max, p.dir); t += H; if (Math.abs(p.dir - (Math.PI - .01)) < .05 && !p.t) p.t = t; }
