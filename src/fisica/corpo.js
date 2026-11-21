@@ -4,8 +4,8 @@
    Chi decide dove andare (l'IA o la levetta) chiede una velocità; il corpo ci arriva come un corpo vero:
    - accelera forte da fermo e sempre meno avvicinandosi alla velocità massima;
    - frena più forte di quanto acceleri;
-   - per curvare serve una forza laterale che ha un limite: più si va veloci, più la curva è larga (in scatto ancora di più);
-   - se la direzione chiesta è quasi alle spalle, prima frena e poi riparte.
+   - la corsa cambia direzione a una velocità angolare limitata: più si va veloci, più la curva è larga;
+   - girare costa velocità in proporzione all'angolo: su un'inversione completa ne resta circa metà (come in Dream League).
    La fatica abbassa velocità massima, accelerazione e prontezza. Il busto ruota verso la direzione di corsa con una
    velocità angolare limitata (niente scatti di 180° in un fotogramma) e si inclina nelle curve e quando accelera o frena.
 
@@ -29,24 +29,30 @@ export function forma(en) {
  * lat (per lo scatto, la fatica, un infortunio). vMax è la velocità massima di questo momento (serve per la curva di potenza).
  */
 export function spingi(p, wx, wz, h, vMax, o = {}) {
-  const C = CORPO, acc = (o.acc || 1) * C.acc, frena = (o.frena || 1) * C.frena, latK = (o.lat || 1) * C.lat;
-  const v = hyp(p.vx, p.vz), w = hyp(wx, wz);
+  const C = CORPO, acc = (o.acc || 1) * C.acc, frena = (o.frena || 1) * C.frena;
+  let v = hyp(p.vx, p.vz); const w = hyp(wx, wz);
   if (v < 0.4) { // quasi fermo: si parte dritti verso dove si vuole
     const dvx = wx - p.vx, dvz = wz - p.vz, d = hyp(dvx, dvz), m = Math.min(d, acc * h);
     if (d > 1e-6) { p.vx += dvx / d * m; p.vz += dvz / d * m; }
     return;
   }
-  const ux = p.vx / v, uz = p.vz / v, lungo = wx * ux + wz * uz, nx = wx - lungo * ux, nz = wz - lungo * uz, n = hyp(nx, nz);
-  const alle = w > 0.5 && lungo / w < C.inverti; // direzione quasi alle spalle: frenata decisa, poca curva
+  let ux = p.vx / v, uz = p.vz / v, avanti = 1;
+  if (w > 0.3) {
+    // Cambio di direzione: la corsa gira verso dove si vuole andare (più piano in scatto) e girando perde velocità in
+    // proporzione all'angolo. Finché la direzione voluta è di lato o alle spalle non si accelera: prima si finisce di girare.
+    const cosA = clamp((wx * ux + wz * uz) / w, -1, 1), ang = Math.acos(cosA);
+    if (ang > 1e-4) {
+      const svolta = Math.min(ang, (C.gira + (C.giraScatto - C.gira) * clamp(v / 7, 0, 1)) * (o.lat || 1) * h), verso = wz * ux - wx * uz >= 0 ? 1 : -1;
+      const c = Math.cos(svolta * verso), s = Math.sin(svolta * verso), nx = ux * c - uz * s, nz = ux * s + uz * c;
+      ux = nx; uz = nz; v *= Math.exp(-C.perde * svolta / Math.PI);
+    }
+    avanti = Math.max(0, cosA);
+  }
   // lungo la direzione di corsa: accelerare (sempre meno vicino alla velocità massima) o frenare
-  const potenza = acc * Math.max(C.accMin, 1 - v / Math.max(vMax * 1.05, 1));
-  let dv = alle ? -frena * h : clamp(lungo - v, -frena * h, potenza * h);
+  const potenza = acc * Math.max(C.accMin, 1 - v / Math.max(vMax * 1.05, 1)) * avanti;
+  let dv = clamp(w - v, -frena * h, potenza * h);
   if (v + dv < 0) dv = -v;
-  // di lato: la forza per curvare ha un limite che cala con la velocità
-  const latMax = latK / (1 + (v / C.latV) * (v / C.latV)) * (alle ? 0.35 : 1);
-  const dn = Math.min(n, latMax * h);
-  p.vx += ux * dv + (n > 1e-6 ? nx / n * dn : 0);
-  p.vz += uz * dv + (n > 1e-6 ? nz / n * dn : 0);
+  p.vx = ux * (v + dv); p.vz = uz * (v + dv);
 }
 
 /**
@@ -80,7 +86,8 @@ export function stanca(p, h, v, vMax, scatto) {
 export const ANDATURE = {
   walk: { D: 0.967, v: 1.53, min: 0.12, max: 1.45, dx: 0.995 },
   jog: { D: 0.833, v: 2.34, min: 0.55, max: 1.75, dx: 0.86 },
-  run: { D: 0.7, v: 3.63, min: 0.6, max: 1.6, dx: 0.94 },
+  // la corsa copre anche lo scatto (7 m/s): la clip accelera fino al doppio, così il piede in appoggio non scivola
+  run: { D: 0.7, v: 3.63, min: 0.6, max: 2, dx: 0.94 },
 };
 /** I pesi di camminata, corsetta e corsa a velocità v (gli stessi che usa l'animazione), centrati sulle velocità delle clip. */
 export function pesi(v) {

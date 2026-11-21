@@ -13,7 +13,7 @@
 
 export const RIS = { giu: 1 / 50, su: 1 / 57, passoGiu: 0.85, passoSu: 1.08, minimo: 0.55, attesaGiu: 1.5, attesaSu: 6, tettoPer: 25 };
 
-export function creaPrestazioni({ renderer, debug = false, livello = () => 0, rinuncia = () => false }) {
+export function creaPrestazioni({ renderer, debug = false, livello = () => 0, rinuncia = () => false, extra = () => '' }) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const S = {
     max: dpr, min: Math.max(0.7, dpr * RIS.minimo), ora: dpr, media: 1 / 60, scarto: 0, cpu: 0, attesa: 3, stabile: 0, tetto: dpr, tettoT: 0,
@@ -61,7 +61,7 @@ export function creaPrestazioni({ renderer, debug = false, livello = () => 0, ri
 
   // tempo della scheda grafica, dove il browser lo misura (Chrome su Android e desktop, non Safari)
   const G2 = debug ? tempoGpu(renderer.getContext()) : null;
-  const HUD = debug ? indicatore(renderer, S, livello, G2) : null;
+  const HUD = debug ? indicatore(renderer, S, livello, G2, extra) : null;
 
   return { aggiorna, inizio, fine, scala, stato: S };
 }
@@ -79,7 +79,7 @@ function tempoGpu(gl) {
   return G;
 }
 
-function indicatore(renderer, S, livello, G2) {
+function indicatore(renderer, S, livello, G2, extra) {
   const el = document.createElement('div');
   el.id = 'debug';
   el.style.cssText = 'position:fixed;left:6px;top:6px;z-index:99;pointer-events:none;font:11px/1.35 ui-monospace,Menlo,monospace;color:#cfff6a;background:rgba(0,0,0,.62);padding:5px 7px;border-radius:6px;white-space:pre';
@@ -94,7 +94,7 @@ function indicatore(renderer, S, livello, G2) {
         + `cpu ${(S.cpu * 1000).toFixed(1)}ms${G2 ? ` · gpu ${G2.ms.toFixed(1)}ms` : ''}${mem}\n`
         + `disegni ${i.render.calls} · triangoli ${(i.render.triangles / 1000).toFixed(0)}k\n`
         + `geometrie ${i.memory.geometries} · texture ${i.memory.textures}\n`
-        + `risoluzione ${S.ora.toFixed(2)}x (${renderer.domElement.width}×${renderer.domElement.height}) · qualità ${livello()}`;
+        + `risoluzione ${S.ora.toFixed(2)}x (${renderer.domElement.width}×${renderer.domElement.height}) · qualità ${livello()}${extra() ? `\n${extra()}` : ''}`;
       n = 0; somma = 0; peggiore = 0; t = 0;
     },
   };

@@ -91,6 +91,15 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   partita si azzera a ogni partita nuova (`DI_PARTITA`). `RIPETI=1` nello script delle partite lo controlla, anche in CI.
   I numeri di riferimento sono cambiati rispetto a prima (generatori separati): si confronta sempre prima e dopo.
 
+## Prova di Alex su iPhone (21/11): punti in ordine
+- 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato
+  nascosta (l'app va tolta e rimessa nella Home), levetta che non resta incastrata.
+- 3 e 4 FATTI: velocità di partenza di Alex (`VELOCITA`, `CORPO` in `src/config.js`), girare costa velocità in proporzione
+  all'angolo (`spingi` in `src/fisica/corpo.js`), stime del computer adattate (`svolta` in `src/game.js`), velocità nel
+  riquadro `?debug`. 32 partite: gol da 2,22 a 1,66, tiri da 9,34 a 6,84, 0 anomalie: da ritarare, vedi `docs/dls-gameplay.md`.
+- Da fare: 5 pallone al piede e interpolazione, 6 telecamera in profondità, 7 erba e pubblico, 8 riquadro del gol (Alex
+  non ha scelto: provvisorio «toglilo come in DLS»), moduli nuovi, scenario del ponte.
+
 ## Due sessioni insieme (dal 21/11)
 - Questa sessione lavora sulla **partita** (campo, giocatori, IA, comandi). Un'altra lavora su **home, menu e sezioni**:
   il suo stato è in fondo a `docs/stato-lavori.md`, l'accordo tra le due in `docs/ponte-partita.md`.

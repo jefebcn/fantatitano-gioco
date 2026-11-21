@@ -64,8 +64,17 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
 ## 4. Ritmo
 - Cronometro ~**22,5×** il tempo vero (90 minuti ≈ 4 minuti veri); ~**3-4×** durante le palle ferme e dopo i gol
   (`RITMO`).
-- Conduzione ~**4,5 m/s** (stima da tarare): chi ha la palla senza scattare non va oltre `RITMO.conduzione`; scattando
-  va come prima. Palla sempre vicina ai piedi (il tocco si accorcia da solo andando più piano).
+- **Velocità dei giocatori** (valori di partenza di Alex del 21/11, `VELOCITA` e `RITMO.conduzione` in `src/config.js`):
+  corsa senza palla ~**5 m/s**, scatto ~**7 m/s**, conduzione ~**4,5 m/s** (misurata su Dream League), scatto con palla
+  ~**6 m/s**. La quotazione sposta la corsa di qualche decimo.
+- **Accelerazione**: da fermo allo scatto in circa **un secondo**; frenata rapida (da 7 m/s a fermo in 0,36 s).
+- **Cambi di direzione**: la corsa gira subito ma perde velocità in proporzione all'angolo: a 90° resta il 72%, su
+  un'inversione circa metà; finché non si è girati non si accelera (`CORPO.gira`, `giraScatto`, `perde`).
+- Le animazioni di camminata, corsetta e corsa girano alla velocità vera del giocatore (la clip della corsa copre anche
+  lo scatto), e si fondono in base alla velocità: il piede in appoggio non scivola.
+- Con `?debug` nell'indirizzo, nel riquadro in alto a sinistra c'è la velocità del giocatore comandato in m/s.
+- Letto dal gioco (giocatore comandato dalla levetta): da fermo a 6,65 m/s in 0,8 s; scatto 7,2 m/s; conduzione 4,3 m/s;
+  scatto con palla 6,0 m/s; dopo mezzo secondo da un'inversione in scatto 3,6 m/s.
 
 ## 5. IA
 - Quando un compagno conduce verso l'area, **3-4 compagni** si inseriscono in area. Sui calci d'angolo **4-5
@@ -100,6 +109,18 @@ Su 16 partite il caso conta ancora molto. Le stesse misure su **32 partite** (se
 |---|---|---|---|---|---|
 | Passo 1 | 2,31 | 9,53 | 74% | 3,3 | 0 |
 | Passo 2: lancio del portiere corretto | 2,56 | 9,84 | 75% | 2,3 | 0 |
+
+Dal 21/11 la simulazione è ripetibile (modalità di prova) e i generatori di numeri casuali sono separati: i numeri di
+riferimento sono cambiati un po' senza che cambiasse il gioco. Sempre 32 partite, semi 7–38:
+
+| | Gol | Tiri | Passaggi riusciti | Contrasti vinti | Anomalie |
+|---|---|---|---|---|---|
+| Prima delle velocità nuove | 2,22 | 9,34 | 74% | 4,6 | 0 |
+| Velocità nuove (corsa 5, scatto 7, palla 4,5 e 6) | 1,66 | 6,84 | 71% | 1,9 | 0 |
+
+Con giocatori più lenti, in quattro minuti si fanno meno azioni: gol e tiri scendono di un quarto e i difensori
+vincono meno contrasti. Le stime che il computer usa per i passaggi sono già adattate (senza, i passaggi riusciti
+scendevano al 66%). Per risalire servono azioni più dirette: è il prossimo lavoro su gol e tiri.
 
 **Passo 1**, tre cose insieme (ognuna da sola sposta poco):
 - il computer tira più volentieri e da un po' più lontano (`TIRO_IA`);
