@@ -3,10 +3,16 @@
    Qui c'è solo la logica, senza schermate: lo stato è un oggetto semplice che si salva così com'è sul dispositivo e, con
    l'accesso, anche sull'account (vedi cloud.js). */
 import { ECONOMIA } from './config.js';
+// i testi che si leggono (nomi dei turni, sfide, descrizioni dei movimenti) stanno in src/testi.js: qui `tr` e non `t`,
+// che in questo file è il nome di tante variabili
+import { t as tr } from './testi.js';
 
 export const KEY = 'fantatitano-carriera';
-export const TURNI = ['Ottavi di finale', 'Quarti di finale', 'Semifinale', 'Finale'];
-export const TURNI_KO = ['Quarti di finale', 'Semifinale', 'Finale']; // Trofeo dei Castelli, dopo i gironi
+// I nomi dei turni: quattro per la Coppa Titano, tre per il Trofeo dei Castelli dopo i gironi. Sono elenchi letti da
+// src/testi.js ogni volta che servono (TURNI[0], TURNI.length...), così seguono la lingua in uso
+const elenco = (chiave) => new Proxy([], { get: (_, k) => tr(chiave)[k], has: (_, k) => k in tr(chiave) });
+export const TURNI = elenco('coppa.turni');
+export const TURNI_KO = elenco('castelli.turni');
 // Monete: quante all'inizio, per risultato, per gol segnato, per turno di coppa superato, per i trofei; quanto vale chi si cede rispetto al suo prezzo
 export const PREMI = { inizio: 500, gemme: 20, v: 300, n: 120, p: 50, gol: 20, turno: 150, campione: 3000, coppa: 2000, castelli: 1500, cessione: .7 };
 // Stadio: posti e monete in più per ogni partita giocata in casa; per salire di livello servono monete e, dal terzo, gemme
@@ -16,41 +22,40 @@ export const STADIO = [
 ];
 // Allenamento: ogni seduta alza di un punto la quotazione di un giocatore; costa base + passo per ogni seduta già fatta, fino a max
 export const ALLENA = { base: 200, passo: 150, max: 6 };
-// Le sfide. m è il contatore che le fa avanzare, n quanto serve. Giornaliere e settimanali ripartono da zero, quelle di stagione a ogni stagione
+// Le sfide. Il testo di ognuna sta in src/testi.js ('sfide.testi', con lo stesso id). m è il contatore che le fa avanzare, n quanto serve. Giornaliere e settimanali ripartono da zero, quelle di stagione a ogni stagione
 export const SFIDE = {
   d: [
-    { id: 'd1', t: 'Gioca una partita', m: 'gioca', n: 1, monete: 100 },
-    { id: 'd2', t: 'Vinci una partita', m: 'vinte', n: 1, monete: 150 },
-    { id: 'd3', t: 'Segna 3 gol', m: 'gol', n: 3, monete: 120 },
-    { id: 'd4', t: 'Chiudi una partita senza subire gol', m: 'inviolate', n: 1, monete: 150 },
-    { id: 'd5', t: 'Gioca una partita di coppa', m: 'coppa', n: 1, monete: 100 },
+    { id: 'd1', m: 'gioca', n: 1, monete: 100 },
+    { id: 'd2', m: 'vinte', n: 1, monete: 150 },
+    { id: 'd3', m: 'gol', n: 3, monete: 120 },
+    { id: 'd4', m: 'inviolate', n: 1, monete: 150 },
+    { id: 'd5', m: 'coppa', n: 1, monete: 100 },
   ],
   w: [
-    { id: 'w1', t: 'Vinci 5 partite', m: 'vinte', n: 5, monete: 600 },
-    { id: 'w2', t: 'Segna 12 gol', m: 'gol', n: 12, monete: 500 },
-    { id: 'w3', t: 'Gioca 3 partite di coppa', m: 'coppa', n: 3, monete: 400 },
-    { id: 'w4', t: 'Compra un giocatore al mercato', m: 'acquisti', n: 1, monete: 300 },
-    { id: 'w5', t: 'Fai 3 sedute di allenamento', m: 'allenamenti', n: 3, monete: 300 },
+    { id: 'w1', m: 'vinte', n: 5, monete: 600 },
+    { id: 'w2', m: 'gol', n: 12, monete: 500 },
+    { id: 'w3', m: 'coppa', n: 3, monete: 400 },
+    { id: 'w4', m: 'acquisti', n: 1, monete: 300 },
+    { id: 'w5', m: 'allenamenti', n: 3, monete: 300 },
   ],
   c: [
-    { id: 'c1', t: 'Vinci il campionato', m: 'campionati', n: 1, gemme: 50 },
-    { id: 'c2', t: 'Vinci la Coppa Titano', m: 'coppe', n: 1, gemme: 30 },
-    { id: 'c3', t: 'Vinci il Trofeo dei Castelli', m: 'castelli', n: 1, gemme: 30 },
-    { id: 'c4', t: 'Porta lo stadio al livello 3', m: 'stadio', n: 3, gemme: 20 },
+    { id: 'c1', m: 'campionati', n: 1, gemme: 50 },
+    { id: 'c2', m: 'coppe', n: 1, gemme: 30 },
+    { id: 'c3', m: 'castelli', n: 1, gemme: 30 },
+    { id: 'c4', m: 'stadio', n: 3, gemme: 20 },
   ],
   s: [
-    { id: 's1', t: 'Vinci 5 partite di campionato', m: 'vinteCamp', n: 5, monete: 400 },
-    { id: 's2', t: 'Vinci 10 partite di campionato', m: 'vinteCamp', n: 10, monete: 800 },
-    { id: 's3', t: 'Chiudi il campionato tra le prime 4', m: 'top4', n: 1, gemme: 10 },
-    { id: 's4', t: 'Segna 25 gol in campionato', m: 'golCamp', n: 25, monete: 600 },
-    { id: 's5', t: 'Arriva ai quarti di Coppa Titano', m: 'quarti', n: 1, monete: 400 },
-    { id: 's6', t: 'Passa i gironi del Trofeo dei Castelli', m: 'gironi', n: 1, monete: 400 },
-    { id: 's7', t: 'Chiudi 3 partite senza subire gol', m: 'inviolate', n: 3, monete: 400 },
-    { id: 's8', t: 'Vinci 3 partite di fila', m: 'serieMax', n: 3, gemme: 10 },
+    { id: 's1', m: 'vinteCamp', n: 5, monete: 400 },
+    { id: 's2', m: 'vinteCamp', n: 10, monete: 800 },
+    { id: 's3', m: 'top4', n: 1, gemme: 10 },
+    { id: 's4', m: 'golCamp', n: 25, monete: 600 },
+    { id: 's5', m: 'quarti', n: 1, monete: 400 },
+    { id: 's6', m: 'gironi', n: 1, monete: 400 },
+    { id: 's7', m: 'inviolate', n: 3, monete: 400 },
+    { id: 's8', m: 'serieMax', n: 3, gemme: 10 },
   ],
 };
 export const BONUS = { d: { gemme: 5 }, w: { gemme: 15 } }; // tutte le giornaliere (o tutte le settimanali) fatte
-export const GRUPPI = { d: 'Giornaliere', w: 'Settimanali', c: 'Carriera', s: 'Stagione' };
 
 const mescola = (a, rnd) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 function poisson(l, rnd) { const L = Math.exp(-l); let k = 0, p = 1; do { k++; p *= rnd(); } while (p > L); return k - 1; }
@@ -83,7 +88,7 @@ function nuoveSfide() { return { d: { chiave: '', c: {} }, w: { chiave: '', c: {
 
 export function nuova(clubs, nome, clubId, rnd = Math.random, mio = null) {
   const ids = clubs.map((c) => c.id);
-  return { v: 1, id: idCarriera(), rev: 0, agg: Date.now(), nome: String(nome || 'Mister').slice(0, 18), club: clubId, mio, stagione: 1, giornata: 0, cal: calendario(ids, rnd), ris: [], coppa: nuovaCoppa(ids, rnd),
+  return { v: 1, id: idCarriera(), rev: 0, agg: Date.now(), nome: String(nome || tr('nuovo.nomeBase')).slice(0, 18), club: clubId, mio, stagione: 1, giornata: 0, cal: calendario(ids, rnd), ris: [], coppa: nuovaCoppa(ids, rnd),
     castelli: nuoviCastelli(ids, rnd), stat: { g: 0, v: 0, n: 0, p: 0, gf: 0, gs: 0, marc: {} }, trofei: [], campione: null, monete: PREMI.inizio, gemme: PREMI.gemme,
     stadio: 1, allen: {}, sfide: nuoveSfide(), rose: {}, panchine: {}, movimenti: [], allenatore: 1, avatar: 0, storico: [], percorso: { stagione: 1, punti: 0, presi: [] }, oggetti: {}, scelte: {}, consigli: 0 };
 }
@@ -149,7 +154,7 @@ export function muovi(C, monete, gemme, causale, dettaglio = '', quando = Date.n
   if (C.storico.length > ECONOMIA.storico) C.storico.length = ECONOMIA.storico;
 }
 /** Il giudizio sulle finanze del club, dal saldo in monete. */
-export function finanze(C) { return ECONOMIA.finanze.find(([fino]) => C.monete < fino)[1]; }
+export function finanze(C) { return tr('finanze.giudizi')[ECONOMIA.finanze.find(([fino]) => C.monete < fino)[1]]; }
 
 /* ---------- percorso premi della stagione ---------- */
 const percorsoDi = (C) => { if (!C.percorso || C.percorso.stagione !== C.stagione) C.percorso = { stagione: C.stagione, punti: 0, presi: [] }; return C.percorso; };
@@ -166,7 +171,7 @@ export function ritiraPercorso(C, livello = 0) {
   const st = statoPercorso(C), tot = { ok: false, monete: 0, gemme: 0, n: 0 };
   for (const x of st.premi) {
     if (!x.raggiunto || x.preso || (livello && x.livello !== livello)) continue;
-    C.percorso.presi.push(x.livello); muovi(C, x.monete, x.gemme, 'percorso', `Percorso premi, livello ${x.livello}`);
+    C.percorso.presi.push(x.livello); muovi(C, x.monete, x.gemme, 'percorso', tr('movimenti.percorso', x.livello));
     tot.ok = true; tot.monete += x.monete; tot.gemme += x.gemme; tot.n++;
   }
   return tot;
@@ -179,15 +184,15 @@ export function ritiraPercorso(C, livello = 0) {
  * oggetto cambia la forza della squadra.
  */
 export const NEGOZIO = {
-  avatar: { nome: 'Avatar del manager', tutti: [0, 1, 2, 3, 4, 5, 6, 7], gratis: [0, 1, 2, 3] },
-  cornice: { nome: 'Cornice del ritratto', tutti: ['semplice', 'oro', 'azzurra', 'lime', 'fuoco'], gratis: ['semplice'] },
-  scarpini: { nome: 'Scarpini della squadra', tutti: ['misti', 'neri', 'bianchi', 'oro', 'azzurri', 'lime', 'arancio', 'rosa'], gratis: ['misti'] },
-  pallone: { nome: 'Pallone di casa', tutti: ['classico', 'oro', 'azzurro', 'notte', 'arancio'], gratis: ['classico'] },
-  disegno: { nome: 'Disegno speciale della divisa', tutti: ['onde', 'chevron', 'sfumata', 'mimetica', 'pennellata'], gratis: [] },
-  terza: { nome: 'Terza maglia', tutti: ['terza'], gratis: [] },
-  forma: { nome: 'Forma dello stemma', tutti: ['scudo', 'tondo', 'stendardo', 'rombo', 'esagono'], gratis: ['scudo', 'tondo', 'stendardo'], rari: [] },
-  simbolo: { nome: 'Simbolo dello stemma', tutti: ['corona', 'stella', 'pallone', 'torre', 'nessuno', 'fulmine', 'tretorri', 'alloro'], gratis: ['corona', 'stella', 'pallone', 'torre', 'nessuno'], rari: ['tretorri', 'alloro'] },
-  bordo: { nome: 'Bordo dello stemma', tutti: ['semplice', 'doppio', 'sottile', 'punti', 'oro'], gratis: ['semplice', 'doppio', 'sottile'], rari: ['oro'] },
+  avatar: { tutti: [0, 1, 2, 3, 4, 5, 6, 7], gratis: [0, 1, 2, 3] },
+  cornice: { tutti: ['semplice', 'oro', 'azzurra', 'lime', 'fuoco'], gratis: ['semplice'] },
+  scarpini: { tutti: ['misti', 'neri', 'bianchi', 'oro', 'azzurri', 'lime', 'arancio', 'rosa'], gratis: ['misti'] },
+  pallone: { tutti: ['classico', 'oro', 'azzurro', 'notte', 'arancio'], gratis: ['classico'] },
+  disegno: { tutti: ['onde', 'chevron', 'sfumata', 'mimetica', 'pennellata'], gratis: [] },
+  terza: { tutti: ['terza'], gratis: [] },
+  forma: { tutti: ['scudo', 'tondo', 'stendardo', 'rombo', 'esagono'], gratis: ['scudo', 'tondo', 'stendardo'], rari: [] },
+  simbolo: { tutti: ['corona', 'stella', 'pallone', 'torre', 'nessuno', 'fulmine', 'tretorri', 'alloro'], gratis: ['corona', 'stella', 'pallone', 'torre', 'nessuno'], rari: ['tretorri', 'alloro'] },
+  bordo: { tutti: ['semplice', 'doppio', 'sottile', 'punti', 'oro'], gratis: ['semplice', 'doppio', 'sottile'], rari: ['oro'] },
 };
 const STEMMA = ['forma', 'simbolo', 'bordo'];
 const oggettiDi = (C) => (C.oggetti && typeof C.oggetti === 'object' ? C.oggetti : (C.oggetti = {}));
@@ -204,7 +209,7 @@ export function compraOggetto(C, tipo, cosa) {
   const N = NEGOZIO[tipo]; if (!N || !N.tutti.includes(cosa)) return { ok: false, motivo: 'cosa' };
   if (possiede(C, tipo, cosa)) return { ok: false, motivo: 'presa' };
   const c = costoOggetto(tipo, cosa); if (C.monete < c.monete || C.gemme < c.gemme) return { ok: false, motivo: 'soldi', ...c };
-  muovi(C, -c.monete, -c.gemme, 'negozio', `${N.nome}: ${cosa}`); const O = oggettiDi(C); (O[tipo] = O[tipo] || []).push(cosa);
+  muovi(C, -c.monete, -c.gemme, 'negozio', tr('movimenti.negozio', tr('negozio.tipi')[tipo], cosa)); const O = oggettiDi(C); (O[tipo] = O[tipo] || []).push(cosa);
   return { ok: true, ...c };
 }
 /** Quanti pezzi dello stemma si hanno, in percentuale su tutti quelli che esistono. */
@@ -215,7 +220,7 @@ export function pezziStemma(C) {
 /** Cambia subito il giocatore consigliato al mercato: costa diamanti, conta solo quante volte è stato fatto. */
 export function rinnovaConsigli(C) {
   const g = ECONOMIA.negozio.rinnovo.g; if (C.gemme < g) return { ok: false, motivo: 'soldi', gemme: g };
-  muovi(C, 0, -g, 'negozio', 'Nuovo giocatore consigliato'); C.consigli = (C.consigli || 0) + 1;
+  muovi(C, 0, -g, 'negozio', tr('movimenti.rinnovo')); C.consigli = (C.consigli || 0) + 1;
   return { ok: true };
 }
 
@@ -256,7 +261,7 @@ export function statoSfide(C, oggi = new Date()) {
   aggiornaSfide(C, oggi);
   const out = { daRiscuotere: 0, conti: {}, bonus: {} };
   for (const g of Object.keys(SFIDE)) {
-    out[g] = SFIDE[g].map((def) => { const prog = Math.min(def.n, valoreSfida(C, g, def)), fatto = prog >= def.n, preso = !!C.sfide.presi[chiavePremio(C, g, def.id)]; if (fatto && !preso) out.daRiscuotere++; return { ...def, prog, fatto, preso }; });
+    out[g] = SFIDE[g].map((def) => { const prog = Math.min(def.n, valoreSfida(C, g, def)), fatto = prog >= def.n, preso = !!C.sfide.presi[chiavePremio(C, g, def.id)]; if (fatto && !preso) out.daRiscuotere++; return { ...def, t: tr('sfide.testi')[def.id], prog, fatto, preso }; });
     out.conti[g] = [out[g].filter((x) => x.fatto).length, out[g].length];
     if (BONUS[g]) { const fatto = out[g].every((x) => x.fatto), preso = !!C.sfide.presi[chiavePremio(C, g, 'tutte')]; out.bonus[g] = { ...BONUS[g], fatto, preso }; if (fatto && !preso) out.daRiscuotere++; }
   }
@@ -266,7 +271,7 @@ export function statoSfide(C, oggi = new Date()) {
 export function riscuoti(C, gruppo, id, oggi = new Date()) {
   const st = statoSfide(C, oggi), x = id === 'tutte' ? st.bonus[gruppo] : (st[gruppo] || []).find((y) => y.id === id);
   if (!x || !x.fatto || x.preso) return { ok: false };
-  C.sfide.presi[chiavePremio(C, gruppo, id)] = 1; muovi(C, x.monete || 0, x.gemme || 0, 'sfida', id === 'tutte' ? `Tutte le sfide: ${GRUPPI[gruppo]}` : x.t);
+  C.sfide.presi[chiavePremio(C, gruppo, id)] = 1; muovi(C, x.monete || 0, x.gemme || 0, 'sfida', id === 'tutte' ? tr('movimenti.sfideTutte', tr('sfide.gruppi')[gruppo]) : x.t);
   if (id !== 'tutte') puntiPercorso(C, { d: 'sfidaD', w: 'sfidaW', s: 'sfidaS', c: 'sfidaC' }[gruppo]);
   return { ok: true, monete: x.monete || 0, gemme: x.gemme || 0 };
 }
@@ -293,7 +298,7 @@ function conta(C, gf, gs, marcatori, comp = 'camp', oggi = new Date()) {
   puntiPercorso(C, 'partita'); if (gf > gs) puntiPercorso(C, 'vinta');
   // premio partita
   const m = (gf > gs ? PREMI.v : gf < gs ? PREMI.p : PREMI.n) + gf * PREMI.gol;
-  muovi(C, m, 0, 'partita', `${gf > gs ? 'Vittoria' : gf < gs ? 'Sconfitta' : 'Pareggio'} ${gf}-${gs} (${{ camp: 'campionato', coppa: 'Coppa Titano', castelli: 'Trofeo dei Castelli' }[comp]})`); return m;
+  muovi(C, m, 0, 'partita', tr('movimenti.partita', tr('movimenti.esiti')[gf > gs ? 'v' : gf < gs ? 'p' : 'n'], gf, gs, tr('movimenti.gare')[comp])); return m;
 }
 const bonusCasa = (C) => (STADIO[(C.stadio || 1) - 1] || STADIO[0]).bonus;
 
@@ -302,14 +307,14 @@ const bonusCasa = (C) => (STADIO[(C.stadio || 1) - 1] || STADIO[0]).bonus;
 export function miglioraStadio(C) {
   const prox = STADIO[C.stadio]; if (!prox) return { ok: false, motivo: 'massimo' };
   if (C.monete < prox.monete || C.gemme < prox.gemme) return { ok: false, motivo: 'soldi', monete: prox.monete, gemme: prox.gemme };
-  muovi(C, -prox.monete, -prox.gemme, 'stadio', `Stadio al livello ${C.stadio + 1}`); C.stadio++;
+  muovi(C, -prox.monete, -prox.gemme, 'stadio', tr('movimenti.stadio', C.stadio + 1)); C.stadio++;
   return { ok: true, livello: C.stadio };
 }
 /** Allenatore: sale di un livello se ci sono monete e diamanti. Più sedute per giocatore e sedute meno care. */
 export function miglioraAllenatore(C) {
   const prox = ECONOMIA.allenatore.livelli[C.allenatore || 1]; if (!prox) return { ok: false, motivo: 'massimo' };
   if (C.monete < prox.monete || C.gemme < prox.gemme) return { ok: false, motivo: 'soldi', monete: prox.monete, gemme: prox.gemme };
-  muovi(C, -prox.monete, -prox.gemme, 'allenatore', `Allenatore al livello ${(C.allenatore || 1) + 1}`); C.allenatore = (C.allenatore || 1) + 1;
+  muovi(C, -prox.monete, -prox.gemme, 'allenatore', tr('movimenti.allenatore', (C.allenatore || 1) + 1)); C.allenatore = (C.allenatore || 1) + 1;
   return { ok: true, livello: C.allenatore };
 }
 /** La valutazione dell'allenatore (60-99) e quante sedute per giocatore permette. */
@@ -325,7 +330,7 @@ export function allena(C, clubs, dove, i, oggi = new Date()) {
   if (costo > C.monete) return { ok: false, motivo: 'monete', costo };
   const copia = rosa.map((y) => y.slice()); copia[i][3] += 1;
   if (dove === 'pan') { C.panchine[mio.id] = copia; C.rose[mio.id] = mio.xi.map((y) => y.slice()); } else { C.rose[mio.id] = copia; C.panchine[mio.id] = (mio.pan || []).map((y) => y.slice()); }
-  muovi(C, -costo, 0, 'allenamento', `Allenamento di ${x[0]}`); C.allen[x[0]] = fatte + 1; evento(C, 'allenamenti', 1, oggi); applica(C, clubs);
+  muovi(C, -costo, 0, 'allenamento', tr('movimenti.allenamento', x[0])); C.allen[x[0]] = fatte + 1; evento(C, 'allenamenti', 1, oggi); applica(C, clubs);
   return { ok: true, costo, sedute: fatte + 1 };
 }
 const libero = (rosa, i, n) => !rosa.some((x, k) => k !== i && x[2] === n);
@@ -382,7 +387,7 @@ export function scambio(C, clubs, valore, da, iIn, iOut) {
   const a = mio.xi.map((x) => x.slice()), b = altro.xi.map((x) => x.slice());
   a[iOut] = preso.slice(); b[iIn] = ceduto.slice();
   if (!libero(a, iOut, a[iOut][2])) a[iOut][2] = ceduto[2]; if (!libero(b, iIn, b[iIn][2])) b[iIn][2] = preso[2]; // numero già preso: si prende quello di chi è partito
-  C.rose[mio.id] = a; C.rose[altro.id] = b; muovi(C, -costo, 0, 'mercato', `${preso[0]} per ${ceduto[0]}`);
+  C.rose[mio.id] = a; C.rose[altro.id] = b; muovi(C, -costo, 0, 'mercato', tr('movimenti.scambio', preso[0], ceduto[0]));
   C.movimenti.unshift({ stagione: C.stagione, preso: preso[0], ceduto: ceduto[0], da: altro.id, costo }); C.movimenti.length = Math.min(C.movimenti.length, 30);
   evento(C, 'acquisti'); applica(C, clubs);
   return { ok: true, costo };
@@ -393,11 +398,11 @@ export function giocaCampionato(C, clubs, gf, gs, marcatori, rnd = Math.random) 
   const p = prossima(C); if (!p) return null;
   C.ris[C.giornata] = C.cal[C.giornata].map(([a, b]) => (a === C.club ? [gf, gs] : b === C.club ? [gs, gf] : simula(clubs, a, b, rnd)));
   let monete = conta(C, gf, gs, marcatori, 'camp'); C.giornata++;
-  if (p.inCasa) { const b = bonusCasa(C); muovi(C, b, 0, 'incasso', 'Incasso dello stadio'); monete += b; }
+  if (p.inCasa) { const b = bonusCasa(C); muovi(C, b, 0, 'incasso', tr('movimenti.incasso')); monete += b; }
   const tab = classifica(C, clubs), pos = tab.findIndex((r) => r.id === C.club) + 1, finita = C.giornata >= C.cal.length;
   if (finita) {
     C.campione = tab[0].id; if (pos <= 4) evento(C, 'top4');
-    if (tab[0].id === C.club) { C.trofei.push({ stagione: C.stagione, tipo: 'Campionato' }); muovi(C, PREMI.campione, 0, 'trofeo', 'Campionato vinto'); monete += PREMI.campione; }
+    if (tab[0].id === C.club) { C.trofei.push({ stagione: C.stagione, tipo: 'Campionato' }); muovi(C, PREMI.campione, 0, 'trofeo', tr('movimenti.campionato')); monete += PREMI.campione; }
   }
   return { posizione: pos, finita, campione: C.campione, monete };
 }
@@ -438,7 +443,7 @@ function koGioca(C, clubs, k, pr, premio, gf, gs, rnd, rig, premioVinta, trofeo)
   avanti(true);
   if (!esito.passa) { k.fuori = pr.turno; while (k.squadre.length > 1) avanti(false); k.campione = k.squadre[0]; }
   else { // turno superato
-    const m = PREMI.turno + (k.squadre.length === 1 ? premioVinta : 0); muovi(C, m, 0, k.squadre.length === 1 ? 'trofeo' : 'turno', k.squadre.length === 1 ? `${trofeo}: vinto` : `${trofeo}: turno superato`); esito.monete += m; puntiPercorso(C, 'turno');
+    const m = PREMI.turno + (k.squadre.length === 1 ? premioVinta : 0); muovi(C, m, 0, k.squadre.length === 1 ? 'trofeo' : 'turno', tr(k.squadre.length === 1 ? 'movimenti.trofeoVinto' : 'movimenti.turno', tr('trofei.nomi')[trofeo] || trofeo)); esito.monete += m; puntiPercorso(C, 'turno');
   }
   if (esito.passa && k.squadre.length === 1) { k.vinta = true; k.campione = C.club; esito.vinta = true; C.trofei.push({ stagione: C.stagione, tipo: trofeo }); }
   return esito;
@@ -461,7 +466,7 @@ export function castelliProssima(C) {
   const k = C.castelli; if (k.fuori !== null || k.vinta || k.campione) return null;
   if (k.ko) { const p = koProssima(k.ko, C.club, TURNI_KO); return p && { ...p, fase: 'ko', inCasa: false }; }
   const gi = castelliGirone(C), g = k.gironi[gi], [ia, ib] = GIRO[k.giornata].find(([a, b]) => g[a] === C.club || g[b] === C.club);
-  return { fase: 'gironi', girone: gi, giornata: k.giornata + 1, totale: 3, nome: `Gironi · giornata ${k.giornata + 1} di 3`, avv: g[ia] === C.club ? g[ib] : g[ia], inCasa: g[ia] === C.club };
+  return { fase: 'gironi', girone: gi, giornata: k.giornata + 1, totale: 3, nome: tr('castelli.gironiGiornata', k.giornata + 1, 3), avv: g[ia] === C.club ? g[ib] : g[ia], inCasa: g[ia] === C.club };
 }
 // I quarti: la prima di un girone contro la seconda di un altro, e le due prime dello stesso lato si incontrano solo in finale
 function castelliTabellone(C) { const t = [0, 1, 2, 3].map((gi) => castelliTabella(C, gi).map((r) => r.id)); return [t[0][0], t[1][1], t[2][0], t[3][1], t[1][0], t[0][1], t[3][0], t[2][1]]; }
@@ -474,7 +479,7 @@ export function giocaCastelli(C, clubs, gf, gs, marcatori, rnd = Math.random, ri
     if (k.ko.vinta) k.vinta = true; if (k.ko.fuori !== null) k.fuori = k.ko.fuori; if (k.ko.campione) k.campione = k.ko.campione;
     return e;
   }
-  let monete = premio; if (pr.inCasa) { const b = bonusCasa(C); muovi(C, b, 0, 'incasso', 'Incasso dello stadio'); monete += b; }
+  let monete = premio; if (pr.inCasa) { const b = bonusCasa(C); muovi(C, b, 0, 'incasso', tr('movimenti.incasso')); monete += b; }
   k.ris[k.giornata] = k.gironi.map((g) => GIRO[k.giornata].map(([ia, ib]) => (g[ia] === C.club ? [gf, gs] : g[ib] === C.club ? [gs, gf] : simula(clubs, g[ia], g[ib], rnd))));
   k.giornata++;
   const tab = castelliTabella(C, pr.girone), pos = tab.findIndex((r) => r.id === C.club) + 1, esito = { fase: 'gironi', posizione: pos, finiti: k.giornata >= 3, passa: null, monete };
@@ -510,13 +515,13 @@ export function salite(C, clubs) {
  */
 export function notifiche(C, oggi = new Date()) {
   const out = [], st = statoSfide(C, oggi), pe = statoPercorso(C);
-  if (st.daRiscuotere) out.push({ t: st.daRiscuotere === 1 ? 'Un premio delle sfide da riscuotere' : `${st.daRiscuotere} premi delle sfide da riscuotere`, vai: 'sfide' });
-  if (pe.daRitirare) out.push({ t: pe.daRitirare === 1 ? 'Un premio del percorso da ritirare' : `${pe.daRitirare} premi del percorso da ritirare`, vai: 'percorso' });
+  if (st.daRiscuotere) out.push({ t: st.daRiscuotere === 1 ? tr('notifiche.sfideUno') : tr('notifiche.sfide', st.daRiscuotere), vai: 'sfide' });
+  if (pe.daRitirare) out.push({ t: pe.daRitirare === 1 ? tr('notifiche.percorsoUno') : tr('notifiche.percorso', pe.daRitirare), vai: 'percorso' });
   const cp = coppaProssima(C), cc = castelliProssima(C);
-  if (cp) out.push({ t: `Coppa Titano: ${cp.nome} da giocare`, vai: 'coppa' });
-  if (cc) out.push({ t: `Trofeo dei Castelli: ${cc.nome} da giocare`, vai: 'castelli' });
+  if (cp) out.push({ t: tr('notifiche.coppa', cp.nome), vai: 'coppa' });
+  if (cc) out.push({ t: tr('notifiche.castelli', cc.nome), vai: 'castelli' });
   const sx = STADIO[C.stadio], ax = ECONOMIA.allenatore.livelli[C.allenatore || 1];
-  if (sx && C.monete >= sx.monete && C.gemme >= sx.gemme) out.push({ t: 'Puoi ampliare lo stadio', vai: 'stadio' });
-  if (ax && C.monete >= ax.monete && C.gemme >= ax.gemme) out.push({ t: 'Puoi migliorare l\'allenatore', vai: 'allenatore' });
+  if (sx && C.monete >= sx.monete && C.gemme >= sx.gemme) out.push({ t: tr('notifiche.stadio'), vai: 'stadio' });
+  if (ax && C.monete >= ax.monete && C.gemme >= ax.gemme) out.push({ t: tr('notifiche.allenatore'), vai: 'allenatore' });
   return out;
 }
