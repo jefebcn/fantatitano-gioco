@@ -209,6 +209,24 @@ provate (indicazioni di Alex del 21/11):
    compatta, controllando che gli anticipi sul passaggio corto restino tra 9 e 12 su 100.
 Il portiere si tara per ultimo, su circa un gol ogni 4–5 tiri (oggi uno ogni 3,6).
 
+### Difetti visti registrando una partita intera (21/11)
+Due partite registrate passo per passo (pallone, giocatori, gesti, piedi e mani), controlli automatici su tutti i
+fotogrammi e primi piani dei momenti sospetti. Trovati, in ordine di quanto si vedono:
+1. **Calci a vuoto**: il pallone partiva col piede a un metro (9 calci su 10). CORRETTO: il calcio aspetta che il piede
+   arrivi sul pallone, al massimo 0,18 secondi, e intanto il pallone viene portato dove lo colpisce la clip del gesto
+   (`CARICO`, `prepara` e `moveBall` in `src/game.js`); il piede che calcia non viene più tenuto fermo dal blocco dei
+   piedi (`src/grafica/piedi.js`). Ora il piede è sul pallone nell'istante giusto in 18 calci su 22.
+2. **Rinvio con le mani del portiere**: il pallone restava sospeso davanti al petto. CORRETTO: segue la mano che lancia.
+3. Parate a distanza: il pallone si ferma a più di un metro dai guanti (1–3 a partita). Da fare.
+4. Giravolta di scatto: il corpo gira di oltre 120° in un fotogramma (7–25 a partita). Da fare.
+5. Chi riceve si lascia sfilare il pallone a 1,2–1,4 metri e lo rincorre (4–9 a partita). Da fare.
+6. Piedi che strisciano nel passo laterale e nei cambi di direzione stretti; portieri che arretrano di corsa. Da fare.
+
+Il prezzo della correzione dei calci, su 32 partite (semi 7–38, nessuna anomalia): gol da 2,09 a 1,34, tiri da 7,59 a
+7,16, passaggi riusciti da 75 a 74 su 100, falli da 0,59 a 0,88. Con attese più lunghe (0,3 secondi) i passaggi
+scendevano a 70 su 100. I gol calano perché chi calcia ha il pallone tra i piedi un attimo in più: un gol ogni 5 tiri,
+dentro il bersaglio del portiere (uno ogni 4–5).
+
 ## 7. Palle ferme
 - Scritta sotto il tabellone col tipo («CALCIO D'ANGOLO», «RIMESSA LATERALE»…). Comandi nascosti, cronometro lento.
 - **Rimessa laterale**: breve dissolvenza scura, stacco della telecamera sul punto di battuta, comandi di nuovo visibili

@@ -6,8 +6,11 @@
 
    PIEDI.su: quanto sopra il punto più basso raggiunto dalla caviglia il piede conta come appoggiato (metri);
    entra/esce: in quanti secondi il blocco arriva pieno e sparisce; max: il piede bloccato non resta mai più lontano di così
-   da quello dell'animazione (oltre si fa trascinare: meglio un piccolo scivolone che una gamba tirata o uno scatto). */
-export const PIEDI = { su: 0.023, entra: 0.05, esce: 0.12, max: 0.19, risale: 0.0004 };
+   da quello dell'animazione (oltre si fa trascinare: meglio un piccolo scivolone che una gamba tirata o uno scatto).
+   veloce: durante un calcio, un piede basso che nell'animazione corre a più di tanti metri al secondo non è in appoggio,
+   sta calciando rasoterra: non si blocca, e se era bloccato si scioglie in `via` secondi (prima il piede del passaggio
+   restava indietro e arrivava sul pallone dopo che era partito). */
+export const PIEDI = { su: 0.023, entra: 0.05, esce: 0.12, max: 0.19, risale: 0.0004, veloce: 4, via: 0.03 };
 
 export function creaPiedi(T) {
   const H = new T.Vector3(), K = new T.Vector3(), A = new T.Vector3(), A2 = new T.Vector3(), M = new T.Vector3(), B = new T.Vector3(); // B: il bersaglio
@@ -40,17 +43,20 @@ export function creaPiedi(T) {
 
   /**
    * Da chiamare dopo la posa (mixer aggiornato, corpo alzato o abbassato). attivo: false nelle azioni a terra, nei tuffi e
-   * quando il giocatore è stato appena spostato di colpo: i blocchi si sciolgono.
+   * quando il giocatore è stato appena spostato di colpo: i blocchi si sciolgono. calcio: vero mentre fa il gesto di un
+   * passaggio, un tiro o un lancio (il piede che calcia non va tenuto fermo).
    */
-  return function blocca(f, dt, attivo) {
+  return function blocca(f, dt, attivo, calcio = false) {
     const b = f.bones; if (!b || !b.thigh_l || !b.calf_l || !b.foot_l || !b.thigh_r || !b.calf_r || !b.foot_r) return;
-    const st = f.piedi || (f.piedi = { l: { w: 0, on: false, x: 0, z: 0 }, r: { w: 0, on: false, x: 0, z: 0 }, h0: 9 });
+    const st = f.piedi || (f.piedi = { l: { w: 0, on: false, x: 0, z: 0, ax: null, az: 0 }, r: { w: 0, on: false, x: 0, z: 0, ax: null, az: 0 }, h0: 9 });
     f.root.updateMatrixWorld(true);
     for (const [s, na, ng, np] of LATI) {
       const k = st[s]; b[np].getWorldPosition(M);
       st.h0 = Math.min(st.h0 + PIEDI.risale * dt * 60, M.y); // il punto più basso della caviglia (risale piano: terreno e corpo cambiano)
-      const giu = attivo && M.y < st.h0 + PIEDI.su;
-      if (giu) { if (!k.on) { k.on = true; k.x = M.x; k.z = M.z; } k.w = Math.min(1, k.w + dt / PIEDI.entra); } else { k.on = false; k.w = Math.max(0, k.w - dt / PIEDI.esce); }
+      // quanto corre il piede dell'animazione sull'erba (prima della correzione): in appoggio quasi niente, calciando molto
+      const corre = calcio && k.ax !== null && dt > 0 && Math.hypot(M.x - k.ax, M.z - k.az) / dt > PIEDI.veloce; k.ax = M.x; k.az = M.z;
+      const giu = attivo && M.y < st.h0 + PIEDI.su && !corre;
+      if (giu) { if (!k.on) { k.on = true; k.x = M.x; k.z = M.z; } k.w = Math.min(1, k.w + dt / PIEDI.entra); } else { k.on = false; k.w = Math.max(0, k.w - dt / (corre ? PIEDI.via : PIEDI.esce)); }
       if (!attivo) k.w = 0;
       if (k.w <= 0) continue;
       // troppo lontano dal piede dell'animazione: il punto bloccato si fa trascinare (resta a PIEDI.max), senza staccarsi di colpo
