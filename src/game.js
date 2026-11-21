@@ -753,7 +753,8 @@ function newMatch(home, away) {
   ballMesh.visible = ballShadow.visible = true;
   G.clock = 0; G.half = 1; G.goals = []; G.cards = []; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penId = -1; G.penWait = 0; G.lastPass = G.shooter = null; G.so = G.soRes = null; $('#hud').classList.remove('rigori'); G.stats = { recAlti: [0, 0], resp: [0, 0], uscite: [0, 0], shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0], fouls: [0, 0], offs: [0, 0], pens: [0, 0], yel: [0, 0], red: [0, 0], crosses: [0, 0], heads: [0, 0], headGoals: [0, 0], corners: [0, 0], adv: [0, 0], inj: [0, 0], subs: [0, 0] }; G.ctrl = null; G.charge = -1;
   paintBoards(home, away, CREST);
-  $('#sbH').src = img(home.id + '-mini'); $('#sbA').src = img(away.id + '-mini'); $('#sbHn').textContent = home.short; $('#sbAn').textContent = away.short;
+  $('#sbH').src = img(home.id + '-mini'); $('#sbA').src = img(away.id + '-mini'); $('#sb').style.setProperty('--sq', G.teams[0].kit.shirt); // la barretta sul bordo destro del tabellone: il colore della nostra maglia
+  $('#sbHn').textContent = home.short; $('#sbAn').textContent = away.short;
   hud(); kickoff(G.teams[0]);
   // la telecamera parte già al suo posto di gioco: prima arrivava da 46 m di altezza e 70 m di distanza in un paio di secondi,
   // e al calcio d'inizio si vedeva tutto il campo da lontano
@@ -2237,7 +2238,8 @@ function updateCamera(dt) {
     const C = CAMERA; gioco = true;
     const tx = clamp(fx * C.seguiX, -(HL - C.bordoX), HL - C.bordoX), tz = Math.min(clamp(fz, -HW, HW) * C.seguiZ, C.zMax - C.dietro);
     px = tx; py = C.alto; pz = tz + C.dietro; lx = tx; lz = tz;
-    fov = C.fov; // verticale, fisso (Dream League): la larghezza in orizzontale segue le proporzioni dello schermo
+    // la stessa larghezza di campo su ogni schermo: l'angolo orizzontale è fisso, quello verticale segue le proporzioni
+    fov = 2 * Math.atan(Math.tan(C.fovOriz * Math.PI / 360) / cam.aspect) * 180 / Math.PI;
   }
   // movimento morbido: una molla smorzata al punto giusto, senza scatti né oscillazioni, più lenta nel menu. In gioco è il
   // leggero ritardo con cui l'inquadratura segue il pallone

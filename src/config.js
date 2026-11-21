@@ -68,16 +68,17 @@ export const PRESSING = { da: 18, primo: 3.5, raggio: 16, stretto: 2.2 };
 export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['In difesa', 'Equilibrata', 'In attacco'], push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
 
 /* ---------------------------------------------------------------- telecamera di gioco */
-// Valori verificati da Alex sui suoi screenshot (21/11): al calcio d'inizio cerchio 43-45%, dischetto 40%, linea laterale
-// lontana 10%. Non cambiarli senza rifare la misura (scripts/prove/inquadratura.cjs). alto e dietro dove sta la telecamera rispetto al punto inquadrato, in
-// metri (dietro, in pianta, è verso la linea laterale vicina: 39 m in linea d'aria). inclina: gradi verso il basso, fissi:
-// così il punto inquadrato (il pallone) sta a circa il 40% dell'altezza dello schermo dall'alto. fov: campo visivo VERTICALE in gradi (quello della
-// PerspectiveCamera di three.js), fisso: su un telefono 19,5:9 in orizzontale sono circa 57° in orizzontale. seguiX e
-// seguiZ: quanto il punto inquadrato segue il pallone lungo il campo e in profondità (tutto: il pallone resta al 40%).
-// Scelte nostre, da confrontare coi video: molla è la prontezza con cui segue (più alta, meno ritardo), bordoX i metri dalla
-// linea di fondo a cui si ferma, zMax fin dove arriva verso la tribuna vicina (oltre ci entrerebbe: col pallone negli ultimi
-// metri verso la tribuna vicina il pallone scende un po' sullo schermo)
-export const CAMERA = { alto: 12.5, dietro: 36.9, inclina: 21.3, fov: 28, seguiX: 1, seguiZ: 1, molla: 6, bordoX: 16, zMax: 56 };
+// Telecamera di gioco come in Dream League. Valori di partenza di Alex (36,9 m in pianta, 12,5 m, 21,3°, 28° verticali),
+// ritoccati di poco perché sullo schermo, al calcio d'inizio su un telefono 19,5:9, tornino le sue misure: cerchio di
+// centrocampo largo il 43%, dischetto al 40% dall'alto, linea laterale lontana al 10% (tolleranza 2 punti: le controlla
+// scripts/prove/inquadratura.cjs, anche nella CI). Non cambiarli senza rifare la misura.
+// alto e dietro: dove sta la telecamera rispetto al punto inquadrato, in metri (dietro, in pianta, è verso la linea laterale
+// vicina). inclina: gradi verso il basso, fissi. La telecamera non gira mai a destra o a sinistra. fovOriz: campo visivo
+// ORIZZONTALE in gradi, uguale su ogni schermo (su 19,5:9 sono 29,1° in verticale, quelli della PerspectiveCamera di three.js).
+// seguiX e seguiZ: quanto il punto inquadrato segue il pallone lungo il campo (tutto) e in profondità (il 45%: pallone a
+// +30 m, telecamera avanti di circa 14). molla è la prontezza con cui segue (più alta, meno ritardo), bordoX i metri dalla
+// linea di fondo a cui si ferma, zMax fin dove arriva verso la tribuna vicina (oltre ci entrerebbe)
+export const CAMERA = { alto: 12.5, dietro: 36.8, inclina: 21.75, fovOriz: 58.7, seguiX: 1, seguiZ: .45, molla: 6, bordoX: 16, zMax: 56 };
 // Vista dall'alto di tutto lo stadio, solo per controlli: si accende con ?alto nell'indirizzo. [x, y, z della telecamera,
 // x, y, z del punto guardato, FOV verticale]
 export const CAMERA_ALTO = [0, 95, 40, 0, 0, 0, 55];
