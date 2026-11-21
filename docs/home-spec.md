@@ -1,16 +1,10 @@
 # Home del gioco — specifica (Fase 5)
 
-Stato: **in attesa delle risposte di Alex**. Il 21/11 Alex ha chiesto di non fermarsi: la home si costruisce con le scelte
-proposte qui, segnate come provvisorie; ogni risposta diversa si applica dopo. L'unica parte ferma è il database (§4): niente
-tabelle sul progetto Supabase dell'app senza il suo sì esplicito.
-Le cose da decidere sono raccolte in fondo, numerate: basta rispondere punto per punto.
-
-Fatto finora (provvisorio dove c'era una decisione aperta): home in blu notte e oro col gradiente segnaposto, barra nuova,
-carte secondo il disegno, percorso premi, «come guadagnare» con lo storico, notifiche, allenatore, finanze, avatar del
-manager, qualità grafica e passaggio assistito nelle impostazioni, prezzi del mercato della proposta. Saldo e storico
-stanno ancora sul telefono (e nella copia sull'account), passando tutti da una sola funzione (`muovi` in `src/carriera.js`).
-Lo stemma a pezzi da sbloccare non è fatto: la percentuale dice quanto è personalizzato (40 di serie, 80 col club proprio,
-100 con un disegno).
+Stato (21/11): Alex ha approvato la struttura di **carriera, economia, diamanti e strutture** del §5, che sostituisce le
+regole di prima su capitano, prezzi, allenamento, stadio e diamanti. È fatta nella logica (`src/carriera.js`) e collegata
+alle schermate: Home, Carriera, Sfida e Squadra sono quelle nuove; Mercato, Il mio club, Sfide e «Come guadagnare» usano
+già le regole nuove ma hanno ancora l'aspetto vecchio, fino ai passi 9, 10 e 11. Saldo e storico stanno sul telefono (e
+nella copia sull'account), passando tutti da una sola funzione (`muovi` in `src/carriera.js`): per ora niente database (§4).
 
 Regole che valgono per tutto il documento:
 - Monete e diamanti non si comprano con soldi veri. Niente acquisti in-app, niente negozio a pagamento, niente pagamenti
@@ -20,6 +14,9 @@ Regole che valgono per tutto il documento:
 - Niente testo finto: ogni scritta e ogni numero viene dai dati salvati.
 
 ## 1. Cosa c'è già e cosa cambia
+
+I §1 e §2 raccontano il primo disegno della home. Dove dicono cose diverse valgono il §5 (carriera ed economia) e
+`docs/navigazione.md` (schermate e percorsi).
 
 La schermata principale di oggi (viola e lime) ha già quasi tutte le funzioni: carriera con campionato a 16 squadre, Coppa
 Titano, Trofeo dei Castelli, classifica, sfide (5 giornaliere, 5 settimanali, 4 di carriera, 8 di stagione), mercato a
@@ -134,18 +131,14 @@ Venti livelli per ogni stagione della carriera; si riparte da zero alla stagione
 | Turno di coppa superato | 15 |
 
 Ogni livello costa 40 punti (800 in tutto). Una stagione piena dà circa 25 partite: chi gioca solo quelle arriva verso
-il livello 9, chi fa anche buona parte delle sfide arriva in fondo. Premi: livelli dispari 200 monete (400 al 15 e al 19), livelli pari
-3 diamanti (10 al livello 10, 20 al livello 20). Totale del percorso: **2.400 monete e 54 diamanti**.
+il livello 9, chi fa anche buona parte delle sfide arriva in fondo. I premi sono nel §5.9: monete della divisione in cui
+si gioca, 60 diamanti in tutto e due allenatori rari.
 
 ### 3.3 Il mio club
-- **Stadio** (c'è già, 5 livelli): più posti e più monete a ogni partita in casa.
-- **Allenatore** (nuovo, 5 livelli, valutazione 60 / 70 / 80 / 90 / 99): ogni livello dà una seduta di allenamento in più
-  per giocatore (da 6 a 10) e uno sconto del 5% sulle sedute.
-- **Stemma** (percentuale): quanti pezzi dello stemma hai (forme, simboli, bordi; si comprano al Negozio, §5.5). Si parte
-  dal 61%, perché la base gratis è già ricca.
-- **Finanze**: giudizio dal saldo (Scarse sotto 500 monete, Discrete fino a 2.000, Buone fino a 6.000, Eccellenti oltre) e
-  storico di entrate e uscite.
-- **Allenamento** dei giocatori e **Amichevole** restano come oggi.
+Sette strutture da zero a cinque stelle (Centro allenamento, Infermeria, Foresteria, Ufficio commerciale, Osservatori,
+Curva dei tifosi, Stadio), gli allenatori in inventario, le finanze (giudizio dal saldo contato in vittorie: Scarse sotto
+3, Discrete fino a 10, Buone fino a 30, Eccellenti oltre), il negozio dell'aspetto, Personalizza e Amichevole. I numeri
+sono nel §5.6.
 
 ### 3.4 Notifiche
 Un elenco dentro il gioco, calcolato dai dati: niente notifiche push e niente da salvare sul server. La campanella ha il
@@ -168,8 +161,10 @@ e alle partite al giorno. Non essendoci soldi veri, è una protezione proporzion
 
 Stesso progetto Supabase dell'app (stessi account). Tutte le tabelle con RLS attiva e nessun permesso diretto.
 
-Il file è pronto e provato su un database locale: `supabase/002-lapartita-economia.sql` (prova in
-`supabase/prove/002-economia-prova.sql`). **Non è applicato**: aspetta il sì di Alex. Rispetto alle tabelle qui sotto la
+Il file `supabase/002-lapartita-economia.sql` (prova in `supabase/prove/002-economia-prova.sql`) era pronto per
+l'economia di prima. **Non è applicato e non è più allineato**: Alex ha deciso il 21/11 che per ora saldo e storico
+restano sul telefono; il listino va riscritto coi numeri del §5 quando si farà il passo 12 (la proposta della «cassa» è
+in `docs/ponte-partita.md` §9). Rispetto alle tabelle qui sotto la
 prima versione è più semplice: portafogli, movimenti, partite, club e listino; i contatori delle sfide e l'elenco dei
 giocatori restano al passo dopo (il server controlla importi e doppioni, il gioco che la sfida sia completa).
 
@@ -214,110 +209,181 @@ storico e il saldo non possono divergere.
 I valori dell'economia oggi sono in `src/carriera.js`. Diventano una voce `ECONOMIA` in `src/config.js` (per mostrare gli
 importi anche senza rete) e le stesse righe in `lapartita_listino`; una prova automatica controlla che siano uguali.
 
-## 5. Economia
+## 5. Carriera, economia, diamanti e strutture (approvata da Alex il 21/11)
 
-### 5.1 Entrate (monete ● e diamanti ◆)
+Questa sezione sostituisce le regole di prima su capitano, prezzi, allenamento, stadio e diamanti. Tutti i numeri stanno in
+`src/config.js` (`DIVISIONI`, `STAGIONE`, `ECONOMIA`); la logica in `src/carriera.js`; le squadre inventate in
+`src/dati/divisioni.js`. Dove Alex non aveva dato un numero l'ho scelto io: è segnato con «(scelta mia)» e si cambia in una riga.
 
-| Fonte | ● | ◆ | Oggi |
+### 5.1 Le cinque divisioni
+Si parte dall'ultima. In ognuna sedici squadre: quindici avversarie e il nostro club.
+
+| # | Divisione | Squadre | Valutazioni | Vittoria | Diamanti a fine stagione |
+|---|---|---|---|---|---|
+| 1 | Campionato Sammarinese | le quindici vere | 55–75 (i migliori 76–82) | 250 | 50 |
+| 2 | Serie Cadetta del Titano | 15 inventate | 54–68 | 180 | 40 |
+| 3 | Lega delle Contrade | 15 inventate | 50–63 | 130 | 30 |
+| 4 | Lega dei Borghi | 15 inventate | 45–57 | 90 | 20 |
+| 5 | Lega Esordienti (partenza) | 15 inventate | 40–52 | 60 | 10 |
+
+- Le sessanta squadre inventate hanno nome, sigla, colori, stemma (fatto coi pezzi dello stemma) e giocatori inventati. I
+  nomi delle squadre vengono da curazie e contrade di San Marino; nessun giocatore inventato ha il cognome di uno vero.
+- In ogni divisione ci sono squadre forti e deboli: la più forte ha la media dei titolari due punti sotto il massimo, la più
+  debole tre sopra il minimo.
+- Stagione: 15 partite di campionato, Trofeo dei Castelli (quattro gironi da quattro, poi quarti, semifinale, finale) e
+  Coppa Titano (eliminazione diretta dagli ottavi), tutte tra le sedici squadre della divisione.
+- Premi di una partita: vittoria piena, pareggio metà, sconfitta un quarto. Niente più premio per ogni gol.
+- Rosa iniziale: undici titolari e sette riserve con valutazioni 42–50. Capitano iniziale tra 70 e 78, scelto tra nove
+  giocatori veri del Campionato Sammarinese: è il premio di partenza, non costa niente.
+- Monete e diamanti d'inizio: 150 e 20 (scelta mia: con 500 monete in Lega Esordienti si comprava subito mezza squadra).
+- I giocatori veri si ottengono solo con l'agente dalla Serie Cadetta in su, o arrivati in cima (lista trasferimenti e
+  agente del Campionato Sammarinese).
+- Le carriere cominciate prima delle divisioni non si possono continuare: si riparte da zero.
+
+**Promozione e retrocessione.** Ogni stagione ha quattro obiettivi; con tre si sale. Chi arriva tra le ultime due scende
+(non dalla Lega Esordienti), anche se ha fatto gli obiettivi. Gli obiettivi diventano più difficili salendo (scelta mia,
+tarata con la simulazione del §5.8):
+
+| Divisione | Posizione finale | Coppa Titano | Trofeo dei Castelli | Media dei titolari |
+|---|---|---|---|---|
+| Lega Esordienti | tra le prime 5 | quarti | passare i gironi | 51 |
+| Lega dei Borghi | tra le prime 4 | semifinale | passare i gironi | 56 |
+| Lega delle Contrade | tra le prime 4 | semifinale | semifinale | 62 |
+| Serie Cadetta del Titano | tra le prime 3 | semifinale | semifinale | 67 |
+| Campionato Sammarinese | tra le prime 3 | semifinale | semifinale | – (non c'è dove salire) |
+
+Premi di fine stagione: i diamanti della divisione e un allenatore leggendario. Con la promozione: altri 25 diamanti, un
+altro leggendario e un contatto dell'agente.
+
+### 5.2 Valore dei giocatori
+100 monete a valutazione 55, raddoppia ogni 5 punti, arrotondato a 5 monete:
+
+| Valutazione | 45 | 50 | 55 | 60 | 65 | 70 | 75 | 80 |
+|---|---|---|---|---|---|---|---|---|
+| Valore | 25 | 50 | 100 | 200 | 400 | 800 | 1.600 | 3.200 |
+
+Vendendo si incassa la metà. La rosa va da 16 giocatori (sotto non si vende: scelta mia) a 22, fino a 32 con la Foresteria.
+
+### 5.3 Allenatori
+Sono oggetti in inventario: si usano dalla scheda del giocatore («Allena»).
+
+- Comune +1, raro +2, leggendario +3 alle statistiche della sua categoria; la valutazione, che è la media pesata delle
+  statistiche secondo il ruolo, sale di conseguenza. Il leggendario ha il 25% di probabilità di alzare di 1 il potenziale.
+- Categorie: Tecnico (controllo, passaggio, tiro), Fisico (velocità, accelerazione, resistenza, potenza), Difesa
+  (contrasto e posizione, che sulla carta sono la statistica «Difesa»), Portieri (le doti del portiere). Quello dei
+  portieri va solo sui portieri, gli altri solo sui giocatori di movimento.
+- Potenziale: la valutazione di un giocatore sale al massimo di 10 punti rispetto a quella con cui è arrivato.
+- Come ho letto «+1, +2, +3»: sono punti sulle statistiche della categoria, come in Dream League, non sulla valutazione.
+  Per questo un allenatore di tecnica su un difensore centrale alza le statistiche ma quasi mai la valutazione. Se Alex
+  intendeva punti di valutazione, si cambia.
+- Da dove arrivano: tutte le sfide del giorno (1 comune), tutte le sfide della settimana e i livelli 5 e 15 del percorso
+  premi (rari), fine stagione, promozione e finale di coppa raggiunta (leggendari), svincolo di un giocatore (comune sotto
+  55, raro 55–64, leggendario da 65), Centro allenamento (1 comune a settimana per stella). Raro e leggendario anche con
+  15 e 40 diamanti.
+
+### 5.4 Mercato
+- **Lista trasferimenti**: sei giocatori della nostra divisione a prezzo pieno; cambia dopo ogni partita.
+- **Osservatore**: per monete trova un giocatore della fascia scelta (bassa, media, alta: i tre terzi delle valutazioni
+  della divisione) e del reparto scelto, con lo sconto del 20%. La ricerca costa 0,3 / 0,6 / 1 vittoria (scelta mia), meno
+  il 10% per stella della struttura Osservatori.
+- **Agente**: per un contatto e una vittoria in monete (scelta mia) trova un giocatore della metà alta della divisione
+  sopra, a prezzo pieno. Dalla Serie Cadetta porta giocatori veri; nel Campionato Sammarinese porta i migliori (76–82).
+  Contatti: uno al settimo giorno giocato di fila, uno con la promozione, uno per ogni finale di coppa raggiunta, oppure 25
+  diamanti.
+- **Offerte a tempo**: due giocatori della divisione sopra, cambiano ogni 24 ore; costano il loro valore più 30 diamanti.
+- Il giocatore comprato entra tra le riserve. Un giocatore vero lascia la sua squadra, che mette al suo posto una riserva.
+
+### 5.5 Diamanti (si guadagnano solo giocando, niente soldi veri)
+Entrate:
+
+| Fonte | Diamanti |
+|---|---|
+| Sette giorni di fila con almeno una partita | 4, 5, 6, 7, 8, 10, 16 = 56 a settimana |
+| Tutte le sfide della settimana | 15 |
+| Percorso premi | 60 a stagione |
+| Fine stagione | da 10 (Esordienti) a 50 (Campionato Sammarinese) |
+| Promozione | 25 |
+| Coppa vinta | 20 |
+| Sfide di stagione e di carriera | 20 a stagione; 130 una volta sola |
+
+Spese: contatto dell'agente 25; allenatore raro 15, leggendario 40; fisioterapista completo 10; lista trasferimenti
+rinnovata subito 5; giocatore delle offerte a tempo 30 più il suo valore; quarta e quinta stella delle strutture 20 e 40
+oltre alle monete; aspetto (terza maglia 30, disegni speciali 20, avatar, cornici, scarpini e pallone 10, pezzi rari
+dello stemma 5; l'esultanza aspetta le animazioni).
+
+### 5.6 Strutture del club
+Sette strutture, da zero a cinque stelle. Ogni stella costa 300 / 800 / 2.000 / 5.000 / 12.000 monete (scelta mia); la
+quarta e la quinta anche 20 e 40 diamanti.
+
+| Struttura | Cosa dà per stella |
+|---|---|
+| Centro allenamento | moduli aperti 4, 5, 6, 7, 8; riscaldamento che dura 1, 1, 1, 2, 2, 3 partite; 1 allenatore comune a settimana |
+| Infermeria | +10% di energia recuperata tra le partite |
+| Foresteria | rosa massima 22, 24, 26, 28, 30, 32 |
+| Ufficio commerciale | +10% di monete a partita |
+| Osservatori | −10% sul costo delle ricerche |
+| Curva dei tifosi | +1% alle statistiche nelle partite in casa (scelta mia: «piccolo bonus») |
+| Stadio | posti 500 → 10.000; incasso in casa 0 / 0,1 / 0,2 / 0,3 / 0,45 / 0,6 vittorie (scelta mia) |
+
+### 5.7 Energia, riscaldamento, fisioterapista
+- L'energia cala giocando e risale di 35 punti tra una partita e l'altra (di più con l'Infermeria).
+- Riscaldamento: mezza vittoria in monete, +5% alle statistiche dei titolari per la prossima partita.
+- Fisioterapista, su tutta la rosa: piccolo +20 energia (mezza vittoria), medio +50 (una vittoria), completo tutta (due
+  vittorie, oppure 10 diamanti). I prezzi in vittorie sono una scelta mia.
+- «Sotto il 60% cala prima la velocità, poi le altre statistiche» è una regola di campo: tocca alla sessione della
+  partita (`docs/ponte-partita.md`).
+
+### 5.8 Simulazione: quante stagioni per arrivare in cima
+`node scripts/simula-carriera.mjs [carriere] [vittorie%] [pareggi%] [partite al giorno]` gioca carriere intere con le
+regole vere; cambiano solo i risultati delle partite del giocatore, tirati a sorte. Mille carriere, 4 partite al giorno:
+
+| Giocatore | Stagioni in media | La metà entro | Nove su dieci entro |
 |---|---|---|---|
-| Inizio della carriera | 500 | 20 | uguale |
-| Vittoria | 300 | – | uguale |
-| Pareggio | 120 | – | uguale |
-| Sconfitta | 50 | – | uguale |
-| Ogni gol segnato | 20 | – | uguale |
-| Partita in casa, per livello dello stadio (1–5) | 0 / 60 / 130 / 220 / 350 | – | uguale |
-| Turno di coppa superato | 150 | – | uguale |
-| Campionato vinto | 3.000 | 50 (sfida di carriera) | uguale |
-| Coppa Titano vinta | 2.000 | 30 (sfida di carriera) | uguale |
-| Trofeo dei Castelli vinto | 1.500 | 30 (sfida di carriera) | uguale |
-| Sfide di oggi (5) | 100–150 l'una, 620 in tutto | 5 se le fai tutte | uguale |
-| Obiettivi della settimana (5) | 300–600 l'uno, 2.100 in tutto | 15 se li fai tutti | uguale |
-| Sfide di stagione (8) | 400–800 (6 sfide), 3.000 in tutto | 10 + 10 (2 sfide) | uguale |
-| Sfide di carriera (4) | – | 20–50, 130 in tutto | uguale |
-| Percorso premi (20 livelli) | 2.400 | 54 | nuovo |
-| Amichevole | 0 | 0 | uguale |
+| medio: 50% vittorie, 30% pareggi, 20% sconfitte | **6,9** | 6 | 10 |
+| forte: 65 / 20 / 15 | 4,7 | 4 | 6 |
+| debole: 40 / 30 / 30 | 15,3 | 14 | 25 |
 
-### 5.2 Uscite
+Giocatore medio, divisione per divisione: Esordienti 1,3 stagioni (sale il 78% delle volte), Borghi 1,5 (67%), Contrade
+1,9 (53%), Cadetta 2,3 (44%). In tutto circa 150 partite. Entrate in monete per stagione, contate in vittorie: partite 17,
+sfide 10, vendite 7, percorso premi 5, trofei e turni di coppa 5.
 
-| Cosa | Costo | Oggi |
-|---|---|---|
-| Giocatore al mercato | prezzo dalla valutazione (tabella sotto), meno il 70% del prezzo di chi cedi | formula uguale, prezzi più alti nella proposta |
-| Stadio livello 2 / 3 / 4 / 5 | ● 1.500 / ● 4.000 + ◆ 10 / ● 9.000 + ◆ 25 / ● 18.000 + ◆ 50 | uguale |
-| Seduta di allenamento (+1 alla valutazione) | ● 200, poi +150 a ogni seduta dello stesso giocatore (massimo 6, fino a 10 con l'allenatore) | uguale |
-| Allenatore livello 2 / 3 / 4 / 5 | ● 2.000 / ● 5.000 / ● 10.000 + ◆ 15 / ● 20.000 + ◆ 30 | nuovo |
-| Pezzo dello stemma | ● 300 i semplici, ◆ 5 i rari | nuovo |
+Cosa ha insegnato la simulazione:
+- Coi primi numeri (obiettivi uguali in tutte le divisioni, sfide che pagavano il doppio) il giocatore medio arrivava in
+  cima in **5,0 stagioni**: un po' sotto l'obiettivo di 6–8.
+- Tagliare i premi in monete da solo non basta: nelle tre divisioni basse i giocatori costano pochissimo rispetto ai premi
+  (in Lega Esordienti una vittoria compra il giocatore più forte della divisione), quindi l'obiettivo sulla rosa si
+  raggiunge sempre. I premi cominciano a pesare dalla Serie Cadetta.
+- Per questo la correzione applicata è doppia: obiettivi più difficili salendo di divisione (tabella del §5.1) e monete
+  delle sfide dimezzate, così le partite restano l'entrata più grande.
+- Per allungare o accorciare: la posizione richiesta e i turni di coppa in `DIVISIONI[].obiettivi`; per far pesare di più
+  le monete, alzare la media richiesta o abbassare i premi delle sfide (`SFIDE` in `src/carriera.js`).
 
-**Scala nuova delle valutazioni (21/11, prompt «Home, menu e sezioni»).** Le valutazioni mostrate vanno da 55 a 82
-(`SCALA` in `src/config.js`, funzioni in `src/dati/scala.js`): quasi tutti tra 55 e 75, i migliori tra 76 e 82. La forza
-usata in partita non cambia. Il prezzo segue la scala nuova:
+### 5.9 Sfide e percorso premi
+- I premi in monete di sfide, percorso, turni di coppa e trofei sono scritti «in vittorie»: valgono quel numero per la
+  vittoria della divisione in cui si gioca, quindi crescono da soli salendo.
+- Sfide del giorno: 0,15–0,25 vittorie l'una (una vittoria in tutto); tutte fatte: un allenatore comune.
+- Sfide della settimana: 0,5–1 vittoria l'una (3,5 in tutto); tutte fatte: 15 diamanti e un allenatore raro.
+- Sfide di stagione: 0,75–1,5 vittorie (sei sfide) e 10 diamanti (due sfide).
+- Sfide di carriera: arrivare nel Campionato Sammarinese 50 diamanti, Coppa Titano 30, Trofeo dei Castelli 30, una
+  struttura a tre stelle 20.
+- Percorso premi, 20 livelli a stagione: monete (0,7 vittorie, 1 ai livelli 17 e 19), 60 diamanti in tutto, un allenatore
+  raro ai livelli 5 e 15.
+- Turno di coppa superato: mezza vittoria. Campionato vinto: 8 vittorie; Coppa Titano 5; Trofeo dei Castelli 4.
 
-Prezzo di un giocatore = (valutazione − 45)² × 4, arrotondato alle decine.
-
-| Valutazione | Chi è | Prezzo |
-|---|---|---|
-| 55 | il più debole | 400 |
-| 60 | riserva | 900 |
-| 66 | medio | 1.760 |
-| 70 | buon titolare | 2.500 |
-| 75 | carta oro | 3.600 |
-| 78 | tra i migliori | 4.360 |
-| 80 | forte | 4.900 |
-| 82 | il massimo senza allenamento | 5.480 |
-
-Stato: accesi sulle schermate col passo 4 (21/11): valutazioni 55–82 e prezzi di questa tabella (`prezzoDa` in
-`ECONOMIA`, `src/config.js`). Il file del database dice gli stessi numeri (`mercato_base`), provato su un Postgres locale.
-
-Formato dei numeri nella barra: punto delle migliaia fino a 99.999, poi «120 K» e «1,2 M». Uno scenario vinto darà 15
-diamanti (`ECONOMIA.scenario`), quando la partita saprà giocarlo.
-
-### 5.3 Quante partite servono
-Due giocatori tipo:
-- **medio**: vince il 45% delle partite, ne pareggia il 25%, segna 1,5 gol a partita → **210 monete a partita**; con le
-  sfide che completa giocando (circa 3 al giorno su 5 e mezza settimana di obiettivi) → circa **330 a partita**;
-- **forte**: vince il 75%, pareggia il 15%, segna 2,5 gol → **300 a partita**; con le sfide → circa **500 a partita**.
-
-Una partita dura 5–6 minuti veri.
-
-| Acquisto | Prezzo | Solo partite: medio / forte | Con le sfide: medio / forte |
-|---|---|---|---|
-| Giocatore medio (66) | 1.760 | 9 / 6 partite | 6 / 4 |
-| Buon titolare (70) | 2.500 | 12 / 9 | 8 / 5 |
-| Giocatore forte (80) | 4.900 | 24 / 17 | 15 / 10 |
-
-Vendendo un proprio giocatore si incassa il 70% del suo prezzo (un 60 rende 630 monete).
-Un giocatore forte (80) costa più o meno **un campionato** (15 partite) a chi gioca in modo normale e fa le sfide: la
-squadra cresce di due o tre acquisti importanti a stagione.
-
-### 5.4 Diamanti: quanti ne arrivano
-Giocatore medio: 15–25 a settimana (qualche bonus giornaliero e gli obiettivi della settimana); in più, a stagione, fino a
-54 dal percorso premi e 20 dalle sfide di stagione, e quelli dei trofei. Giocatore forte: fino a 50 a settimana.
-
-### 5.5 Diamanti: su cosa spenderli (approvato da Alex il 21/11, fatto)
-Regola: i diamanti comprano **aspetto e comodità**, non la vittoria. I giocatori si comprano solo con le monete.
-Tutto sta nel **Negozio** (dal club, da «Monete e diamanti» e dal profilo), in quattro schede. Una cosa non ancora presa si
-compra in due tocchi (il primo mostra «Conferma», il secondo paga) e poi resta per sempre.
+### 5.10 Negozio: l'aspetto (approvato il 21/11, fatto)
+Una cosa non ancora presa si compra in due tocchi e poi resta per sempre.
 
 | Scheda | Cosa | Costo | Gratis dall'inizio |
 |---|---|---|---|
 | Stemma | Forme: scudo, tondo, stendardo, rombo, esagono | ● 300 l'una | scudo, tondo, stendardo |
-| Stemma | Simboli in cima: corona, stella, pallone, torre, nessuno, fulmine, tre torri, alloro | ● 300 il fulmine, ◆ 5 tre torri e alloro (rari) | i primi cinque |
-| Stemma | Bordi: semplice, doppio, sottile, a punti, oro | ● 300 a punti, ◆ 5 oro (raro) | i primi tre |
+| Stemma | Simboli in cima: corona, stella, pallone, torre, nessuno, fulmine, tre torri, alloro | ● 300 il fulmine, ◆ 5 tre torri e alloro | i primi cinque |
+| Stemma | Bordi: semplice, doppio, sottile, a punti, oro | ● 300 a punti, ◆ 5 oro | i primi tre |
 | Divisa | Disegni speciali della prima maglia: onde, chevron, sfumata, mimetica, pennellata | ◆ 20 l'uno | gli altri quindici disegni |
-| Divisa | Terza maglia: una divisa in più coi colori e il disegno che vuoi, da indossare al posto della prima | ◆ 30 | — |
-| Manager | Avatar: otto | ◆ 10 l'uno | i primi quattro |
-| Manager | Cornice del ritratto: semplice, oro, azzurra, lime, fuoco | ◆ 10 l'una | semplice |
-| Squadra | Scarpini uguali per tutta la squadra: neri, bianchi, oro, azzurri, lime, arancio, rosa | ◆ 10 l'uno | ognuno i suoi |
-| Squadra | Pallone delle partite in casa: oro, azzurro, notte, arancio | ◆ 10 l'uno | classico |
-| Squadra | Cambiare subito il giocatore consigliato al mercato | ◆ 5 ogni volta | — |
-| (club) | Stadio ai livelli 3, 4, 5 e allenatore ai livelli 4 e 5, insieme alle monete | ◆ 10 / 25 / 50 e ◆ 15 / 30 | c'erano già |
+| Divisa | Terza maglia | ◆ 30 | — |
+| Manager | Avatar (otto) e cornici del ritratto | ◆ 10 l'uno | quattro avatar, la cornice semplice |
+| Squadra | Scarpini uguali per tutti e pallone delle partite in casa | ◆ 10 l'uno | ognuno i suoi, pallone classico |
 
-La percentuale «Stemma» nella home è la parte dei pezzi che hai (si parte dal 61%).
-
-**Manca ancora**: l'esultanza scelta per il capitano (◆ 15). Nel gioco ci sono solo due esultanze: per sceglierne una
-servono altre animazioni (da Mixamo, come «mani in testa» e «indica»). Appena ci sono, si aggiunge una riga al negozio.
-
-Sconsigliato, e non fatto: recuperi di energia, ripetizione di partite perse, giocatori in vendita solo a diamanti. Sono le
-cose che in altri giochi spingono a pagare, e qui non si paga.
+**Manca ancora**: l'esultanza scelta per il capitano. Servono altre animazioni (da Mixamo).
 
 ## 6. Immagine di sfondo (la genera Alex)
 
@@ -348,21 +414,22 @@ Le domande erano dieci, più cinque cose pratiche. Queste le risposte.
 
 | # | Domanda | Risposta di Alex | Stato |
 |---|---|---|---|
-| 1 | Logo: corona lime o viola | **Da decidere**: lime se è la stessa dell'app Fantatitano, viola se il logo ufficiale è quello | resta la lime, in attesa |
-| 2 | Prezzi del mercato | Un giocatore da 85 costa 4.900 monete (circa un campionato) | fatto |
-| 3 | Diamanti | Va bene l'elenco del §5.5: solo aspetto e comodità, mai vantaggi in partita | fatto (manca l'esultanza: servono animazioni) |
+| 1 | Logo | Deciso il 21/11: solo la corona gialla su fondo nero, senza scritte (`public/img/logo-fantatitano.png`) | fatto dalla sessione della partita |
+| 2 | Prezzi del mercato | Superata dal §5.2: 100 monete a valutazione 55, raddoppia ogni 5 punti | fatto |
+| 3 | Diamanti | Superata dal §5.5: oltre all'aspetto comprano contatti dell'agente, allenatori, fisioterapista completo, rinnovo della lista, offerte a tempo e le ultime stelle delle strutture. Restano non comprabili con soldi veri | fatto (manca l'esultanza: servono animazioni) |
 | 4 | Percorso premi | Legato alla stagione della carriera | fatto |
-| 5 | Allenatore | Cinque livelli, una seduta in più e 5% di sconto a livello | fatto |
+| 5 | Allenatore | Superata dal §5.3: gli allenatori sono oggetti da usare sui giocatori | fatto |
 | 6 | Stemma a pezzi | Sì, con una base di pezzi gratis già ricca | fatto |
 | 7 | Colori | Tutte le schermate in blu notte e oro; il lime resta solo come accento, finché la corona è lime | fatto |
 | 8 | Lingua | Solo italiano, ma coi testi in un unico file per aggiungere l'inglese dopo | da fare |
-| 9 | Database | Sì, a tre condizioni: sapere prima quale progetto; se è quello dell'app pubblicata, nessuna tabella esistente toccata e schema separato; prima un backup | file pronto, **non applicato**: manca il backup (§8.1) |
+| 9 | Database | Per ora no (21/11): saldo e storico restano sul telefono. Quando si farà: sapere prima quale progetto; se è quello dell'app pubblicata, nessuna tabella esistente toccata, schema separato e prima un backup | fermo; il file SQL è da riallineare al §5 |
 | 10 | Saldo sul server e rete | Mercato e miglioramenti chiedono la rete; i premi delle partite senza rete arrivano dopo | col punto 9 |
 | 11 | Carriere già iniziate | Si riparte da zero: nessun saldo importato | nel file SQL |
 | 12 | Immagine di sfondo | La manda Alex; intanto il gradiente | in attesa |
 | 13 | Animazioni Mixamo | Le manda Alex («mani in testa» e «indica», FBX, Without Skin, 30 fps) | in attesa |
 | 14 | fps su iPhone | Li misura Alex con `?debug` | in attesa |
 | 15 | Gol e tiri | Pochi: puntare a 2–3 gol e 10–12 tiri per squadra a partita, poi tarare giocando | vedi `docs/dls-gameplay.md` |
+| 16 | Carriera, economia, diamanti, strutture | Approvata il 21/11: cinque divisioni, valore dei giocatori, allenatori, osservatore e agente, diamanti, sette strutture (§5) | fatto; aspetto di Mercato, Club e Sfide ai passi 9–11 |
 
 ### 8.1 Come si applica il file SQL (quando c'è il backup)
 - Il progetto è **fantasyfootball** (`nskgzpbcssnpfuxmbepa`): è quello dell'app Fantatitano pubblicata (circa 250 iscritti).

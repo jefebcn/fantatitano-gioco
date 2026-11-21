@@ -292,33 +292,93 @@ export const TIRO_IA = { buona: .12, pressato: [.06, .9], minima: .03, vicino: 2
 // mai oltre `massimo` metri dal centro del campo verso la porta avversaria.
 export const ATTACCO = { sullaLinea: 1.2, massimo: 44 };
 
-// Economia della carriera (docs/home-spec.md). Monete e diamanti si guadagnano solo giocando: niente acquisti.
-// prezzo: il prezzo di un giocatore è (valutazione meno `prezzoDa`) al quadrato, per `prezzo`, per dieci monete. Con la
-// scala delle valutazioni da 55 a 82: 400 monete il più debole, 4.900 un giocatore da 80 (circa un campionato).
-// percorso: il percorso premi della stagione. Punti per fonte, punti che servono per ogni livello e premio di ogni livello
-// (m monete, g diamanti). allenatore: i cinque livelli (valutazione mostrata e costo per arrivarci). Ogni livello oltre il
-// primo dà `sedute` sedute di allenamento in più per giocatore e toglie `sconto` dal prezzo delle sedute.
-// finanze: fino a quante monete vale ogni giudizio. storico: quanti movimenti si tengono.
+// Le cinque divisioni della carriera, dalla più alta (docs/home-spec.md, §3). Si parte dall'ultima.
+// val: tra quali valutazioni stanno i giocatori della divisione. vittoria: monete per una vittoria. fine: diamanti a
+// fine stagione. vere: le squadre sono quelle vere del Campionato Sammarinese; nelle altre divisioni sono inventate.
+// obiettivi: i quattro obiettivi della stagione, più difficili salendo. posizione: arrivare tra le prime tante in
+// campionato. coppa: quanti turni di Coppa Titano superare (1 = arrivare ai quarti, 2 = in semifinale). castelli: 1 =
+// passare i gironi del Trofeo dei Castelli, 2 = arrivare in semifinale. media: la valutazione media dei titolari.
+export const DIVISIONI = [
+  { id: 'sammarinese', nome: 'Campionato Sammarinese', val: [55, 75], vittoria: 250, fine: 50, vere: true, obiettivi: { posizione: 3, coppa: 2, castelli: 2 } },
+  { id: 'cadetta', nome: 'Serie Cadetta del Titano', val: [54, 68], vittoria: 180, fine: 40, obiettivi: { posizione: 3, coppa: 2, castelli: 2, media: 67 } },
+  { id: 'contrade', nome: 'Lega delle Contrade', val: [50, 63], vittoria: 130, fine: 30, obiettivi: { posizione: 4, coppa: 2, castelli: 2, media: 62 } },
+  { id: 'borghi', nome: 'Lega dei Borghi', val: [45, 57], vittoria: 90, fine: 20, obiettivi: { posizione: 4, coppa: 2, castelli: 1, media: 56 } },
+  { id: 'esordienti', nome: 'Lega Esordienti', val: [40, 52], vittoria: 60, fine: 10, obiettivi: { posizione: 5, coppa: 1, castelli: 1, media: 51 } },
+];
+// Come finisce una stagione: per salire servono `servono` obiettivi su quattro; scende chi arriva tra le ultime
+// `retrocedono`, tranne nell'ultima divisione. Nella divisione più alta gli obiettivi restano ma non c'è dove salire.
+export const STAGIONE = { servono: 3, retrocedono: 2 };
+
+// Economia della carriera (docs/home-spec.md, §5). Monete e diamanti si guadagnano solo giocando: niente acquisti.
+// Tutti i premi e i costi in monete scritti «in vittorie» valgono quel numero per il premio di una vittoria nella
+// divisione in cui si gioca: così crescono da soli salendo di divisione.
+// inizio: monete e diamanti di partenza; tra quali valutazioni sta la rosa iniziale e quante riserve ha.
+// premi: pareggio e sconfitta sono una parte della vittoria; turno di coppa superato e trofei vinti, in vittorie.
+//   arrotonda: a quante monete si arrotonda ogni importo calcolato.
+// valore: un giocatore vale `base` monete a valutazione `a` e raddoppia ogni `raddoppia` punti; vendendolo si incassa
+//   la parte `vendita`. minimo: sotto quanti giocatori in rosa non si vende più.
+// allenatori: oggetti che si usano su un giocatore. Per ogni rarità: di quanti punti alza le statistiche della sua
+//   categoria, quanti diamanti costa (il comune non si compra), e per il leggendario la probabilità di alzare di uno il
+//   potenziale. categorie: quali statistiche alza ognuna. potenziale: di quanto può salire al massimo la valutazione
+//   di un giocatore rispetto a quella con cui è arrivato. svincolo: sotto quale valutazione lo svincolo di un giocatore
+//   dà un allenatore di ogni rarità.
+// mercato. lista: quanti giocatori ha la lista trasferimenti e quanti diamanti costa rinnovarla subito. osservatore:
+//   lo sconto sul valore del giocatore trovato e il costo della ricerca per fascia, in vittorie. agente: il costo in
+//   vittorie oltre al contatto, e quanti diamanti costa un contatto. offerte: quante sono le offerte a tempo, quanti
+//   diamanti costano oltre al valore in monete, quante ore durano.
+// diamanti: la serie di sette giorni (uno per giorno giocato di fila), tutte le sfide della settimana, la promozione,
+//   una coppa vinta, il fisioterapista completo pagato in diamanti.
+// strutture: le sette strutture del club, da zero a cinque stelle. costi e diamanti: quanto costa ogni stella.
+//   centro (quanti moduli sono aperti, quante partite dura il riscaldamento, quanti allenatori comuni dà a settimana
+//   per stella), infermeria (energia recuperata in più per stella), foresteria (rosa massima), commerciale (monete in
+//   più a partita per stella), osservatori (sconto sulle ricerche per stella), curva (statistiche in più in casa per
+//   stella), stadio (posti, e incasso di una partita in casa in vittorie).
+// percorso: il percorso premi della stagione. Punti per fonte, punti che servono per ogni livello e premio di ogni
+//   livello (v monete in vittorie, g diamanti, a un allenatore di quella rarità).
+// finanze: fino a quante vittorie di saldo vale ogni giudizio. storico: quanti movimenti si tengono.
 // scenario: quanti diamanti dà uno scenario vinto (g).
-// energia: quanta energia, su 100, recupera ogni giocatore del club tra una partita e l'altra. Riscaldamento: quanta ne
-// aggiunge ai titolari prima di una partita e quante monete costa. Fisio: quante monete costa ogni punto di energia che
-// il fisioterapista ridà alla rosa, e quanto costa come minimo.
-// negozio: quanto costa un oggetto di ogni tipo (m monete, g diamanti). Solo aspetto e comodità, niente che aiuti in
-// partita. Quali oggetti esistono e quali si hanno dall'inizio sta in NEGOZIO, in src/carriera.js.
+// energia: quanta energia, su 100, recupera ogni giocatore del club tra una partita e l'altra. Riscaldamento: di quanto
+//   alza le statistiche dei titolari e quanto costa in vittorie. Fisio: i tre interventi, quanta energia ridanno a
+//   tutta la rosa e quanto costano in vittorie.
+// negozio: quanto costa un oggetto di ogni tipo (m monete, g diamanti): solo aspetto. Quali oggetti esistono e quali
+//   si hanno dall'inizio sta in NEGOZIO, in src/carriera.js.
 export const ECONOMIA = {
-  prezzo: .4, prezzoDa: 45,
+  inizio: { monete: 150, diamanti: 20, rosa: [42, 50], panchina: 7 },
+  premi: { pareggio: .5, sconfitta: .25, turno: .5, campionato: 8, coppa: 5, castelli: 4, arrotonda: 5 },
+  valore: { base: 100, a: 55, raddoppia: 5, vendita: .5, minimo: 16 },
+  allenatori: {
+    rarita: { comune: { punti: 1 }, raro: { punti: 2, diamanti: 15 }, leggendario: { punti: 3, diamanti: 40, potenziale: .25 } },
+    categorie: { tecnico: ['CON', 'PAS', 'TIR'], fisico: ['VEL', 'ACC', 'RES', 'POT'], difesa: ['DIF'], portieri: ['PAR', 'RIF', 'POS', 'USC', 'PRE', 'RIN'] },
+    potenziale: 10,
+    svincolo: [[55, 'comune'], [65, 'raro'], [Infinity, 'leggendario']],
+  },
+  mercato: {
+    lista: { quanti: 6, rinnovo: 5 },
+    osservatore: { sconto: .2, fasce: { bassa: .3, media: .6, alta: 1 } },
+    agente: { vittorie: 1, diamanti: 25 },
+    offerte: { quante: 2, diamanti: 30, ore: 24 },
+  },
+  diamanti: { serie: [4, 5, 6, 7, 8, 10, 16], settimana: 15, promozione: 25, coppa: 20, fisio: 10 },
+  strutture: {
+    costi: [300, 800, 2000, 5000, 12000], diamanti: [0, 0, 0, 20, 40],
+    centro: { moduli: [4, 5, 6, 7, 8, 8], riscaldamento: [1, 1, 1, 2, 2, 3], allenatori: 1 },
+    infermeria: .1, foresteria: [22, 24, 26, 28, 30, 32], commerciale: .1, osservatori: .1, curva: .01,
+    stadio: { posti: [500, 1000, 2000, 3500, 6000, 10000], incasso: [0, .1, .2, .3, .45, .6] },
+  },
   percorso: {
     perLivello: 40, punti: { partita: 10, vinta: 10, sfidaD: 5, sfidaW: 15, sfidaS: 20, sfidaC: 20, turno: 15 },
-    premi: [{ m: 200 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 200 }, { g: 10 },
-      { m: 200 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 400 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 400 }, { g: 20 }],
+    premi: [{ v: .7 }, { g: 4 }, { v: .7 }, { g: 4 }, { a: 'raro' }, { g: 4 }, { v: .7 }, { g: 4 }, { v: .7 }, { g: 10 },
+      { v: .7 }, { g: 4 }, { v: .7 }, { g: 4 }, { a: 'raro' }, { g: 4 }, { v: 1 }, { g: 4 }, { v: 1 }, { g: 18 }],
   },
-  allenatore: { livelli: [{ voto: 60 }, { voto: 70, monete: 2000, gemme: 0 }, { voto: 80, monete: 5000, gemme: 0 }, { voto: 90, monete: 10000, gemme: 15 }, { voto: 99, monete: 20000, gemme: 30 }], sedute: 1, sconto: .05 },
-  finanze: [[500, 'Scarse'], [2000, 'Discrete'], [6000, 'Buone'], [Infinity, 'Eccellenti']],
+  finanze: [[3, 'Scarse'], [10, 'Discrete'], [30, 'Buone'], [Infinity, 'Eccellenti']],
   storico: 120,
   scenario: { g: 15 },
-  energia: { recupero: 35, riscaldamento: { bonus: 10, monete: 150 }, fisio: { monete: 1.5, minimo: 50 } },
+  energia: {
+    recupero: 35, riscaldamento: { bonus: .05, vittorie: .5 },
+    fisio: { piccolo: { energia: 20, vittorie: .5 }, medio: { energia: 50, vittorie: 1 }, completo: { energia: 100, vittorie: 2 } },
+  },
   negozio: {
-    avatar: { g: 10 }, cornice: { g: 10 }, scarpini: { g: 10 }, pallone: { g: 10 }, disegno: { g: 20 }, terza: { g: 30 }, rinnovo: { g: 5 },
+    avatar: { g: 10 }, cornice: { g: 10 }, scarpini: { g: 10 }, pallone: { g: 10 }, disegno: { g: 20 }, terza: { g: 30 },
     stemma: { m: 300 }, stemmaRaro: { g: 5 },
   },
 };
@@ -335,6 +395,8 @@ export const ECONOMIA = {
 // fasce: da che valutazione la carta è argento e da quale è oro (sotto è bronzo). colori: da che valore una statistica è
 //   gialla e da quale è verde (sotto è rossa).
 // capitani: tra quali valutazioni stanno i candidati di «Ingaggia il tuo capitano» e quanti sono.
+// basso: il valore interno di chi ha quotazione 1. Serve ai giocatori inventati delle divisioni sotto il Campionato
+//   Sammarinese, più deboli del più debole giocatore vero: sotto il minimo vero la quotazione scende fino a 1.
 export const SCALA = {
   interno: [55, 88],
   punti: [[30, 42], [55, 55], [65, 60], [72, 64], [78, 68], [82, 71], [85, 75], [88, 82], [100, 90]],
@@ -343,6 +405,7 @@ export const SCALA = {
   fasce: { argento: 65, oro: 75 },
   colori: [60, 72],
   capitani: { min: 70, max: 78, quanti: 9 },
+  basso: 20,
 };
 // Carte dei giocatori: le otto statistiche (portieri e giocatori di movimento) e, ruolo per ruolo, quanto pesa ogni
 // statistica nella valutazione (pesi) e come è fatto in media chi gioca lì (doti, in punti della scala interna).
@@ -352,6 +415,7 @@ export const SCALA = {
 //   un centrocampista più indietro di `cdc` è un mediano e più avanti di `coc` un trequartista.
 // migliore: come «Squadra migliore» sceglie gli undici. Dalla valutazione toglie `vicino` punti a chi gioca in un ruolo
 //   vicino al suo, `fuori` a chi è fuori ruolo, ed `energia` per ogni punto di energia che gli manca.
+// sinistri: la parte di giocatori mancini. altezze: tra quali centimetri sta un giocatore inventato di ogni reparto.
 export const CARTE = {
   chiavi: { P: ['PAR', 'RIF', 'POS', 'USC', 'PRE', 'RIN', 'PAS', 'VEL'], G: ['VEL', 'ACC', 'RES', 'POT', 'CON', 'PAS', 'TIR', 'DIF'] },
   ruoli: {
@@ -369,6 +433,7 @@ export const CARTE = {
   simili: [['TS', 'TD'], ['AS', 'AD'], ['DC', 'CDC'], ['CDC', 'CC'], ['CC', 'COC'], ['TS', 'AS'], ['TD', 'AD'], ['COC', 'AS'], ['COC', 'AD'], ['COC', 'ATT'], ['AS', 'ATT'], ['AD', 'ATT']],
   posto: { largo: 15, largoC: 17, basso: -14, cdc: -16.5, coc: -5 },
   sinistri: .24,
+  altezze: { P: [183, 195], D: [176, 192], C: [170, 186], A: [170, 190] },
   migliore: { vicino: 2, fuori: 8, energia: .12 },
 };
 

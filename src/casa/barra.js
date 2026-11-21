@@ -3,8 +3,8 @@
 // il percorso premi, con tempo e progresso. A destra diamanti e monete col «+». All'estremità lo stemma, il manager, il
 // club e le stelle. I bollini «!» dicono dove c'è qualcosa da ritirare.
 import * as CAR from '../carriera.js';
-import { img, club } from '../game.js';
-import { K, mon, fmtTempo } from './casa.js';
+import { img } from '../game.js';
+import { K, mon, fmtTempo, club } from './casa.js';
 import { icona, stelline } from './icone.js';
 import { adatta } from './carte.js';
 import { nomiDi } from '../dati/squadre.js';

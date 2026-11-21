@@ -117,8 +117,9 @@ Un'altra sessione lavora sulla partita: questa non tocca i suoi file senza averl
 | 7 | Sfida (`vista-sfida.js`): due campi in prospettiva con le carte a scudo dei giocatori secondo il modulo (`giocatore.js`: valutazione, ritratto, ruolo, energia, nome, fascia «C», avviso di fuori ruolo), competizione, fase, ora e tempo al centro, sotto ogni campo stemma, nome, stelle, modulo e maglia della partita; in basso Squadra, Riscaldamento e Gioca. La partita parte dal ponte e alla fine la home registra il risultato, salva l'energia e mostra il premio in una finestra. Energia tra le partite, riscaldamento e orario in `src/carriera.js`, coi numeri in `ECONOMIA.energia` e `METEO` | fatto |
 | carte | Cornice delle carte ridisegnata sul modello di Alex (`docs/riferimenti/modello-carte.png`): scudo con angoli smussati e punta, bordo, riflessi, tre fasce. Tre misure in `giocatore.js`: grande (tutto dentro, nome su fascia scura, stemma ed energia), piccola (per i campi stretti, nome sotto) e mini (Home). Usata in Home, Sfida, Squadra, scheda del giocatore e scelta del capitano | fatto |
 | 8 | Squadra (`vista-squadra.js`): titolo «Gestione squadra» nella barra; campo in prospettiva con gli undici (`campo.js`), panchina a due colonne, Modulo, Riserve, Fisioterapista, Allenatore, i quattro incarichi, «Squadra migliore» (`rosa.js`). Scambio a tocchi o trascinando, tocco lungo per la scheda del giocatore (`scheda-giocatore.js`: statistiche, altezza, piede, valore, capitano, allena, vendi). In `src/carriera.js`: `schiera`, `spostaGiocatori`, incarichi, fisioterapista | fatto |
-| 9–11 | Mercato, Il mio club, Sfide | da fare: per ora sono le schermate di prima, sotto la barra nuova |
-| 12 | Database dell'economia | da fare (condizioni in `docs/home-spec.md` §8.1) |
+| economia | Carriera a cinque divisioni, economia, diamanti e strutture approvate da Alex (`docs/home-spec.md` §5): sessanta squadre inventate (`src/dati/divisioni.js`), obiettivi, promozione e retrocessione, valore dei giocatori, vendita e svincolo, allenatori in inventario, lista trasferimenti, osservatore, agente, offerte a tempo, sette strutture, fisioterapista a tre interventi, riscaldamento, serie di sette giorni (`src/carriera.js`, numeri in `DIVISIONI`, `STAGIONE`, `ECONOMIA` di `src/config.js`). Collegata a Home, Carriera, Sfida, Squadra e scheda del giocatore; pannelli semplici per Mercato, Il mio club e «Come guadagnare» (`vista-economia.js`). Simulazione: `node scripts/simula-carriera.mjs` | fatto; l'aspetto di Mercato e Club arriva coi passi 9 e 10 |
+| 9–11 | Mercato, Il mio club, Sfide | da ridisegnare: funzionano già con le regole nuove, ma con l'aspetto di prima sotto la barra nuova |
+| 12 | Database dell'economia | fermo per decisione di Alex (21/11): saldo e storico restano sul telefono. Il file SQL è da riscrivere coi numeri nuovi; la proposta della «cassa» è in `docs/ponte-partita.md` §9 |
 
 Immagini: tutte le 26 illustrazioni sono **segnaposto** (nessuna consegnata); icone e cornici **definitive**; ritratti:
 quelli che il gioco disegna da sé, in attesa dei render da Blender.
@@ -133,11 +134,33 @@ La schermata vecchia `#pre` non si raggiunge più: il suo codice in `casa.js` e 
 all'altra sessione.
 Squadra: le carte grandi (col nome dentro) vogliono almeno 58 px di larghezza. Con un modulo a cinque linee, sugli iPhone
 da 667 e 844 punti, non ci stanno e il campo passa alle carte piccole col nome sotto; a 932 restano grandi. In porta va
-solo un portiere. «Vendi» nella scheda per ora apre il Mercato (la vendita vera arriva col passo 9). La panchina ha otto
-posti, oggi le rose ne riempiono da cinque a sette: «Riserve» resta a zero finché una rosa non supera i diciannove.
-Il costo del fisioterapista (`ECONOMIA.energia.fisio`) non è ancora nel listino del server: va aggiunto col passo 12.
+solo un portiere. La panchina ha otto posti: si parte con sette riserve, più quella che lascia il posto al capitano;
+«Riserve» conta chi sta oltre l'ottavo posto.
 Sfondo della Home: l'importatore e la vignettatura sono pronti, manca il file (`docs/riferimenti/LEGGIMI.md`).
 
 Decisioni di Alex del 21/11: `docs/navigazione.md` §5. Da girare alla sessione «partita»: `docs/ponte-partita.md`.
 I nomi dei giocatori stanno ancora in `public/data.js` (lo usa la partita); `src/dati/giocatori.js` li ripete con ruolo,
 piede e altezza e una prova controlla che coincidano. Unirli in un file solo vuol dire toccare il file della partita.
+
+## Carriera a divisioni ed economia nuova (21/11)
+Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere.
+
+- **Simulazione** (`node scripts/simula-carriera.mjs 1000`): un giocatore che vince il 50%, pareggia il 30% e perde il 20%
+  arriva dalla Lega Esordienti al Campionato Sammarinese in **6,9 stagioni** in media (la metà entro 6, nove su dieci
+  entro 10; circa 150 partite). Coi primi numeri erano 5,0: corretto con obiettivi più difficili salendo di divisione e
+  con le monete delle sfide dimezzate. Giocatore forte (65/20/15): 4,7 stagioni; debole (40/30/30): 15.
+- **Carriere di prima**: non si possono continuare, si riparte da zero (la versione del salvataggio è la 2).
+- **Come arriva alla partita**: la partita conosce un numero solo per giocatore, la `forza`. Crescita con gli allenatori,
+  riscaldamento e Curva dei tifosi ci stanno dentro. Le squadre inventate arrivano per intero nella richiesta; lo stemma
+  lo disegna la home coi pezzi dello stemma. Dettagli in `docs/ponte-partita.md`.
+- **Scelte mie da confermare con Alex** (segnate «scelta mia» nella specifica): monete d'inizio 150; obiettivi per
+  divisione; «+1, +2, +3» degli allenatori letti come punti sulle statistiche della categoria; prezzi in vittorie di
+  osservatore, agente, riscaldamento e fisioterapista; costo delle stelle delle strutture; bonus della Curva 1% per
+  stella; incasso dello Stadio; rosa mai sotto 16; chi arriva tra le ultime due scende anche con gli obiettivi fatti.
+- **Resta da fare**: aspetto nuovo di Mercato (passo 9), Il mio club (10) e Sfide (11); «sotto il 60% di energia cala
+  prima la velocità» (sessione della partita); il limite dei moduli nella pausa della partita; l'esultanza del capitano
+  (servono animazioni); il listino del database.
+- **Prove**: `npm run prova` copre squadre inventate, rosa iniziale, premi, valore, vendita e svincolo, lista, osservatore,
+  agente, offerte, allenatori e potenziale, strutture, energia, serie di sette giorni, sfide e percorso, obiettivi,
+  promozione e retrocessione fino al Campionato Sammarinese. `scripts/lib/mondo.mjs` prepara fuori dal browser quello che
+  la home prepara all'avvio.
