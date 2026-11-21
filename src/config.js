@@ -254,6 +254,12 @@ export const DUELLO = { vicini: 0.63, corsa: 3, paralleli: 0.35, spinta: 14, sbi
 // `piede` metri davanti al bacino, con uno spessore `raggio`. Tempi e misure vengono dall'animazione del modello.
 export const SCIVOLATA = { v0: 8.5, spinta: 1.1, attrito: 2.2, durata: 0.75, attiva: 0.16, fine: 0.62, anca: 0.13, piede: 0.83, raggio: 0.25, giuPalla: 0.5, uomo: 0.33, dopo: 0.12 };
 
+// Quando il computer tira. La bontà dell'occasione va da 0 a 1 e la calcola valoreTiro in game.js.
+// Tira sempre sopra `buona`. Tira sopra il primo numero di `pressato` se l'avversario arriva entro il secondo (in secondi).
+// Con un'occasione almeno `minima` tira sempre entro `vicino` metri dalla porta e, entro il primo numero di `daFuori`
+// (metri), con la probabilità del secondo a ogni decisione.
+export const TIRO_IA = { buona: .22, pressato: [.12, .7], minima: .05, vicino: 16, daFuori: [27, .3] };
+
 // Economia della carriera (docs/home-spec.md). Monete e diamanti si guadagnano solo giocando: niente acquisti.
 // prezzo: il prezzo di un giocatore è (valutazione meno 50) al quadrato, per questo numero, per dieci monete.
 // percorso: il percorso premi della stagione. Punti per fonte, punti che servono per ogni livello e premio di ogni livello

@@ -167,6 +167,11 @@ e alle partite al giorno. Non essendoci soldi veri, è una protezione proporzion
 
 Stesso progetto Supabase dell'app (stessi account). Tutte le tabelle con RLS attiva e nessun permesso diretto.
 
+Il file è pronto e provato su un database locale: `supabase/002-lapartita-economia.sql` (prova in
+`supabase/prove/002-economia-prova.sql`). **Non è applicato**: aspetta il sì di Alex. Rispetto alle tabelle qui sotto la
+prima versione è più semplice: portafogli, movimenti, partite, club e listino; i contatori delle sfide e l'elenco dei
+giocatori restano al passo dopo (il server controlla importi e doppioni, il gioco che la sfida sia completa).
+
 ### 4.2 Tabelle
 
 | Tabella | Una riga è | Colonne principali |

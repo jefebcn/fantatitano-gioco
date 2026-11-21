@@ -27,6 +27,8 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 | `src/prestazioni.js` | Risoluzione dinamica e indicatore delle prestazioni (`?debug` nell'indirizzo) |
 | `src/debug-ia.js` | Vista di controllo dell'IA (`?ia` nell'indirizzo o tasto O): posizioni base, linee di passaggio col punteggio, decisioni |
 | `docs/home-spec.md` | La specifica della home (schermate, dati, economia, sfondo) e le decisioni aperte per Alex |
+| `docs/stato-lavori.md` | Cosa è fatto, cosa resta e le decisioni aperte del prompt «modalità partita + home» |
+| `supabase/002-lapartita-economia.sql` | Proposta, non applicata: monete e diamanti sul server (tabelle, listino, funzioni). Si prova con `supabase/prove/002-economia-prova.sql` su un Postgres locale |
 | `public/data.js` | 16 squadre con colori, undici titolari e riserve. **Generato**: `python3 scripts/genera-dati.py <cartella dell'app>` |
 | `src/regia.js` | Regia: sequenza del gol (primo piano, scheda del marcatore, replay, transizione), arbitro, segnaposto col nome, tabelloni che festeggiano. Crea da sola la sua grafica, senza toccare `index.html` |
 | `src/divisa.js` | Disegna la divisa come texture: una per divisa e tono di pelle, non per giocatore |

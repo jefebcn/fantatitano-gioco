@@ -20,7 +20,7 @@ import { creaAudio } from './audio.js';
 import { creaPrestazioni } from './prestazioni.js';
 import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
-import { HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, ECONOMIA, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, ECONOMIA, TIRO_IA, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 
 (() => {
 // i valori di gioco (campo, tempi, difficoltà, IA, comandi, fisica) stanno tutti in src/config.js
@@ -1552,7 +1552,7 @@ function ownerThink(p, dt) {
   p.conduci = conduzione(p, press < .6);
   const tiro = valoreTiro(p), errore = D.err * (1 + (1 - clamp(press, 0, 1)) * .5);
   // si tira con una buona occasione, prima se pressati, sempre da vicino; e ogni tanto anche da fuori
-  if (tiro.q > .22 || (tiro.q > .12 && press < .7) || (tiro.q > .05 && tiro.d < 16) || (tiro.q > .05 && tiro.d < 27 && rnd() < .3)) { const f = tiro.d < 13 ? rnd(.5, .68) : rnd(.68, .84); DBG_IA.scelta(p, 'tira'); return prepara(p, 'calcia', s * HL, tiro.tz, () => shoot(p, tiro.tz, f, errore * 1.1), f > .7); }
+  if (tiro.q > TIRO_IA.buona || (tiro.q > TIRO_IA.pressato[0] && press < TIRO_IA.pressato[1]) || (tiro.q > TIRO_IA.minima && tiro.d < TIRO_IA.vicino) || (tiro.q > TIRO_IA.minima && tiro.d < TIRO_IA.daFuori[0] && rnd() < TIRO_IA.daFuori[1])) { const f = tiro.d < 13 ? rnd(.5, .68) : rnd(.68, .84); DBG_IA.scelta(p, 'tira'); return prepara(p, 'calcia', s * HL, tiro.tz, () => shoot(p, tiro.tz, f, errore * 1.1), f > .7); }
   if (canCross(p) && rnd() < AIR.cross * 1.4) { const m = crossTarget(p); if (m && openness(m) > 1.4) { DBG_IA.scelta(p, 'cross per ' + m.name); return prepara(p, 'lancia', m.x, m.z, () => cross(p, m)); } }
   const m = bestPass(p), sp = bestPass.punteggio, cd = p.conduci;
   // valore del portare palla: lo spazio trovato, meno la pressione; vicino alla porta avversaria conviene giocarla
@@ -2671,7 +2671,11 @@ const riga = (a, b, r, rg) => `<div class="${a === K.club || b === K.club ? 'io'
 const tabella = (tab, corta) => `<table class="tab"><tr><th></th><th>Squadra</th><th>G</th>${corta ? '' : '<th>V</th><th>N</th><th>P</th>'}<th>GF</th><th>GS</th><th>DR</th><th>PT</th></tr>${tab.map((r, i) => `<tr class="${r.id === K.club ? 'io' : ''}"><td>${i + 1}</td><td>${mini(r.id)}${esc(club(r.id).name)}</td><td>${r.g}</td>${corta ? '' : `<td>${r.v}</td><td>${r.n}</td><td>${r.p}</td>`}<td>${r.gf}</td><td>${r.gs}</td><td>${r.gf - r.gs}</td><td>${r.pt}</td></tr>`).join('')}</table>`;
 function panClassifica() {
   const g = K.giornata - 1;
-  pan(`Campionato · stagione ${K.stagione}`, tabella(CAR.classifica(K, CLUBS)) + (g >= 0 ? `<div class="sez">Giornata ${g + 1}</div><div class="ris2">${K.cal[g].map(([a, b], i) => riga(a, b, K.ris[g][i])).join('')}</div>` : ''));
+  // il calendario del proprio club: tutte le giornate, con il risultato di quelle già giocate
+  const mie = K.cal.map((gg, n) => { const i = gg.findIndex(([x, y]) => x === K.club || y === K.club), [x, y] = gg[i], r = K.ris[n] && K.ris[n][i], casa = x === K.club, avv = casa ? y : x, esito = r ? (r[casa ? 0 : 1] > r[casa ? 1 : 0] ? 'v' : r[casa ? 0 : 1] < r[casa ? 1 : 0] ? 'p' : 'n') : '';
+    return `<div class="${n === K.giornata ? 'io' : ''}"><span>${n + 1}. ${casa ? 'in casa' : 'in trasferta'} · ${esc(club(avv).name)}</span><b class="${esito}">${r ? `${r[casa ? 0 : 1]}-${r[casa ? 1 : 0]}` : n === K.giornata ? 'prossima' : '–'}</b></div>`; }).join('');
+  pan(`Campionato · stagione ${K.stagione}`, tabella(CAR.classifica(K, CLUBS)) + (g >= 0 ? `<div class="sez">Giornata ${g + 1}: tutti i risultati</div><div class="ris2">${K.cal[g].map(([a, b], i) => riga(a, b, K.ris[g][i])).join('')}</div>` : '')
+    + `<div class="sez">Il tuo calendario</div><div class="ris2 cale">${mie}</div>`);
 }
 function gioca(tipo, avv, titolo, fuori, rigori) { sel.mia = K.club; sel.loro = avv; G.comp = { tipo, titolo, fuori: !!fuori, rigori: !!rigori }; showPre(); }
 // Come nelle schermate dei tornei: prima il quadro, e in cima il tasto per giocare la prossima partita

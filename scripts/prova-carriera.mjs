@@ -223,5 +223,20 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
   // prezzi: un giocatore forte costa più o meno un campionato di chi gioca in modo normale
   assert.equal(K.prezzo(85), 4900); assert.equal(K.prezzo(72), 1940);
 }
+// ---------- il listino del server (supabase/002-lapartita-economia.sql) dice gli stessi numeri del gioco
+{
+  const { ECONOMIA: E } = await import('../src/config.js');
+  const sql = readFileSync(new URL('../supabase/002-lapartita-economia.sql', import.meta.url), 'utf8'), L = {};
+  for (const m of sql.matchAll(/\('([a-z0-9_]+)', '(monete|diamanti|numero)', (-?\d+)\)/g)) L[`${m[1]}:${m[2]}`] = +m[3];
+  const vale = (codice, valuta, atteso) => assert.equal(L[`${codice}:${valuta}`], atteso, `listino ${codice} (${valuta}): il server dice ${L[`${codice}:${valuta}`]}, il gioco ${atteso}`);
+  const P = K.PREMI; vale('inizio', 'monete', P.inizio); vale('inizio', 'diamanti', P.gemme); vale('vittoria', 'monete', P.v); vale('pareggio', 'monete', P.n); vale('sconfitta', 'monete', P.p); vale('gol', 'monete', P.gol);
+  vale('turno', 'monete', P.turno); vale('campionato', 'monete', P.campione); vale('coppa', 'monete', P.coppa); vale('castelli', 'monete', P.castelli); vale('mercato_cessione', 'numero', Math.round(P.cessione * 100)); vale('mercato_coefficiente', 'numero', Math.round(E.prezzo * 100));
+  K.STADIO.forEach((x, i) => { vale(`casa_${i + 1}`, 'monete', x.bonus); if (i) { vale(`stadio_${i + 1}`, 'monete', -x.monete); if (x.gemme) vale(`stadio_${i + 1}`, 'diamanti', -x.gemme); else assert.equal(L[`stadio_${i + 1}:diamanti`], undefined); } });
+  E.allenatore.livelli.forEach((x, i) => { if (i) { vale(`allenatore_${i + 1}`, 'monete', -x.monete); if (x.gemme) vale(`allenatore_${i + 1}`, 'diamanti', -x.gemme); else assert.equal(L[`allenatore_${i + 1}:diamanti`], undefined); } });
+  for (const g of Object.keys(K.SFIDE)) for (const x of K.SFIDE[g]) { if (x.monete) vale(`sfida_${x.id}`, 'monete', x.monete); if (x.gemme) vale(`sfida_${x.id}`, 'diamanti', x.gemme); }
+  for (const g of Object.keys(K.BONUS)) vale(`sfida_${g}_tutte`, 'diamanti', K.BONUS[g].gemme);
+  E.percorso.premi.forEach((x, i) => vale(`percorso_${i + 1}`, x.m ? 'monete' : 'diamanti', x.m || x.g));
+  vale('allenamento_base', 'numero', K.ALLENA.base); vale('allenamento_passo', 'numero', K.ALLENA.passo); vale('allenamento_sedute', 'numero', K.ALLENA.max); vale('allenatore_sconto', 'numero', Math.round(E.allenatore.sconto * 100));
+}
 assert.equal(K.carica({ getItem: () => '{rotto' }), null); assert.equal(K.carica({ getItem: () => null }), null);
 console.log(`Carriera: tutte le prove passate (forte contro debole: ${v} vittorie, ${s} sconfitte su 4000, ${(gol / 4000).toFixed(2)} gol a partita)`);
