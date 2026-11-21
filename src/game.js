@@ -2,6 +2,7 @@
 import * as T from 'three';
 import { creaRegia } from './regia.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { creaDivisa, creaZone, creaRilievo, TONI, DISEGNI } from './divisa.js';
 import * as CLOUD from './cloud.js';
@@ -18,7 +19,7 @@ import { creaAudio } from './audio.js';
 import { creaPrestazioni } from './prestazioni.js';
 import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
-import { HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 
 (() => {
 // i valori di gioco (campo, tempi, difficoltà, IA, comandi, fisica) stanno tutti in src/config.js
@@ -356,21 +357,34 @@ const pixel = (im) => { const [c, x] = cv(im.naturalWidth || im.width, im.natura
  */
 async function loadModel() {
   try {
-    const L = new GLTFLoader();
-    const [g, h, im, ip, io] = await Promise.all([L.parseAsync(b64(window.MODEL_B64), ''), L.parseAsync(b64(window.HAIR_B64), ''), loadImg('img/divisa-maschera.png'), loadImg('img/pelle.webp'), loadImg('img/occhi.webp')]);
+    // il modello nuovo è compresso con Meshopt (scripts/modello-js.mjs): al caricatore serve il decodificatore
+    const L = new GLTFLoader(); L.setMeshoptDecoder(MeshoptDecoder);
+    // Il corpo di prima (Quaternius) resta come ripiego: ?corpo=vecchio nell'indirizzo carica quello, con le sue texture
+    const vecchio = /[?&]corpo=vecchio\b/.test(location.search), dir = vecchio ? 'img/vecchio/' : 'img/';
+    if (vecchio) await new Promise((ok) => { const sc = document.createElement('script'); sc.src = 'modello-vecchio.js'; sc.onload = sc.onerror = ok; document.head.appendChild(sc); });
+    const [g, h, im, ip, io] = await Promise.all([L.parseAsync(b64(window.MODEL_B64), ''), L.parseAsync(b64(window.HAIR_B64), ''), loadImg(dir + 'divisa-maschera.png'), loadImg(dir + 'pelle.webp'), loadImg('img/occhi.webp')]);
     if (!im || !ip) throw new Error('mancano le texture della divisa');
     const scene = g.scene; scene.updateMatrixWorld(true);
     let head = null, spine = null, body = null;
-    scene.traverse((o) => { if (o.isBone && o.name === 'Head') head = o; if (o.isBone && o.name === 'spine_03') spine = o; if (o.isSkinnedMesh && o.material.name === CORPO) body = o; });
+    scene.traverse((o) => { if (o.isBone && o.name === 'Head') head = o; if (o.isBone && o.name === 'spine_03') spine = o; if (o.isSkinnedMesh && o.material.name === CORPO && (!body || o.name === 'SuperHero_Male')) body = o; });
     if (!head || !spine || !body) throw new Error('modello non riconosciuto');
-    const originale = body.geometry.clone();
-    snellisci(body); // proporzioni da calciatore, non da supereroe: prima del resto, così numero e stemma si appoggiano al corpo nuovo
-    const corporature = CORPORATURE.map((f) => (f === 1 ? body.geometry : (() => { const g2 = originale.clone(); snellisci(body, f, g2); return g2; })()));
+    // Il corpo nuovo (MPFB) ha tre livelli di dettaglio (SuperHero_Male, Lod1, Lod2) e le corporature come forme: non va
+    // snellito. Quello di prima è un supereroe: lo si snellisce e le tre corporature sono tre snelliture diverse
+    const nuovo = !!scene.getObjectByName('Lod1'); let corporature = null;
+    if (!nuovo) {
+      const originale = body.geometry.clone();
+      snellisci(body); // proporzioni da calciatore, non da supereroe: prima del resto, così numero e stemma si appoggiano al corpo nuovo
+      corporature = CORPORATURE.map((f) => (f === 1 ? body.geometry : (() => { const g2 = originale.clone(); snellisci(body, f, g2); return g2; })()));
+    }
     // k porta il modello a un metro di altezza: ogni giocatore lo moltiplica per la sua statura
     const box = new T.Box3().setFromObject(scene), k = 1 / (box.max.y - box.min.y);
     // capelli: portati nello spazio dell'osso della testa, così basta appenderli
     const hair = {}, hInv = new T.Matrix4().copy(head.matrixWorld).invert(); h.scene.updateMatrixWorld(true);
-    h.scene.traverse((o) => { if (o.isMesh) { const geo = o.geometry.clone(); geo.applyMatrix4(o.matrixWorld).applyMatrix4(hInv); geo.computeVertexNormals(); hair[o.name] = geo; } });
+    // (nel file compresso le posizioni sono numeri interi: qui tornano decimali, e le normali si ricalcolano)
+    h.scene.traverse((o) => { if (o.isMesh) { const geo = o.geometry.clone(), p0 = geo.attributes.position, a = new Float32Array(p0.count * 3);
+      for (let i = 0; i < p0.count; i++) { a[i * 3] = p0.getX(i); a[i * 3 + 1] = p0.getY(i); a[i * 3 + 2] = p0.getZ(i); }
+      geo.setAttribute('position', new T.BufferAttribute(a, 3)); geo.deleteAttribute('normal');
+      geo.applyMatrix4(o.matrixWorld).applyMatrix4(hInv); geo.computeVertexNormals(); hair[o.name] = geo; } });
     // dove stanno numero (schiena) e stemma (petto): un raggio contro il corpo nella posa a riposo, poi tutto riferito all'osso del torace
     const fermo = new T.Mesh(body.geometry, new T.MeshBasicMaterial({ side: T.DoubleSide })); fermo.matrixWorld.copy(body.matrixWorld);
     const sInv = new T.Matrix4().copy(spine.matrixWorld).invert(), rc = new T.Raycaster();
@@ -387,7 +401,7 @@ async function loadModel() {
       // il numerino sulla gamba sinistra dei pantaloncini, appeso alla coscia
       cortiM: coscia ? appoggio(.095, box.min.y + alto * .405, true, .1 / .3, new T.Matrix4().copy(coscia.matrixWorld).invert(), .03) : null,
       zone: (() => { const z = creaZone(pixel(im)), t = new T.DataTexture(z.data, z.size, z.size); t.flipY = false; t.magFilter = t.minFilter = T.LinearFilter; t.needsUpdate = true; return t; })(),
-      stili: stiliCapelli(hair, scene, hInv), corpi: [], corporature,
+      stili: nuovo ? Object.fromEntries(Object.entries(hair).map(([n, geo]) => [n, [geo]])) : stiliCapelli(hair, scene, hInv), corpi: [], corporature, nuovo,
       // rilievo della stoffa (normal map) e lucidità per zona (roughness), dalla stessa maschera
       ...(() => { const r = creaRilievo(pixel(im)), dt = (d) => { const t = new T.DataTexture(d, r.size, r.size); t.flipY = false; t.magFilter = T.LinearFilter; t.minFilter = T.LinearMipmapLinearFilter; t.generateMipmaps = true; t.anisotropy = 4; t.needsUpdate = true; return t; }; return { rilievo: dt(r.normali), ruvido: dt(r.ruvido) }; })(),
       sponsorM: appoggio(0, box.min.y + alto * .72, true, .048),
@@ -467,6 +481,8 @@ function stiliCapelli(hair, scene, hInv) {
   S.codino = [riga || base, orienta(new T.SphereGeometry(r * .3, 10, 8), C.clone().addScaledVector(su, r * .55).addScaledVector(davanti, -r * .85))];
   return S;
 }
+// corpo nuovo: otto capigliature (la prima è rasata: i capelli sono solo dipinti sul cuoio capelluto)
+const ACCONCIATURE_N = [null, 'Hair_Corti', 'Hair_Folti', 'Hair_Ciuffo', 'Hair_Cresta', 'Hair_Ricci', 'Hair_Lunghi', 'Hair_Riga'];
 const ACCONCIATURE = [null, 'Hair_Buzzed', 'Hair_SimpleParted', 'Hair_Buzzed', 'Hair_SimpleParted', 'ricci', 'cresta', 'codino', 'folti', 'ricci', 'folti'];
 // scarpini: tomaia e suola
 const SCARPINI = [['#16161a', '#F3F3F3'], ['#F3F3F3', '#16161a'], ['#D9F51F', '#16161a'], ['#FF5A1F', '#F3F3F3'], ['#1E6FB5', '#F3F3F3'], ['#E91E8C', '#16161a'], ['#16161a', '#D9F51F'], ['#C9CDD6', '#E8542A']];
@@ -492,7 +508,7 @@ function corpoMat(kit, u) {
       .replace('#include <begin_vertex>', `#include <begin_vertex>
 { vec4 zv = texture2D(uZone, vMapUv); transformed += objectNormal * (zv.b * zv.b * 0.017 + clamp(zv.a * 2.55, 0.0, 1.0) * 0.007 + smoothstep(0.6, 0.95, zv.a) * uCap * 0.006); } // la fascia del capitano sporge un po'`);
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
-uniform sampler2D uZone; uniform vec3 uTono, uScarpe, uSuola, uFascia; uniform float uCap, uGuanti; uniform vec2 uSporco;
+uniform sampler2D uZone; uniform vec3 uTono, uScarpe, uSuola, uFascia, uCapelli; uniform float uCap, uGuanti, uBarba; uniform vec2 uSporco;
 float rumoreC(vec2 p) { return fract(sin(dot(floor(p), vec2(12.9898, 78.233))) * 43758.5453); }
 float macchieC(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(rumoreC(i), rumoreC(i + vec2(1, 0)), f.x), mix(rumoreC(i + vec2(0, 1)), rumoreC(i + vec2(1, 1)), f.x), f.y); }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
@@ -504,6 +520,9 @@ float macchieC(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0
   // scarpini: il grigio della texture porta i dettagli, il colore è del giocatore; la suola di un altro colore
   float sc = clamp(zz.g * 2.0, 0.0, 1.0), suola = 1.0 - clamp(zz.g * 2.0 - 1.0, 0.0, 1.0);
   diffuseColor.rgb = mix(diffuseColor.rgb, mix(uScarpe, uSuola, suola) * clamp(diffuseColor.g / 0.55, 0.7, 1.25), sc);
+  // capelli e sopracciglia dipinti sulla pelle (zz.a attorno a 0,47) e barba corta (attorno a 0,24), col colore dei capelli
+  float pelo = smoothstep(0.30, 0.42, zz.a) * (1.0 - smoothstep(0.52, 0.60, zz.a)), barba = smoothstep(0.12, 0.20, zz.a) * (1.0 - smoothstep(0.27, 0.33, zz.a)) * uBarba;
+  diffuseColor.rgb = mix(diffuseColor.rgb, uCapelli * (0.8 + 0.4 * rumoreC(vMapUv * 900.0)), max(pelo * 0.94, barba * 0.6));
   // fascia da capitano sul braccio sinistro
   diffuseColor.rgb = mix(diffuseColor.rgb, uFascia, smoothstep(0.6, 0.95, zz.a) * uCap);
   // sporco: fango ed erba a chiazze, solo su pantaloncini e calzettoni, cresce con scivolate, cadute e tuffi
@@ -562,14 +581,20 @@ function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
   const sc = kit.boots ? [kit.boots, kit.suola || '#16161a'] : SCARPINI[(seed >>> 24) % SCARPINI.length];
   const fascia = cdist(kit.shirt, '#D9F51F') > .3 ? '#D9F51F' : '#16161a';
   const u = { uTono: { value: new T.Vector3(...TONI[tono].map((c) => lineare(c * varia))) }, uScarpe: { value: new T.Color(sc[0]) }, uSuola: { value: new T.Color(sc[1]) },
-    uFascia: { value: new T.Color(fascia) }, uCap: { value: opz.capitano ? 1 : 0 }, uGuanti: { value: kit.gloves ? 1 : 0 }, uSporco: { value: new T.Vector2() } };
-  const corpo = corpoMat(kit, u), bones = {}, vicini = []; // vicini: i dettagli che si vedono solo da vicino (vedi dettagliFigure)
+    uFascia: { value: new T.Color(fascia) }, uCap: { value: opz.capitano ? 1 : 0 }, uGuanti: { value: kit.gloves ? 1 : 0 }, uSporco: { value: new T.Vector2() },
+    // capelli, sopracciglia e barba dipinti sulla pelle (corpo nuovo): il colore dei capelli del giocatore, e uno su quattro ha la barba
+    uCapelli: { value: pelo.color.clone() }, uBarba: { value: (seed >>> 12) % 4 === 0 ? 1 : 0 } };
+  const corpo = corpoMat(kit, u), bones = {}, vicini = [], lod = []; // vicini: i dettagli che si vedono solo da vicino (vedi dettagliFigure)
   obj.traverse((o) => {
     if (o.isBone) bones[o.name] = o;
     if (o.isSkinnedMesh && o.material.name === CORPO && MODEL.corporature) o.geometry = MODEL.corporature[(seed >>> 27) % MODEL.corporature.length]; // corporatura dal seme
+    if (o.isSkinnedMesh && MODEL.nuovo) { // corpo nuovo: il livello di dettaglio lo sceglie dettagliFigure, la corporatura è una forma (snello, normale, robusto)
+      const k = { SuperHero_Male: 0, Lod1: 1, Lod2: 2 }[o.name]; lod[k] = o; o.visible = k === 0;
+      const c = (seed >>> 27) % 3; if (o.morphTargetInfluences) { o.morphTargetInfluences[0] = c === 0 ? 1 : 0; o.morphTargetInfluences[1] = c === 2 ? 1 : 0; }
+    }
     if (o.isSkinnedMesh) { o.frustumCulled = false; o.material = o.material.name === CORPO ? corpo : o.material.name === OCCHI ? MODEL.occhi : pelo; if (o.material !== corpo) { o.castShadow = false; vicini.push(o); } } // occhi e sopracciglia
   });
-  const stile = ACCONCIATURE[(seed >>> 8) % ACCONCIATURE.length];
+  const stile = (MODEL.nuovo ? ACCONCIATURE_N : ACCONCIATURE)[(seed >>> 8) % (MODEL.nuovo ? ACCONCIATURE_N : ACCONCIATURE).length];
   if (stile && MODEL.stili[stile]) for (const g of MODEL.stili[stile]) bones.Head.add(new T.Mesh(g, pelo));
   if ((seed >>> 12) % 4 === 0 && MODEL.hair.Hair_Beard) bones.Head.add(new T.Mesh(MODEL.hair.Hair_Beard, pelo));
   const bordo = kit.ink === '#fff' ? 'rgba(0,0,0,.45)' : 'rgba(255,255,255,.55)';
@@ -583,7 +608,7 @@ function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
   const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null, passoS: MODEL.fx.passoS, passoD: MODEL.fx.passoD }; // i passi laterali servono anche a chi difende guardando la palla
   for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = rnd(base[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; w[n] = n === 'idle' ? 1 : 0; }
   if (kit.gloves && MODEL.braccia) { const a = mixer.clipAction(MODEL.braccia); a.play(); a.setEffectiveWeight(0); A.braccia = a; w.braccia = 0; }
-  const fig = { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true, sporco: u.uSporco.value, alt, metri, vicini, ombra: sh, dettagli: true };
+  const fig = { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true, sporco: u.uSporco.value, alt, metri, vicini, ombra: sh, dettagli: true, lod, lodOra: 0 };
   FIGURE.add(fig); return fig;
 }
 /* Meno chiamate di disegno per ogni persona in campo. Le ombre di contatto sotto i piedi di tutti sono un'unica InstancedMesh
@@ -602,6 +627,8 @@ function dettagliFigure() {
     if (!f.root.parent) continue;
     const r = f.root, d2 = cam.position.distanceToSquared(r.position), su = f.dettagli ? d2 < DETT.lontano : d2 < DETT.vicino;
     if (su !== f.dettagli) { f.dettagli = su; for (const o of f.vicini) o.visible = su; }
+    // livello di dettaglio del corpo nuovo: pieno da vicino (primi piani), medio in gioco, leggero in fondo al campo
+    if (f.lod && f.lod.length === 3) { const k = d2 < LOD.vicino * LOD.vicino ? 0 : d2 < LOD.lontano * LOD.lontano ? 1 : 2; if (k !== f.lodOra) { f.lodOra = k; f.lod.forEach((o, i) => { o.visible = i === k; }); } }
     if (n < OMBRE.max && r.parent === scene) { f.ombra.visible = false; if (r.visible) {
       // senza le ombre del sole (qualità bassa) l'ombra di contatto si allunga dalla parte opposta al sole: mai nessuno senza ombra
       if (lunghe) { const k = .55 * (f.metri || 1.8); _p.set(r.position.x - SOLE.x / sl * k, .03, r.position.z - SOLE.z / sl * k); _m4.compose(_p, _qL, _sL); }

@@ -28,14 +28,16 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 | `public/data.js` | 16 squadre con colori, undici titolari e riserve. **Generato**: `python3 scripts/genera-dati.py <cartella dell'app>` |
 | `src/regia.js` | Regia: sequenza del gol (primo piano, scheda del marcatore, replay, transizione), arbitro, segnaposto col nome, tabelloni che festeggiano. Crea da sola la sua grafica, senza toccare `index.html` |
 | `src/divisa.js` | Disegna la divisa come texture: una per divisa e tono di pelle, non per giocatore |
-| `public/modello.js` | Calciatore e acconciature in base64. **Generato**: `npm run modello` |
+| `public/modello.js` | Calciatore e capigliature, compressi con Meshopt, in base64. **Generato**: `npm run modello` |
 | `public/anim.js` | Tutte le animazioni, già adattate allo scheletro del calciatore. **Generato**: `node scripts/animazioni.mjs <cartella degli FBX>` |
 | `public/img/` | Stemmi di fantasia (grande e `-mini`), pose di Tito, logo (copiati da `media/` dell'app); `pelle.webp`, `occhi.webp`, `divisa-maschera.png` (generati) |
-| `modelli/quaternius/` | I file originali del calciatore: «Universal Base Characters» di Quaternius, licenza CC0 |
-| `modelli/calciatore.glb` · `capelli.glb` | Corpo, occhi, sopracciglia (5.150 triangoli) e tre acconciature, alleggeriti da `scripts/calciatore.mjs` |
+| `modelli/calciatore.glb` · `capelli.glb` | Il calciatore in uso: corpo MakeHuman/MPFB (CC0) sullo scheletro del gioco, tre livelli di dettaglio (4.264, 1.500 e 600 triangoli), due forme (snello, robusto), sette capigliature. Fatti da `scripts/blender/calciatore.py` (in Blender) e `scripts/calciatore-nuovo.py`; vedi `modelli/mpfb/LEGGIMI.md` |
+| `modelli/mpfb/blender/` | Quello che esce da Blender (tre corpi, capigliature, punti del viso): `npm run modello` parte da qui, senza Blender |
+| `modelli/quaternius/` · `quaternius-scheletro.glb` · `quaternius-capelli.glb` | Il calciatore di prima («Universal Base Characters» di Quaternius, CC0): dà lo scheletro a quello nuovo e resta come ripiego (`?corpo=vecchio`, con `public/modello-vecchio.js` e `public/img/vecchio/`) |
 | `modelli/animazioni-base.glb` | Solo sorgente di attesa, camminata e corsa (manichino di three.js, scheletro Mixamo) |
-| `scripts/calciatore.mjs` | Alleggerisce il modello tenendo conto di UV e normali |
-| `scripts/maschera-divisa.py` | Dice, per ogni punto della texture del corpo, se è pelle, maglia, pantaloncini, calzettoni, scarpe |
+| `scripts/maschera-nuova.py` | Dice, per ogni punto della texture del corpo, se è pelle, maglia, pantaloncini, calzettoni, scarpe; sulla pelle anche capelli, sopracciglia, barba, occhio. Disegna la pelle (`pelle.webp`) |
+| `scripts/modello-js.mjs` | Comprime i due GLB (Meshopt) e li mette in `public/modello.js` |
+| `scripts/calciatore.mjs` · `scripts/maschera-divisa.py` | Gli stessi passi per il corpo di ripiego |
 | `scripts/animazioni.mjs` | Porta le clip Mixamo sullo scheletro del calciatore; in cima c'è l'elenco `CLIP` |
 | `src/carriera.js` | La logica della carriera, senza schermate: calendario, risultati simulati, classifica, coppa, salvataggio |
 | `scripts/prova-carriera.mjs` | Prove della logica della carriera: `npm run prova` |
@@ -111,8 +113,10 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   energia (`TIRE`, barretta sotto il nome) e chi è stanco scatta meno forte.
 - **Pagelle** a fine partita (`vote`, pesi in `VOTE`): voto da 3 a 10 da gol, assist, passaggi,
   contrasti, palloni intercettati, parate, falli, cartellini e risultato; migliore in campo.
-- Calciatori: un solo corpo con scheletro per tutti e 22 (Quaternius, CC0), con volto, tre acconciature, barba,
-  cinque toni di pelle. La divisa è una texture generata dai colori della squadra (`src/divisa.js`): maglia,
+- Calciatori: un solo corpo con scheletro per tutti e 22 (MakeHuman/MPFB, CC0, viso generico), in tre livelli di
+  dettaglio scelti secondo la distanza dalla telecamera (`LOD` in `src/config.js`), tre corporature (forme «snello» e
+  «robusto»), stature da 1,70 a 1,95, sette capigliature più la testa rasata, barba, cinque toni di pelle. Un materiale
+  solo: capelli corti, sopracciglia e barba sono dipinti nello shader col colore dei capelli del giocatore. La divisa è una texture generata dai colori della squadra (`src/divisa.js`): maglia,
   pantaloncini, calzettoni col risvolto, scarpe, colletto e bordo delle maniche nel secondo colore; disegno della
   maglia dal campo `st` in `data.js` (`righe` verticali, `fasce` orizzontali, `meta` metà e metà, `banda`
   diagonale; l'elenco è `DISEGNI` in `src/divisa.js`); maniche lunghe e guanti per il portiere. Cognome e numero
@@ -190,7 +194,7 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 
 - **Prove.** Quelle automatiche sono fatte in un browser senza scheda grafica; Alex l'ha provato sul
   suo telefono e funziona. Su altri telefoni la fluidità è da verificare: se scatta, abbassare ancora il
-  rapporto in `npm run modello` (oggi 0.36 del corpo originale) e rigenerare.
+  numero di triangoli dei tre livelli (`LOD` in `scripts/blender/calciatore.py`) o avvicinare le soglie `LOD` in `src/config.js`.
 - **Livello degli avversari** tarato solo con partite simulate (`DIFF` in cima a `src/game.js`):
   `node scripts/simula.cjs 64` dopo `npm run build`. Con la squadra di casa che gioca da sola, oggi
   finisce in media 2,4-0,5 a facile, 1,0-0,8 a normale, 0,6-1,2 a difficile, con uno o due falli,
@@ -264,8 +268,10 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   è ruotato nel mondo rispetto alla posa a T e applica la stessa rotazione all'osso corrispondente del
   calciatore. Nei file di Mixamo ogni osso compare due volte con lo stesso nome: conta quello esterno.
 - **Controllare una clip a occhio**: `node scripts/prove/fotogrammi.cjs <cartella> <clip>…` salva sei pose per clip.
-- **Rigenerare in ordine.** Se cambia il modello: `npm run modello` (modello, poi maschera, poi base64) e
-  di nuovo le animazioni. La maschera va rifatta dal modello alleggerito, se no gli orli vengono strappati.
+- **Rigenerare in ordine.** Se cambia la forma del corpo: Blender (`scripts/blender/calciatore.py`, comando in
+  `modelli/mpfb/LEGGIMI.md`), copiare l'uscita in `modelli/mpfb/blender/`, poi `npm run modello` (assembla sullo scheletro del
+  gioco, rifà maschera e pelle, comprime). Le animazioni non vanno rifatte: lo scheletro ha gli stessi nomi e le stesse
+  rotazioni a riposo di prima, cambiano solo le posizioni delle giunture.
 - **Il repository resta privato**: `modelli/animazioni-base.glb` e le clip vengono da Mixamo.
 - Lo spostamento orizzontale del bacino viene tolto dalle clip: a muovere il giocatore è il motore.
 - Il mixer di three.js non riscrive un osso se la posa non è cambiata: i ritocchi a codice vanno
