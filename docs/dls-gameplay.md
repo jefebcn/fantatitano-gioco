@@ -152,6 +152,63 @@ difesa finiscono spesso oltre il compagno. Il passo dopo lavora lì.
 Siamo a metà strada dall'obiettivo: i numeri di Alex restano scritti negli obiettivi dello script (escono con ✗ finché
 non ci si arriva, senza bloccare).
 
+**Passo 3** (21/11, PR #96): il rasoterra al compagno che corre arrivava più svelto di lui e lui gli correva accanto
+senza prenderlo. Ora arriva al massimo a 5,5 m/s, solo sui passaggi medi e lunghi (`PASSAGGIO.inCorsa`). 32 partite,
+semi 7–38: rasoterra lungo in avanti riuscito da 53 a 73 su 100, tiri da 6,16 a 7,59, gol da 2,22 a 2,09.
+
+### Dove si ferma l'azione (misure del 21/11, 32 partite, semi 7–38)
+Il gioco di oggi: **2,09 gol, 7,59 tiri** (casa 4,09, ospiti 3,50), 27,9 possessi da 8,4 secondi, di cui solo **13,2
+superano la trequarti**; di quelli più della metà finisce col tiro. Il collo di bottiglia è risalire il campo.
+- Tempo: il pallone è in gioco 234 secondi su 240. A palla ferma (37 secondi veri: esultanza 17, punizioni e
+  fuorigioco 7, rimesse dal fondo 5, calci d'inizio 5, rimesse laterali 3) il cronometro va a un sesto, quindi quei
+  secondi quasi non tolgono gioco. Il portiere tiene il pallone in mano 11 secondi a partita. Chi porta palla lo fa per
+  metà del tempo nella propria metà campo; un'azione che finisce col tiro dura 11 secondi.
+- Passaggi rasoterra (57 a partita) per libertà di chi riceve, cioè distanza dell'avversario più vicino: sotto 2 m
+  riescono 49 su 100, tra 2 e 4 m 61, tra 4 e 7 m 78, oltre 7 m 87. In avanti di almeno 8 metri sono solo 13,6 a partita
+  e ne riescono 69 su 100; indietro o di lato sono 32 e ne riescono 87.
+- Energia media a fine partita 53 su 100 (il più stanco 7), falli 0,59.
+
+**Provato e scartato** (ogni riga una prova da 32 partite sugli stessi semi, nessuna anomalia; contano tiri e possessi
+oltre la trequarti):
+
+| Prova | Gol | Tiri | Possessi | Oltre la trequarti |
+|---|---|---|---|---|
+| Gioco di oggi | 2,09 | 7,59 | 27,9 | 13,2 |
+| Tira più volentieri e da più lontano (`TIRO_IA`) | 2,16 | 7,81 | 27,0 | – |
+| Decide più in fretta (`TENUTA` 0,7–1,2 s) | 1,75 | 6,78 | 27,0 | – |
+| Meno traversoni (`AIR.cross` a metà) | 1,94 | 6,69 | 27,2 | – |
+| Passa più volentieri (`TENUTA.soglia` 3) | 1,69 | 6,53 | 26,9 | – |
+| Nessuno sulle linee di passaggio | 1,63 | 7,72 | 27,0 | – |
+| Marcatura più larga (5 m) | 1,97 | 7,53 | 28,9 | – |
+| Più inserimenti (`RUN` ogni 0,8 s, fino a 3) | 2,19 | 7,03 | 29,7 | – |
+| Pressing più basso (`PRESSING.da` −15) | 1,53 | 5,91 | 24,6 | – |
+| Pressing più alto (`PRESSING.da` 15) | 2,16 | 7,38 | 29,3 | 12,6 |
+| Passaggio più in avanti | 1,47 | 5,94 | 32,7 | 10,9 |
+| Rinvio lungo del portiere | 2,00 | 7,63 | 27,9 | 13,4 |
+| Portieri meno forti (`save` 0,48) | 2,00 | 6,88 | 27,8 | 12,5 |
+| Riprese rapide (si batte subito, esultanza a metà) | 1,69 | 6,81 | 27,8 | 12,4 |
+| Riprese rapide + pressing alto | 1,72 | 7,25 | 29,1 | 12,3 |
+| Quattro movimenti senza palla insieme | 1,03 | 5,44 | 28,5 | 12,5 |
+| Quattro movimenti + passaggio più in avanti | 1,25 | 5,56 | 29,2 | 12,9 |
+| Solo ali larghe fino alla trequarti | 1,28 | 6,16 | 26,2 | 12,4 |
+| Solo un compagno che si offre più avanti | 1,69 | 6,63 | 27,9 | 13,0 |
+| Solo punta che viene incontro | 1,53 | 5,56 | 26,1 | 12,0 |
+
+Tra una prova e l'altra uguale i tiri oscillano di circa ±1,3: quasi tutte le righe sono dentro l'oscillazione, i
+movimenti senza palla sono sotto. Le riprese rapide portano il gioco da 234 a 236 secondi: accorciano la partita vera,
+non danno possessi in più. Il pressing alto non fa crollare l'energia (51 contro 53) né alza i falli. Con la punta che
+viene incontro e le ali larghe i tiri da meno di 12 metri scendono da 1,8 a 0,6–1,3: restano lontane dalla porta quando
+l'azione arriva in fondo; chi si offre viene anticipato più spesso (14–19 su 100 sul passaggio corto, contro 9).
+
+**Fermi qui finché Alex non manda le statistiche di una partita di Dream League** (tiri per squadra): lì una squadra la
+guida chi gioca, il bersaglio per il computer può essere più basso di 20–24 tiri. Alla ripartenza, due strade non ancora
+provate (indicazioni di Alex del 21/11):
+1. Conduzione in avanti: se il portatore ha campo libero davanti (nessun avversario entro 6–8 metri) avanza palla al
+   piede, anche in scatto, invece di passare subito. In Dream League il computer lo fa spesso.
+2. Difesa meno perfetta: ritardo di reazione di 0,2–0,3 secondi sui passaggi avversari e linea difensiva un po' meno
+   compatta, controllando che gli anticipi sul passaggio corto restino tra 9 e 12 su 100.
+Il portiere si tara per ultimo, su circa un gol ogni 4–5 tiri (oggi uno ogni 3,6).
+
 ## 7. Palle ferme
 - Scritta sotto il tabellone col tipo («CALCIO D'ANGOLO», «RIMESSA LATERALE»…). Comandi nascosti, cronometro lento.
 - **Rimessa laterale**: breve dissolvenza scura, stacco della telecamera sul punto di battuta, comandi di nuovo visibili

@@ -91,7 +91,12 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   corto fermo a 80, tiri da 6,16 a 7,59, gol da 2,22 a 2,09 (dentro il rumore), rimesse laterali da 2,75 a 1,25, 0
   anomalie. Provati e scartati: 4,5 e 5,0 m/s e il tetto anche sui corti (più intercetti su chi riceve, meno gol).
 - Scartati perché non spostano i numeri: reazione ritardata dei difensori al passaggio, passaggi più sicuri, più attesa.
-- Prossimo: passaggi presi sull'uomo che riceve (riescono 75 su 100), traversoni (1 su 3), lanci lunghi troppo lunghi.
+- Venti prove da 32 partite (21/11) su tiro, tenuta, traversoni, marcature, pressing, rinvio, riprese rapide e movimenti
+  senza palla: nessuna alza i tiri (tabella e misure in `docs/dls-gameplay.md`, «Dove si ferma l'azione»). Solo 13
+  possessi su 28 superano la trequarti; i passaggi in avanti di almeno 8 metri riescono 69 volte su 100.
+- FERMI finché Alex non manda le statistiche di una partita di Dream League (tiri per squadra). Poi: conduzione in avanti
+  a campo libero, difesa meno perfetta (ritardo 0,2–0,3 s sui passaggi, linea meno compatta), portiere per ultimo (un gol
+  ogni 4–5 tiri).
 - Simulazione ripetibile (21/11): modalità di prova `?seme=N` o `__g.prova(N)` (audio spento, semi fissi); lo stato di una
   partita si azzera a ogni partita nuova (`DI_PARTITA`). `RIPETI=1` nello script delle partite lo controlla, anche in CI.
   I numeri di riferimento sono cambiati rispetto a prima (generatori separati): si confronta sempre prima e dopo.
