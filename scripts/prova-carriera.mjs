@@ -76,7 +76,7 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
 // mercato: prezzi, scambio, monete insufficienti, ruolo diverso, numeri di maglia, ritorno alle rose di partenza
 {
   const cl = JSON.parse(JSON.stringify(clubs)), valore = (ruolo, q) => 50 + q; // valore di prova: cresce col prezzo del listone
-  assert.ok(K.prezzo(88) > K.prezzo(70) * 3 && K.prezzo(55) < 100 && K.prezzo(50) === 0);
+  assert.ok(K.prezzo(88) > K.prezzo(70) * 3 && K.prezzo(55) <= 100 && K.prezzo(50) === 0);
   assert.equal(K.costoScambio(70, 70), K.prezzo(70) - Math.round(K.prezzo(70) * .7 / 10) * 10); assert.ok(K.costoScambio(60, 80) < 0);
   const M = K.nuova(cl, 'm', 'academy', rnd); K.applica(M, cl);
   const mio = cl.find((c) => c.id === 'academy'), forte = cl.find((c) => c.id === 'trefiori'), iIn = 9, iOut = 9, preso = forte.xi[iIn].slice(), ceduto = mio.xi[iOut].slice();
@@ -187,6 +187,41 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
   const vecchia = { v: 1, nome: 'x', club: 'trefiori', stagione: 2, giornata: 3, cal: K.calendario(clubs.map((c) => c.id), rnd), ris: [], coppa: { turno: 0, squadre: clubs.map((c) => c.id), storia: [], fuori: null, vinta: false, campione: null }, stat: { g: 3, v: 1, n: 1, p: 1, gf: 4, gs: 3, marc: {} }, trofei: [], campione: null };
   const C2 = K.carica({ getItem: () => JSON.stringify(vecchia) }); assert.ok(C2 && C2.id && C2.sfide && C2.castelli && C2.castelli.gironi.length === 4 && C2.gemme === K.PREMI.gemme && C2.stadio === 1 && C2.mio === null);
   assert.ok(K.castelliProssima(C2)); const mem = {}; const st = { setItem: (k, v) => { mem[k] = v; } }; K.salva(C2, st); K.salva(C2, st); assert.equal(C2.rev, 2); assert.equal(JSON.parse(mem[K.KEY]).rev, 2);
+}
+// ---------- home nuova: storico di entrate e uscite, percorso premi, allenatore, movimento in classifica, notifiche
+{
+  const { ECONOMIA: E } = await import('../src/config.js');
+  const cl = JSON.parse(JSON.stringify(clubs)), M = K.nuova(cl, 'm', 'academy', rnd); K.applica(M, cl);
+  assert.equal(M.storico.length, 0); assert.equal(K.finanze(M), 'Discrete');
+  // ogni partita lascia una riga nello storico, e il saldo scritto nella riga è quello vero
+  const m0 = M.monete, r1 = K.giocaCampionato(M, cl, 3, 1, ['X', 'X', 'Y'], rnd);
+  assert.equal(M.monete, m0 + r1.monete); assert.ok(M.storico.length >= 1 && M.storico[0].sm === M.monete && M.storico.some((x) => x.c === 'partita' && x.m === K.PREMI.v + 3 * K.PREMI.gol));
+  assert.equal(M.storico.reduce((t, x) => t + x.m, 0), M.monete - m0, 'lo storico non torna col saldo');
+  // percorso: una vittoria dà i punti di partita e vittoria; il premio si ritira una volta sola
+  assert.equal(K.statoPercorso(M).punti, E.percorso.punti.partita + E.percorso.punti.vinta);
+  M.percorso.punti = E.percorso.perLivello * 2 + 5; let sp = K.statoPercorso(M);
+  assert.equal(sp.livello, 2); assert.equal(sp.daRitirare, 2); assert.equal(sp.nelLivello, 5);
+  const g0 = M.gemme, m1 = M.monete, rp = K.ritiraPercorso(M); assert.ok(rp.ok && rp.n === 2); assert.equal(M.monete, m1 + E.percorso.premi[0].m); assert.equal(M.gemme, g0 + E.percorso.premi[1].g);
+  assert.equal(K.ritiraPercorso(M).ok, false); assert.equal(K.statoPercorso(M).daRitirare, 0);
+  M.percorso.punti = 99999; sp = K.statoPercorso(M); assert.equal(sp.livello, E.percorso.premi.length);
+  assert.equal(E.percorso.premi.reduce((t, x) => t + (x.m || 0), 0), 2400); assert.equal(E.percorso.premi.reduce((t, x) => t + (x.g || 0), 0), 54);
+  // riscuotere una sfida dà anche punti al percorso; la stagione nuova lo azzera
+  const p0 = M.percorso.punti; K.riscuotiTutto(M); assert.ok(M.percorso.punti > p0, 'la sfida riscossa non ha dato punti al percorso');
+  // allenatore: senza soldi no; coi soldi sale, permette una seduta in più e fa lo sconto
+  const A = K.nuova(cl, 'a', 'academy', rnd); assert.equal(K.miglioraAllenatore(A).ok, false); assert.equal(K.votoAllenatore(A), 60); assert.equal(K.seduteMax(A), K.ALLENA.max);
+  const pieno = K.costoAllenamento(A, 'Tizio'); A.monete = 50000; A.gemme = 100; assert.ok(K.miglioraAllenatore(A).ok); assert.equal(K.votoAllenatore(A), 70); assert.equal(K.seduteMax(A), K.ALLENA.max + 1);
+  assert.ok(K.costoAllenamento(A, 'Tizio') < pieno); assert.equal(A.storico[0].c, 'allenatore'); assert.equal(A.monete, 50000 - E.allenatore.livelli[1].monete);
+  for (let i = 0; i < 5; i++) K.miglioraAllenatore(A); assert.equal(A.allenatore, 5); assert.equal(K.miglioraAllenatore(A).motivo, 'massimo'); assert.equal(K.votoAllenatore(A), 99);
+  // movimento in classifica: la somma è zero, e alla prima giornata nessuno si muove
+  const S = K.nuova(cl, 's', 'academy', rnd); K.giocaCampionato(S, cl, 5, 0, [], rnd); assert.ok(Object.values(K.salite(S, cl)).every((n) => n === 0));
+  K.giocaCampionato(S, cl, 0, 5, [], rnd); const sal = K.salite(S, cl); assert.equal(Object.values(sal).reduce((t, n) => t + n, 0), 0); assert.ok(Object.values(sal).some((n) => n !== 0));
+  // classifica: posizioni tutte diverse (punti, poi differenza reti, poi gol fatti)
+  const tab = K.classifica(S, cl); for (let i = 1; i < tab.length; i++) assert.ok(tab[i - 1].pt > tab[i].pt || (tab[i - 1].pt === tab[i].pt && tab[i - 1].gf - tab[i - 1].gs >= tab[i].gf - tab[i].gs));
+  // notifiche: le coppe da giocare ci sono dall'inizio; coi soldi compaiono stadio e allenatore
+  const N = K.nuova(cl, 'n', 'academy', rnd); let nn = K.notifiche(N); assert.ok(nn.some((x) => x.vai === 'coppa') && nn.some((x) => x.vai === 'castelli') && !nn.some((x) => x.vai === 'stadio'));
+  N.monete = 99999; N.gemme = 99; nn = K.notifiche(N); assert.ok(nn.some((x) => x.vai === 'stadio') && nn.some((x) => x.vai === 'allenatore'));
+  // prezzi: un giocatore forte costa più o meno un campionato di chi gioca in modo normale
+  assert.equal(K.prezzo(85), 4900); assert.equal(K.prezzo(72), 1940);
 }
 assert.equal(K.carica({ getItem: () => '{rotto' }), null); assert.equal(K.carica({ getItem: () => null }), null);
 console.log(`Carriera: tutte le prove passate (forte contro debole: ${v} vittorie, ${s} sconfitte su 4000, ${(gol / 4000).toFixed(2)} gol a partita)`);

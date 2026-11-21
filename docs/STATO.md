@@ -54,6 +54,16 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Da tarare giocando: gol tra computer (0,7-1 a partita), fuorigioco rari, conduzione a 4,5 m/s.
 - Prossimo: Fase 5, `docs/home-spec.md` da far approvare ad Alex prima di scrivere codice della home.
 
+## Fase 6 (home nuova) — IN CORSO
+- Specifica: `docs/home-spec.md`. Alex (21/11) ha chiesto di non fermarsi ad aspettare: si va avanti con le scelte proposte,
+  provvisorie. Fermo solo il database (serve il suo sì esplicito).
+- Fatto: home blu notte e oro (gradiente segnaposto al posto della foto di San Marino), barra nuova, carte del disegno, font
+  Bebas Neue e Montserrat (OFL), percorso premi, «come guadagnare» e storico, notifiche, allenatore, finanze, avatar,
+  qualità grafica e passaggio assistito nelle impostazioni. Economia nuova in `ECONOMIA` (`src/config.js`); ogni entrata e
+  uscita passa da `muovi` in `src/carriera.js`. Prove in `scripts/prova-carriera.mjs`.
+- Resta: saldo sul server (SQL da far leggere ad Alex), immagine di sfondo (la genera Alex, 3840 × 1800), stemma a pezzi,
+  oggetti da comprare coi diamanti, altre schermate nello stesso stile (decisione 7), `docs/stato-lavori.md` alla fine.
+
 ## Decisioni recenti di Alex ancora valide
 - "Merge fallo sempre tu": PR → controlli verdi + anteprima Vercel → squash merge → verifica produzione.
 - Il gioco non è pubblico finché non lo dice lui (PR #114 dell'app non va unita).
