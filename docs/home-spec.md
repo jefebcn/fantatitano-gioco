@@ -141,7 +141,8 @@ il livello 9, chi fa anche buona parte delle sfide arriva in fondo. Premi: livel
 - **Stadio** (c'è già, 5 livelli): più posti e più monete a ogni partita in casa.
 - **Allenatore** (nuovo, 5 livelli, valutazione 60 / 70 / 80 / 90 / 99): ogni livello dà una seduta di allenamento in più
   per giocatore (da 6 a 10) e uno sconto del 5% sulle sedute.
-- **Stemma** (percentuale): quanti pezzi dell'editor dello stemma hai sbloccato (forme, simboli, bordi). Si parte dal 40%.
+- **Stemma** (percentuale): quanti pezzi dello stemma hai (forme, simboli, bordi; si comprano al Negozio, §5.5). Si parte
+  dal 61%, perché la base gratis è già ricca.
 - **Finanze**: giudizio dal saldo (Scarse sotto 500 monete, Discrete fino a 2.000, Buone fino a 6.000, Eccellenti oltre) e
   storico di entrate e uscite.
 - **Allenamento** dei giocatori e **Amichevole** restano come oggi.
@@ -177,13 +178,13 @@ giocatori restano al passo dopo (il server controlla importi e doppioni, il gioc
 | Tabella | Una riga è | Colonne principali |
 |---|---|---|
 | `lapartita_carriere` (c'è già) | la carriera di una persona | `user_id`, `dati` (calendario, risultati, rosa, club), `aggiornato_at`. Monete e diamanti non si leggono più da qui |
-| `lapartita_portafogli` | il saldo di una persona | `user_id`, `monete`, `diamanti`, `aggiornato_at` |
-| `lapartita_movimenti` | un'entrata o un'uscita | `id`, `user_id`, `quando`, `valuta` (monete o diamanti), `importo` (positivo o negativo), `causale` (codice del listino), `dettagli` (partita, sfida, giocatore), `saldo_dopo` |
-| `lapartita_partite` | una partita giocata | `id`, `user_id`, `competizione`, `turno`, `avversario`, `in_casa`, `iniziata_at`, `finita_at`, `gol_fatti`, `gol_subiti`, `marcatori`, `stato` (aperta, chiusa, annullata), `premio_monete` |
+| `lapartita.portafogli` | il saldo di una persona | `user_id`, `monete`, `diamanti`, `aggiornato_at` |
+| `lapartita.movimenti` | un'entrata o un'uscita | `id`, `user_id`, `quando`, `valuta` (monete o diamanti), `importo` (positivo o negativo), `causale` (codice del listino), `dettagli` (partita, sfida, giocatore), `saldo_dopo` |
+| `lapartita.partite` | una partita giocata | `id`, `user_id`, `competizione`, `turno`, `avversario`, `in_casa`, `iniziata_at`, `finita_at`, `gol_fatti`, `gol_subiti`, `marcatori`, `stato` (aperta, chiusa, annullata), `premio_monete` |
 | `lapartita_progressi` | i contatori di una persona per un periodo | `user_id`, `periodo` (giorno, settimana, stagione, carriera), `contatori`, `riscosse` |
 | `lapartita_percorso` | il percorso premi di una stagione | `user_id`, `stagione`, `punti`, `livelli_riscossi` |
-| `lapartita_club` | i miglioramenti del club | `user_id`, `stadio`, `allenatore`, `stemma_pezzi`, `avatar`, `oggetti` (cose comprate coi diamanti), `allenamenti` (sedute per giocatore) |
-| `lapartita_listino` | una voce di premio o di costo | `codice`, `tipo` (premio o costo), `valuta`, `importo`, `attivo`. È la tabella del §5: cambiare un prezzo è cambiare una riga |
+| `lapartita.club` | i miglioramenti del club | `user_id`, `stadio`, `allenatore`, `stemma_pezzi`, `avatar`, `oggetti` (cose comprate coi diamanti), `allenamenti` (sedute per giocatore) |
+| `lapartita.listino` | una voce di premio o di costo | `codice`, `tipo` (premio o costo), `valuta`, `importo`, `attivo`. È la tabella del §5: cambiare un prezzo è cambiare una riga |
 | `lapartita_giocatori` | un giocatore del gioco | `club`, `nome`, `ruolo`, `valutazione`: copia dei dati del gioco, serve al server per calcolare i prezzi del mercato |
 
 ### 4.3 Funzioni (le uniche porte d'ingresso)
@@ -282,22 +283,32 @@ cresce di due o tre acquisti importanti a stagione. Coi prezzi di oggi ne basta 
 Giocatore medio: 15–25 a settimana (qualche bonus giornaliero e gli obiettivi della settimana); in più, a stagione, fino a
 54 dal percorso premi e 20 dalle sfide di stagione, e quelli dei trofei. Giocatore forte: fino a 50 a settimana.
 
-### 5.5 Diamanti: su cosa spenderli (proposta)
+### 5.5 Diamanti: su cosa spenderli (approvato da Alex il 21/11, fatto)
 Regola: i diamanti comprano **aspetto e comodità**, non la vittoria. I giocatori si comprano solo con le monete.
+Tutto sta nel **Negozio** (dal club, da «Monete e diamanti» e dal profilo), in quattro schede. Una cosa non ancora presa si
+compra in due tocchi (il primo mostra «Conferma», il secondo paga) e poi resta per sempre.
 
-| Cosa | ◆ | Perché |
-|---|---|---|
-| Stadio ai livelli 3, 4, 5 (insieme alle monete) | 10 / 25 / 50 | c'è già |
-| Allenatore ai livelli 4 e 5 (insieme alle monete) | 15 / 30 | traguardo lungo |
-| Terza maglia e disegni speciali della divisa | 20–40 | aspetto |
-| Pezzi rari dello stemma | 5 l'uno | aspetto |
-| Avatar del manager e cornici del ritratto | 10 | aspetto |
-| Esultanza scelta per il capitano | 15 | aspetto |
-| Colore di scarpini e pallone di casa | 10 | aspetto |
-| Rinnovare subito i giocatori consigliati al mercato | 5 | comodità |
+| Scheda | Cosa | Costo | Gratis dall'inizio |
+|---|---|---|---|
+| Stemma | Forme: scudo, tondo, stendardo, rombo, esagono | ● 300 l'una | scudo, tondo, stendardo |
+| Stemma | Simboli in cima: corona, stella, pallone, torre, nessuno, fulmine, tre torri, alloro | ● 300 il fulmine, ◆ 5 tre torri e alloro (rari) | i primi cinque |
+| Stemma | Bordi: semplice, doppio, sottile, a punti, oro | ● 300 a punti, ◆ 5 oro (raro) | i primi tre |
+| Divisa | Disegni speciali della prima maglia: onde, chevron, sfumata, mimetica, pennellata | ◆ 20 l'uno | gli altri quindici disegni |
+| Divisa | Terza maglia: una divisa in più coi colori e il disegno che vuoi, da indossare al posto della prima | ◆ 30 | — |
+| Manager | Avatar: otto | ◆ 10 l'uno | i primi quattro |
+| Manager | Cornice del ritratto: semplice, oro, azzurra, lime, fuoco | ◆ 10 l'una | semplice |
+| Squadra | Scarpini uguali per tutta la squadra: neri, bianchi, oro, azzurri, lime, arancio, rosa | ◆ 10 l'uno | ognuno i suoi |
+| Squadra | Pallone delle partite in casa: oro, azzurro, notte, arancio | ◆ 10 l'uno | classico |
+| Squadra | Cambiare subito il giocatore consigliato al mercato | ◆ 5 ogni volta | — |
+| (club) | Stadio ai livelli 3, 4, 5 e allenatore ai livelli 4 e 5, insieme alle monete | ◆ 10 / 25 / 50 e ◆ 15 / 30 | c'erano già |
 
-Sconsigliato: recuperi di energia, ripetizione di partite perse, giocatori in vendita solo a diamanti. Sono le cose che in
-altri giochi spingono a pagare, e qui non si paga.
+La percentuale «Stemma» nella home è la parte dei pezzi che hai (si parte dal 61%).
+
+**Manca ancora**: l'esultanza scelta per il capitano (◆ 15). Nel gioco ci sono solo due esultanze: per sceglierne una
+servono altre animazioni (da Mixamo, come «mani in testa» e «indica»). Appena ci sono, si aggiunge una riga al negozio.
+
+Sconsigliato, e non fatto: recuperi di energia, ripetizione di partite perse, giocatori in vendita solo a diamanti. Sono le
+cose che in altri giochi spingono a pagare, e qui non si paga.
 
 ## 6. Immagine di sfondo (la genera Alex)
 
@@ -323,21 +334,35 @@ altri giochi spingono a pagare, e qui non si paga.
 - Prove automatiche: economia (listino del gioco uguale a quello del database), classifica (posizioni mai doppie),
   funzioni del server (partita troppo corta rifiutata, premio riscosso due volte rifiutato, saldo insufficiente rifiutato).
 
-## 8. Decisioni che servono da Alex
-1. **Logo**: nel gioco c'è `img/corona-lime.png` (corona lime con «FANTATITANO – PLAY · MANAGE · BELONG»). Tu parli della
-   corona viola disegnata a mano: è un altro file? Se sì mandamelo, o dimmi dove sta nel repository dell'app.
-2. **Prezzi del mercato**: restano quelli di oggi o passano alla proposta (giocatore forte ≈ un campionato)?
-3. **Diamanti**: va bene l'elenco del §5.5? Qualcosa da togliere o aggiungere?
-4. **Percorso premi**: va bene legato alla stagione della carriera (20 livelli, si azzera alla stagione nuova), o lo vuoi a
-   tempo vero (per esempio un mese)?
-5. **Saldo sul server**: va bene che mercato e miglioramenti chiedano la rete e che i premi delle partite giocate senza
-   rete arrivino al ritorno della rete?
-6. **Ospiti e carriere già iniziate**: va bene importare una volta sola il saldo che c'è, con tetto a 5.000 monete e 50
-   diamanti?
-7. **Colori**: la home diventa blu notte e oro. Le altre schermate (menu iniziale, pausa, fine partita) restano viola e
-   lime o le porto allo stesso stile?
-8. **Lingua** nelle impostazioni: solo italiano per ora, o preparo già italiano e inglese?
-9. **Allenatore e stemma** (§3.3): vanno bene così (allenatore = più sedute di allenamento e sconto; stemma = pezzi
-   dell'editor sbloccati)?
-10. **Database**: per creare tabelle e funzioni sul progetto Supabase dell'app mi serve il tuo via libera esplicito; prima
-    ti mando il file SQL da leggere.
+## 8. Decisioni di Alex (21/11)
+Le domande erano dieci, più cinque cose pratiche. Queste le risposte.
+
+| # | Domanda | Risposta di Alex | Stato |
+|---|---|---|---|
+| 1 | Logo: corona lime o viola | **Da decidere**: lime se è la stessa dell'app Fantatitano, viola se il logo ufficiale è quello | resta la lime, in attesa |
+| 2 | Prezzi del mercato | Un giocatore da 85 costa 4.900 monete (circa un campionato) | fatto |
+| 3 | Diamanti | Va bene l'elenco del §5.5: solo aspetto e comodità, mai vantaggi in partita | fatto (manca l'esultanza: servono animazioni) |
+| 4 | Percorso premi | Legato alla stagione della carriera | fatto |
+| 5 | Allenatore | Cinque livelli, una seduta in più e 5% di sconto a livello | fatto |
+| 6 | Stemma a pezzi | Sì, con una base di pezzi gratis già ricca | fatto |
+| 7 | Colori | Tutte le schermate in blu notte e oro; il lime resta solo come accento, finché la corona è lime | fatto |
+| 8 | Lingua | Solo italiano, ma coi testi in un unico file per aggiungere l'inglese dopo | da fare |
+| 9 | Database | Sì, a tre condizioni: sapere prima quale progetto; se è quello dell'app pubblicata, nessuna tabella esistente toccata e schema separato; prima un backup | file pronto, **non applicato**: manca il backup (§8.1) |
+| 10 | Saldo sul server e rete | Mercato e miglioramenti chiedono la rete; i premi delle partite senza rete arrivano dopo | col punto 9 |
+| 11 | Carriere già iniziate | Si riparte da zero: nessun saldo importato | nel file SQL |
+| 12 | Immagine di sfondo | La manda Alex; intanto il gradiente | in attesa |
+| 13 | Animazioni Mixamo | Le manda Alex («mani in testa» e «indica», FBX, Without Skin, 30 fps) | in attesa |
+| 14 | fps su iPhone | Li misura Alex con `?debug` | in attesa |
+| 15 | Gol e tiri | Pochi: puntare a 2–3 gol e 10–12 tiri per squadra a partita, poi tarare giocando | vedi `docs/dls-gameplay.md` |
+
+### 8.1 Come si applica il file SQL (quando c'è il backup)
+- Il progetto è **fantasyfootball** (`nskgzpbcssnpfuxmbepa`): è quello dell'app Fantatitano pubblicata (circa 250 iscritti).
+- Il file crea solo cose nuove: lo schema `lapartita` con cinque tabelle e quattro funzioni interne, e sette funzioni in
+  `public` (le sole che il gioco chiama). Non modifica e non legge nessuna tabella dell'app; usa soltanto
+  `public.current_user_id()`, che c'è già.
+- Perché sette funzioni restano in `public`: il collegamento dell'app guarda solo quello schema. Per metterle altrove
+  bisognerebbe aggiungere `lapartita` agli schemi esposti nelle impostazioni dell'app pubblicata, cioè cambiare una sua
+  impostazione. Se Alex preferisce così, si fa dalla pagina Settings → API di Supabase e le funzioni si spostano.
+- Backup: il piano gratuito di Supabase non ne fa. Claude da qui non può farlo (serve la password del database). Lo fa Alex
+  dal suo computer, oppure decide che non serve perché il file non tocca niente di esistente.
+- Per tornare indietro basta una riga: `drop schema lapartita cascade;` più la cancellazione delle sette funzioni.

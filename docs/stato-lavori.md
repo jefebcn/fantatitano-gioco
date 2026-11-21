@@ -15,37 +15,34 @@ dalle risposte di Alex. Le scelte prese senza la sua risposta sono segnate **pro
 | 6 | Home in blu notte e oro; percorso premi; «monete e diamanti» con lo storico; notifiche; allenatore e finanze; avatar del manager; classifica completa col calendario; impostazioni (passaggio assistito, qualità grafica, lingua) | PR #66 e seguenti |
 
 Le 12 funzioni della home (§8.4 del prompt): tutte aprono una schermata che funziona con dati salvati. In dettaglio:
-1 profilo e personalizzazione (avatar tra otto, nome, colori, stemma); 2 obiettivi della settimana e percorso premi; 3 «+»
+1 profilo e personalizzazione (avatar, nome, colori, stemma a pezzi); 2 obiettivi della settimana e percorso premi; 3 «+»
 → come guadagnare e storico; 4 home, impostazioni, info, notifiche; 5 campionato → pre-partita → partita → premi e
 classifica; 6 classifica completa con calendario; 7 Trofeo dei Castelli e Coppa Titano; 8 rosa; 9 mercato; 10 sfide;
 11 club (stadio, allenatore, stemma, allenamento, finanze, amichevole); 12 badge «!» su premi, pillole, sfide, club, campanella.
+
+## Dopo le risposte di Alex del 21/11
+Le risposte sono nella tabella in fondo a `docs/home-spec.md` (§8). Fatto subito:
+- **Colori** (7B): menu iniziale, scelta squadre, pausa, sostituzioni e fine partita sono in blu notte e oro come la home.
+  Il lime resta accanto alla corona, finché il logo è quello lime. Tabellone e tasti in partita non sono cambiati.
+- **Negozio** (3A, 6A): quattro schede (stemma, divisa, manager, squadra), acquisto in due tocchi. Stemma a pezzi (forme,
+  simboli, bordi) con una base gratis ricca; disegni speciali e terza maglia; avatar e cornici; scarpini della squadra,
+  pallone di casa, rinnovo del giocatore consigliato. Elenco e prezzi in `docs/home-spec.md` §5.5.
+- **Database** (9, 10, 11): il file SQL ora lavora nello schema separato `lapartita`, non tocca niente di esistente, non
+  importa i saldi vecchi (si riparte da zero) e conosce anche il negozio. Provato su un database locale. **Non applicato.**
 
 ## Resta da fare
 
 | Cosa | Perché non è fatto | Cosa serve |
 |---|---|---|
-| Saldo e storico sul server | non si creano tabelle sul database dell'app senza il sì di Alex | leggere `supabase/002-lapartita-economia.sql` (pronto, provato su un database locale) e dare il via libera; poi collego il gioco |
-| Immagine di sfondo della home | la genera Alex | 3840 × 1800 pixel, indicazioni in `docs/home-spec.md` §6; ora c'è un gradiente |
-| Clip «mani in testa» e «indica» | sono di Mixamo, le scarica Alex | FBX, Without Skin, 30 fps, nella cartella del Soccer Game Pack o in chat |
-| Stemma a pezzi da sbloccare | decisione 9 aperta | per ora la percentuale dice quanto è personalizzato |
-| Oggetti da comprare coi diamanti (terza maglia, esultanze, scarpini…) | decisione 3 aperta | l'elenco approvato |
-| Altre schermate in blu e oro (menu iniziale, pausa, fine partita) | decisione 7 aperta | sì o no |
+| Applicare il file SQL e collegare il gioco al saldo sul server | il progetto è quello dell'app pubblicata e Alex ha chiesto prima un backup: Supabase gratuito non ne fa e Claude non può farlo da qui | il backup (o la decisione che non serve), e l'ok alle sette funzioni in `public`: `docs/home-spec.md` §8.1 |
+| Logo | Alex deve dire se la corona giusta è la lime (quella che c'è) o la viola | la risposta, e il file se è la viola |
+| Testi in un unico file | è un lavoro che tocca quasi tutto il codice dell'interfaccia: va fatto da solo, dopo queste modifiche | niente, è il prossimo passo |
+| Esultanza del capitano (negozio) | nel gioco ci sono solo due esultanze | altre animazioni da Mixamo |
+| Immagine di sfondo della home | la manda Alex | 3840 × 1800 pixel, indicazioni in `docs/home-spec.md` §6; ora c'è un gradiente |
+| Clip «mani in testa» e «indica» | le manda Alex | FBX, Without Skin, 30 fps |
 | fps veri su iPhone | qui non c'è un iPhone | aprire il gioco con `?debug` e dirmi i numeri |
-| Taratura del gioco giocando | tra computer ora tutte le misure sono dentro gli obiettivi (gol 1,0, tiri 7,0, fuorigioco 0,44 a partita su 16 partite), ma sono al limite basso | provare contro il computer e dire se segna e tira troppo poco |
+| Più gol e più tiri | Alex: pochi, puntare a 2–3 gol e 10–12 tiri per squadra | vedi `docs/dls-gameplay.md`, «Gol e tiri» |
 | Texture KTX2 | le texture dei giocatori le disegna il gioco coi colori della squadra | niente, salvo cambiare sistema |
-
-## Scelte provvisorie (prese per non fermarsi, da confermare)
-- Prezzi del mercato della proposta: coefficiente 0,4 (un giocatore da 85 costa 4.900 monete). Si cambia in una riga
-  (`ECONOMIA.prezzo` in `src/config.js`, e la riga `mercato_coefficiente` del listino).
-- Percorso premi legato alla stagione della carriera (20 livelli, 40 punti a livello).
-- Allenatore: cinque livelli, una seduta di allenamento in più e 5% di sconto per livello.
-- Logo: resta `img/corona-lime.png` (l'unico originale che c'è nel gioco).
-- Lingua: solo italiano.
-- La home e i suoi pannelli sono in blu notte e oro; il resto del gioco resta viola e lime.
-
-## Decisioni aperte per Alex
-Sono le dieci in fondo a `docs/home-spec.md`. Le più urgenti: il logo (c'è un file della corona viola?), i prezzi del
-mercato, il via libera al database.
 
 ## Da sapere
 - Resta su GitHub il ramo `claude/dls-risposte-tastiera-gol`, creato per errore: si può cancellare dalla pagina dei rami.

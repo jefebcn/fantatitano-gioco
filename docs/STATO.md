@@ -61,8 +61,12 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   Bebas Neue e Montserrat (OFL), percorso premi, «come guadagnare» e storico, notifiche, allenatore, finanze, avatar,
   qualità grafica e passaggio assistito nelle impostazioni. Economia nuova in `ECONOMIA` (`src/config.js`); ogni entrata e
   uscita passa da `muovi` in `src/carriera.js`. Prove in `scripts/prova-carriera.mjs`.
-- Resta: saldo sul server (SQL da far leggere ad Alex), immagine di sfondo (la genera Alex, 3840 × 1800), stemma a pezzi,
-  oggetti da comprare coi diamanti, altre schermate nello stesso stile (decisione 7), `docs/stato-lavori.md` alla fine.
+- Risposte di Alex alle domande (21/11, tabella in `docs/home-spec.md` §8). Fatto: tutte le schermate in blu notte e oro
+  (variabili su `.scr` in `src/pagina.html`); negozio a quattro schede con stemma a pezzi, disegni speciali, terza maglia,
+  avatar, cornici, scarpini, pallone di casa, rinnovo del consigliato (`NEGOZIO` in `src/carriera.js`, prezzi in
+  `ECONOMIA.negozio`, `panNegozio` in `src/game.js`); SQL nello schema separato `lapartita`, senza importazione dei saldi.
+- Resta: applicare l'SQL (progetto dell'app pubblicata: Alex vuole prima un backup, vedi `docs/home-spec.md` §8.1), logo
+  (lime o viola: decide Alex), testi in un unico file, esultanza del capitano (servono animazioni), immagine di sfondo.
 
 ## Taratura dei tiri del computer (21/11)
 - Soglie in `TIRO_IA` (`src/config.js`). Su 16 partite, semi 7-22, difficoltà normale: prima 0,88 gol e 5,44 tiri a partita,
