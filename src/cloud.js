@@ -3,6 +3,7 @@
    Altrove (per esempio il deploy di prova) si accede con email e password dello stesso account.
    La copia sul telefono resta sempre: questa è in più, e serve a non perdere la carriera cambiando telefono o browser. */
 import { createClient } from '@supabase/supabase-js';
+import { t } from './testi.js';
 
 // Valori pubblici, gli stessi di src/config.js dell'app: la sicurezza sta nelle funzioni del database, che leggono e scrivono
 // solo la riga di chi ha fatto l'accesso.
@@ -42,9 +43,9 @@ export function avvia() {
 }
 
 export async function accedi(email, password) {
-  await avvia(); if (!sb) return { ok: false, errore: 'Collegamento non riuscito: controlla la rete e riprova.' };
+  await avvia(); if (!sb) return { ok: false, errore: t('account.erroreRete') };
   const { data, error } = await sb.auth.signInWithPassword({ email: String(email || '').trim(), password: String(password || '') });
-  if (error) return { ok: false, errore: /invalid/i.test(error.message) ? 'Email o password sbagliate.' : /confirm/i.test(error.message) ? "Conferma prima l'email dal messaggio che ti è arrivato." : 'Accesso non riuscito: riprova.' };
+  if (error) return { ok: false, errore: t(/invalid/i.test(error.message) ? 'account.erroreCredenziali' : /confirm/i.test(error.message) ? 'account.erroreConferma' : 'account.erroreAltro') };
   utente = data.user; stato = 'pronto'; await leggiNome(); avvisa();
   return { ok: true };
 }
