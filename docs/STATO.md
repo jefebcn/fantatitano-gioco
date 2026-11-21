@@ -35,6 +35,15 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Prossimo: risposte di Alex alle domande aperte; tarare la conduzione (4,5 m/s è una stima) e il portiere.
 - Prestazioni: 60 fps su iPhone nella webview dell'app, minimo 30.
 
+## Giocatori 3D (20/11 notte): punto e scelta in sospeso
+- Oggi: corpo «Superhero» gratuito di Quaternius (CC0), snellito via codice; ~5.600 triangoli a giocatore (corpo 4.522,
+  occhi e sopracciglia 630, capelli ~450), 9 mesh, 8 materiali, 7 texture; 65 ossa, skinning su GPU (three.js). Nessun LOD.
+- Fatto subito: tre corporature (snella, normale, robusta), arbitro rosso e nero, ombre del sole più nette di giorno.
+- Proposte per il corpo nuovo (sceglie Alex): Quaternius «Regular» dal pacchetto Source (CC0, 19,99 $ o Patreon), MakeHuman/
+  MPFB2 in Blender (gratis, licenza CC0 per le esportazioni ufficiali, più lavoro), generazione AI (Meshy Pro 20 $/mese,
+  diritti commerciali, topologia da rifare). Poi: un materiale con atlas e due LOD.
+- Riferimenti DLS: la cartella docs/dls-riferimenti non c'è (né in main né in altri rami).
+
 ## Decisioni recenti di Alex ancora valide
 - "Merge fallo sempre tu": PR → controlli verdi + anteprima Vercel → squash merge → verifica produzione.
 - Il gioco non è pubblico finché non lo dice lui (PR #114 dell'app non va unita).

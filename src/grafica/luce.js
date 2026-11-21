@@ -1,4 +1,6 @@
-/* Giorno e notte. Di giorno: sole caldo e basso, cielo limpido, ombre nette. Di notte: cielo scuro, le quattro torri faro
+/* Giorno e notte. Di giorno: sole caldo e basso, cielo limpido, ombre nette (sole basso a ~45°, di lato e un po' dal fondo: l'ombra di
+   ogni giocatore cade in basso a sinistra sullo schermo, lunga circa quanto il giocatore). Il sole è forte e la luce diffusa
+   del cielo debole, così l'ombra è scura e netta come in Dream League. Di notte: cielo scuro, le quattro torri faro
    accese (pannelli luminosi, alone, fasci di luce visibili e quattro faretti che danno i riflessi su erba e linee), ombre
    corte e morbide che vengono dall'alto. Si sceglie prima della partita. */
 
@@ -17,7 +19,7 @@ export function creaAtmosfera(T, { scene, hemi, sun, sole, fari, sfondo, campo, 
     const sp = new T.SpotLight(0xf6f4ff, 0, 0, 0.55, 0.65, 0); sp.position.copy(p); sp.target.position.copy(bersaglio); scene.add(sp, sp.target); notte.faretti.push(sp);
   }
   const ORE = {
-    giorno: { cielo: 0x86b9ea, nebbia: [0xa9cdee, 130, 330], hemi: [0xffffff, 0x47703a, 2.1], sole: [0xfff0d4, 2.1], dir: [30, 70, 40], morbide: 1.5, fari: 0.15, faretti: 0, sfondo: 0x4d6f9c, ruvido: 1, tribune: 0xffffff },
+    giorno: { cielo: 0x86b9ea, nebbia: [0xa9cdee, 130, 330], hemi: [0xffffff, 0x47703a, 0.7], sole: [0xfff0d4, 3.7], dir: [14, 39, -37], morbide: .6, fari: 0.15, faretti: 0, sfondo: 0x4d6f9c, ruvido: 1, tribune: 0xffffff },
     notte: { cielo: 0x060a18, nebbia: [0x0a1022, 110, 320], hemi: [0x34436e, 0x0b130c, 0.35], sole: [0xf3f6ff, 0.95], dir: [6, 95, 14], morbide: 4, fari: 2.6, faretti: 1.0, sfondo: 0x111a30, ruvido: 0.7, tribune: 0x5c6378 },
   };
   let ora = 'giorno';
