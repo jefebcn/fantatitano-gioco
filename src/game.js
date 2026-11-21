@@ -62,7 +62,7 @@ const OMBRA = { lato: 34, mappa: (navigator.hardwareConcurrency || 4) >= 6 ? 204
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFShadowMap; // in three r18x la PCF usa shadow.radius: ombre morbide senza il vecchio PCFSoft
 sun.castShadow = true; sun.shadow.mapSize.set(OMBRA.mappa, OMBRA.mappa); sun.shadow.bias = -.0006; sun.shadow.normalBias = .03; sun.shadow.radius = 3;
 Object.assign(sun.shadow.camera, { left: -OMBRA.lato, right: OMBRA.lato, top: OMBRA.lato, bottom: -OMBRA.lato, near: 10, far: 160 }); sun.shadow.camera.updateProjectionMatrix();
-const SOLE = new T.Vector3(-40, 38, -14); // la direzione del sole la mette creaAtmosfera (src/grafica/luce.js)
+const SOLE = new T.Vector3(14, 39, -37); // la direzione del sole la mette creaAtmosfera (src/grafica/luce.js)
 function seguiOmbre() { // il sole si sposta con l'inquadratura, a passi di un texel (niente ombre che tremolano)
   const k = OMBRA.lato * 2 / OMBRA.mappa, x = Math.round(camLook.x / k) * k, z = Math.round(camLook.z / k) * k;
   sun.target.position.set(x, 0, z); sun.position.set(x + SOLE.x, SOLE.y, z + SOLE.z);
