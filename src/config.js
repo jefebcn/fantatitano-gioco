@@ -15,6 +15,10 @@ export const LINEE = { area: [16.5, 40.32], piccola: [5.5, 18.32], dischetto: 11
 // `fermo` volte durante le palle ferme, dopo i gol e al calcio d'inizio. Conduzione: velocità di corsa col pallone (senza
 // scatto) in m/s, stima dai video da tarare
 export const RITMO = { gioco: 22.5, fermo: 3.5, conduzione: 4.5 };
+// Velocità dei giocatori in m/s (valori di partenza di Alex del 21/11, da Dream League): `corsa` e `scatto` senza palla,
+// `scattoPalla` col pallone tra i piedi (la conduzione senza scatto è RITMO.conduzione). `qualita`: quanti m/s separano
+// il più scarso dal più forte. `squadra`: m/s per ogni stella di forza della squadra. `portiere`: la corsa del portiere.
+export const VELOCITA = { corsa: 5, scatto: 7, scattoPalla: 6, qualita: .5, squadra: .05, portiere: 4.6 };
 export const HALF_SECS = 45 * 60 / RITMO.gioco;
 export const DIFF = {
   facile:    { spd: .88, steal: .7,  save: .48, err: 1.7, think: .6, wait: 1.2, slide: 1.5 },
@@ -99,7 +103,9 @@ export const PRESSIONE = { anticipo: .25, vicino: 1.6 };
 // Passaggio (Calcio basso), da confermare con DLS: con `assistito` va al compagno nella direzione della levetta e la durata
 // della pressione cambia solo un po' la velocità (± `dosa`, da un tocco a tutta carica). Senza, la potenza decide anche quanto
 // lontano si passa (DIST)
-export const PASSAGGIO = { assistito: true, dosa: .15 };
+// `arrivo`: a che velocità il rasoterra arriva al compagno, in m/s: base, più tanto per ogni metro di distanza, tra un
+// minimo e un massimo. Sono in proporzione alla corsa dei giocatori (VELOCITA): una palla troppo tesa non si ferma.
+export const PASSAGGIO = { assistito: true, dosa: .15, arrivo: [6, .15, 6.5, 10.5] };
 // Passa, Cross e Tira si tengono premuti: la barra sotto il giocatore si riempie (in 0,8 s) e al rilascio parte il colpo
 // con quella potenza. Un tocco veloce su Passa o Cross fa il passaggio dosato da solo, come prima.
 export const CARICA = { piena: .8, tocco: .12, max: .95 };
@@ -232,13 +238,13 @@ export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.35, vici
 
 /* ---------------------------------------------------------------- fisica dei giocatori */
 export const CORPO = {
-  acc: 12, // accelerazione da fermo (m/s²)
+  acc: 16, // accelerazione da fermo (m/s²): da fermo allo scatto in circa un secondo
   accMin: 0.22, // quanta accelerazione resta vicino alla velocità massima (frazione di acc)
-  frena: 17, // frenata massima (m/s²)
-  lat: 30, // forza laterale massima per curvare, da fermo (m/s²)
-  latV: 6, // velocità a cui la forza laterale si dimezza: più veloce, curva più larga
-  latScatto: 0.75, // in scatto la curva si allarga ancora
-  inverti: -0.35, // coseno sotto cui la direzione chiesta è "alle spalle": prima si frena
+  frena: 20, // frenata massima (m/s²)
+  gira: 9, // quanto in fretta la corsa cambia direzione andando piano (rad/s): mezzo giro in un terzo di secondo
+  giraScatto: 5, // e in pieno scatto: la curva si allarga
+  perde: 1, // quanta velocità costa girare, in proporzione all'angolo: a 90° ne resta il 72%, su un'inversione completa circa metà
+  latScatto: 0.75, // in scatto si gira ancora un po' più piano
   giro: 13, // velocità massima di rotazione del busto da fermo (rad/s)
   giroCorsa: 7.5, // e a piena corsa
   molla: 160, // quanto forte il busto insegue la direzione voluta

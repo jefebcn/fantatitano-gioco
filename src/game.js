@@ -23,7 +23,7 @@ import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -60,13 +60,15 @@ const G = {
   in: { jx: 0, jy: 0, pressing: false }, idle: 0, stats: null, goals: [], cards: [], next: null, taker: null,
   headId: -1, fk: null, wait: 1.1, offs: null, noOff: false, pen: false, penId: -1, penWait: 0,
 };
+// quanto è più veloce lo scatto della corsa (VELOCITA in src/config.js)
+const SCATTO_K = VELOCITA.scatto / VELOCITA.corsa;
 const G_INIZIO = { ...G }; // i valori al caricamento, per azzerare lo stato a ogni partita nuova (DI_PARTITA)
 
 /* ------------------------------------------------------------------ scena */
 const canvas = $('#c');
 const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 // risoluzione che si adatta ai fotogrammi e indicatore ?debug (src/prestazioni.js)
-const PERF = creaPrestazioni({ renderer, debug: /[?&]debug\b/.test(location.search), livello: () => QUAL.livello + (RESA && RESA.effetti() ? ' · alone' : ''), rinuncia: () => !!RESA && RESA.rinuncia() });
+const PERF = creaPrestazioni({ renderer, debug: /[?&]debug\b/.test(location.search), extra: () => (G.ctrl && G.state !== 'menu' ? `giocatore ${hyp(G.ctrl.vx, G.ctrl.vz).toFixed(1)} m/s${G.ball && G.ball.owner === G.ctrl ? ' (con palla)' : ''}${G.ctrl.sprint ? ' · scatto' : ''}` : ''), livello: () => QUAL.livello + (RESA && RESA.effetti() ? ' · alone' : ''), rinuncia: () => !!RESA && RESA.rinuncia() });
 const scene = new T.Scene();
 scene.background = new T.Color(0x86b9ea);
 scene.fog = new T.Fog(0xa9cdee, 130, 330);
@@ -771,8 +773,8 @@ function creaGiocatore(t, i, [name, role, num, q]) {
   if (PROVA.semi) PROVA.semi.figura = generatore(hash(t.club.id + name) % 2147483000 + 1);
   const club = t.club, fig = colSeme('figura', () => (MODEL ? makeSkinned : makeFigure)(i === 0 ? t.gkit : t.kit, hash(club.id + name), num, i === 0 ? null : club.id, name, { capitano: name === t.capitano })); scene.add(fig.root);
   fig.root.traverse((o) => { if (o.isMesh && !(o.material && o.material.transparent) && !(fig.vicini && fig.vicini.includes(o))) o.castShadow = true; }); // ombra vera del sole (l'ombra di contatto resta)
-  const base = 7.3 + clamp((q - 20) / 40, -.5, .6) + (club.str - 3) * .07;
-  return { team: t, i, role, nat: role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: t.side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? 6.6 : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1, run: null, mark: null, jock: false, slideCd: 0, inj: false, yel: 0, red: false, fkShot: false, en: 1, by: null, s: { g: 0, a: 0, kp: 0, sh: 0, sot: 0, pa: 0, pc: 0, tk: 0, int: 0, sv: 0, fl: 0, og: 0 }, massa: 72 + ({ P: 6, D: 5, C: -1, A: 2 }[role] || 0) + (hash(name + club.id) % 9) - 4, sbil: 0 }; // la massa conta nei duelli spalla a spalla
+  const base = VELOCITA.corsa + clamp((q - 20) / 40, -.5, .6) * VELOCITA.qualita + (club.str - 3) * VELOCITA.squadra;
+  return { team: t, i, role, nat: role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: t.side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? VELOCITA.portiere : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1, run: null, mark: null, jock: false, slideCd: 0, inj: false, yel: 0, red: false, fkShot: false, en: 1, by: null, s: { g: 0, a: 0, kp: 0, sh: 0, sot: 0, pa: 0, pc: 0, tk: 0, int: 0, sv: 0, fl: 0, og: 0 }, massa: 72 + ({ P: 6, D: 5, C: -1, A: 2 }[role] || 0) + (hash(name + club.id) % 9) - 4, sbil: 0 }; // la massa conta nei duelli spalla a spalla
 }
 /** Sostituzione: esce `out`, entra il k-esimo della panchina e ne prende posto e compito. Il portiere si cambia solo con un portiere. */
 function sostituisci(t, out, k) {
@@ -1016,13 +1018,20 @@ function duelloAereo(b) {
 }
 // Passaggi rasoterra: velocità d'arrivo (tesi, che non si fermano a metà) e, per ogni distanza, con che forza partire e quanto
 // ci mettono. La tabella si fa una volta sola con la fisica del pallone: così il punto d'incontro si cerca in fretta.
-const vArr = (d) => clamp(8 + d * .2, 8.5, 14);
+const vArr = (d) => clamp(PASSAGGIO.arrivo[0] + d * PASSAGGIO.arrivo[1], PASSAGGIO.arrivo[2], PASSAGGIO.arrivo[3]);
 const RASO = (() => { const v = [], t = []; for (let d = 0; d <= 70; d++) { const s = FIS.rasoterra(Math.max(d, .5), vArr(d), 30); v.push(s); t.push(FIS.rotolaFino(s, Math.max(d, .5)).t); } return { v, t }; })();
 const daTabella = (arr, d) => { const k = clamp(d, 0, 69.999), i = Math.floor(k); return arr[i] + (arr[i + 1] - arr[i]) * (k - i); };
 const tempoPalla = (o, x, z) => daTabella(RASO.t, hyp(x - o.x, z - o.z));
 // Quanta strada fa p in t secondi correndo nella direzione (ux, uz): parte dalla velocità che ha in quel verso e accelera
+// Quanto costa a chi corre girarsi verso (ux, uz), come lo fa il corpo (src/fisica/corpo.js): i secondi persi a girare e la
+// velocità che gli resta in quel verso. Senza, le stime credevano che chi corre dall'altra parte ripartisse subito.
+function svolta(q, ux, uz) {
+  const v = hyp(q.vx, q.vz); if (v < .4) return [0, 0];
+  const C = MOTO.CORPO, ang = Math.acos(clamp((q.vx * ux + q.vz * uz) / v, -1, 1)), giro = C.gira + (C.giraScatto - C.gira) * clamp(v / VELOCITA.scatto, 0, 1);
+  return [ang / giro * .5, v * Math.exp(-C.perde * ang / Math.PI)];
+}
 function corsaIn(p, ux, uz, t, scatto) {
-  const v0 = Math.max(0, p.vx * ux + p.vz * uz), vm = p.maxV * (scatto ? 1.2 : 1) * MOTO.forma(p.en).v, a = MOTO.CORPO.acc * .62;
+  const [tg, v0] = svolta(p, ux, uz); t = Math.max(0, t - tg); const vm = p.maxV * (scatto ? SCATTO_K * .94 : 1) * MOTO.forma(p.en).v, a = MOTO.CORPO.acc * .62;
   const tm = Math.max(0, (vm - v0) / a); return t < tm ? v0 * t + .5 * a * t * t : v0 * tm + .5 * a * tm * tm + vm * (t - tm);
 }
 /**
@@ -1059,9 +1068,9 @@ function tempoRaso(sp, d) {
 /** Secondi che q ci mette ad arrivare in (x, z), partendo con la sua velocità e accelerando (senza cicli), più il riflesso. */
 function arrivo(q, x, z, riflesso = .16) {
   const dx = x - q.x, dz = z - q.z, d0 = hyp(dx, dz), d = d0 - .7; if (d <= 0) return 0;
-  const v0 = Math.max(0, (q.vx * dx + q.vz * dz) / (d0 || 1)), vm = q.maxV * 1.1 * MOTO.forma(q.en).v * (q.stun > 0 ? .3 : 1), a = MOTO.CORPO.acc * .62;
+  const [tg, v0] = svolta(q, dx / (d0 || 1), dz / (d0 || 1)), vm = Math.max(v0, q.maxV * SCATTO_K * .87 * MOTO.forma(q.en).v * (q.stun > 0 ? .3 : 1)), a = MOTO.CORPO.acc * .62;
   const tm = Math.max(0, (vm - v0) / a), dm = v0 * tm + .5 * a * tm * tm;
-  return riflesso + (d <= dm ? (-v0 + Math.sqrt(v0 * v0 + 2 * a * d)) / a : tm + (d - dm) / vm);
+  return riflesso + tg + (d <= dm ? (-v0 + Math.sqrt(v0 * v0 + 2 * a * d)) / a : tm + (d - dm) / vm);
 }
 /**
  * Il margine di un rasoterra di p verso il punto (x, z) a velocità sp: lungo il percorso, quanto prima la palla passa
@@ -1330,7 +1339,7 @@ function homeOf(p) {
 }
 // Quanta strada fa p verso (x, z) in t secondi: parte dalla velocità che ha in quella direzione e accelera fino alla massima
 function portata(p, x, z, t) {
-  const dx = x - p.x, dz = z - p.z, d = hyp(dx, dz) || 1, v0 = Math.max(-2, (p.vx * dx + p.vz * dz) / d), vm = p.maxV * 1.12, a = MOTO.CORPO.acc * .62;
+  const dx = x - p.x, dz = z - p.z, d = hyp(dx, dz) || 1, v0 = Math.max(-2, (p.vx * dx + p.vz * dz) / d), vm = p.maxV * SCATTO_K * .88, a = MOTO.CORPO.acc * .62;
   const tm = Math.max(0, (vm - v0) / a); return t < tm ? v0 * t + .5 * a * t * t : v0 * tm + .5 * a * tm * tm + vm * (t - tm);
 }
 function intercept(p) {
@@ -1346,7 +1355,7 @@ function roles() {
     let a = null, c = null, e = null, ad = 1e9, cd = 1e9, ed = 1e9;
     for (const p of t.players) {
       if (p.i === 0 || p.stun > 0 || userDrives(p) || p === b.owner) continue;
-      const d = arrivo(p, bx, bz, 0) * 7; // in tempo (convertito in metri): chi è lanciato verso la palla arriva prima di chi è fermo
+      const d = arrivo(p, bx, bz, 0) * VELOCITA.scatto; // in tempo (convertito in metri): chi è lanciato verso la palla arriva prima di chi è fermo
       if (d < ad) { e = c; ed = cd; c = a; cd = ad; a = p; ad = d; } else if (d < cd) { e = c; ed = cd; c = p; cd = d; } else if (d < ed) { e = p; ed = d; }
     }
     t.B = blocco(t); possesso(t, b.owner); t.chaser = a; t.chaserD = ad; t.cover = c; t.cover2 = t.ment < 0 ? e : null; t.offLine = offsideLine(t); // con la mentalità difensiva copre anche un secondo uomo
@@ -1854,21 +1863,22 @@ function andatura(l) {
 function corri(p, dt) {
   const b = G.ball, guida = userDrives(p), owner = b.owner === p; if (p.fallen && p.stun <= 0) p.fallen = false;
   const fm = MOTO.forma(p.en), sb = p.sbil > 0, base = (sb ? .85 : 1) * p.maxV * (p.team.human ? 1 : G.diff.spd) * fm.v * (owner ? .97 : 1) * (p.stun > 0 ? (p.fallen ? 0 : .25) : 1) * (p.jock ? .85 : 1) * (p.inj ? FOUL.limp : 1);
-  let sp = base * (p.sprint ? 1 + .27 * (.3 + .7 * p.en / Math.max(p.fondo || 1, .01)) : 1);
+  let sp = base * (p.sprint ? 1 + (SCATTO_K - 1) * (.3 + .7 * p.en / Math.max(p.fondo || 1, .01)) : 1);
   if (G.state === 'goal' && !p.sprint) sp *= .5;
-  if (owner && p.i && !p.sprint) sp = Math.min(sp, RITMO.conduzione * fm.v); // col pallone, senza scatto, si va al passo della conduzione (Dream League)
+  // col pallone si va più piano: al passo della conduzione senza scatto, a quello dello scatto con palla scattando (Dream League)
+  if (owner && p.i) sp = Math.min(sp, (p.sprint ? VELOCITA.scattoPalla : RITMO.conduzione) * fm.v);
   if (guida) sp = Math.min(sp, base * andatura(p.user)) + (p.sprint && p.user >= LEVETTA.scatto ? sp - base : 0); // la levetta decide l'andatura; lo scatto solo con la levetta al bordo
   p.vVoluta = sp; // a che velocità vuole andare: il tocco di palla in conduzione la mette dove arriverà
   let gx = p.tx, gz = p.tz, insegue = false;
   if (owner && p.i && G.state === 'play') { // conduzione: se la palla non è sulla strada verso dove vuole andare, prima ci va sopra
     const bx = b.x - p.x, bz = b.z - p.z, bd = hyp(bx, bz), wx0 = gx - p.x, wz0 = gz - p.z, wd = hyp(wx0, wz0);
-    if (bd > .6 && wd > .3 && (bx * wx0 + bz * wz0) / (bd * wd) < .88) { gx = b.x + b.vx * .35 + wx0 / wd * .3; gz = b.z + b.vz * .35 + wz0 / wd * .3; insegue = true; sp = Math.max(sp * 1.12, base * (1.05 + .27 * (.3 + .7 * p.en))); } // e allunga il passo per riprenderla, anche senza scatto
+    if (bd > .6 && wd > .3 && (bx * wx0 + bz * wz0) / (bd * wd) < .88) { gx = b.x + b.vx * .35 + wx0 / wd * .3; gz = b.z + b.vz * .35 + wz0 / wd * .3; insegue = true; sp = Math.max(sp * 1.12, base * (1.05 + (SCATTO_K - 1) * (.3 + .7 * p.en))); } // e allunga il passo per riprenderla, anche senza scatto
   }
   // velocità voluta: piena finché si è lontani, poi quella che permette di fermarsi sul punto (niente frenate brusche all'ultimo)
   const dx = gx - p.x, dz = gz - p.z, d = hyp(dx, dz); let wx = 0, wz = 0;
   if (d > .15) { const k = (insegue ? sp : Math.min(sp, Math.sqrt(2 * MOTO.CORPO.frena * .55 * d), d * 4)) / d; wx = dx * k; wz = dz * k; } // inseguendo la propria palla non si frena all'arrivo
   p.wx = wx; p.wz = wz; // per l'animazione (movimento): dove vuole andare
-  const scatto = p.sprint && hyp(p.vx, p.vz) > 5, aiuto = guida ? 1.12 : 1; // chi guida l'utente risponde un filo prima
+  const scatto = p.sprint && hyp(p.vx, p.vz) > VELOCITA.corsa, aiuto = guida ? 1.12 : 1; // chi guida l'utente risponde un filo prima
   const o = { acc: fm.acc * aiuto * (p.i === 0 ? 1.15 : 1) * (sb ? .7 : 1), frena: (.85 + .15 * fm.acc) * aiuto, lat: fm.lat * aiuto * (scatto ? MOTO.CORPO.latScatto : 1) * (sb ? .75 : 1) }; // sbilanciato da una spallata: per un attimo meno spunto e meno curva
   const vPrima = hyp(p.vx, p.vz), h = MOTO.CORPO.passoMax; p.restoC = (p.restoC || 0) + dt;
   while (p.restoC >= h - 1e-9) {
