@@ -168,20 +168,23 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
 ## Ritratti (21/11)
 Come sono fatti e come si rifanno: `docs/ritratti.md`. Strumenti: `scripts/blender/render_ritratti.py`, `scripts/ritratti_webp.py`.
 
-- **Stato**: secondo foglio di prova da 12 mandato ad Alex; **gli altri non si generano prima del suo OK**. Nel gioco i
+- **Stato**: terzo foglio di prova da 12 mandato ad Alex; **gli altri non si generano prima del suo OK**. Nel gioco i
   ritratti sono ancora quelli vecchi.
 - **Decisioni di Alex**: maglia neutra colorata dal gioco; un ritratto per ogni giocatore vero e circa 150 volti
-  condivisi per inventati e mercato, mai due facce uguali nella stessa rosa o nella stessa partita.
-- **Secondo giro, fatto**: ritratto a due strati (testa del giocatore + maglia uguale per tutti, colorata dopo), polo col
-  colletto vero e pieghe, busto da calciatore, niente riflessi gialli sui capelli, tratti maschili, calvo senza ciocche,
-  capelli a ciuffi, espressioni e teste girate, tutta la testa nell'inquadratura.
-- **Giudizio sul secondo foglio** (mio): molto meglio del primo. Restano deboli: le pieghe della stoffa (leggere), il
-  taglio «corto» (a ciuffetti), le espressioni (si vedono poco in piccolo). `docs/riferimenti/modello-carte.png` non è
-  nel repository: il confronto affiancato manca ancora.
+  condivisi per inventati e mercato, mai due facce uguali nella stessa rosa o nella stessa partita; di base girocollo o
+  scollo a V, colletto piccolo solo come variante di alcune squadre; colore degli occhi legato alla pelle.
+- **Terzo giro, fatto**: ritratto a strati (testa del giocatore, maglia uguale per tutti e colorata dopo, capelli e
+  barba che le cadono davanti); girocollo e scollo a V al posto della polo; righe e scacchi che seguono la stoffa; pelle
+  meno liscia e meno lucida con la luce di contorno neutra; sopracciglia a peli veri; occhi scuri con le pelli scure;
+  attaccatura dei capelli sfumata; velo di barba.
+- **Ancora da fare sui ritratti**: il colletto piccolo (due prove non all'altezza: serve un modello suo).
+  `docs/riferimenti/modello-carte.png` non è nel repository: il confronto affiancato manca ancora.
 - **Tempi** (computer cloud, 4 processori, senza scheda grafica, 800 punti di lato, 256 campioni con soglia di rumore):
-  circa 50 secondi a testa più 3 di preparazione; la maglia 35 secondi una volta sola. 265 veri + 150 condivisi = 415
-  teste: circa 6 ore; a 1024 punti circa 10.
-- **Peso**: testa a 512 e 256 punti insieme circa 26 KB a volto (415 volti: circa 11 MB); maglia comune 183 KB.
-- **Dopo l'OK, da fare**: l'«aspetto» di ogni giocatore vero nei dati e l'insieme dei 150 condivisi; la regola che
-  assegna i volti senza doppioni in rosa e in partita; nel gioco, il conto che colora la maglia (lo stesso di `componi`
-  in `scripts/ritratti_webp.py`) e i ritratti nuovi al posto di quelli disegnati dal modello 3D.
+  in media 77 secondi a volto (da 50 a 160: il più lento è chi ha i capelli lunghi, che ha anche lo strato «sopra»), più
+  3 di preparazione; ogni maglia 26 secondi, una volta sola. 265 veri + 150 condivisi = 415 volti: circa 9 ore; a 1024
+  punti circa 15.
+- **Peso**: testa a 512 e 256 punti insieme circa 27 KB a volto (415 volti: circa 11 MB); le due maglie 345 KB in tutto.
+- **Dopo l'OK, da fare**: l'«aspetto» di ogni giocatore vero nei dati e l'insieme dei 150 condivisi; lo scollo di ogni
+  squadra nei dati; la regola che assegna i volti senza doppioni in rosa e in partita; nel gioco, il conto che colora la
+  maglia (lo stesso di `componi` in `scripts/ritratti_webp.py`) e i ritratti nuovi al posto di quelli disegnati dal
+  modello 3D.
