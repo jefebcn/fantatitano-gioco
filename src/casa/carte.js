@@ -7,14 +7,15 @@ import { t } from './testi.js';
 
 /**
  * Una carta di navigazione come testo HTML.
- * rotta: la schermata che apre; titolo; colore: 'oro', 'rossa', 'azzurra' o 'blu'; corpo: l'HTML del riassunto;
+ * rotta: la schermata che apre; titolo; nota: una scritta piccola nella fascia, a destra (la competizione, la stagione);
+ * colore: 'oro', 'rossa', 'azzurra' o 'blu'; corpo: l'HTML del riassunto;
  * piede: la frase in basso (facoltativa); bollino: c'è qualcosa da ritirare; chiusa: non si apre e in basso dice «In arrivo»;
  * sfondo: il nome dell'illustrazione di fondo (si usa se è stata consegnata, se no resta il fondo pulito).
  */
-export function carta({ rotta, titolo, colore = 'azzurra', corpo, piede = '', bollino = false, chiusa = false, sfondo = '', classe = '' }) {
+export function carta({ rotta, titolo, nota = '', colore = 'azzurra', corpo, piede = '', bollino = false, chiusa = false, sfondo = '', classe = '' }) {
   const img = sfondo && ILLUSTRAZIONI[sfondo] ? ` style="--sfondo:image-set(url(img/illustrazioni/${sfondo}@1x.webp) 1x,url(img/illustrazioni/${sfondo}@2x.webp) 2x,url(img/illustrazioni/${sfondo}@3x.webp) 3x)"` : '';
   return `<button class="carta tono-${colore}${chiusa ? ' chiusa' : ''}${img ? ' illustrata' : ''}${bollino ? ' avvisa' : ''}${classe ? ' ' + classe : ''}" data-vai="${rotta}"${chiusa ? ' data-chiusa="1"' : ''}${img}>`
-    + `<span class="fascia"><b>${titolo}</b>${chiusa ? icona('lucchetto') : icona('avanti')}</span><span class="corpo">${corpo}</span>`
+    + `<span class="fascia"><b>${titolo}</b>${nota ? `<i class="nota">${nota}</i>` : ''}${chiusa ? icona('lucchetto') : icona('avanti')}</span><span class="corpo">${corpo}</span>`
     + (chiusa ? `<span class="piede">${t('inArrivo')}</span>` : piede ? `<span class="piede">${piede}</span>` : '') + (bollino ? '<em class="bollino">!</em>' : '') + '</button>';
 }
 
