@@ -97,7 +97,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - 3 e 4 FATTI: velocità di partenza di Alex (`VELOCITA`, `CORPO` in `src/config.js`), girare costa velocità in proporzione
   all'angolo (`spingi` in `src/fisica/corpo.js`), stime del computer adattate (`svolta` in `src/game.js`), velocità nel
   riquadro `?debug`. 32 partite: gol da 2,22 a 1,66, tiri da 9,34 a 6,84, 0 anomalie: da ritarare, vedi `docs/dls-gameplay.md`.
-- Da fare: 5 pallone al piede e interpolazione, 6 telecamera in profondità, 7 erba e pubblico, 8 riquadro del gol (Alex
+- 5 FATTO: tocchi più lunghi col passo (palla tra 0,6 e 0,8 m), guinzaglio a 1,5 m (`COND`), disegno con l'avanzo di tempo
+  (`avanzo` in `src/game.js`). 32 partite: gol 1,75, tiri 5,88, 0 anomalie.
+- Da fare: 6 telecamera in profondità, 7 erba e pubblico, 8 riquadro del gol (Alex
   non ha scelto: provvisorio «toglilo come in DLS»), moduli nuovi, scenario del ponte.
 
 ## Due sessioni insieme (dal 21/11)
