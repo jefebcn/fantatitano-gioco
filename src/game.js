@@ -8,6 +8,7 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { creaDivisa, creaZone, creaRilievo, TONI, DISEGNI } from './divisa.js';
 import * as CLOUD from './cloud.js';
 import * as CAR from './carriera.js';
+import { ponte, controllaRichiesta } from './ponte.js';
 import * as FIS from './fisica/pallone.js';
 import * as MOTO from './fisica/corpo.js';
 import * as URTO from './fisica/contatti.js';
@@ -743,6 +744,7 @@ function clearMatch() {
 }
 // il capitano: per la mia squadra quello scelto in carriera, per le altre il migliore in campo (portiere escluso)
 function capitanoDi(club, mia) {
+  if (club.richiesta && club.richiesta.capitano) return club.richiesta.capitano; // dal ponte: lo dice la home
   if (mia && K && K.mio && K.mio.capitano && club.xi.some((x) => x[0] === K.mio.capitano)) return K.mio.capitano;
   const c = club.xi.slice(1).sort((a, b) => b[3] - a[3])[0]; return c ? c[0] : null;
 }
@@ -757,6 +759,7 @@ function sostituisci(t, out, k) {
   const b = t.bench[k], at = t.players.indexOf(out);
   if (!b || b.used || at < 0 || t.subs >= SUB.max || G.so || (out.i === 0) !== (b.role === 'P')) return null;
   const p = creaGiocatore(t, out.i, [b.name, b.role, b.num, b.q]);
+  if (b.en !== undefined) p.en = b.en; p.pid = b.pid; p.ruoloP = b.ruoloP; out.fuoriMin = p.dentroMin = minute(); (G.cambi || (G.cambi = [])).push({ t: t.idx, min: minute(), esce: out, entra: p });
   p.role = out.role; p.x = p.tx = out.x; p.z = p.tz = out.z; p.dir = out.dir; t.players[at] = p; t.out.push(out); scene.remove(out.fig.root); b.used = true; t.subs++;
   if (G.ctrl === out) G.ctrl = p; if (G.ball.owner === out) G.ball.owner = p; if (G.taker === out) G.taker = p; if (G.intended === out) G.intended = null;
   if (G.offs) G.offs = G.offs.filter((x) => x !== out); if (G.fk && G.fk.pos && G.fk.pos.has(out)) { G.fk.pos.set(p, G.fk.pos.get(out)); G.fk.pos.delete(out); } if (G.fk && G.fk.wall) for (const w of G.fk.wall) if (w.p === out) w.p = p;
@@ -780,14 +783,17 @@ function newMatch(home, away) {
   clearMatch();
   const fuori = !!(G.comp && G.comp.fuori), [kh, ka, g1, g2, arb] = kitsFor(home, away, fuori); G.arbKit = arb;
   // dal negozio: gli scarpini scelti per tutta la squadra dell'utente e, in casa, il suo pallone
-  const scarpe = K && K.scelte && SCARPE_NEGOZIO[K.scelte.scarpini] && CAR.possiede(K, 'scarpini', K.scelte.scarpini) ? SCARPE_NEGOZIO[K.scelte.scarpini] : null;
-  ballMesh.userData.colora(K && K.scelte && !fuori && !G.auto && CAR.possiede(K, 'pallone', K.scelte.pallone) ? K.scelte.pallone : 'classico');
+  let scarpe = K && K.scelte && SCARPE_NEGOZIO[K.scelte.scarpini] && CAR.possiede(K, 'scarpini', K.scelte.scarpini) ? SCARPE_NEGOZIO[K.scelte.scarpini] : null;
+  let palla = K && K.scelte && !fuori && !G.auto && CAR.possiede(K, 'pallone', K.scelte.pallone) ? K.scelte.pallone : 'classico';
+  if (home.richiesta) { scarpe = SCARPE_NEGOZIO[home.richiesta.scarpini] || null; palla = PALLONI[home.richiesta.pallone] ? home.richiesta.pallone : 'classico'; } // dal ponte: lo dice la home
+  ballMesh.userData.colora(palla);
   const mk = (club, side, human, kit, gkit) => {
     const t = { club, side, human, score: 0, players: [], off: [], idx: side > 0 ? 0 : 1, chaser: null, cover: null, ment: 0 };
-    if (human && scarpe && !G.auto) { kit = { ...kit, boots: scarpe[0], suola: scarpe[1] }; gkit = { ...gkit, boots: scarpe[0], suola: scarpe[1] }; }
+    if (human && scarpe && (!G.auto || club.richiesta)) { kit = { ...kit, boots: scarpe[0], suola: scarpe[1] }; gkit = { ...gkit, boots: scarpe[0], suola: scarpe[1] }; }
     t.kit = kit; t.gkit = gkit; t.capitano = capitanoDi(club, human); t.bench = (club.pan || []).map(([name, role, num, q]) => ({ name, role, num, q, used: false })); t.subs = 0; t.out = [];
     club.xi.forEach((rec, i) => t.players.push(creaGiocatore(t, i, rec)));
-    setTactics(t, human ? sel.form : aiForm(club), human ? sel.ment : 0);
+    setTactics(t, human ? sel.form : club.modulo || aiForm(club), human ? sel.ment : 0);
+    if (club.richiesta) datiDaRichiesta(t, club.richiesta);
     return t;
   };
   G.teams = [mk(home, 1, true, kh, g1), mk(away, -1, false, ka, g2)];
@@ -795,7 +801,7 @@ function newMatch(home, away) {
   if (fuori) { G.teams[0].side = -1; G.teams[1].side = 1; } // in trasferta si comincia attaccando verso sinistra
   G.ball = { x: 0, y: BR, z: 0, vx: 0, vy: 0, vz: 0, c: 0, t: 0, resto: 0, owner: null };
   ballMesh.visible = ballShadow.visible = true;
-  G.clock = 0; G.half = 1; G.goals = []; G.cards = []; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penId = -1; G.penWait = 0; G.lastPass = G.shooter = null; G.so = G.soRes = null; $('#hud').classList.remove('rigori'); G.stats = { recAlti: [0, 0], resp: [0, 0], uscite: [0, 0], shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0], fouls: [0, 0], offs: [0, 0], pens: [0, 0], yel: [0, 0], red: [0, 0], crosses: [0, 0], heads: [0, 0], headGoals: [0, 0], corners: [0, 0], adv: [0, 0], inj: [0, 0], subs: [0, 0] }; G.ctrl = null; G.charge = -1;
+  G.clock = 0; G.half = 1; G.goals = []; G.cards = []; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penId = -1; G.penWait = 0; G.lastPass = G.shooter = null; G.so = G.soRes = null; G.cambi = []; G.fkId = -1; $('#hud').classList.remove('rigori'); G.stats = { pali: [0, 0], recAlti: [0, 0], resp: [0, 0], uscite: [0, 0], shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0], fouls: [0, 0], offs: [0, 0], pens: [0, 0], yel: [0, 0], red: [0, 0], crosses: [0, 0], heads: [0, 0], headGoals: [0, 0], corners: [0, 0], adv: [0, 0], inj: [0, 0], subs: [0, 0] }; G.ctrl = null; G.charge = -1;
   paintBoards(home, away, CREST);
   $('#sbH').src = img(home.id + '-mini'); $('#sbA').src = img(away.id + '-mini'); $('#sb').style.setProperty('--sq', G.teams[0].kit.shirt); // la barretta sul bordo destro del tabellone: il colore della nostra maglia
   $('#sbHn').textContent = home.short; $('#sbAn').textContent = away.short;
@@ -1549,7 +1555,7 @@ function ownerThink(p, dt) {
   const t = p.team, s = t.side, D = diffOf(p);
   if (p.fkShot) { // punizione diretta: fermo sul pallone, poi tiro sopra la barriera
     p.tx = p.x; p.tz = p.z; p.thinkT -= dt; if (p.thinkT > 0) return; p.fkShot = false;
-    return shoot(p, sgn(rnd(-1, 1)) * GH * rnd(.5, .9), rnd(.62, .8), D.err);
+    shoot(p, sgn(rnd(-1, 1)) * GH * rnd(.5, .9), rnd(.62, .8), D.err); G.fkId = G.shotId; return;
   }
   if (G.rimessa && G.rimessa.chi === p) { // rimessa laterale: fermo sulla linea, poi lancia con le mani al compagno migliore entro 28 m
     p.tx = p.x; p.tz = p.z; p.thinkT -= dt; if (p.thinkT > 0) return;
@@ -1970,7 +1976,7 @@ function bounds() {
     const e = sgn(b.x), az = Math.abs(b.z);
     if (az > GH && az < GH + 1.4 && b.y < GT + .4) for (const p of PORTE) if (p.d === e) p.colpoFuori(b); // sfiora l'esterno della rete uscendo sul fondo
     if (az < GH + .28 && b.y < GT + .3 && (az > GH - .05 || b.y > GT - .05) && Math.abs(b.x) < HL + .8 && !b.owner) { // palo o traversa
-      AU.palo(hyp(b.vx, b.vz)); if (G.shooter) { AU.ooh(1); G.occasioneT = G.t; } b.x = e * (HL - .15); b.vx *= -.55; b.vz += sgn(b.z) * 2; b.vy *= .6; return;
+      AU.palo(hyp(b.vx, b.vz)); if (G.shooter) { AU.ooh(1); G.occasioneT = G.t; G.stats.pali[G.shooter.team.idx]++; } b.x = e * (HL - .15); b.vx *= -.55; b.vz += sgn(b.z) * 2; b.vy *= .6; return;
     }
     if (az < GH && b.y < GT) return goal(G.teams.find((t) => t.side === e));
     if (G.so) return soEsito(false);
@@ -2040,7 +2046,7 @@ function card(p, red) {
   const t = p.team; G.cards.push({ t: t.idx, name: p.name, min: minute(), c: red ? 'r' : 'g' }); G.stats[red ? 'red' : 'yel'][t.idx]++;
   if (!red) { p.yel = 1; return; }
   p.red = true;
-  t.players.splice(t.players.indexOf(p), 1); t.off.push(p); scene.remove(p.fig.root); p.run = p.mark = null;
+  p.fuoriMin = minute(); t.players.splice(t.players.indexOf(p), 1); t.off.push(p); scene.remove(p.fig.root); p.run = p.mark = null;
   if (G.ctrl === p) { G.ctrl = null; setCtrl(nearestTo(t, G.ball.x, G.ball.z)); }
   if (G.intended === p) G.intended = null;
 }
@@ -2112,7 +2118,9 @@ function goal(team) {
   const name = own ? `Autogol${lt ? ' (' + lt.name + ')' : ''}` : k.name;
   if (!own && G.headId === G.shotId && G.lastKicker === k) G.stats.headGoals[team.idx]++;
   if (own) { if (lt) lt.s.og++; } else { k.s.g++; if (G.shooter === k) { k.s.sot++; G.shooter = null; } if (k.by && k.by.team === team) k.by.s.a++; }
-  G.goals.push({ t: team.idx, name, min }); G.next = team.opp; G.charge = -1;
+  // per l'esito del ponte: chi ha segnato, chi gli ha dato la palla e come (rigore, punizione, testa, azione, autogol)
+  const tipo = own ? 'autogol' : G.penId === G.shotId ? 'rigore' : G.fkId === G.shotId ? 'punizione' : G.headId === G.shotId && G.lastKicker === k ? 'testa' : 'azione';
+  G.goals.push({ t: team.idx, name, min, chi: own ? lt : k, assist: !own && k.by && k.by.team === team ? k.by : null, tipo }); G.next = team.opp; G.charge = -1;
   for (const p of team.players) if (p.i) { p.st = 'run'; }
   // con la regia niente scritta al centro: tabelloni e primo piano (Dream League)
   setState('goal'); if (!MODEL || G.noRegia) banner('Gol!', `${name} ${min}' · ${team.club.name}`, 3400); AU.boato(); AU.rete(hyp(G.ball.vx, G.ball.vz)); setTimeout(() => AU.fischio('gol'), 450); hud();
@@ -3001,7 +3009,7 @@ function buildMenu() {
   $('#tClub').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) clubAz(b.dataset.club); });
   $('#campoA').addEventListener('click', tapRosa);
   $('#tRosa').onclick = () => { rXi = rPan = -1; sel.mia = K.club; sel.loro = CLUBS.find((c) => c.id !== K.club).id; G.comp = { tipo: 'rosa' }; showPre(); };
-  $('#panInd').onclick = casa; $('#continua').onclick = () => { toMenu(); };
+  $('#panInd').onclick = casa; $('#continua').onclick = () => { const fine = chiudiPonte(true); toMenu(); if (fine) fine(); };
   // i cursori del volume (impostazioni): musica ed effetti separati, salvati sul dispositivo
   $('#panC').addEventListener('input', (e) => { const r = e.target.closest('input[data-vol]'); if (!r) return; AU.init(); AU.volume(r.dataset.vol, r.value / 100); r.nextElementSibling.textContent = r.value; if (r.dataset.vol === 'effetti') AU.calcio(12, 'passaggio'); });
   $('#panC').addEventListener('click', async (e) => {
@@ -3055,16 +3063,69 @@ function buildMenu() {
   tactics();
   $('#apriCambi').onclick = () => { cOut = null; cIn = -1; drawCambi(); show('#cambi'); }; $('#cambiOk').onclick = () => show('#stop'); $('#cambiL').addEventListener('click', tapCambi);
   $('#pausa').onclick = () => pause(true); $('#riprendi').onclick = () => pause(false);
-  $('#esci').onclick = () => { G.paused = false; toMenu(); };
+  $('#esci').onclick = () => { G.paused = false; const fine = chiudiPonte(false); toMenu(); if (fine) fine(); };
   $('#audio').onclick = () => { AU.init(); AU.toggle(); }; $('#audio').style.opacity = AU.on ? 1 : .4;
   AU.musica(true); // la musica dei menu parte al primo tocco (prima i browser non lasciano suonare)
   $('#rivincita').onclick = () => startMatch(sel.mia, sel.loro, sel.diff);
   $('#cambia').onclick = () => { toMenu(); G.comp = null; show('#scelta'); refresh(); };
 }
 const club = (id) => CLUBS.find((c) => c.id === id);
+/* --- il ponte tra home e partita (docs/ponte-partita.md): la home manda una richiesta, la partita la gioca e alla fine
+   restituisce un esito. Si aggiunge a quello che c'è: gioca() e showEnd() restano finché la home non passa di qui.
+   Nel motore la squadra di chi gioca è sempre la prima (G.teams[0]): se nella richiesta è la seconda, gioca in trasferta. */
+function clubDaRichiesta(s) {
+  const base = club(s.id) || {}, m = s.maglia, riga = (g) => [g.nome, g.reparto, g.numero, g.forza];
+  const c = { ...base, id: s.id, name: s.nome, short: s.sigla, c1: m.c1, c2: m.c2, st: m.stile || undefined, col: m.colletto || undefined, rag: m.colletto ? !!m.raglan : undefined,
+    xi: s.titolari.map(riga), pan: (s.panchina || []).map(riga), modulo: s.modulo, richiesta: s };
+  c.str = forzaClub(c); return c;
+}
+/** Energia iniziale, identità e ruolo preciso di ogni giocatore, dalla richiesta (titolari e panchina). */
+function datiDaRichiesta(t, s) {
+  const dati = (g) => ({ en: clamp((g.energia === undefined ? 100 : g.energia) / 100, 0, 1), pid: g.id, ruoloP: g.ruolo || RUOLO[g.reparto] });
+  t.players.forEach((p, i) => Object.assign(p, dati(s.titolari[i])));
+  t.bench.forEach((b, i) => Object.assign(b, dati(s.panchina[i])));
+}
+/** Fa partire la partita dalla richiesta. Ritorna { ok: true } oppure { ok: false, errori } senza cambiare niente. */
+function avviaPartita(r) {
+  const errori = controllaRichiesta(r, Object.keys(FORMS)); if (errori.length) return { ok: false, errori };
+  const iu = r.squadre.findIndex((s) => s.utente), mia = clubDaRichiesta(r.squadre[iu]), loro = clubDaRichiesta(r.squadre[1 - iu]);
+  sel.form = mia.modulo; sel.ment = r.squadre[iu].mentalita || 0;
+  if (r.ora === 'giorno' || r.ora === 'notte') { sel.ora = r.ora; if (ATMO) ATMO.applica(sel.ora); }
+  G.comp = { tipo: 'ponte', titolo: r.titolo || '', fuori: iu === 1, rigori: !!r.supplementariERigori };
+  G.ponte = { r, iu, t0: performance.now() };
+  startMatch(mia, loro, r.difficolta || sel.diff);
+  return { ok: true };
+}
+ponte.avviaPartita = avviaPartita;
+/** L'esito della partita in corso nella forma del ponte (docs/ponte-partita.md, §4). finita: falso se si abbandona. */
+function esitoPartita(finita) {
+  const P = G.ponte, sq = (k) => (k === 0 ? P.iu : 1 - P.iu), paio = (v) => (P.iu === 0 ? [v[0], v[1]] : [v[1], v[0]]), fine = finita ? 90 : minute();
+  const id = (p) => p.pid || `${p.team.club.id}/${p.name}`, somma = (k, c) => G.teams[k].players.concat(G.teams[k].off, G.teams[k].out).reduce((a, p) => a + (p.s[c] || 0), 0);
+  const tot = G.stats.poss[0] + G.stats.poss[1] || 1, ph = Math.round(G.stats.poss[0] / tot * 100);
+  const righe = G.teams.flatMap((t, k) => t.players.concat(t.off, t.out).map((p) => ({ p, k, v: vote(p) })));
+  const migliore = righe.slice().sort((x, y) => y.v - x.v || y.p.s.g - x.p.s.g || y.p.s.a - x.p.s.a)[0];
+  return {
+    versione: 1, finita, minuti: fine, secondiVeri: Math.round((performance.now() - P.t0) / 1000),
+    punteggio: paio([G.teams[0].score, G.teams[1].score]), rigori: G.soRes ? paio(G.soRes) : null,
+    marcatori: G.goals.map((g) => ({ squadra: sq(g.t), id: g.chi ? id(g.chi) : '', nome: g.chi ? g.chi.name : g.name, minuto: g.min, ruolo: g.chi ? g.chi.ruoloP || RUOLO[g.chi.nat] : '', assist: g.assist ? { id: id(g.assist), nome: g.assist.name } : null, tipo: g.tipo })),
+    cartellini: G.cards.map((c) => { const t = G.teams[c.t], p = t.players.concat(t.off, t.out).find((x) => x.name === c.name); return { squadra: sq(c.t), id: p ? id(p) : `${t.club.id}/${c.name}`, nome: c.name, minuto: c.min, colore: c.c === 'r' ? 'rosso' : 'giallo' }; }),
+    cambi: (G.cambi || []).map((c) => ({ squadra: sq(c.t), minuto: c.min, esce: id(c.esce), entra: id(c.entra) })),
+    giocatori: righe.map(({ p, k, v }) => ({ squadra: sq(k), id: id(p), nome: p.name, ruolo: p.ruoloP || RUOLO[p.nat], minuti: Math.max(0, (p.fuoriMin === undefined ? fine : Math.min(fine, p.fuoriMin)) - (p.dentroMin || 0)),
+      energia: Math.round(clamp(p.en, 0, 1) * 100), voto: v, gol: p.s.g, assist: p.s.a, tiri: p.s.sh, tiriInPorta: p.s.sot, passaggi: p.s.pa, passaggiRiusciti: p.s.pc, contrasti: p.s.tk, intercetti: p.s.int, parate: p.s.sv, falli: p.s.fl, infortunato: !!p.inj })),
+    squadre: { tiri: paio(G.stats.shots), tiriInPorta: paio([somma(0, 'sot'), somma(1, 'sot')]), possesso: paio([ph, 100 - ph]), parate: paio([somma(0, 'sv'), somma(1, 'sv')]), falli: paio(G.stats.fouls), fuorigioco: paio(G.stats.offs),
+      angoli: paio(G.stats.corners), ammonizioni: paio(G.stats.yel), espulsioni: paio(G.stats.red), pali: paio(G.stats.pali) },
+    migliore: migliore ? id(migliore.p) : null,
+  };
+}
+/** Chiude il ponte una volta sola: ritorna la funzione che consegna l'esito alla home (da chiamare dopo essere usciti dalla partita), o null. */
+function chiudiPonte(finita) {
+  const P = G.ponte; if (!P || !G.teams.length) { G.ponte = null; return null; }
+  const esito = esitoPartita(finita && G.state === 'full'); G.ponte = null; G.comp = null;
+  return typeof P.r.allaFine === 'function' ? () => P.r.allaFine(esito) : null;
+}
 function startMatch(h, a, d) {
   AU.init(); AU.musica(false); G.diff = DIFF[d] || DIFF.normale; G.shown = false; G.paused = false; G.auto = false; // la musica dei menu sfuma: comincia la partita
-  const H = club(h), A = club(a);
+  const H = typeof h === 'string' ? club(h) : h, A = typeof a === 'string' ? club(a) : a;
   $('#vsH').src = img(H.id); $('#vsA').src = img(A.id); $('#vsHn').textContent = H.name; $('#vsAn').textContent = A.name;
   show('#vs'); $('#hud').classList.add('nas'); G.state = 'menu';
   setTimeout(() => { show(null); $('#hud').classList.remove('nas'); newMatch(H, A); AU.amb(1); }, 1900);
@@ -3111,7 +3172,8 @@ function showEnd() {
     salvaK(); G.comp = null;
   }
   if (carr && G.premio) nota += ` · +${mon(G.premio)} monete`;
-  $('#esitoC').textContent = nota; $('#continua').classList.toggle('nas', !carr); $('#rivincita').classList.toggle('nas', carr); $('#cambia').classList.toggle('nas', carr);
+  // dal ponte si esce solo con «Continua»: è lì che l'esito torna alla home
+  const esce = carr || !!G.ponte; $('#esitoC').textContent = nota; $('#continua').classList.toggle('nas', !esce); $('#rivincita').classList.toggle('nas', esce); $('#cambia').classList.toggle('nas', esce);
   $('#marc').textContent = G.goals.map((g) => `${g.name} ${g.min}' (${G.teams[g.t].club.short})`).join(' · ');
   const tot = G.stats.poss[0] + G.stats.poss[1] || 1, ph = Math.round(G.stats.poss[0] / tot * 100);
   $('#cart').innerHTML = G.cards.map((c) => `<span><i class="${c.c}"></i>${c.name.replace(/[<>&]/g, '')} ${c.min}' (${G.teams[c.t].club.short})</span>`).join('');
@@ -3194,6 +3256,6 @@ async function boot() {
   $('#carica').remove(); casa(); requestAnimationFrame(loop);
   CLOUD.quandoCambia(aggiornaCloud); CLOUD.avvia().then((a) => { if (a.utente) allAccesso(); aggiornaCloud(); }); // l'account non blocca mai l'avvio
 }
-window.__g = { G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { avviaPartita, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
 })();
