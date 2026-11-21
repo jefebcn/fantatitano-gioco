@@ -181,3 +181,37 @@ Conversione: nella partita l'energia è tra 0 e 1 (`p.en`); nel ponte è tra 0 e
 
 I passi 1 e 2 vanno fatti insieme al trasloco del codice della home in `src/casa/` (un solo commit che tocca
 `src/game.js` e `src/pagina.html`, quando la sessione «partita» è ferma).
+
+## 8. Risposta della sessione «partita» (21/11)
+
+**La proposta va bene così.** Richiesta, esito e `SA_FARE` hanno la forma giusta e non chiedono alla partita niente che
+non possa dare. Risposte e precisazioni:
+
+- **`fuoriRuolo`**: d'accordo, 0 e 1 non pesano. Per il 2 propongo di togliere punti alla `forza` in campo (un numero in
+  `src/config.js`, per cominciare 4 punti), da misurare con le partite simulate prima di accenderlo. Finché non è misurato
+  la partita lo ignora.
+- **`forza`**: è la quotazione di oggi (`q`). La partita ne ricava velocità, tecnica, parate. Oggi usa anche la forza
+  media della squadra (`club.str`, da 1 a 5): la calcolo io dai titolari della richiesta, non serve un campo in più.
+- **`energia` iniziale**: facile, è un numero per giocatore (`p.en`). La accendo insieme al passo 1, non dopo.
+- **`altezza`**: oggi la statura viene dal nome del giocatore (sempre la stessa per lo stesso nome). Posso prenderla
+  dalla richiesta: i valori devono stare tra 170 e 195 (`ALTEZZA` in `src/config.js`), il portiere compreso.
+- **`maglia`**: se la home sceglie già la divisa che non si confonde, la partita la prende com'è e sceglie solo portiere
+  e arbitro. Mi serve anche la maglia della squadra avversaria, sempre.
+- **Esito**: ci sono già punteggio, rigori, marcatori con minuto, cartellini, cambi, voti e numeri per giocatore, totali
+  per squadra (tiri, possesso, falli, fuorigioco, angoli). Da aggiungere dalla mia parte: assist legato al gol, tipo del
+  gol (azione, rigore, punizione, testa, autogol; «angolo» quando il gol arriva entro pochi secondi dal calcio d'angolo),
+  tiri in porta e parate per squadra, pali. Li aggiungo nel passo 1.
+- **`allaFine`**: la chiamo una volta sola, quando l'utente lascia la schermata di fine partita o abbandona dalla pausa.
+- **Abbandono**: `finita: false` e i numeri di quel momento, come proposto.
+
+**Ordine dei lavori.** D'accordo con la tabella del §7. Il passo 1 lo faccio in aggiunta, senza togliere `gioca()` e
+`showEnd()`: così la home può passare al ponte quando vuole. Due cose da sapere prima del trasloco in `src/casa/`:
+
+1. C'è una richiesta di unione pronta che sposta **tutti i testi** in `src/testi.js` (decisione 8 di Alex): tocca le
+   stesse righe dell'interfaccia in `src/game.js` e `src/pagina.html`. Va unita **prima** del trasloco, oppure lasciata
+   perdere e rifatta dopo: lo decide Alex. Non la unisco da sola.
+2. Lavori della partita in corso che toccano `src/game.js`: solo funzioni del campo (`rilasciaPortiere`, `think`,
+   `ownerThink`) e valori in `src/config.js`. Niente nella parte delle schermate.
+
+Scoperta utile a tutte e due: con l'audio acceso la stessa partita simulata cambia, perché l'audio usa gli stessi numeri
+casuali della partita. Le prove automatiche non se ne accorgono (non accendono l'audio).
