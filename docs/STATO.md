@@ -94,7 +94,10 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Venti prove da 32 partite (21/11) su tiro, tenuta, traversoni, marcature, pressing, rinvio, riprese rapide e movimenti
   senza palla: nessuna alza i tiri (tabella e misure in `docs/dls-gameplay.md`, «Dove si ferma l'azione»). Solo 13
   possessi su 28 superano la trequarti; i passaggi in avanti di almeno 8 metri riescono 69 volte su 100.
-- FERMI finché Alex non manda le statistiche di una partita di Dream League (tiri per squadra). Poi: conduzione in avanti
+- Partita intera registrata e analizzata (21/11): elenco dei difetti in `docs/dls-gameplay.md`. Corretti i calci a vuoto
+  (il calcio aspetta che il piede arrivi sul pallone, `CARICO`) e il rinvio con le mani del portiere (pallone nella mano
+  che lancia). Restano: parate a distanza, giravolta di scatto, pallone che sfila a chi riceve, piedi che strisciano.
+- FERMI con le varianti finché Alex non manda le statistiche di una partita di Dream League (tiri per squadra). Poi: conduzione in avanti
   a campo libero, difesa meno perfetta (ritardo 0,2–0,3 s sui passaggi, linea meno compatta), portiere per ultimo (un gol
   ogni 4–5 tiri).
 - Simulazione ripetibile (21/11): modalità di prova `?seme=N` o `__g.prova(N)` (audio spento, semi fissi); lo stato di una

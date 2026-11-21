@@ -128,8 +128,12 @@ export const DIST = { pass: [5, 45], cross: [12, 30], lancio: [15, 40] };
 // `cambio` secondi. La barra della potenza diventa rossa da `rosso` (parte della carica piena). `scala`: grandezza dei segni
 // sopra le teste (parte dell'altezza dello schermo)
 export const SEGNI = { x: 1.1, alto: 1.6, cambio: .2, rosso: .8, scala: .12 };
-// Secondi tra l'inizio del gesto e il momento in cui il piede colpisce il pallone (passaggio, tiro, lancio)
-export const CARICO = { passa: .1, calcia: .14, lancia: .14 };
+// Secondi tra l'inizio del gesto e il momento in cui il piede colpisce il pallone (passaggio, tiro, lancio).
+// In conduzione il pallone sta fino a un metro e mezzo davanti: il calcio aspetta che il piede ci arrivi. Dove il piede
+// lo colpisce lo dice la clip del gesto. Per i gesti che non lo dicono: `portata` metri davanti al corpo e `lato` metri
+// dalla parte del piede che calcia. `chiude`: a quanti metri al secondo il giocatore gli arriva sopra in quell'attesa.
+// `attesa`: quanto si aspetta al massimo, in secondi.
+export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: .15, chiude: 6, attesa: .18 };
 
 /* ---------------------------------------------------------------- palle ferme e sequenza del gol (come Dream League) */
 // Palle ferme: i comandi tornano `comandi` secondi dopo il fischio della rimessa laterale; la dissolvenza scura della rimessa
