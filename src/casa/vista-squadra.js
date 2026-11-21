@@ -5,9 +5,9 @@
 // scheda del giocatore. Ogni cambio è salvato subito.
 import * as CAR from '../carriera.js';
 import { FORMS } from '../config.js';
-import { img, club } from '../game.js';
+import { img } from '../game.js';
 import { adatto, postiModulo } from '../dati/scala.js';
-import { K, DATI, sel, save, salvaK, applicaMio, avviso, mon } from './casa.js';
+import { K, DATI, sel, save, salvaK, applicaMio, avviso, mon, club, moduloMio } from './casa.js';
 import { icona } from './icone.js';
 import { adatta } from './carte.js';
 import { cartaCampo, riempiRitratti } from './giocatore.js';
@@ -28,7 +28,7 @@ const SEGNO = { capitano: 'capitano', rigori: 'rigore', punizioni: 'punizione', 
 // scelto: la carta toccata, in attesa della seconda, come 'xi:3' o 'pan:1'. armato: l'incarico da dare al prossimo titolare
 // toccato; riserve: la colonna di destra mostra le riserve invece della panchina
 let scelto = null, armato = null, riserve = false;
-const modulo = () => (FORMS[sel.form] ? sel.form : '4-3-3');
+const modulo = () => moduloMio();
 const posto = (g) => { const [dove, i] = g.split(':'); return { dove, i: +i }; };
 const dopoCambio = () => { applicaMio(); salvaK(); };
 
@@ -38,13 +38,13 @@ function rosa(c) { return c.xi.concat(c.pan || []).map((x) => ({ x, sc: DATI.sch
 /** Disegna la Squadra del proprio club. */
 export function disegnaSquadra() {
   const c = club(K.club), m = modulo(), fisio = CAR.statoFisio(K, CLUBS), pan = c.pan || [], extra = Math.max(0, pan.length - PANCHINA);
-  const allenabili = c.xi.concat(pan).filter((x) => ((K.allen || {})[x[0]] || 0) < CAR.seduteMax(K) && CAR.costoAllenamento(K, x[0]) <= K.monete).length;
+  const allenabili = CAR.quantiAllenatori(K);
   const ottima = !squadraMigliore(rosa(c), postiModulo(m)).cambiata;
   if (!extra) riserve = false;
   radice.innerHTML = '<div class="qSx">'
     + `<button class="qB" data-az="modulo">${icona('modulo')}<span><b data-adatta data-min="13">${t('squadra.modulo')}</b><i>${m}</i></span></button>`
     + `<button class="qB${riserve ? ' accesa' : ''}" data-az="riserve">${icona('riserve')}<span><b data-adatta data-min="13">${t('squadra.riserve', extra)}</b></span></button>`
-    + `<button class="qB" data-az="fisio">${icona('fisioterapista')}<span><b data-adatta data-min="13">${t('squadra.fisio')}</b>${fisio.manca ? `<i>${icona('moneta')} ${mon(fisio.monete)}</i>` : `<i data-adatta data-corto="${t('fisio.alMassimoCorto')}">${t('fisio.alMassimo')}</i>`}</span></button>`
+    + `<button class="qB" data-az="fisio">${icona('fisioterapista')}<span><b data-adatta data-min="13">${t('squadra.fisio')}</b>${fisio.manca ? `<i data-adatta>${t('fisio.stanca')}</i>` : `<i data-adatta data-corto="${t('fisio.alMassimoCorto')}">${t('fisio.alMassimo')}</i>`}</span></button>`
     + `<button class="qB accesa" data-az="allenatore">${icona('allenatore')}<span><b data-adatta data-min="13">${t('squadra.allenatore')}</b></span>${allenabili ? `<em class="num">${allenabili}</em>` : ''}</button>`
     + `<div class="qInc">${CAR.INCARICHI.map((k) => `<button class="${armato === k ? 'armato' : ''}" data-inc="${k}">${icona(SEGNO[k])}<b>${t('inc.' + k)}</b></button>`).join('')}</div></div>`
     + `<div class="qCampo"></div>`
@@ -63,7 +63,7 @@ function campo(c, m) {
   el.innerHTML = erba(STRETTO) + c.xi.map((x, i) => {
     const sc = schede[i], q = d.dove[i], g = `xi:${i}`;
     return cartaCampo(sc, { club: c.id, energia: CAR.energiaDi(K, x[0]), capitano: inc.capitano === x[0], incarichi: ['rigori', 'punizioni', 'angoli'].filter((k) => inc[k] === x[0]), fuori: adatto(sc.ruolo, posti[i].ruolo),
-      migliorato: ((K.allen || {})[x[0]] || 0) > 0, grande: d.grande, stemma: img(c.id + '-mini'), dati: `data-g="${g}"${scelto === g ? ' data-scelto' : ''}`,
+      migliorato: !!(K.crescita || {})[x[0]], grande: d.grande, stemma: img(c.id + '-mini'), dati: `data-g="${g}"${scelto === g ? ' data-scelto' : ''}`,
       stile: `left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px${d.grande ? '' : `;width:${Math.floor(q.posto - 2)}px`}` });
   }).join('');
 }
@@ -76,7 +76,7 @@ function panchina(c) {
   el.innerHTML = Array.from({ length: PANCHINA }, (_, k) => {
     const x = lista[k]; if (!x) return `<span class="qVuoto"><i>${t('squadra.libero')}</i></span>`;
     const g = `pan:${da + k}`;
-    return cartaCampo(DATI.scheda(x, c.id), { club: c.id, energia: CAR.energiaDi(K, x[0]), migliorato: ((K.allen || {})[x[0]] || 0) > 0, grande: d.grande, ferma: true, stemma: img(c.id + '-mini'), dati: `data-g="${g}"${scelto === g ? ' data-scelto' : ''}` });
+    return cartaCampo(DATI.scheda(x, c.id), { club: c.id, energia: CAR.energiaDi(K, x[0]), migliorato: !!(K.crescita || {})[x[0]], grande: d.grande, ferma: true, stemma: img(c.id + '-mini'), dati: `data-g="${g}"${scelto === g ? ' data-scelto' : ''}` });
   }).join('');
 }
 addEventListener('resize', () => { if (K && !radice.classList.contains('nas')) disegnaSquadra(); });
@@ -102,13 +102,22 @@ function toccaCarta(g) {
 }
 function scegliModulo() {
   const m = modulo();
-  finestra({ titolo: t('modulo.scegli'), scelte: Object.keys(FORMS).map((n) => ({ testo: n, valore: n, attiva: n === m })), fatto: (n) => { if (FORMS[n]) { sel.form = n; save(); scelto = null; disegnaSquadra(); } } });
+  // i moduli oltre i primi si aprono col Centro allenamento: quelli chiusi si vedono, col lucchetto
+  const aperti = CAR.moduliAperti(K, Object.keys(FORMS));
+  finestra({ titolo: t('modulo.scegli'), scelte: Object.keys(FORMS).map((n) => ({ testo: n, nota: aperti.includes(n) ? '' : `${icona('lucchetto')} ${t('modulo.chiuso')}`, valore: n, attiva: n === m })),
+    fatto: (n) => { if (!aperti.includes(n)) return avviso(t('modulo.serveCentro')); if (FORMS[n]) { sel.form = n; save(); scelto = null; disegnaSquadra(); } } });
 }
+// Il fisioterapista: tre interventi a monete (piccolo, medio, completo) e quello completo anche a diamanti
 function fisioterapista() {
   const st = CAR.statoFisio(K, CLUBS);
   if (!st.manca) return avviso(t('fisio.pieni'));
-  if (!st.puo) return avviso(t('risc.monete', mon(st.monete)));
-  finestra({ titolo: t('squadra.fisio'), testo: t('fisio.conferma', mon(st.monete)), si: t('fisio.si'), fatto: () => { if (CAR.fisioterapia(K, CLUBS).ok) { salvaK(); avviso(t('fisio.ok')); } disegnaSquadra(); } });
+  const scelte = st.interventi.map((x) => ({ testo: t('fisio.' + x.id), nota: t('fisio.costo', x.energia, mon(x.monete)), valore: x.id, attiva: x.id === 'medio' }));
+  scelte.push({ testo: t('fisio.completo'), nota: t('fisio.costoDiamanti', st.gemme), valore: 'diamanti' });
+  finestra({ titolo: t('squadra.fisio'), testo: t('fisio.scegli'), scelte, fatto: (v) => {
+    const r = v === 'diamanti' ? CAR.fisioterapia(K, CLUBS, 'completo', true) : CAR.fisioterapia(K, CLUBS, v);
+    if (r.ok) { salvaK(); avviso(t('fisio.ok')); } else avviso(t('fisio.soldi'));
+    disegnaSquadra();
+  } });
 }
 function migliore() {
   const c = club(K.club), tutti = rosa(c), r = squadraMigliore(tutti, postiModulo(modulo()));
@@ -160,7 +169,7 @@ radice.addEventListener('click', (e) => {
     const az = b.dataset.az;
     if (az === 'modulo') return scegliModulo();
     if (az === 'fisio') return fisioterapista();
-    if (az === 'allenatore') return apri('club', 'allenamento');
+    if (az === 'allenatore') return apri('club', 'allenatori');
     if (az === 'migliore') return migliore();
     if (az === 'riserve') { if (!(club(K.club).pan || []).slice(PANCHINA).length) return avviso(t('squadra.nessunaRiserva')); riserve = !riserve; scelto = null; return disegnaSquadra(); }
   }

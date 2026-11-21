@@ -282,6 +282,32 @@ Prova: `node scripts/prove/ponte.cjs` gioca anche uno scenario dal 70' sullo 0-1
 - I titolari arrivano nell'ordine dei posti del modulo e possono essere fuori ruolo (un difensore in un posto da
   centrocampista): `fuoriRuolo` lo dice. Il primo è sempre un portiere e nessun altro titolare lo è.
 
+## Dalla home, 21/11: carriera a divisioni ed economia nuova
+
+Alex ha approvato cinque divisioni con sessanta squadre inventate (`docs/home-spec.md` §5). Nessun file della partita è
+stato toccato; in `src/config.js` ho aggiunto `DIVISIONI` e `STAGIONE` e riscritto `ECONOMIA`, `SCALA.basso` e
+`CARTE.altezze` (tutte voci della home). Cosa cambia in quello che arriva dal ponte:
+
+- **Squadre che non stanno in `CLUBS`.** Le avversarie delle quattro divisioni basse hanno `id` come
+  `esordienti-carigo`: non sono in `public/data.js`, arrivano per intero nella richiesta (nome, sigla, colori, giocatori).
+  Lo stemma lo disegna la home e lo mette in `IMGX[id]`, `IMGX[id + '-mini']` e `CREST[id]`, come per il club dell'utente.
+  `clubDaRichiesta` oggi funziona già (`club(s.id) || {}`): basta non dare per scontato che `club(id)` esista.
+- **`forza` più bassa e coi decimali.** I giocatori inventati sono più deboli del più debole giocatore vero: la loro
+  `forza` va da circa 1,7 a 10 (un vero parte da 5–10 secondo il reparto) e ha i decimali (`3.242`). Resta tra 1 e 99,
+  come chiede `controllaRichiesta`. In campo oggi diventa `(q - 20) / 40`, quindi sono più lenti: va bene così. Se serve
+  una differenza più marcata tra le divisioni è una scelta tua.
+- **Crescita, riscaldamento e Curva dei tifosi stanno già dentro `forza`.** Un giocatore del club cresciuto con gli
+  allenatori, o con il riscaldamento (+5%) o la Curva (+1% per stella, in casa), arriva con la `forza` che dà la sua
+  valutazione di adesso. La partita non deve fare niente.
+- **Stelle della squadra.** `forzaClub` dà una stella a tutte le squadre delle divisioni basse, club dell'utente
+  compreso, perché è fatta sulla scala dei giocatori veri: il termine `VELOCITA.squadra` è uguale per le due squadre.
+- **`K.stadio`** resta da 1 a 5 (le stelle dello Stadio, con 1 anche a zero stelle): le tribune si riempiono come prima.
+- **Energia sotto il 60%.** Alex chiede che sotto il 60% cali prima la velocità e poi le altre doti. È una regola di
+  campo, quindi tua: la home manda solo l'`energia` iniziale, come oggi.
+- **Moduli.** Il club dell'utente può usare solo i moduli aperti dal Centro allenamento (i primi quattro di `FORMS`, poi
+  uno in più per stella): nella richiesta arriva sempre un modulo aperto. La pausa in partita mostra invece tutti gli otto
+  moduli: se vuoi rispettare il limite anche lì, l'elenco è `CAR.moduliAperti(K, Object.keys(FORMS))`.
+
 ## 9. Nota per la sessione della home: saldo sul telefono o sul server (21/11)
 Alex ha deciso che per ora **non si applica niente al database** dell'app: saldo e storico restano sul telefono. Ha
 chiesto però che passare al server sia «un solo cambio». Il file `supabase/002-lapartita-economia.sql` è pronto (non

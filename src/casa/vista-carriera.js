@@ -2,8 +2,9 @@
 // attorno alla nostra squadra; sotto il Trofeo dei Castelli e la Coppa Titano; in fondo le scorciatoie per Sfide,
 // Squadra, Mercato e Il mio club.
 import * as CAR from '../carriera.js';
-import { img, club } from '../game.js';
-import { K, salvaK, esc } from './casa.js';
+import { img } from '../game.js';
+import { K, salvaK, esc, club, applicaMio } from './casa.js';
+import { DIVISIONI } from '../config.js';
 import { ILLUSTRAZIONI } from './illustrazioni.js';
 import { icona, stelline } from './icone.js';
 import { carta, adatta, attrNome } from './carte.js';
@@ -26,10 +27,17 @@ const AZIONI = {
 };
 radice.addEventListener('click', (e) => { const b = e.target.closest('[data-vai]'); if (b && AZIONI[b.dataset.vai]) AZIONI[b.dataset.vai](); });
 
-/** Stagione finita: si conferma in una finestra, poi comincia la stagione nuova (il percorso premi riparte). */
+/**
+ * Stagione finita: la finestra dice come è andata (promozione, retrocessione o niente) e, alla conferma, comincia la
+ * stagione nuova nella divisione giusta; poi mostra i premi di fine stagione.
+ */
 function nuovaStagione() {
-  const aperte = CAR.coppaProssima(K) || CAR.castelliProssima(K);
-  finestra({ titolo: t('stagione.titolo', K.stagione + 1), testo: t(aperte ? 'stagione.testoCoppe' : 'stagione.testo'), si: t('stagione.si'), fatto: () => { CAR.nuovaStagione(K, CLUBS); salvaK(); ridisegna(); } });
+  const aperte = CAR.coppaProssima(K) || CAR.castelliProssima(K), e = CAR.esitoStagione(K, CLUBS), nome = (div) => DIVISIONI[div - 1].nome;
+  const come = e.sale ? t('stagione.sale', nome(e.div)) : e.scende ? t('stagione.scende', nome(e.div)) : K.div === 1 ? t('stagione.restaCima') : t('stagione.resta', e.fatti, e.servono);
+  finestra({ titolo: t('stagione.titolo', K.stagione + 1), testo: come + (aperte ? t('stagione.coppeAperte') : ''), si: t('stagione.si'), fatto: () => {
+    const r = CAR.nuovaStagione(K, CLUBS); applicaMio(); salvaK(); ridisegna();
+    finestra({ titolo: t('stagione.premiTitolo'), testo: t('stagione.premi', r.premi.gemme, r.premi.leggendari, r.premi.contatti), si: t('dopo.continua'), soloSi: true });
+  } });
 }
 
 // l'avversario di una carta: stemma, nome (o sigla, se il nome non ci sta) e stelle
@@ -43,11 +51,13 @@ const trofeo = (nome, ico) => (ILLUSTRAZIONI[nome] ? `<img class="trofeo" src="i
 export function disegnaCarriera() {
   const p = CAR.prossima(K), tab = CAR.classifica(K, CLUBS), io = tab.findIndex((r) => r.id === K.club), oggi = new Date();
   const st = CAR.statoSfide(K, oggi), note = CAR.notifiche(K, oggi);
+  // in fondo alla carta: la divisione in cui si gioca e quanti obiettivi della stagione sono fatti
+  const ob = CAR.obiettivi(K, CLUBS), obiettiviT = K.div === 1 ? t('carriera.cima', CAR.divisione(K).nome) : t('carriera.obiettivi', CAR.divisione(K).nome, ob.filter((o) => o.fatto).length, ob.length);
   // prossima partita di campionato, o la stagione nuova quando il campionato è finito
   const prossima = p
     ? carta({ rotta: 'prossima', titolo: t('carriera.gioca'), nota: t('carriera.campionatoNome'), colore: 'oro', sfondo: 'carta-carriera', classe: 'k-prossima',
       corpo: `${avversario(p.avv)}<span class="quando"><b>${t('carriera.partita', p.giornata, p.totale)}</b><i>${icona(p.inCasa ? 'home' : 'avanti')} ${t(p.inCasa ? 'carriera.inCasa' : 'carriera.inTrasferta')}</i></span>`,
-      piede: `<i data-adatta>${t('carriera.prepara')}</i>` })
+      piede: `<i data-adatta>${obiettiviT}</i>` })
     : carta({ rotta: 'prossima', titolo: t('carriera.nuova'), nota: t('carriera.campionatoNome'), colore: 'oro', classe: 'k-prossima',
       corpo: `${avversario(K.campione || tab[0].id)}<span class="quando"><b>${t('carriera.campione')}</b><i>${t('carriera.tuoPosto', io + 1)}</i></span>`,
       piede: `<i data-adatta>${t('carriera.nuovaStagione')}</i>` });
@@ -72,6 +82,6 @@ export function disegnaCarriera() {
   const scorciatoia = (rotta, ico, bollino) => `<button class="scorc" data-vai="${rotta}">${icona(ico)}<b>${t('home.' + rotta)}</b>${bollino ? '<em class="bollino">!</em>' : ''}</button>`;
   radice.classList.toggle('illustrata', !!ILLUSTRAZIONI['sfondo-home']);
   radice.innerHTML = prossima + classifica + castelli + coppa
-    + `<span class="scorciatoie">${scorciatoia('sfide', 'sfide', st.daRiscuotere > 0)}${scorciatoia('squadra', 'squadra', false)}${scorciatoia('mercato', 'mercato', false)}${scorciatoia('club', 'club', note.some((n) => n.vai === 'stadio' || n.vai === 'allenatore'))}</span>`;
+    + `<span class="scorciatoie">${scorciatoia('sfide', 'sfide', st.daRiscuotere > 0)}${scorciatoia('squadra', 'squadra', note.some((n) => n.vai === 'squadra'))}${scorciatoia('mercato', 'mercato', false)}${scorciatoia('club', 'club', note.some((n) => n.vai === 'club'))}</span>`;
   adatta(radice);
 }

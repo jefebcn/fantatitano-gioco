@@ -27,7 +27,7 @@ radice.addEventListener('click', (e) => {
 export function finestra({ titolo, testo = '', si = '', no, fatto, soloSi = false, scelte = null }) {
   el('finT').textContent = titolo; el('finP').textContent = testo; el('finP').classList.toggle('nas', !testo); el('finSi').textContent = si; el('finNo').textContent = no || t('finestra.annulla');
   el('finS').innerHTML = scelte ? scelte.map((s) => `<button class="bottone${s.attiva ? '' : ' secondo'}" data-scelta="${String(s.valore).replace(/[<>&"]/g, '')}"><b>${s.testo}</b>${s.nota ? `<i>${s.nota}</i>` : ''}</button>`).join('') : '';
-  el('finS').classList.toggle('nas', !scelte); el('finSi').classList.toggle('nas', !!scelte); el('finNo').classList.toggle('nas', soloSi || !!scelte);
+  el('finS').classList.toggle('note', !!scelte && scelte.some((x) => x.nota)); el('finS').classList.toggle('nas', !scelte); el('finSi').classList.toggle('nas', !!scelte); el('finNo').classList.toggle('nas', soloSi || !!scelte);
   quando = fatto; radice.classList.remove('nas');
 }
 /** Chiude la finestra senza fare niente (quando si cambia schermata per altre vie). */
