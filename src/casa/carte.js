@@ -20,18 +20,25 @@ export function carta({ rotta, titolo, nota = '', colore = 'azzurra', corpo, pie
 }
 
 /**
- * Fa stare su una riga i testi segnati con data-adatta dentro `radice`: se un testo è più largo del suo posto il
- * carattere si rimpicciolisce a passi fino a `data-min` (12 se non è scritto); se ancora non ci sta e c'è data-corto,
- * si usa quel testo più breve; se nemmeno quello ci sta e c'è data-sparisce, il testo non si mostra. Così niente viene
- * tagliato coi puntini e niente va a capo male.
+ * Fa stare su una riga i testi segnati con data-adatta dentro `radice`, senza mai tagliarli. Se un testo è più largo del
+ * suo posto: 1) il carattere si rimpicciolisce a passi fino a `data-min` (12 se non è scritto); 2) si prova il testo più
+ * breve di data-corto, poi quello di data-sigla, ognuno prima a grandezza piena e poi rimpicciolito; 3) se c'è
+ * data-due-righe il testo va su due righe; 4) se c'è data-sparisce il testo non si mostra.
  */
 export function adatta(radice) {
   for (const el of radice.querySelectorAll('[data-adatta]')) {
-    el.style.fontSize = ''; el.hidden = false; if (el.dataset.intero) el.textContent = el.dataset.intero;
-    const min = +el.dataset.min || 12; let px = parseFloat(getComputedStyle(el).fontSize);
-    while (el.scrollWidth > el.clientWidth + .5 && px > min) { px = Math.max(min, px - 1); el.style.fontSize = `${px}px`; }
-    if (el.scrollWidth > el.clientWidth + .5 && el.dataset.corto) { el.dataset.intero = el.textContent; el.textContent = el.dataset.corto; }
-    // ultimo passo, solo per i testi che si possono togliere (data-sparisce): meglio niente che un testo tagliato
-    if (el.scrollWidth > el.clientWidth + .5 && el.dataset.sparisce !== undefined) el.hidden = true;
+    if (el.dataset.intero === undefined) el.dataset.intero = el.textContent;
+    el.hidden = false; el.classList.remove('dueRighe');
+    const min = +el.dataset.min || 12, troppo = () => el.scrollWidth > el.clientWidth + .5;
+    const prova = (testo) => {
+      el.textContent = testo; el.style.fontSize = ''; let px = parseFloat(getComputedStyle(el).fontSize);
+      while (troppo() && px > min) { px = Math.max(min, px - 1); el.style.fontSize = `${px}px`; }
+      return !troppo();
+    };
+    if ([el.dataset.intero, el.dataset.corto, el.dataset.sigla].filter((x, i, l) => x && l.indexOf(x) === i).some(prova)) continue;
+    if (el.dataset.dueRighe !== undefined) { prova(el.dataset.corto || el.dataset.intero); el.classList.add('dueRighe'); continue; }
+    if (el.dataset.sparisce !== undefined) el.hidden = true;
   }
 }
+/** Gli attributi che fanno adattare il nome di un club: intero, poi breve, poi sigla (`n` viene da nomiDi). */
+export const attrNome = (n, min = 12) => `data-adatta data-min="${min}" data-corto="${n.breve.replace(/[<>&"]/g, '')}" data-sigla="${n.sigla.replace(/[<>&"]/g, '')}"`;

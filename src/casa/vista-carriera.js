@@ -6,7 +6,8 @@ import { img, club } from '../game.js';
 import { K, salvaK, esc } from './casa.js';
 import { ILLUSTRAZIONI } from './illustrazioni.js';
 import { icona, stelline } from './icone.js';
-import { carta, adatta } from './carte.js';
+import { carta, adatta, attrNome } from './carte.js';
+import { nomiDi } from '../dati/squadre.js';
 import { finestra } from './finestra.js';
 import { t } from './testi.js';
 import { apri, ridisegna } from './nav.js';
@@ -32,7 +33,7 @@ function nuovaStagione() {
 }
 
 // l'avversario di una carta: stemma, nome (o sigla, se il nome non ci sta) e stelle
-const avversario = (id) => { const c = club(id); return `<img class="stemma" src="${img(c.id)}" alt=""><span class="chi"><b data-adatta data-min="16" data-corto="${esc(c.short)}">${esc(c.name)}</b>${stelline(c.str)}</span>`; };
+const avversario = (id) => { const c = club(id); return `<img class="stemma" src="${img(c.id)}" alt=""><span class="chi"><b ${attrNome(nomiDi(c), 16)}>${esc(c.name)}</b>${stelline(c.str)}</span>`; };
 // la posizione in classifica: una medaglia (oro, argento, bronzo) per i primi tre, il numero per gli altri
 const posto = (n) => `<i class="pos${n <= 3 ? ' med m' + n : ''}">${n}</i>`;
 const dr = (n) => (n > 0 ? `+${n}` : String(n).replace('-', '−'));
@@ -53,14 +54,14 @@ export function disegnaCarriera() {
   // classifica: cinque righe attorno alla nostra, che è evidenziata
   const righe = 5, da = Math.max(0, Math.min(io - 2, tab.length - righe));
   const classifica = carta({ rotta: 'classifica', titolo: t('carriera.classifica'), nota: t('carriera.stagione', K.stagione), colore: 'azzurra', classe: 'k-classifica',
-    corpo: `<span class="tabella"><span class="rigaC testa"><i>${t('classifica.pos')}</i><i></i><i>${t('classifica.squadra')}</i><i>${t('classifica.dr')}</i><i>${t('classifica.pt')}</i></span>`
-      + tab.slice(da, da + righe).map((r, i) => { const c = club(r.id); return `<span class="rigaC${r.id === K.club ? ' io' : ''}">${posto(da + i + 1)}<img src="${img(r.id + '-mini')}" alt=""><b data-adatta data-corto="${esc(c.short)}">${esc(c.name)}</b><i>${dr(r.gf - r.gs)}</i><em>${r.pt}</em></span>`; }).join('') + '</span>' });
+    corpo: `<span class="tabella"><span class="rigaC capo"><i>${t('classifica.pos')}</i><i></i><i>${t('classifica.squadra')}</i><i>${t('classifica.dr')}</i><i>${t('classifica.pt')}</i></span>`
+      + tab.slice(da, da + righe).map((r, i) => { const c = club(r.id); return `<span class="rigaC${r.id === K.club ? ' io' : ''}">${posto(da + i + 1)}<img src="${img(r.id + '-mini')}" alt=""><b ${attrNome(nomiDi(c))}>${esc(c.name)}</b><i>${dr(r.gf - r.gs)}</i><em>${r.pt}</em></span>`; }).join('') + '</span>' });
   // le due coppe: la prossima partita, oppure come è finita
   const coppaCarta = (rotta, titolo, classe, immagine, ico, pr, fine) => {
     const f = pr ? null : fine();
     const c = club(pr ? pr.avv : f.id);
     return carta({ rotta, titolo, colore: 'blu', classe: `k-coppa ${classe}`,
-      corpo: `<img class="stemma" src="${img(c.id)}" alt=""><span class="chi"><i class="su">${pr ? t('carriera.prossimaPartita') : f.titolo}</i><b data-adatta data-min="16" data-corto="${esc(c.short)}">${esc(c.name)}</b>${stelline(c.str)}<i class="fase" data-adatta>${pr ? pr.nome : f.testo}</i></span>${trofeo(immagine, ico)}` });
+      corpo: `<img class="stemma" src="${img(c.id)}" alt=""><span class="chi"><i class="su">${pr ? t('carriera.prossimaPartita') : f.titolo}</i><b ${attrNome(nomiDi(c), 16)}>${esc(c.name)}</b>${stelline(c.str)}<i class="fase" data-adatta>${pr ? pr.nome : f.testo}</i></span>${trofeo(immagine, ico)}` });
   };
   const kc = K.castelli, camC = CAR.castelliCampione(K), k = K.coppa;
   const castelli = coppaCarta('castelli', t('carriera.castelli'), 'k-castelli', 'trofeo-castelli', 'castelli', CAR.castelliProssima(K),

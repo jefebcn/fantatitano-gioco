@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { SCALA, CARTE, FORMS } from '../src/config.js';
 import { scala, creaDati, statistiche, moduli, postiModulo, adatto, fascia, hash } from '../src/dati/scala.js';
 import { GIOCATORI } from '../src/dati/giocatori.js';
+import { SQUADRE, nomeBreve, nomiDi } from '../src/dati/squadre.js';
 
 const src = readFileSync(new URL('../public/data.js', import.meta.url), 'utf8');
 const clubs = JSON.parse(src.slice(src.indexOf('['), src.lastIndexOf(']') + 1));
@@ -75,6 +76,17 @@ for (const c of clubs) assert.ok(new Set(GIOCATORI[c.id].map((g) => g[1])).size 
 // chi cambia squadra si porta dietro ruolo, piede e altezza
 const viaggia = clubs[0].xi[1], s0 = D.scheda(viaggia, clubs[0].id), s1 = D.scheda(viaggia.concat(clubs[0].id), 'academy');
 assert.deepEqual([s1.ruolo, s1.piede, s1.altezza, s1.val], [s0.ruolo, s0.piede, s0.altezza, s0.val]);
+
+// i tre nomi di ogni squadra: completo e sigla come nei dati delle squadre, breve non più lungo di 14 lettere e mai vuoto
+assert.deepEqual(Object.keys(SQUADRE).sort(), clubs.map((c) => c.id).sort());
+for (const c of clubs) {
+  const n = nomiDi(c); assert.equal(n.nome, c.name); assert.equal(n.sigla, c.short); assert.equal(n.sigla.length, 3);
+  assert.ok(n.breve && n.breve.length <= 14 && n.breve.length <= n.nome.length, `nome breve di ${c.id}: «${n.breve}»`);
+}
+// il club dell'utente ha un nome suo: il breve si calcola, senza tagliare parole a metà; se non si può resta la sigla
+for (const [nome, breve] of [['Sporting Serravalle U', 'Sp. Serravalle'], ['Titani FC', 'Titani FC'], ['Libera Acquaviva', 'Lib. Acquaviva'], ['Polisportiva Tre Castelli', 'Tre Castelli'], ['Unione Sportiva Montegiardino', 'Montegiardino'], ['Atletico Fiorentino Calcio', 'Fiorentino']]) assert.equal(nomeBreve(nome), breve);
+for (const nome of ['Real Montale', 'Atletico Borgo', 'Rocca United', 'Guaita Calcio 1921', 'Sporting Serravalle', 'Real Sporting Borgo Maggiore']) { const b = nomeBreve(nome); assert.ok(b.length <= 14 && b.split(' ').every((p) => nome.includes(p.replace(/\.$/, ''))), `«${nome}» → «${b}»`); }
+assert.deepEqual(nomiDi({ id: 'academy', name: 'Supercalifragilistico', short: 'SUP' }), { nome: 'Supercalifragilistico', breve: 'SUP', sigla: 'SUP' });
 
 const conta = {}; for (const t of tutti) conta[t.s.ruolo] = (conta[t.s.ruolo] || 0) + 1;
 console.log(`dati: ${n} giocatori, valutazioni 55-82, ${alti} da 76 in su; ruoli ${JSON.stringify(conta)}`);
