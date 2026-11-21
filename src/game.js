@@ -2312,13 +2312,21 @@ function hud() {
   const hh = $('#hud'); hh.classList.toggle('fermo', fermo); hh.classList.toggle('piazzato', fermo && !!G.fk);
 }
 const radar = $('#radar'), rx = radar.getContext('2d');
+// Minimappa come Dream League: sfondo semitrasparente, i giocatori come piccole maglie nei colori della propria divisa
+// (il portiere con la sua), il pallone bianco. Non dice chi ha palla: chi si comanda ha il bordo più marcato.
+function maglietta(x, y, s, colore, bordo, spesso) {
+  rx.beginPath(); rx.moveTo(x - .25 * s, y - .5 * s); rx.lineTo(x - .65 * s, y - .25 * s); rx.lineTo(x - .5 * s, y); rx.lineTo(x - .35 * s, y - .08 * s);
+  rx.lineTo(x - .35 * s, y + .5 * s); rx.lineTo(x + .35 * s, y + .5 * s); rx.lineTo(x + .35 * s, y - .08 * s); rx.lineTo(x + .5 * s, y); rx.lineTo(x + .65 * s, y - .25 * s);
+  rx.lineTo(x + .25 * s, y - .5 * s); rx.quadraticCurveTo(x, y - .25 * s, x - .25 * s, y - .5 * s); rx.closePath();
+  rx.fillStyle = colore; rx.fill(); rx.lineWidth = spesso ? 2.6 : 1.4; rx.strokeStyle = bordo; rx.stroke();
+}
 function drawRadar() {
   const w = radar.width, h = radar.height; rx.clearRect(0, 0, w, h);
-  rx.fillStyle = 'rgba(10,10,12,.62)'; rx.fillRect(0, 0, w, h); rx.strokeStyle = 'rgba(255,255,255,.45)'; rx.lineWidth = 2; rx.strokeRect(5, 5, w - 10, h - 10);
-  rx.beginPath(); rx.moveTo(w / 2, 5); rx.lineTo(w / 2, h - 5); rx.stroke();
-  const X = (x) => 5 + (x + HL) / (HL * 2) * (w - 10), Z = (z) => 5 + (z + HW) / (HW * 2) * (h - 10);
-  for (const t of G.teams) for (const p of t.players) { rx.fillStyle = p === G.ctrl ? '#D9F51F' : (t.idx ? '#ff5a5a' : '#ffffff'); rx.beginPath(); rx.arc(X(p.x), Z(p.z), p === G.ctrl ? 6 : 4.4, 0, 7); rx.fill(); }
-  rx.fillStyle = '#ffb300'; rx.beginPath(); rx.arc(X(G.ball.x), Z(G.ball.z), 3.6, 0, 7); rx.fill();
+  rx.fillStyle = 'rgba(10,10,12,.4)'; rx.fillRect(0, 0, w, h); rx.strokeStyle = 'rgba(255,255,255,.5)'; rx.lineWidth = 2; rx.strokeRect(5, 5, w - 10, h - 10);
+  rx.beginPath(); rx.moveTo(w / 2, 5); rx.lineTo(w / 2, h - 5); rx.stroke(); rx.beginPath(); rx.arc(w / 2, h / 2, h * .13, 0, 7); rx.stroke();
+  const X = (x) => 5 + (x + HL) / (HL * 2) * (w - 10), Z = (z) => 5 + (z + HW) / (HW * 2) * (h - 10), s = h * .095;
+  for (const t of G.teams) for (const p of t.players) { const k = p.i === 0 ? t.gkit : t.kit; maglietta(X(p.x), Z(p.z), s, k.shirt, p === G.ctrl ? '#D9F51F' : lum(k.shirt) > .6 ? 'rgba(0,0,0,.7)' : 'rgba(255,255,255,.85)', p === G.ctrl); }
+  rx.fillStyle = '#fff'; rx.beginPath(); rx.arc(X(G.ball.x), Z(G.ball.z), h * .028, 0, 7); rx.fill(); rx.lineWidth = 1.2; rx.strokeStyle = '#000'; rx.stroke();
 }
 
 /* ------------------------------------------------------------------ audio: effetti, pubblico e musica (src/audio.js) */
