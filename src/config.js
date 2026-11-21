@@ -291,3 +291,49 @@ export const ECONOMIA = {
     stemma: { m: 300 }, stemmaRaro: { g: 5 },
   },
 };
+
+// ---------- Valutazioni mostrate (home, carte dei giocatori, mercato) ----------
+// La forza usata in partita non cambia: qui si decide solo che numero si vede. Funzioni in src/dati/scala.js.
+// interno: la scala di lavoro, dal giocatore più debole al più forte del suo reparto (portieri, difensori,
+//   centrocampisti, attaccanti).
+// punti: la conversione, UNA sola per valutazione e statistiche: coppie [valore interno, numero mostrato] unite da
+//   segmenti. È sempre crescente, quindi l'ordine di forza resta quello. Per il Campionato Sammarinese: quasi tutti tra
+//   55 e 75, i migliori tra 76 e 82, oltre 85 solo chi si allena molto.
+// stat: il minimo e il massimo di una statistica mostrata. rumore: di quanto una statistica si scosta, giocatore per
+//   giocatore, dal profilo del suo ruolo.
+// fasce: da che valutazione la carta è argento e da quale è oro (sotto è bronzo). colori: da che valore una statistica è
+//   gialla e da quale è verde (sotto è rossa).
+// capitani: tra quali valutazioni stanno i candidati di «Ingaggia il tuo capitano» e quanti sono.
+export const SCALA = {
+  interno: [55, 88],
+  punti: [[30, 42], [55, 55], [65, 60], [72, 64], [78, 68], [82, 71], [85, 75], [88, 82], [100, 90]],
+  stat: [30, 99],
+  rumore: 5,
+  fasce: { argento: 65, oro: 75 },
+  colori: [60, 72],
+  capitani: { min: 70, max: 78, quanti: 9 },
+};
+// Carte dei giocatori: le otto statistiche (portieri e giocatori di movimento) e, ruolo per ruolo, quanto pesa ogni
+// statistica nella valutazione (pesi) e come è fatto in media chi gioca lì (doti, in punti della scala interna).
+// simili: coppie di ruoli vicini, dove un giocatore rende quasi uguale (avviso leggero invece di «fuori ruolo»).
+// posto: come si legge il ruolo di un posto dalle posizioni del modulo (FORMS, campo di 100 × 64): oltre `largo` di
+//   lato è un esterno (`largoC` per i centrocampisti), un esterno di centrocampo più indietro di `basso` è un terzino,
+//   un centrocampista più indietro di `cdc` è un mediano e più avanti di `coc` un trequartista.
+export const CARTE = {
+  chiavi: { P: ['PAR', 'RIF', 'POS', 'USC', 'PRE', 'RIN', 'PAS', 'VEL'], G: ['VEL', 'ACC', 'RES', 'POT', 'CON', 'PAS', 'TIR', 'DIF'] },
+  ruoli: {
+    POR: { reparto: 'P', pesi: { PAR: 6, RIF: 5, POS: 4, USC: 3, PRE: 2 }, doti: { PAR: 3, RIF: 2, USC: -2, PRE: -1, RIN: -6, PAS: -14, VEL: -18 } },
+    DC: { reparto: 'D', pesi: { DIF: 8, POT: 5, RES: 4, VEL: 2, PAS: 1 }, doti: { VEL: -6, ACC: -8, RES: 2, POT: 6, CON: -8, PAS: -5, TIR: -20, DIF: 6 } },
+    TS: { reparto: 'D', pesi: { DIF: 6, RES: 4, VEL: 4, POT: 2, PAS: 2, ACC: 2 }, doti: { VEL: 4, ACC: 2, RES: 3, POT: -4, CON: -3, PAS: -1, TIR: -16, DIF: 2 } },
+    TD: { reparto: 'D', pesi: { DIF: 6, RES: 4, VEL: 4, POT: 2, PAS: 2, ACC: 2 }, doti: { VEL: 4, ACC: 2, RES: 3, POT: -4, CON: -3, PAS: -1, TIR: -16, DIF: 2 } },
+    CDC: { reparto: 'C', pesi: { PAS: 5, DIF: 5, CON: 4, RES: 4, POT: 2 }, doti: { VEL: -5, ACC: -4, RES: 4, POT: 2, PAS: 2, TIR: -10, DIF: 3 } },
+    CC: { reparto: 'C', pesi: { PAS: 7, CON: 6, RES: 5, TIR: 1, DIF: 1 }, doti: { VEL: -3, ACC: -2, RES: 3, POT: -3, CON: 2, PAS: 4, TIR: -6, DIF: -6 } },
+    COC: { reparto: 'C', pesi: { CON: 7, PAS: 6, TIR: 4, RES: 2, ACC: 1 }, doti: { ACC: 2, RES: -3, POT: -6, CON: 5, PAS: 4, TIR: 1, DIF: -16 } },
+    AS: { reparto: 'A', pesi: { VEL: 6, CON: 5, TIR: 4, ACC: 3, PAS: 2 }, doti: { VEL: 5, ACC: 5, RES: -2, POT: -8, CON: 3, PAS: -2, TIR: -1, DIF: -20 } },
+    AD: { reparto: 'A', pesi: { VEL: 6, CON: 5, TIR: 4, ACC: 3, PAS: 2 }, doti: { VEL: 5, ACC: 5, RES: -2, POT: -8, CON: 3, PAS: -2, TIR: -1, DIF: -20 } },
+    ATT: { reparto: 'A', pesi: { TIR: 8, VEL: 4, CON: 4, POT: 3, ACC: 1 }, doti: { VEL: 1, RES: -3, POT: 3, PAS: -6, TIR: 5, DIF: -22 } },
+  },
+  simili: [['TS', 'TD'], ['AS', 'AD'], ['DC', 'CDC'], ['CDC', 'CC'], ['CC', 'COC'], ['TS', 'AS'], ['TD', 'AD'], ['COC', 'AS'], ['COC', 'AD'], ['COC', 'ATT'], ['AS', 'ATT'], ['AD', 'ATT']],
+  posto: { largo: 15, largoC: 17, basso: -14, cdc: -16.5, coc: -5 },
+  sinistri: .24,
+};

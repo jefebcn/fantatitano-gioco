@@ -247,18 +247,26 @@ importi anche senza rete) e le stesse righe in `lapartita_listino`; una prova au
 | Allenatore livello 2 / 3 / 4 / 5 | ● 2.000 / ● 5.000 / ● 10.000 + ◆ 15 / ● 20.000 + ◆ 30 | nuovo |
 | Pezzo dello stemma | ● 300 i semplici, ◆ 5 i rari | nuovo |
 
-Prezzo di un giocatore = (valutazione − 50)² × coefficiente, arrotondato alle decine. Le valutazioni vanno da 55 a 88.
+**Scala nuova delle valutazioni (21/11, prompt «Home, menu e sezioni»).** Le valutazioni mostrate vanno da 55 a 82
+(`SCALA` in `src/config.js`, funzioni in `src/dati/scala.js`): quasi tutti tra 55 e 75, i migliori tra 76 e 82. La forza
+usata in partita non cambia. Il prezzo segue la scala nuova:
 
-| Valutazione | Oggi (coeff. 2,2) | Proposta (coeff. 4) |
+Prezzo di un giocatore = (valutazione − 45)² × 4, arrotondato alle decine.
+
+| Valutazione | Chi è | Prezzo |
 |---|---|---|
-| 60 | 220 | 400 |
-| 65 | 500 | 900 |
-| 70 | 880 | 1.600 |
-| 72 (medio) | 1.060 | 1.940 |
-| 75 | 1.380 | 2.500 |
-| 80 | 1.980 | 3.600 |
-| 85 (forte) | 2.700 | 4.900 |
-| 88 (il massimo) | 3.180 | 5.780 |
+| 55 | il più debole | 400 |
+| 60 | riserva | 900 |
+| 66 | medio | 1.760 |
+| 70 | buon titolare | 2.500 |
+| 75 | carta oro | 3.600 |
+| 78 | tra i migliori | 4.360 |
+| 80 | forte | 4.900 |
+| 82 | il massimo senza allenamento | 5.480 |
+
+Stato: scala, ruoli e prove sono pronti (`npm run prova`); le schermate usano ancora i numeri vecchi (55–88, prezzo
+(valutazione − 50)² × 4) finché il codice della home non trasloca in `src/casa/`. Il prezzo cambia in quel momento, insieme
+ai numeri mostrati.
 
 ### 5.3 Quante partite servono
 Due giocatori tipo:
@@ -268,16 +276,15 @@ Due giocatori tipo:
 
 Una partita dura 5–6 minuti veri.
 
-| Acquisto | Prezzi | Solo partite: medio / forte | Con le sfide: medio / forte |
+| Acquisto | Prezzo | Solo partite: medio / forte | Con le sfide: medio / forte |
 |---|---|---|---|
-| Giocatore medio (72) | oggi 1.060 | 6 / 4 partite | 4 / 3 |
-| Giocatore medio (72) | proposta 1.940 | 10 / 7 | 6 / 4 |
-| Giocatore forte (85) | oggi 2.700 | 13 / 9 | 9 / 6 |
-| Giocatore forte (85) | proposta 4.900 | 24 / 17 | 15 / 10 |
+| Giocatore medio (66) | 1.760 | 9 / 6 partite | 6 / 4 |
+| Buon titolare (70) | 2.500 | 12 / 9 | 8 / 5 |
+| Giocatore forte (80) | 4.900 | 24 / 17 | 15 / 10 |
 
-Cedendo in cambio un proprio giocatore da 65 si risparmiano 350 monete coi prezzi di oggi e 630 con la proposta.
-Con la proposta un giocatore forte costa più o meno **un campionato** (15 partite) a chi gioca in modo normale: la squadra
-cresce di due o tre acquisti importanti a stagione. Coi prezzi di oggi ne basta metà.
+Vendendo un proprio giocatore si incassa il 70% del suo prezzo (un 60 rende 630 monete).
+Un giocatore forte (80) costa più o meno **un campionato** (15 partite) a chi gioca in modo normale e fa le sfide: la
+squadra cresce di due o tre acquisti importanti a stagione.
 
 ### 5.4 Diamanti: quanti ne arrivano
 Giocatore medio: 15–25 a settimana (qualche bonus giornaliero e gli obiettivi della settimana); in più, a stagione, fino a
