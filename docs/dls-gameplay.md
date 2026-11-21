@@ -79,6 +79,8 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
 - Resta sulla linea seguendo il pallone di lato; esce verso il **palo vicino** quando l'attaccante entra in area.
 - Reagisce al tiro entro ~**0,3 s**, col tuffo. Respinge di lato (spesso in angolo) o lascia la palla in area e poi va a
   riprenderla. A volte para in presa (`PORTIERE`). Nel codice: `gkThink()` e le parate in `contacts()`.
+- Col pallone in mano lo lancia teso e basso a un compagno libero: tocca terra un po' prima di lui e gli arriva di
+  rimbalzo (`RINVIO`). Nel codice: `rilasciaPortiere()`.
 
 ## Gol e tiri (obiettivo di Alex del 21/11)
 Alex, giocando: «pochi gol». In Dream League a difficoltà media una partita finisce spesso con più gol. Obiettivo:
@@ -92,14 +94,29 @@ di questi il pallone è in gioco per circa 215 secondi.
 | Prima (20/11) | 1,00 | 7,00 | 0 |
 | Passo 1 (21/11) | 2,69 | 10,38 | 0 |
 
+Su 16 partite il caso conta ancora molto. Le stesse misure su **32 partite** (semi 7–38), più affidabili:
+
+| | Gol | Tiri | Passaggi riusciti | Rimesse laterali | Anomalie |
+|---|---|---|---|---|---|
+| Passo 1 | 2,31 | 9,53 | 74% | 3,3 | 0 |
+| Passo 2: lancio del portiere corretto | 2,56 | 9,84 | 75% | 2,3 | 0 |
+
 **Passo 1**, tre cose insieme (ognuna da sola sposta poco):
 - il computer tira più volentieri e da un po' più lontano (`TIRO_IA`);
 - i portieri parano meno a tutte le difficoltà (`save` in `DIFF` e `MATE`: a normale da 0,70 a 0,58);
 - chi difende va sul portatore dalla metà campo, non più 18 metri dentro la metà avversaria (`PRESSING.da`): prima si
   perdevano troppi palloni a centrocampo e le azioni non arrivavano in fondo.
 
+**Passo 2**: era un difetto. Il portiere, lanciando con le mani, sbagliava 8 volte su 10: il pallone passava accanto al
+compagno ad altezza del petto a più di 20 m/s e finiva in fallo laterale o agli avversari. Ora il lancio è più lento e
+tocca terra un po' prima del compagno (`RINVIO.mano`, `vicino`, `rimbalzo`): su 4 partite 16 lanci riusciti su 16.
+
+Provato e **scartato** perché non cambia i numeri: far reagire i difensori un attimo dopo al passaggio (0,35 e 0,6
+secondi), pretendere passaggi più sicuri, far temporeggiare di più chi difende.
+
 **Dove si perde ancora** (diagnosi su 8 partite): su 80 passaggi a partita ne riescono 74. Quelli sbagliati sono quasi
-tutti presi dal difensore proprio sull'uomo che riceve; i traversoni riescono una volta su cinque. Il passo dopo lavora lì.
+tutti presi dal difensore proprio sull'uomo che riceve; i traversoni riescono una volta su tre e i lanci lunghi sopra la
+difesa finiscono spesso oltre il compagno. Il passo dopo lavora lì.
 Siamo a metà strada dall'obiettivo: i numeri di Alex restano scritti negli obiettivi dello script (escono con ✗ finché
 non ci si arriva, senza bloccare).
 

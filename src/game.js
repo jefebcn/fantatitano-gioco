@@ -1614,9 +1614,11 @@ function gkTiene(p, dt) {
 function rilasciaPortiere(p, r) {
   const b = G.ball, m = r.m || p.team.players[1], s = p.team.side; b.owner = null;
   let v;
-  if (r.tipo === 'mano') { // lancio teso e basso dalle mani, sui piedi (o un passo avanti se corre)
-    const tx = m.x + m.vx * .45, tz = m.z + m.vz * .45, d = hyp(tx - b.x, tz - b.z), T = clamp(d / 23, .4, 1.25);
-    v = FIS.mira({ x: b.x, y: b.y, z: b.z }, { x: tx, y: .3, z: tz }, T, 0, 0); AU.calcio(9, 'passaggio');
+  if (r.tipo === 'mano') {
+    // lancio teso e basso dalle mani: tocca terra un po' prima del compagno e gli arriva di rimbalzo, bassa e frenata. Mirato
+    // sui piedi gli passava accanto ad altezza del petto a più di 20 m/s: non la fermava e finiva fuori o agli avversari
+    const tx = m.x + m.vx * .45, tz = m.z + m.vz * .45, d = hyp(tx - b.x, tz - b.z), k = d > RINVIO.vicino ? RINVIO.rimbalzo : 1, T = clamp(d * k / RINVIO.mano, .35, 1.25);
+    v = FIS.mira({ x: b.x, y: b.y, z: b.z }, { x: b.x + (tx - b.x) * k, y: k < 1 ? BR : .3, z: b.z + (tz - b.z) * k }, T, 0, 0); AU.calcio(9, 'passaggio');
   } else { // rinvio di collo: la palla cade dalle mani e parte alta e lunga
     b.y = Math.max(.8, b.y * .5); const tx = clamp(m.x + m.vx * 1.2 + s * 4, -HL + 3, HL - 3), tz = clamp(m.z, -HW + 3, HW - 3), d = hyp(tx - b.x, tz - b.z), T = clamp(d / 21, 1.3, 2.8);
     v = FIS.mira({ x: b.x, y: b.y, z: b.z }, { x: tx, y: PARATA.rinvio, z: tz }, T, 0, .1); AU.calcio(28, 'rinvio');
