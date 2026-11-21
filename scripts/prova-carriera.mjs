@@ -76,7 +76,7 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
 // mercato: prezzi, scambio, monete insufficienti, ruolo diverso, numeri di maglia, ritorno alle rose di partenza
 {
   const cl = JSON.parse(JSON.stringify(clubs)), valore = (ruolo, q) => 50 + q; // valore di prova: cresce col prezzo del listone
-  assert.ok(K.prezzo(88) > K.prezzo(70) * 3 && K.prezzo(55) <= 100 && K.prezzo(50) === 0);
+  assert.ok(K.prezzo(82) > K.prezzo(62) * 3 && K.prezzo(55) === 400 && K.prezzo(45) === 0);
   assert.equal(K.costoScambio(70, 70), K.prezzo(70) - Math.round(K.prezzo(70) * .7 / 10) * 10); assert.ok(K.costoScambio(60, 80) < 0);
   const M = K.nuova(cl, 'm', 'academy', rnd); K.applica(M, cl);
   const mio = cl.find((c) => c.id === 'academy'), forte = cl.find((c) => c.id === 'trefiori'), iIn = 9, iOut = 9, preso = forte.xi[iIn].slice(), ceduto = mio.xi[iOut].slice();
@@ -221,7 +221,7 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
   const N = K.nuova(cl, 'n', 'academy', rnd); let nn = K.notifiche(N); assert.ok(nn.some((x) => x.vai === 'coppa') && nn.some((x) => x.vai === 'castelli') && !nn.some((x) => x.vai === 'stadio'));
   N.monete = 99999; N.gemme = 99; nn = K.notifiche(N); assert.ok(nn.some((x) => x.vai === 'stadio') && nn.some((x) => x.vai === 'allenatore'));
   // prezzi: un giocatore forte costa più o meno un campionato di chi gioca in modo normale
-  assert.equal(K.prezzo(85), 4900); assert.equal(K.prezzo(72), 1940);
+  assert.equal(K.prezzo(80), 4900); assert.equal(K.prezzo(66), 1760); assert.equal(K.prezzo(82), 5480);
 }
 // ---------- negozio: oggetti gratis e a pagamento, pezzi dello stemma, giocatore consigliato
 {
@@ -254,7 +254,7 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
   for (const m of sql.matchAll(/\('([a-z0-9_]+)', '(monete|diamanti|numero)', (-?\d+)\)/g)) L[`${m[1]}:${m[2]}`] = +m[3];
   const vale = (codice, valuta, atteso) => assert.equal(L[`${codice}:${valuta}`], atteso, `listino ${codice} (${valuta}): il server dice ${L[`${codice}:${valuta}`]}, il gioco ${atteso}`);
   const P = K.PREMI; vale('inizio', 'monete', P.inizio); vale('inizio', 'diamanti', P.gemme); vale('vittoria', 'monete', P.v); vale('pareggio', 'monete', P.n); vale('sconfitta', 'monete', P.p); vale('gol', 'monete', P.gol);
-  vale('turno', 'monete', P.turno); vale('campionato', 'monete', P.campione); vale('coppa', 'monete', P.coppa); vale('castelli', 'monete', P.castelli); vale('mercato_cessione', 'numero', Math.round(P.cessione * 100)); vale('mercato_coefficiente', 'numero', Math.round(E.prezzo * 100));
+  vale('turno', 'monete', P.turno); vale('campionato', 'monete', P.campione); vale('coppa', 'monete', P.coppa); vale('castelli', 'monete', P.castelli); vale('mercato_cessione', 'numero', Math.round(P.cessione * 100)); vale('mercato_coefficiente', 'numero', Math.round(E.prezzo * 100)); vale('mercato_base', 'numero', E.prezzoDa);
   K.STADIO.forEach((x, i) => { vale(`casa_${i + 1}`, 'monete', x.bonus); if (i) { vale(`stadio_${i + 1}`, 'monete', -x.monete); if (x.gemme) vale(`stadio_${i + 1}`, 'diamanti', -x.gemme); else assert.equal(L[`stadio_${i + 1}:diamanti`], undefined); } });
   E.allenatore.livelli.forEach((x, i) => { if (i) { vale(`allenatore_${i + 1}`, 'monete', -x.monete); if (x.gemme) vale(`allenatore_${i + 1}`, 'diamanti', -x.gemme); else assert.equal(L[`allenatore_${i + 1}:diamanti`], undefined); } });
   for (const g of Object.keys(K.SFIDE)) for (const x of K.SFIDE[g]) { if (x.monete) vale(`sfida_${x.id}`, 'monete', x.monete); if (x.gemme) vale(`sfida_${x.id}`, 'diamanti', x.gemme); }

@@ -75,11 +75,19 @@ Un'altra sessione lavora sulla partita: questa non tocca i suoi file senza averl
 | 2 | `docs/immagini-da-generare.md` (26 illustrazioni coi prompt), `scripts/importa_immagini.py`, icone SVG (`scripts/icone.mjs`, `public/img/icone/`), logo senza scritta (`public/img/logo-fantatitano.png`) | fatto |
 | 3 | Scala delle valutazioni e file di dati: `SCALA` e `CARTE` in `src/config.js`, `src/dati/scala.js` (una sola conversione), `src/dati/giocatori.js` (ruolo, piede, altezza), `scripts/genera-giocatori.mjs`, `scripts/prova-dati.mjs`; `docs/ponte-partita.md` | pronto e provato, **non ancora collegato alle schermate** (si collega col trasloco) |
 | trasloco | Il codice della home è in `src/casa/` (`casa.js`, `casa.html`, `casa.css`): righe spostate così com'erano da `src/game.js` e `src/pagina.html`. Verifica: 153 foto delle schermate identiche a prima, tre partite simulate identiche | fatto |
-| 4–11 | Barra, carte, Home, Carriera, Sfida, Squadra, Mercato, Il mio club, Sfide | da fare, ora tutto in `src/casa/` |
+| 4 | Barra fissa (`barra.js`), carte di navigazione (`carte.js`), navigazione a livelli con Indietro (`nav.js`), icone nella pagina (`icone.js`), testi delle schermate nuove in un file (`testi.js`), stili nuovi (`stile.css`). Scala 55–82, ruoli precisi e prezzi nuovi accesi sulle schermate. «Ingaggia il tuo capitano» coi nove candidati nuovi e il pulsante fuori dalle carte | fatto |
+| 5 | Home a otto carte (`home.js`) | fatta la prima versione, coi dati veri; restano le illustrazioni (segnaposto) e il premio ridotto dell'amichevole |
+| 6–11 | Carriera, Sfida, Squadra, Mercato, Il mio club, Sfide | da fare: per ora sono le schermate di prima, sotto la barra nuova |
 | 12 | Database dell'economia | da fare (condizioni in `docs/home-spec.md` §8.1) |
 
 Immagini: tutte le 26 illustrazioni sono **segnaposto** (nessuna consegnata); icone e cornici **definitive**; ritratti:
 quelli che il gioco disegna da sé, in attesa dei render da Blender.
+
+Controllo delle schermate: `node scripts/prove/schermate.cjs cartella` fotografa tutto alle tre misure di iPhone e, nelle
+parti rifatte (barra e Home), controlla le regole di qualità: testo mai sotto 12 px, niente tagli, niente fuori schermo,
+pulsanti della barra da 44 px, anche con nomi lunghi e saldi grandi.
+Provvisorio fino al passo 7: nella schermata prima della partita «Gioca» sta fisso in basso a destra e, sull'iPhone più
+piccolo, giorno e notte si raggiungono scorrendo.
 
 Decisioni di Alex del 21/11: `docs/navigazione.md` §5. Da girare alla sessione «partita»: `docs/ponte-partita.md`.
 I nomi dei giocatori stanno ancora in `public/data.js` (lo usa la partita); `src/dati/giocatori.js` li ripete con ruolo,

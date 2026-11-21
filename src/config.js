@@ -269,7 +269,8 @@ export const TIRO_IA = { buona: .12, pressato: [.06, .9], minima: .03, vicino: 2
 export const ATTACCO = { sullaLinea: 1.2, massimo: 44 };
 
 // Economia della carriera (docs/home-spec.md). Monete e diamanti si guadagnano solo giocando: niente acquisti.
-// prezzo: il prezzo di un giocatore è (valutazione meno 50) al quadrato, per questo numero, per dieci monete.
+// prezzo: il prezzo di un giocatore è (valutazione meno `prezzoDa`) al quadrato, per `prezzo`, per dieci monete. Con la
+// scala delle valutazioni da 55 a 82: 400 monete il più debole, 4.900 un giocatore da 80 (circa un campionato).
 // percorso: il percorso premi della stagione. Punti per fonte, punti che servono per ogni livello e premio di ogni livello
 // (m monete, g diamanti). allenatore: i cinque livelli (valutazione mostrata e costo per arrivarci). Ogni livello oltre il
 // primo dà `sedute` sedute di allenamento in più per giocatore e toglie `sconto` dal prezzo delle sedute.
@@ -277,7 +278,7 @@ export const ATTACCO = { sullaLinea: 1.2, massimo: 44 };
 // negozio: quanto costa un oggetto di ogni tipo (m monete, g diamanti). Solo aspetto e comodità, niente che aiuti in
 // partita. Quali oggetti esistono e quali si hanno dall'inizio sta in NEGOZIO, in src/carriera.js.
 export const ECONOMIA = {
-  prezzo: .4,
+  prezzo: .4, prezzoDa: 45,
   percorso: {
     perLivello: 40, punti: { partita: 10, vinta: 10, sfidaD: 5, sfidaW: 15, sfidaS: 20, sfidaC: 20, turno: 15 },
     premi: [{ m: 200 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 200 }, { g: 10 },

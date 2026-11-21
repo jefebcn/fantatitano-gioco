@@ -146,9 +146,9 @@ insert into lapartita.listino (codice, valuta, importo) values
   ('negozio_avatar', 'diamanti', -10), ('negozio_cornice', 'diamanti', -10), ('negozio_scarpini', 'diamanti', -10), ('negozio_pallone', 'diamanti', -10),
   ('negozio_disegno', 'diamanti', -20), ('negozio_terza', 'diamanti', -30), ('negozio_rinnovo', 'diamanti', -5), ('negozio_stemma', 'monete', -300), ('negozio_stemma_raro', 'diamanti', -5),
   -- regole: allenamento (base, passo, sedute di base, sconto per livello dell'allenatore in centesimi),
-  -- mercato (coefficiente del prezzo in centesimi, quota di cessione in centesimi), limiti delle partite
+  -- mercato (coefficiente del prezzo in centesimi, valutazione da cui parte il prezzo, quota di cessione in centesimi), limiti delle partite
   ('allenamento_base', 'numero', 200), ('allenamento_passo', 'numero', 150), ('allenamento_sedute', 'numero', 6), ('allenatore_sconto', 'numero', 5),
-  ('mercato_coefficiente', 'numero', 40), ('mercato_cessione', 'numero', 70),
+  ('mercato_coefficiente', 'numero', 40), ('mercato_base', 'numero', 45), ('mercato_cessione', 'numero', 70),
   ('partita_secondi_minimi', 'numero', 150), ('partita_gol_massimi', 'numero', 12), ('partite_al_giorno', 'numero', 60)
 on conflict (codice, valuta) do update set importo = excluded.importo;
 
@@ -334,12 +334,12 @@ end $$;
 -- meno 50) al quadrato per il coefficiente, arrotondato alle decine.
 create or replace function public.lapartita_scambia(p_entra integer, p_esce integer, p_dettagli jsonb default '{}'::jsonb)
 returns jsonb language plpgsql security definer set search_path = '' as $$
-declare chi text := public.current_user_id(); k numeric := lapartita.regola('mercato_coefficiente') / 100.0; q numeric := lapartita.regola('mercato_cessione') / 100.0; costo integer; saldo integer;
+declare chi text := public.current_user_id(); k numeric := lapartita.regola('mercato_coefficiente') / 100.0; b numeric := lapartita.regola('mercato_base'); q numeric := lapartita.regola('mercato_cessione') / 100.0; costo integer; saldo integer;
 begin
   if chi is null then return jsonb_build_object('ok', false, 'motivo', 'accesso'); end if;
   if p_entra is null or p_esce is null or p_entra not between 55 and 99 or p_esce not between 55 and 99 then return jsonb_build_object('ok', false, 'motivo', 'valutazione'); end if;
   perform lapartita.apri(chi);
-  costo := (round(power(p_entra - 50, 2) * k) * 10)::integer - (round(round(power(p_esce - 50, 2) * k) * 10 * q / 10.0) * 10)::integer;
+  costo := (round(power(p_entra - b, 2) * k) * 10)::integer - (round(round(power(p_esce - b, 2) * k) * 10 * q / 10.0) * 10)::integer;
   begin
     saldo := lapartita.muovi(chi, 'monete', -costo, 'mercato', coalesce(p_dettagli, '{}'::jsonb) || jsonb_build_object('entra', p_entra, 'esce', p_esce));
   exception when sqlstate 'P0001' then return jsonb_build_object('ok', false, 'motivo', sqlerrm, 'costo', costo);
