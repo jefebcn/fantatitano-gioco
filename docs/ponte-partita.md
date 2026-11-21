@@ -241,3 +241,14 @@ import { ponte, SA_FARE } from './ponte.js';
 const risposta = ponte.avviaPartita({ versione: 1, tipo: 'campionato', squadre: [casa, ospite], allaFine: (esito) => { /* conti e schermata */ } });
 if (!risposta.ok) console.warn(risposta.errori);
 ```
+
+## Dalla home, 21/11: Sfida e Squadra nuove
+
+- La home ora avvia tutte le partite dal ponte (Sfida nuova, `src/casa/vista-sfida.js`): campionato, coppa, Trofeo dei
+  Castelli e amichevole. Alla fine registra il risultato, salva l'energia con cui i giocatori sono usciti e la riporta
+  come `energia` iniziale alla partita dopo (più il recupero e l'eventuale riscaldamento).
+- Dalla Squadra nuova l'utente sceglie `capitano`, `rigorista`, `punizioni` e `angoli`: nella richiesta ci sono sempre
+  (quelli scelti, o i più adatti tra i titolari). Oggi la partita li ignora: quando li usa, i nomi sono quelli dei
+  `titolari`.
+- I titolari arrivano nell'ordine dei posti del modulo e possono essere fuori ruolo (un difensore in un posto da
+  centrocampista): `fuoriRuolo` lo dice. Il primo è sempre un portiere e nessun altro titolare lo è.

@@ -79,19 +79,28 @@ Un'altra sessione lavora sulla partita: questa non tocca i suoi file senza averl
 | 5 | Home a otto carte (`home.js`): righe al 38, 27 e 35%; nessun testo abbreviato o tagliato (nomi delle squadre in tre misure, `src/dati/squadre.js`); Carriera con le tre competizioni e la prossima partita; Percorso premi coi livelli da 1 e i prossimi quattro premi; Squadra con la fascia «C»; Mercato con la carta del giocatore, lo stemma e il prezzo; Scenario col premio; sfondo blu notte con vignettatura | fatta, coi dati veri; restano le illustrazioni (segnaposto) e il premio ridotto dell'amichevole |
 | 6 | Carriera (`vista-carriera.js`): prossima partita con «Gioca adesso», classifica a cinque righe con le medaglie, Trofeo dei Castelli, Coppa Titano, quattro scorciatoie. Stagione nuova con finestra di conferma (`finestra.js`). Classifica a pari punti: differenza reti, gol fatti, nome. Tolta la schermata di prima e 200 regole di stile rimaste senza uso | fatto |
 | 7 | Sfida (`vista-sfida.js`): due campi in prospettiva con le carte a scudo dei giocatori secondo il modulo (`giocatore.js`: valutazione, ritratto, ruolo, energia, nome, fascia «C», avviso di fuori ruolo), competizione, fase, ora e tempo al centro, sotto ogni campo stemma, nome, stelle, modulo e maglia della partita; in basso Squadra, Riscaldamento e Gioca. La partita parte dal ponte e alla fine la home registra il risultato, salva l'energia e mostra il premio in una finestra. Energia tra le partite, riscaldamento e orario in `src/carriera.js`, coi numeri in `ECONOMIA.energia` e `METEO` | fatto |
-| 8–11 | Squadra, Mercato, Il mio club, Sfide | da fare: per ora sono le schermate di prima, sotto la barra nuova |
+| carte | Cornice delle carte ridisegnata sul modello di Alex (`docs/riferimenti/modello-carte.png`): scudo con angoli smussati e punta, bordo, riflessi, tre fasce. Tre misure in `giocatore.js`: grande (tutto dentro, nome su fascia scura, stemma ed energia), piccola (per i campi stretti, nome sotto) e mini (Home). Usata in Home, Sfida, Squadra, scheda del giocatore e scelta del capitano | fatto |
+| 8 | Squadra (`vista-squadra.js`): titolo «Gestione squadra» nella barra; campo in prospettiva con gli undici (`campo.js`), panchina a due colonne, Modulo, Riserve, Fisioterapista, Allenatore, i quattro incarichi, «Squadra migliore» (`rosa.js`). Scambio a tocchi o trascinando, tocco lungo per la scheda del giocatore (`scheda-giocatore.js`: statistiche, altezza, piede, valore, capitano, allena, vendi). In `src/carriera.js`: `schiera`, `spostaGiocatori`, incarichi, fisioterapista | fatto |
+| 9–11 | Mercato, Il mio club, Sfide | da fare: per ora sono le schermate di prima, sotto la barra nuova |
 | 12 | Database dell'economia | da fare (condizioni in `docs/home-spec.md` §8.1) |
 
 Immagini: tutte le 26 illustrazioni sono **segnaposto** (nessuna consegnata); icone e cornici **definitive**; ritratti:
 quelli che il gioco disegna da sé, in attesa dei render da Blender.
 
 Controllo delle schermate: `node scripts/prove/schermate.cjs cartella` fotografa tutto alle tre misure di iPhone e, nelle
-parti rifatte (barra, Home, Carriera, Sfida, finestre), controlla le regole di qualità: testo mai sotto 12 px, niente tagli, niente fuori schermo,
+parti rifatte (barra, Home, Carriera, Sfida, Squadra, scheda del giocatore, finestre), controlla le regole di qualità: testo mai sotto 12 px, niente tagli, niente fuori schermo,
 pulsanti da 44 px, anche con nomi lunghi e saldi grandi; sui campi della Sfida nessun giocatore ne copre un altro.
 Sfida: le carte sono grandi quanto il campo consente. Un modulo a cinque linee (3-5-2, 4-2-3-1) le vuole più piccole di
 uno a quattro: sull'iPhone più piccolo lo scudo è largo 26 px invece di 31. Giorno o notte in campo vengono dall'orario
 della partita, non si scelgono più. Una partita di carriera abbandonata non viene registrata (da decidere con Alex).
-La schermata vecchia `#pre` resta solo come «La mia rosa», fino al passo 8.
+La schermata vecchia `#pre` non si raggiunge più: il suo codice in `casa.js` e in `src/game.js` si toglie insieme
+all'altra sessione.
+Squadra: le carte grandi (col nome dentro) vogliono almeno 58 px di larghezza. Con un modulo a cinque linee, sugli iPhone
+da 667 e 844 punti, non ci stanno e il campo passa alle carte piccole col nome sotto; a 932 restano grandi. In porta va
+solo un portiere. «Vendi» nella scheda per ora apre il Mercato (la vendita vera arriva col passo 9). La panchina ha otto
+posti, oggi le rose ne riempiono da cinque a sette: «Riserve» resta a zero finché una rosa non supera i diciannove.
+Il costo del fisioterapista (`ECONOMIA.energia.fisio`) non è ancora nel listino del server: va aggiunto col passo 12.
+Sfondo della Home: l'importatore e la vignettatura sono pronti, manca il file (`docs/riferimenti/LEGGIMI.md`).
 
 Decisioni di Alex del 21/11: `docs/navigazione.md` §5. Da girare alla sessione «partita»: `docs/ponte-partita.md`.
 I nomi dei giocatori stanno ancora in `public/data.js` (lo usa la partita); `src/dati/giocatori.js` li ripete con ruolo,

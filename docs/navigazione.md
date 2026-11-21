@@ -193,7 +193,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Scenario | da fare (serve l'aggancio nella partita) |
 | Percorso premi, Sfide | esistono, da risistemare (schede, giorni di fila) |
 | Amichevole | esiste |
-| Squadra | esiste in forma semplice, da rifare |
+| Squadra | fatta: campo con gli undici, panchina, modulo, incarichi, fisioterapista, squadra migliore, scheda del giocatore |
 | Mercato | esiste a scambio, da rifare |
 | Il mio club, Stadio e strutture | esiste con stadio e allenatore, da rifare con le 6 strutture |
 | Personalizza, Negozio | esistono, da risistemare (anteprima grande, testi chiari) |
