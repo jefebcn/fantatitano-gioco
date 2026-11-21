@@ -84,8 +84,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   rimesse laterali da 3,3 a 2,3, 0 anomalie.
 - Scartati perché non spostano i numeri: reazione ritardata dei difensori al passaggio, passaggi più sicuri, più attesa.
 - Prossimo: passaggi presi sull'uomo che riceve (riescono 75 su 100), traversoni (1 su 3), lanci lunghi troppo lunghi.
-- Da sapere: con l'audio acceso la stessa partita simulata cambia (l'audio usa i numeri casuali della partita). Le prove
-  non se ne accorgono perché non accendono l'audio.
+- Simulazione ripetibile (21/11): modalità di prova `?seme=N` o `__g.prova(N)` (audio spento, semi fissi); lo stato di una
+  partita si azzera a ogni partita nuova (`DI_PARTITA`). `RIPETI=1` nello script delle partite lo controlla, anche in CI.
+  I numeri di riferimento sono cambiati rispetto a prima (generatori separati): si confronta sempre prima e dopo.
 
 ## Due sessioni insieme (dal 21/11)
 - Questa sessione lavora sulla **partita** (campo, giocatori, IA, comandi). Un'altra lavora su **home, menu e sezioni**:
