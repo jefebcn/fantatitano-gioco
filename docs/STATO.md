@@ -66,7 +66,10 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   avatar, cornici, scarpini, pallone di casa, rinnovo del consigliato (`NEGOZIO` in `src/carriera.js`, prezzi in
   `ECONOMIA.negozio`, `panNegozio` in `src/game.js`); SQL nello schema separato `lapartita`, senza importazione dei saldi.
 - Resta: applicare l'SQL (progetto dell'app pubblicata: Alex vuole prima un backup, vedi `docs/home-spec.md` §8.1), logo
-  (lime o viola: decide Alex), testi in un unico file, esultanza del capitano (servono animazioni), immagine di sfondo.
+  (lime o viola: decide Alex), esultanza del capitano (servono animazioni), immagine di sfondo.
+- Testi della partita in un file solo — FATTO: `src/testi.js` (93 chiavi; in testa al file come si aggiunge l'inglese). Nel
+  codice `tr('chiave')`, nella pagina `data-t`. La home ha i suoi in `src/casa/testi.js`, stessa forma: unirli è uno
+  spostamento. Controllo: `node scripts/prove/testi.cjs chiavi` (in `npm run prova`), `salva` e `confronta` per le scritte.
 
 ## Taratura dei tiri del computer (21/11)
 - Soglie in `TIRO_IA` (`src/config.js`). Su 16 partite, semi 7-22, difficoltà normale: prima 0,88 gol e 5,44 tiri a partita,
