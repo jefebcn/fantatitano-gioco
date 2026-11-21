@@ -31,7 +31,7 @@ classifica; 6 classifica completa con calendario; 7 Trofeo dei Castelli e Coppa 
 | Oggetti da comprare coi diamanti (terza maglia, esultanze, scarpini…) | decisione 3 aperta | l'elenco approvato |
 | Altre schermate in blu e oro (menu iniziale, pausa, fine partita) | decisione 7 aperta | sì o no |
 | fps veri su iPhone | qui non c'è un iPhone | aprire il gioco con `?debug` e dirmi i numeri |
-| Taratura del gioco tra computer | serve giocare | gol 0,7–1 a partita (obiettivo 1–6), tiri 6 (obiettivo 7–30), fuorigioco rari |
+| Taratura del gioco giocando | tra computer ora tutte le misure sono dentro gli obiettivi (gol 1,0, tiri 7,0, fuorigioco 0,44 a partita su 16 partite), ma sono al limite basso | provare contro il computer e dire se segna e tira troppo poco |
 | Texture KTX2 | le texture dei giocatori le disegna il gioco coi colori della squadra | niente, salvo cambiare sistema |
 
 ## Scelte provvisorie (prese per non fermarsi, da confermare)

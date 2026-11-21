@@ -70,6 +70,8 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
 ## 5. IA
 - Quando un compagno conduce verso l'area, **3-4 compagni** si inseriscono in area. Sui calci d'angolo **4-5
   attaccanti** in area.
+- In possesso le punte aspettano sulla linea dell'ultimo difensore avversario, un passo dietro (`ATTACCO`): ogni tanto
+  si distraggono e finiscono in fuorigioco. Il computer tira secondo le soglie di `TIRO_IA`.
 - I difensori scalano verso la porta e restano compatti (`AREA_IA`): col pallone vicino alla propria porta la squadra si
   stringe. Nel codice: `possesso()` (chi va in area), `corner()`, `blocco()`.
 

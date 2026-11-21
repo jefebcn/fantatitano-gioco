@@ -20,7 +20,7 @@ import { creaAudio } from './audio.js';
 import { creaPrestazioni } from './prestazioni.js';
 import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
-import { HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, ECONOMIA, TIRO_IA, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, ECONOMIA, TIRO_IA, ATTACCO, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 
 (() => {
 // i valori di gioco (campo, tempi, difficoltà, IA, comandi, fisica) stanno tutti in src/config.js
@@ -1276,6 +1276,8 @@ function homeOf(p) {
   if (p.role === 'D') hx = B.linea + (f[0] + 33) * .5 + (att && Math.abs(f[1]) > 15 ? 5 + t.ment * 3 : 0); // in possesso i terzini salgono un po'
   else if (p.role === 'C') hx = clamp(hx, B.linea + 5, B.linea + B.lunga - 5);
   else hx = clamp(hx, B.linea + 10, B.linea + B.lunga + (att ? 10 : 4));
+  // in possesso le punte aspettano sulla linea dell'ultimo difensore (un passo dietro, per restare in gioco), non in mezzo al blocco
+  if (att && p.role === 'A' && Number.isFinite(t.offLine)) hx = clamp(Math.max(hx, t.offLine - ATTACCO.sullaLinea), -14, ATTACCO.massimo);
   hz *= B.largo;
   hx += Math.sin(G.t * .7 + p.i * 2.1) * 1.6; hz += Math.cos(G.t * .5 + p.i * 1.3) * 1.6;
   return [hx * s, clamp(hz, -HW + 3, HW - 3) * s];
