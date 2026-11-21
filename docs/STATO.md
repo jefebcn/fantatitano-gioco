@@ -97,15 +97,25 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - 3 e 4 FATTI: velocità di partenza di Alex (`VELOCITA`, `CORPO` in `src/config.js`), girare costa velocità in proporzione
   all'angolo (`spingi` in `src/fisica/corpo.js`), stime del computer adattate (`svolta` in `src/game.js`), velocità nel
   riquadro `?debug`. 32 partite: gol da 2,22 a 1,66, tiri da 9,34 a 6,84, 0 anomalie: da ritarare, vedi `docs/dls-gameplay.md`.
-- Da fare: 5 pallone al piede e interpolazione, 6 telecamera in profondità, 7 erba e pubblico, 8 riquadro del gol (Alex
-  non ha scelto: provvisorio «toglilo come in DLS»), moduli nuovi, scenario del ponte.
+- 5 FATTO: tocchi più lunghi col passo (palla tra 0,6 e 0,8 m), guinzaglio a 1,5 m (`COND`), disegno con l'avanzo di tempo
+  (`avanzo` in `src/game.js`). 32 partite: gol 1,75, tiri 5,88, 0 anomalie.
+- 6, 7, 8 FATTI: `CAMERA.fascia` (pallone tra 30% e 70% dell'altezza), `PRATO` (verde più pieno, strisce più
+  contrastate, anelli a metà), pubblico smorzato e vario con tribune più scure (`src/grafica/spalti.js`),
+  `GOLSEQ.riquadro` = 0 (provvisorio: Alex non ha scelto). Partite simulate identiche.
+- Il punto 9 (giocatori MPFB2) era già fatto con la PR #63.
+- Moduli nuovi FATTI: 4-3-1-2, 5-3-2, 4-1-4-1, 3-4-3 in `FORMS`; si provano con `MODULO=… node scripts/prove/partita.cjs`.
+- Da fare: scenario del ponte (minuto e punteggio di partenza), poi tutorial e allenamenti; ritarare gol e tiri.
 
 ## Due sessioni insieme (dal 21/11)
 - Questa sessione lavora sulla **partita** (campo, giocatori, IA, comandi). Un'altra lavora su **home, menu e sezioni**:
   il suo stato è in fondo a `docs/stato-lavori.md`, l'accordo tra le due in `docs/ponte-partita.md`.
 - Ponte, passo 1 FATTO: `ponte.avviaPartita(richiesta)` in `src/ponte.js` e `src/game.js`, esito a fine partita con
   `allaFine(esito)`. Prova: `scripts/prove/ponte.cjs` (anche in CI). `gioca()` e `showEnd()` restano finché la home non passa di lì.
-- Non toccare le schermate della home senza dirlo ad Alex: l'altra sessione le sta rifacendo e le sposterà in `src/casa/`.
+- Ponte, passi 3, 4 e 5 FATTI: energia iniziale, otto moduli in `FORMS` (i quattro nuovi li usa solo chi li chiede), scenario
+  (`tipo: 'scenario'` con minuto, punteggio e chi batte; nell'esito `partenza`): `docs/ponte-partita.md` §8.2 e §8.3.
+  Restano il passo 6 (tutorial, allenamento libero, punizioni, angoli) e i campi ignorati (`altezza`, `fuoriRuolo`,
+  `rigorista`, `punizioni`, `angoli`, gol di tipo «angolo»).
+- Le schermate della home ora sono in `src/casa/` (dell'altra sessione): non toccarle senza dirlo ad Alex.
 
 ## Decisioni recenti di Alex ancora valide
 - "Merge fallo sempre tu": PR → controlli verdi + anteprima Vercel → squash merge → verifica produzione.

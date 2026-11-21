@@ -414,7 +414,7 @@ export function creaRegia(X) {
       // --- sequenza del gol
       for (const b of boards) b.material.map.offset.x += dt * .22;
       if (t >= S.c0) { hud.classList.add('cine'); $('#banner').classList.remove('su'); }
-      golc.classList.toggle('su', inFesta() && t > S.c0 + .25 && t < S.c1 - .2);
+      golc.classList.toggle('su', inFesta() && t > S.c0 + .25 && t < Math.min(S.c1 - .2, S.c0 + .25 + GOLSEQ.riquadro));
       salta.classList.toggle('su', t > S.c0 + .6 && t < S.c2 - SEQ.stacco);
       rep.classList.toggle('su', replay && t < S.c2 - .15);
       if (!S.t1 && S.rp && t >= S.c1 - SEQ.stacco) { S.t1 = true; staccoLogo(RIVEDI.stacco); } // stacco col logo prima e dopo il replay

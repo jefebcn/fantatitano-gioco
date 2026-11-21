@@ -5,6 +5,7 @@
      SEME=7          primo seme (le partite usano SEME, SEME+1, …: stesso seme, stessa partita)
      RAPPORTO=f.json salva tutte le misure, per confrontare prima e dopo una modifica
      SEVERO=1        esce con errore anche se una misura è fuori dagli obiettivi (di norma solo per le anomalie)
+     MODULO=5-3-2    tutte e due le squadre giocano con quel modulo (i moduli che il computer da solo non sceglie)
      RIPETI=1        rigioca l'ultima partita due volte dopo un tocco sullo schermo e controlla che finisca identica
    Serve Playwright (non è tra le dipendenze): npm i --no-save playwright && npx playwright install chromium
 
@@ -44,12 +45,14 @@ const srv = http.createServer((q, r) => {
 });
 
 /** Una partita intera nella pagina: ritorna misure e anomalie. Gira tutta dentro il browser (niente andata e ritorno). */
-function partita([seme, diffi, casa, ospiti]) {
+function partita([seme, diffi, casa, ospiti, modulo]) {
   const g = window.__g, G = g.G, hyp = Math.hypot, HL = 52.5, HW = 34;
   // Stesso seme, stessa partita: la simulazione ha i suoi numeri casuali, la grafica altri (crea oggetti e particelle in
   // quantità che dipendono da cosa c'era prima, e consumerebbe numeri della partita); il tempo riparte da zero
   g.prova(seme); G.paused = true; G.shown = true; G.t = 0; G.diff = g.DIFF[diffi];
   g.newMatch(window.CLUBS[casa], window.CLUBS[ospiti]); G.auto = true;
+  // MODULO: tutte e due le squadre giocano con quel modulo (serve a provare i moduli che il computer da solo non sceglie)
+  if (modulo) for (const t of G.teams) { t.formName = modulo.nome; t.form = modulo.pos; for (const p of t.players) p.role = modulo.roles[p.i]; }
   const disegna = g.renderer.render; g.renderer.render = () => {}; // si prepara tutto (scheletri, pose) ma non si disegna
   const draw = g.draw;
   const tutti = () => G.teams[0].players.concat(G.teams[1].players);
@@ -112,6 +115,8 @@ function partita([seme, diffi, casa, ospiti]) {
 }
 
 srv.listen(0, async () => {
+  let MODULO = null;
+  if (process.env.MODULO) { const { FORMS } = await import('../../src/config.js'), f = FORMS[process.env.MODULO]; if (!f) { console.log(`Modulo sconosciuto: ${process.env.MODULO} (ci sono ${Object.keys(FORMS).join(', ')})`); process.exit(2); } MODULO = { nome: process.env.MODULO, pos: f.pos, roles: f.roles }; }
   const br = await chromium.launch(), pg = await br.newPage(), errori = [];
   pg.on('pageerror', (e) => errori.push(String(e)));
   await pg.goto(`http://localhost:${srv.address().port}/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
@@ -121,7 +126,7 @@ srv.listen(0, async () => {
   await pg.evaluate(() => new Promise((ok) => { window.requestAnimationFrame = () => 0; setTimeout(ok, 100); }));
   const partite = [], t0 = Date.now();
   for (let k = 0; k < N; k++) {
-    const r = await pg.evaluate(partita, [SEME + k, DIFFI, (k * 3) % 16, (k * 5 + 7) % 16]);
+    const r = await pg.evaluate(partita, [SEME + k, DIFFI, (k * 3) % 16, (k * 5 + 7) % 16, MODULO]);
     partite.push(r);
     const an = Object.entries(r.anomalie).map(([a, v]) => `${a} ×${v}`).join(', ');
     console.log(`${k + 1}. ${r.risultato}  ·  ${Object.entries(r.misure).map(([a, v]) => `${a} ${v}`).join(' · ')}${an ? `\n   ANOMALIE: ${an}\n   ${r.esempi.join('\n   ')}` : ''}`);
@@ -133,7 +138,7 @@ srv.listen(0, async () => {
   let diversa = false;
   if (process.env.RIPETI) {
     await pg.mouse.click(200, 200); await pg.keyboard.press('Shift');
-    const k = N - 1, dati = [SEME + k, DIFFI, (k * 3) % 16, (k * 5 + 7) % 16], chiave = (r) => JSON.stringify([r.risultato, r.misure, r.ripartenze]);
+    const k = N - 1, dati = [SEME + k, DIFFI, (k * 3) % 16, (k * 5 + 7) % 16, MODULO], chiave = (r) => JSON.stringify([r.risultato, r.misure, r.ripartenze]);
     const r1 = await pg.evaluate(partita, dati), r2 = await pg.evaluate(partita, dati), uguale = chiave(r1) === chiave(r2) && (N < 2 || chiave(r1) === chiave(partite[k]));
     diversa = !uguale; console.log(`${uguale ? '✓' : '✗'} ultima partita rigiocata due volte dopo un tocco: ${uguale ? 'identica' : `DIVERSA (${r1.risultato} · ${JSON.stringify(r1.misure)} · ${r2.risultato} · ${JSON.stringify(r2.misure)})`}`);
   }

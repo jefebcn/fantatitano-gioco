@@ -60,6 +60,13 @@ export const FORMS = {
   '4-4-2': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-15, -7], [-15, 7], [-11, -21], [-11, 21], [9, -6], [9, 6]], roles: 'PDDDDCCCCAA' },
   '3-5-2': { pos: [[-46, 0], [-33, -12], [-35, 0], [-33, 12], [-16, -23], [-18, 0], [-9, -9], [-9, 9], [-16, 23], [9, -6], [9, 6]], roles: 'PDDDCCCCCAA' },
   '4-2-3-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-19, -7], [-19, 7], [-3, 0], [1, -20], [11, 0], [1, 20]], roles: 'PDDDDCCCAAA' },
+  // i quattro moduli aggiunti il 21/11 per la home (li sceglie chi gioca, o la richiesta del ponte: le squadre del computer
+  // restano sui primi quattro). Stesse regole: undici posti, il primo è il portiere, il decimo e l'undicesimo battono il
+  // calcio d'inizio. `roles` dice il reparto di ogni posto, ed è quello che decide come si comporta il computer
+  '4-3-1-2': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-17, -13], [-20, 0], [-17, 13], [-4, 0], [9, -6], [9, 6]], roles: 'PDDDDCCCCAA' },
+  '5-3-2': { pos: [[-46, 0], [-27, -24], [-33, -11], [-35, 0], [-33, 11], [-27, 24], [-14, -12], [-17, 0], [-14, 12], [9, -6], [9, 6]], roles: 'PDDDDDCCCAA' },
+  '4-1-4-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-22, 0], [-9, -22], [-12, -7], [-12, 7], [-9, 22], [11, 0]], roles: 'PDDDDCCCCCA' },
+  '3-4-3': { pos: [[-46, 0], [-33, -12], [-35, 0], [-33, 12], [-14, -23], [-17, -7], [-17, 7], [-14, 23], [7, -19], [11, 0], [7, 19]], roles: 'PDDDCCCCAAA' },
 };
 // le posizioni qui sopra sono scritte per un campo di 100 × 64: si allargano in proporzione al campo vero
 for (const f of Object.values(FORMS)) f.pos = f.pos.map(([x, z]) => [x * HL / 50, z * HW / 32]);
@@ -84,7 +91,9 @@ export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['I
 // seguiX e seguiZ: quanto il punto inquadrato segue il pallone lungo il campo (tutto) e in profondità (il 45%: pallone a
 // +30 m, telecamera avanti di circa 14). molla è la prontezza con cui segue (più alta, meno ritardo), bordoX i metri dalla
 // linea di fondo a cui si ferma, zMax fin dove arriva verso la tribuna vicina (oltre ci entrerebbe)
-export const CAMERA = { alto: 12.5, dietro: 36.8, inclina: 21.75, fovOriz: 58.7, seguiX: 1, seguiZ: .45, molla: 6, bordoX: 16, zMax: 56 };
+// fascia: il pallone resta sempre tra queste due altezze dello schermo (0 in alto, 1 in basso). Se seguendolo al 45% ne
+// uscirebbe (verso la linea laterale lontana finiva sotto il tabellone), la telecamera lo segue per intero in profondità.
+export const CAMERA = { alto: 12.5, dietro: 36.8, inclina: 21.75, fovOriz: 58.7, seguiX: 1, seguiZ: .45, molla: 6, bordoX: 16, zMax: 56, fascia: [.3, .7] };
 // Vista dall'alto di tutto lo stadio, solo per controlli: si accende con ?alto nell'indirizzo. [x, y, z della telecamera,
 // x, y, z del punto guardato, FOV verticale]
 export const CAMERA_ALTO = [0, 95, 40, 0, 0, 0, 55];
@@ -130,10 +139,17 @@ export const FERMI = { comandi: 2, buio: .5, occasione: 4, fuori: 2.5, corto: [7
 // con gli avversari fermi a disperarsi per `fermi` secondi e l'arbitro che indica il centro; a `stacco` la telecamera passa
 // al primo piano del marcatore: alta `camAlt` metri, a `camDist` metri da lui, con un difensore deluso in primo piano
 // Il deluso sta a `deluso` = [parte della distanza dalla telecamera, metri di lato]
-export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.7, camDist: 4.6, deluso: [.55, 1.7] };
+// `riquadro`: per quanti secondi resta il riquadro in basso col nome di chi ha segnato. 0 = mai, come in Dream League
+// (scelta provvisoria: Alex non ha ancora deciso tra tenerlo, toglierlo o mostrarlo 2 secondi). 9 = per tutta l'esultanza.
+export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.7, camDist: 4.6, deluso: [.55, 1.7], riquadro: 0 };
 
 // Livelli di dettaglio del calciatore: sotto `vicino` metri dalla telecamera il corpo pieno (circa 4.300 triangoli: primi
 // piani, replay, esultanze), fino a `lontano` quello medio (1.500: la telecamera di gioco), oltre quello leggero (600)
+// Il prato (Alex, 21/11): `tinta` moltiplica rosso, verde e blu dell'erba (meno rosso e meno blu: verde più pieno e meno
+// giallo). `strisce`: quanto sono scure e chiare le strisce di taglio. `anelli`: lo stesso per gli anelli concentrici e
+// gli scacchi del cerchio, più leggeri delle strisce. `rilievo`: quanto risalta la grana dell'erba. `piastrella`: ogni
+// quanti metri si ripete la texture (più piccola, più nitida).
+export const PRATO = { tinta: [.8, 1.04, .7], strisce: [.74, 1.18], anelli: [.9, 1.05], rilievo: .8, piastrella: 3 };
 export const LOD = { vicino: 22, lontano: 62 };
 // Cartelloni LED a bordo campo: scorrono piano di continuo (frazione di tutta la striscia al secondo: 4 pannelli)
 export const LED = { scorre: .02 };
@@ -227,6 +243,7 @@ export const FIS = {
  *  vicino:  sotto questa distanza "davanti al piede" scatta il tocco successivo
  *  passo:   tocco normale = velocità di corsa · passo; scatto: passoScatto
  *  perde:   oltre questa distanza dal giocatore la palla non è più sua
+ *  guinzaglio: in conduzione la palla non va mai più lontano di così (Alex, 21/11: circa 1,5 m)
  *  fermo:   sotto questa velocità si tiene la palla sotto la suola
  *  errore:  di quanto (radianti) può andare storto un tocco per chi ha la tecnica più bassa
  *  pausa:   tempo minimo tra due tocchi
@@ -234,7 +251,7 @@ export const FIS = {
  *  ritmo:   col passo (p.ritmo, vedi corpo.js) il tocco parte quando un piede sta per scendere, anche un po' prima (fino a
  *           vicino + ritmo); tra un passo e l'altro aspetta, a meno che la palla non sia già sotto i piedi (forza)
  */
-export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.35, vicino: 0.75, passo: 1.12, passoScatto: 1.2, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6 };
+export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.15, vicino: 0.5, passo: 1.22, passoScatto: 1.3, guinzaglio: 1.5, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6 };
 
 /* ---------------------------------------------------------------- fisica dei giocatori */
 export const CORPO = {

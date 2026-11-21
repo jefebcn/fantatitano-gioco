@@ -23,7 +23,7 @@ import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { PRATO, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -99,7 +99,7 @@ function ctex(c, repX = 1, repY = 1) {
 function cv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
 
 async function buildPitch() {
-  const { campo, fuori } = await creaCampo(T, { HL, HW, linee: LINEE, anisotropia: renderer.capabilities.getMaxAnisotropy() }); scene.add(campo, fuori); CAMPO = campo; // prato PBR, strisce, usura e linee: src/grafica/campo.js
+  const { campo, fuori } = await creaCampo(T, { HL, HW, linee: LINEE, anisotropia: renderer.capabilities.getMaxAnisotropy(), passo: PRATO.piastrella, prato: PRATO }); scene.add(campo, fuori); CAMPO = campo; // prato PBR, strisce, usura e linee: src/grafica/campo.js
   // porte con la rete che si deforma e bandierine che si flettono (src/grafica/stadio.js)
   PORTE = [-1, 1].map((d) => new Porta(T, scene, { d, gx: d * HL, GH, GT }));
   BANDIERINE = new Bandierine(T, scene, { HL, HW });
@@ -831,7 +831,10 @@ function nuovaPartita(home, away) {
   paintBoards(home, away, CREST);
   $('#sbH').src = img(home.id + '-mini'); $('#sbA').src = img(away.id + '-mini'); $('#sb').style.setProperty('--sq', G.teams[0].kit.shirt); // la barretta sul bordo destro del tabellone: il colore della nostra maglia
   $('#sbHn').textContent = home.short; $('#sbAn').textContent = away.short;
-  hud(); kickoff(G.teams[0]);
+  // scenario del ponte: si parte da un minuto e da un punteggio dati, e la richiesta dice chi batte
+  const sc = G.ponte && G.ponte.r.tipo === 'scenario' ? G.ponte.r.scenario : null;
+  if (sc) partiDa(sc, G.ponte.iu);
+  hud(); kickoff(sc && sc.palla === 'avversario' ? G.teams[1] : G.teams[0]);
   // la telecamera parte già al suo posto di gioco: prima arrivava da 46 m di altezza e 70 m di distanza in un paio di secondi,
   // e al calcio d'inizio si vedeva tutto il campo da lontano
   updateCamera(9);
@@ -842,6 +845,17 @@ const userDrives = (p) => p === G.ctrl && p.team.human && !G.auto;
 // vista di controllo dell'IA: ?ia nell'indirizzo o tasto O (src/debug-ia.js). Legge soltanto, non cambia il gioco
 const DBG_IA = creaDebugIA({ cam, G, homeOf, HW, attiva: /[?&]ia\b/.test(location.search) });
 
+/** Scenario: orologio, tempo, campo e punteggio come al minuto chiesto. iu: quale squadra della richiesta è l'utente. */
+function partiDa(sc, iu) {
+  const fatti = sc.minuto - 1;
+  // un soffio dentro il minuto: così i conti con la virgola non lo fanno scivolare in quello prima
+  G.half = fatti >= 45 ? 2 : 1; G.clock = (fatti % 45 + 1e-6) / 45 * HALF_SECS;
+  // nel secondo tempo le squadre hanno già cambiato campo
+  if (G.half === 2) for (const t of G.teams) t.side = -t.side;
+  G.teams[0].score = sc.punteggio[iu]; G.teams[1].score = sc.punteggio[1 - iu];
+  // i minuti dei giocatori si contano da qui
+  for (const p of all()) p.dentroMin = fatti;
+}
 function kickoff(team) {
   const b = G.ball; b.x = b.z = 0; b.y = BR; b.vx = b.vy = b.vz = 0; b.c = b.t = 0; b.owner = null;
   for (const t of G.teams) for (const p of t.players) {
@@ -2191,7 +2205,7 @@ function startFx(f, name, da = 0, sp = null) {
   a.setLoop(T.LoopOnce, 1); a.clampWhenFinished = true; a.reset(); a.timeScale = sp || FX[name].sp; a.time = da; a.play(); f.act = a;
 }
 function poseSkinned(p, dt) {
-  const f = p.fig, v = hyp(p.vx, p.vz), alt = f.alt || 1; f.root.position.set(p.x, 0, p.z);
+  const f = p.fig, v = hyp(p.vx, p.vz), alt = f.alt || 1; f.root.position.set(p.x + p.vx * avanzo(p), 0, p.z + p.vz * avanzo(p));
   // il corpo segue la direzione con una molla rapida: tiri, passaggi e scivolate girano p.dir di colpo, il bacino no
   // (oltre i 150° o dopo un salto di posizione, come a un calcio d'inizio, si gira subito)
   if (dt > 0) movimento(p, v);
@@ -2288,7 +2302,7 @@ function poseSkinned(p, dt) {
 function pose(p, dt) {
   if (p.fig.skinned) return poseSkinned(p, dt);
   const f = p.fig, v = hyp(p.vx, p.vz), a = Math.min(1, v / 6.5);
-  f.root.position.set(p.x, 0, p.z); f.root.rotation.y = p.dir;
+  f.root.position.set(p.x + p.vx * avanzo(p), 0, p.z + p.vz * avanzo(p)); f.root.rotation.y = p.dir;
   p.ph += v * dt * 2.35;
   const s = Math.sin(p.ph), c = Math.cos(p.ph);
   let lL = -s * a * .95, lR = s * a * .95, kL = Math.max(0, c) * a * 1.5 + .08, kR = Math.max(0, -c) * a * 1.5 + .08;
@@ -2307,6 +2321,10 @@ function pose(p, dt) {
 // Gambe al passo: camminata, corsetta e corsa girano tutte sulla fase p.passo del corpo (src/fisica/corpo.js), così il
 // piede scende proprio quando parte il tocco di palla e le tre clip si fondono senza piedi che scivolano. Si sistema il tempo
 // delle clip prima che l'animazione avanzi, tenendo conto di quanto avanzerà in questo fotogramma.
+// Giocatori e pallone avanzano a passi fissi di 1/120 di secondo: tra un fotogramma e l'altro resta sempre un avanzo di
+// tempo non ancora simulato (fino a 8 millesimi), diverso per ognuno. A schermo lo si aggiunge alla posizione, così pallone
+// e portatore non si staccano e non vanno a scatti quando i fotogrammi non arrivano regolari.
+const avanzo = (p) => (p.st === 'run' ? p.restoC || 0 : 0);
 function allinea(p, dt) {
   const f = p.fig; if (!f.skinned || !f.A) return;
   const v = hyp(p.vx, p.vz);
@@ -2353,9 +2371,13 @@ function updateCamera(dt) {
     // (dopo un gol chi ha segnato): per intero lungo il campo, solo in parte in profondità, senza uscire dai bordi.
     const C = CAMERA; gioco = true;
     const tx = clamp(fx * C.seguiX, -(HL - C.bordoX), HL - C.bordoX), tz = Math.min(clamp(fz, -HW, HW) * C.seguiZ, C.zMax - C.dietro);
-    px = tx; py = C.alto; pz = tz + C.dietro; lx = tx; lz = tz;
     // la stessa larghezza di campo su ogni schermo: l'angolo orizzontale è fisso, quello verticale segue le proporzioni
     fov = 2 * Math.atan(Math.tan(C.fovOriz * Math.PI / 360) / cam.aspect) * 180 / Math.PI;
+    // In profondità il pallone resta dentro la fascia dello schermo (CAMERA.fascia): a che distanza dalla telecamera un punto
+    // a terra appare a una certa altezza dello schermo lo dicono altezza, inclinazione e campo visivo, che non cambiano.
+    const lontano = (f) => C.alto / Math.tan(C.inclina * Math.PI / 180 - Math.atan((1 - 2 * f) * Math.tan(fov * Math.PI / 360))), fzc = clamp(fz, -HW, HW);
+    pz = Math.min(clamp(tz + C.dietro, fzc + lontano(C.fascia[1]), fzc + lontano(C.fascia[0])), C.zMax);
+    px = tx; py = C.alto; lx = tx; lz = pz - C.dietro;
   }
   // movimento morbido: una molla smorzata al punto giusto, senza scatti né oscillazioni, più lenta nel menu. In gioco è il
   // leggero ritardo con cui l'inquadratura segue il pallone
@@ -2395,8 +2417,10 @@ function disegna(dt) {
     if (!REGIA.figure()) for (const p of all()) { allinea(p, dt); pose(p, dt); inclina(p, dt); if (p.fig.skinned && !G.senzaPiedi) bloccaPiedi(p.fig, dt, !!p.fig.piediAttivi); } // durante il replay le figure le mette in posa la regia
     else for (const p of all()) p.fig.root.rotation.x = p.fig.root.rotation.z = 0;
     const sp = hyp(b.vx, b.vz);
-    ballMesh.position.set(b.x, b.y, b.z); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; ballMesh.rotation.y += (b.c || 0) * dt * 25; }
-    ballShadow.position.set(b.x, .04, b.z); ballShadow.scale.setScalar(1.25 + b.y * .16); ballShadow.material.opacity = .62 / (1 + Math.max(0, b.y - BR) * .32); // a terra scura e stretta, in aria larga e chiara: si capisce dove scende un cross
+    // il pallone si disegna dove sarà tra un attimo (il tempo non ancora simulato), come i giocatori: restano insieme
+    const ar = b.resto || 0, bxd = b.x + b.vx * ar, bzd = b.z + b.vz * ar, byd = Math.max(BR, b.y + b.vy * ar);
+    ballMesh.position.set(bxd, byd, bzd); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; ballMesh.rotation.y += (b.c || 0) * dt * 25; }
+    ballShadow.position.set(bxd, .04, bzd); ballShadow.scale.setScalar(1.25 + b.y * .16); ballShadow.material.opacity = .62 / (1 + Math.max(0, b.y - BR) * .32); // a terra scura e stretta, in aria larga e chiara: si capisce dove scende un cross
     // segni sopra le teste come Dream League (li disegna la regia): niente anello ai piedi né freccia della levetta
     const c = G.ctrl; G.segno = !!c && !G.auto && G.state !== 'full'; ring.visible = arrow.visible = freccia.visible = false;
     // in difesa: il compagno che si prenderebbe con «Cambia giocatore» (segnalino grigio), ricalcolato ogni tanto
@@ -2557,13 +2581,13 @@ function avviaPartita(r) {
 ponte.avviaPartita = avviaPartita;
 /** L'esito della partita in corso nella forma del ponte (docs/ponte-partita.md, §4). finita: falso se si abbandona. */
 function esitoPartita(finita) {
-  const P = G.ponte, sq = (k) => (k === 0 ? P.iu : 1 - P.iu), paio = (v) => (P.iu === 0 ? [v[0], v[1]] : [v[1], v[0]]), fine = finita ? 90 : minute();
+  const P = G.ponte, sq = (k) => (k === 0 ? P.iu : 1 - P.iu), paio = (v) => (P.iu === 0 ? [v[0], v[1]] : [v[1], v[0]]), fine = finita ? 90 : minute(), sc = P.r.tipo === 'scenario' ? P.r.scenario : null, prima = sc ? sc.minuto - 1 : 0;
   const id = (p) => p.pid || `${p.team.club.id}/${p.name}`, somma = (k, c) => G.teams[k].players.concat(G.teams[k].off, G.teams[k].out).reduce((a, p) => a + (p.s[c] || 0), 0);
   const tot = G.stats.poss[0] + G.stats.poss[1] || 1, ph = Math.round(G.stats.poss[0] / tot * 100);
   const righe = G.teams.flatMap((t, k) => t.players.concat(t.off, t.out).map((p) => ({ p, k, v: vote(p) })));
   const migliore = righe.slice().sort((x, y) => y.v - x.v || y.p.s.g - x.p.s.g || y.p.s.a - x.p.s.a)[0];
   return {
-    versione: 1, finita, minuti: fine, secondiVeri: Math.round((performance.now() - P.t0) / 1000),
+    versione: 1, finita, minuti: fine - prima, partenza: sc ? { minuto: sc.minuto, punteggio: [sc.punteggio[0], sc.punteggio[1]] } : null, secondiVeri: Math.round((performance.now() - P.t0) / 1000),
     punteggio: paio([G.teams[0].score, G.teams[1].score]), rigori: G.soRes ? paio(G.soRes) : null,
     marcatori: G.goals.map((g) => ({ squadra: sq(g.t), id: g.chi ? id(g.chi) : '', nome: g.chi ? g.chi.name : g.name, minuto: g.min, ruolo: g.chi ? g.chi.ruoloP || RUOLO[g.chi.nat] : '', assist: g.assist ? { id: id(g.assist), nome: g.assist.name } : null, tipo: g.tipo })),
     cartellini: G.cards.map((c) => { const t = G.teams[c.t], p = t.players.concat(t.off, t.out).find((x) => x.name === c.name); return { squadra: sq(c.t), id: p ? id(p) : `${t.club.id}/${c.name}`, nome: c.name, minuto: c.min, colore: c.c === 'r' ? 'rosso' : 'giallo' }; }),

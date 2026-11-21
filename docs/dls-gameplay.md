@@ -15,6 +15,10 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
   campo visivo verticale **28°**; ritoccate di poco (36,8 m, 21,75°, campo visivo orizzontale fisso 58,7°) perché il cerchio
   di centrocampo occupi il **43%** della larghezza, come chiesto il 21/11. Mai girata a destra o sinistra, niente zoom in
   area. Segue il pallone per intero lungo il campo e al 45% in profondità.
+- In profondità il pallone resta sempre tra il **30% e il 70%** dell'altezza dello schermo (`CAMERA.fascia`, 21/11): verso
+  la linea laterale lontana finiva al 19%, sotto il tabellone; ora la telecamera lo segue quanto serve, senza cambiare
+  altezza, inclinazione e campo visivo. Verso la linea vicina si ferma a `zMax` (oltre entrerebbe in tribuna): lì il
+  pallone arriva al 76%.
 - Controllo (`scripts/prove/inquadratura.cjs`, anche nella CI, 844 × 390): cerchio 43,0% (rif. 43), bordo lontano 28,0% (29),
   dischetto 40,0% (40), bordo vicino 58,7% (60), linea laterale lontana 10,0% (10), giocatore 8,2% (9), pallone 1,0% (1).
 - La vista dall'alto è solo di controllo: `?alto` nell'indirizzo.
@@ -72,6 +76,12 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
   un'inversione circa metà; finché non si è girati non si accelera (`CORPO.gira`, `giraScatto`, `perde`).
 - Le animazioni di camminata, corsetta e corsa girano alla velocità vera del giocatore (la clip della corsa copre anche
   lo scatto), e si fondono in base alla velocità: il piede in appoggio non scivola.
+- **Pallone al piede** (`COND` in `src/config.js`, `conduci` in `src/fisica/pallone.js`): in conduzione la palla non è
+  incollata e non è libera. A ogni tocco, dato quando un piede sta per appoggiare, viene spinta avanti e resta tra 0,6 e
+  0,8 m dal portatore (un tocco ogni due o tre appoggi); nei cambi di direzione il tocco dopo la porta nella direzione
+  nuova. Non si allontana mai più di 1,5 m (`COND.guinzaglio`): la perde solo un contrasto o un calcio.
+- Giocatori e pallone avanzano a passi fissi di 1/120 di secondo e a schermo si disegnano con l'avanzo di tempo non
+  ancora simulato: non si staccano e non vanno a scatti quando i fotogrammi calano.
 - Con `?debug` nell'indirizzo, nel riquadro in alto a sinistra c'è la velocità del giocatore comandato in m/s.
 - Letto dal gioco (giocatore comandato dalla levetta): da fermo a 6,65 m/s in 0,8 s; scatto 7,2 m/s; conduzione 4,3 m/s;
   scatto con palla 6,0 m/s; dopo mezzo secondo da un'inversione in scatto 3,6 m/s.
@@ -117,6 +127,7 @@ riferimento sono cambiati un po' senza che cambiasse il gioco. Sempre 32 partite
 |---|---|---|---|---|---|
 | Prima delle velocità nuove | 2,22 | 9,34 | 74% | 4,6 | 0 |
 | Velocità nuove (corsa 5, scatto 7, palla 4,5 e 6) | 1,66 | 6,84 | 71% | 1,9 | 0 |
+| Pallone al piede (tocchi più lunghi, mai oltre 1,5 m) | 1,75 | 5,88 | 70% | 1,3 | 0 |
 
 Con giocatori più lenti, in quattro minuti si fanno meno azioni: gol e tiri scendono di un quarto e i difensori
 vincono meno contrasti. Le stime che il computer usa per i passaggi sono già adattate (senza, i passaggi riusciti
@@ -155,6 +166,8 @@ non ci si arriva, senza bloccare).
 - Nel codice: `restart()` (scritta, dissolvenza, comandi), `corner()` (replay dopo la grande occasione), `hud()`.
 
 ## 8. Sequenza del gol
+- Riquadro in basso col nome di chi ha segnato: in Dream League non c'è. `GOLSEQ.riquadro` dice per quanti secondi resta:
+  ora **0** (scelta provvisoria, Alex deve ancora decidere tra tenerlo, toglierlo o mostrarlo 2 secondi).
 | tempo | cosa succede |
 |---|---|
 | 0 s | punteggio aggiornato subito; levetta, tasti e minimappa spariscono |

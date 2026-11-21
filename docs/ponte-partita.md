@@ -242,6 +242,35 @@ const risposta = ponte.avviaPartita({ versione: 1, tipo: 'campionato', squadre: 
 if (!risposta.ok) console.warn(risposta.errori);
 ```
 
+### 8.2 Passo 4 fatto: i quattro moduli nuovi (21/11)
+In `FORMS` (`src/config.js`) ci sono ora anche **4-3-1-2, 5-3-2, 4-1-4-1 e 3-4-3**, accanto ai quattro di prima. La home
+li trova leggendo le chiavi di `FORMS`. Li usa chi gioca e la squadra avversaria quando la richiesta li chiede
+(`modulo`); le squadre del computer, da sole, restano sui primi quattro. Provati in partite intere tra computer con
+`MODULO=5-3-2 node scripts/prove/partita.cjs 4`: nessuna anomalia. La pausa della partita mostra gli otto moduli.
+
+### 8.3 Passo 5 fatto: lo scenario (21/11)
+`SA_FARE.tipi` ora contiene anche **`'scenario'`**. Con `tipo: 'scenario'` la richiesta deve avere
+`scenario: { minuto, punteggio, palla }`:
+
+- `minuto`: intero da 1 a 89. La partita parte da lì: orologio, primo o secondo tempo (dal 46' le squadre hanno già
+  cambiato campo), e finisce al 90' come sempre (coi rigori, se `supplementariERigori` è vero e finisce pari).
+- `punteggio`: `[casa, ospite]`, nello stesso ordine di `squadre`. Si vede subito sul tabellone.
+- `palla`: `'utente'` (se manca vale questo) o `'avversario'`: chi batte il calcio d'inizio della ripresa.
+
+Energia: lo scenario non stanca nessuno da solo. Se al 70' i giocatori devono essere stanchi, la home lo dice con
+`energia` di ogni giocatore, come nelle altre partite.
+
+Nell'esito cambia questo:
+
+- **`partenza`**: `{ minuto, punteggio }` della richiesta (nelle altre partite è `null`).
+- `punteggio` è quello finale, gol di partenza compresi. `marcatori` ha solo i gol segnati giocando: i conti tornano
+  togliendo `partenza.punteggio` (lo fa già `controllaEsito`).
+- `minuti` sono i minuti giocati davvero: partendo dal 70' e arrivando in fondo sono 21. Lo stesso per i `minuti` di
+  ogni giocatore.
+
+Una richiesta con lo scenario sbagliato (minuto fuori misura, punteggio mancante) viene rifiutata con `{ ok: false, errori }`.
+Prova: `node scripts/prove/ponte.cjs` gioca anche uno scenario dal 70' sullo 0-1.
+
 ## Dalla home, 21/11: Sfida e Squadra nuove
 
 - La home ora avvia tutte le partite dal ponte (Sfida nuova, `src/casa/vista-sfida.js`): campionato, coppa, Trofeo dei
