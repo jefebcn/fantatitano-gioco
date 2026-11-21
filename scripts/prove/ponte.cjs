@@ -41,6 +41,7 @@ srv.listen(0, async () => {
   vero(controllaRichiesta({ versione: 1 }).length > 0 && SA_FARE.energiaIniziale === true, 'i controlli di forma girano anche fuori dal browser');
 
   // partita intera
+  await pg.evaluate(() => window.__g.prova(7)); // seme fisso: la stessa partita a ogni giro
   const si = await pg.evaluate(() => window.__g.avviaPartita(window.__richiesta()));
   vero(si.ok === true, 'richiesta giusta accettata');
   await pg.waitForFunction(() => ['kickoff', 'play'].includes(window.__g.G.state) && window.__g.G.teams.length === 2, null, { timeout: 30000 });

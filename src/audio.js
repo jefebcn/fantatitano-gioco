@@ -43,6 +43,7 @@ export function creaAudio(opz = {}) {
 
   /* ------------------------------------------------------------ contesto, bus e sblocco al primo tocco */
   A.init = function () {
+    if (this.muto) return; // modalità di prova (seme fisso): niente audio, così non consuma i numeri casuali della partita
     if (this.ctx) { if (this.ctx.state !== 'running' && this.ctx.resume) this.ctx.resume().catch(() => {}); return; }
     try {
       const C = window.AudioContext || window.webkitAudioContext; if (!C && !opz.contesto) return;

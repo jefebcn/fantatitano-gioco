@@ -5,6 +5,7 @@
      SEME=7          primo seme (le partite usano SEME, SEME+1, …: stesso seme, stessa partita)
      RAPPORTO=f.json salva tutte le misure, per confrontare prima e dopo una modifica
      SEVERO=1        esce con errore anche se una misura è fuori dagli obiettivi (di norma solo per le anomalie)
+     RIPETI=1        rigioca l'ultima partita due volte dopo un tocco sullo schermo e controlla che finisca identica
    Serve Playwright (non è tra le dipendenze): npm i --no-save playwright && npx playwright install chromium
 
    Anomalie (fanno fallire la prova): errori nella pagina, partita che non finisce, palla con numeri impossibili o sotto
@@ -47,11 +48,10 @@ function partita([seme, diffi, casa, ospiti]) {
   const g = window.__g, G = g.G, hyp = Math.hypot, HL = 52.5, HW = 34;
   // Stesso seme, stessa partita: la simulazione ha i suoi numeri casuali, la grafica altri (crea oggetti e particelle in
   // quantità che dipendono da cosa c'era prima, e consumerebbe numeri della partita); il tempo riparte da zero
-  const caso = (x) => () => (x = (x * 16807) % 2147483647) / 2147483647, gioco = caso(seme), grafica = caso(seme + 7919);
-  Math.random = caso(seme + 104729); G.paused = true; G.shown = true; G.t = 0; G.diff = g.DIFF[diffi];
-  g.newMatch(window.CLUBS[casa], window.CLUBS[ospiti]); G.auto = true; Math.random = gioco;
+  g.prova(seme); G.paused = true; G.shown = true; G.t = 0; G.diff = g.DIFF[diffi];
+  g.newMatch(window.CLUBS[casa], window.CLUBS[ospiti]); G.auto = true;
   const disegna = g.renderer.render; g.renderer.render = () => {}; // si prepara tutto (scheletri, pose) ma non si disegna
-  const draw = (dt) => { Math.random = grafica; g.draw(dt); Math.random = gioco; };
+  const draw = g.draw;
   const tutti = () => G.teams[0].players.concat(G.teams[1].players);
   const anomalie = {}, esempi = [], nota = (k, d) => { anomalie[k] = (anomalie[k] || 0) + 1; if (anomalie[k] <= 2) esempi.push(`${G.t.toFixed(1)}s ${k} ${d}`); };
   const ripartenze = {}, tenute = [], prima = new Map(), aTerra = new Map(), gestoDa = new Map();
@@ -126,6 +126,17 @@ srv.listen(0, async () => {
     const an = Object.entries(r.anomalie).map(([a, v]) => `${a} ×${v}`).join(', ');
     console.log(`${k + 1}. ${r.risultato}  ·  ${Object.entries(r.misure).map(([a, v]) => `${a} ${v}`).join(' · ')}${an ? `\n   ANOMALIE: ${an}\n   ${r.esempi.join('\n   ')}` : ''}`);
   }
+  // RIPETI=1: l'ultima partita si rigioca due volte dopo un tocco sullo schermo (che fuori dalla modalità di prova accende
+  // l'audio): deve finire uguale in ogni numero. È la prova che la simulazione è ripetibile. La prima partita dopo il
+  // caricamento della pagina resta fuori dal confronto: è sempre uguale a sé stessa a pagina appena caricata, ma differisce
+  // dalle successive per arrotondamenti nelle pose dei giocatori (vedi docs/RICETTE.md)
+  let diversa = false;
+  if (process.env.RIPETI) {
+    await pg.mouse.click(200, 200); await pg.keyboard.press('Shift');
+    const k = N - 1, dati = [SEME + k, DIFFI, (k * 3) % 16, (k * 5 + 7) % 16], chiave = (r) => JSON.stringify([r.risultato, r.misure, r.ripartenze]);
+    const r1 = await pg.evaluate(partita, dati), r2 = await pg.evaluate(partita, dati), uguale = chiave(r1) === chiave(r2) && (N < 2 || chiave(r1) === chiave(partite[k]));
+    diversa = !uguale; console.log(`${uguale ? '✓' : '✗'} ultima partita rigiocata due volte dopo un tocco: ${uguale ? 'identica' : `DIVERSA (${r1.risultato} · ${JSON.stringify(r1.misure)} · ${r2.risultato} · ${JSON.stringify(r2.misure)})`}`);
+  }
   // media delle misure e confronto con gli obiettivi
   console.log(`\nMedia su ${N} partite (${DIFFI}, semi ${SEME}–${SEME + N - 1}, ${((Date.now() - t0) / 1000).toFixed(0)} s):`);
   let fuori = 0;
@@ -139,5 +150,5 @@ srv.listen(0, async () => {
   console.log(`\nAnomalie: ${anomalie}  ·  errori nella pagina: ${unici.length}${unici.length ? `\n  ${unici.slice(0, 5).join('\n  ')}` : ''}  ·  misure fuori obiettivo: ${fuori}`);
   if (process.env.RAPPORTO) fs.writeFileSync(process.env.RAPPORTO, JSON.stringify({ diffi: DIFFI, seme: SEME, partite, errori: unici }, null, 1));
   await br.close(); srv.close();
-  process.exitCode = anomalie || unici.length || (process.env.SEVERO && fuori) ? 1 : 0;
+  process.exitCode = anomalie || unici.length || diversa || (process.env.SEVERO && fuori) ? 1 : 0;
 });
