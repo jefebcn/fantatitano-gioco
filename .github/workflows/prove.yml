@@ -29,7 +29,7 @@ jobs:
       - name: Browser per le partite simulate
         run: npm i --no-save playwright@1.63.0 && npx playwright install --with-deps chromium
       - name: Partite simulate
-        run: node scripts/prove/partita.cjs 3 normale
+        run: RIPETI=1 node scripts/prove/partita.cjs 3 normale
       - name: Rigori
         run: node scripts/prove/rigori.cjs
       - name: Ponte tra home e partita (una partita avviata da una richiesta, esito alla fine)

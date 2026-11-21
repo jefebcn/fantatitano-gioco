@@ -34,15 +34,33 @@ Le risposte sono nella tabella in fondo a `docs/home-spec.md` (§8). Fatto subit
 
 | Cosa | Perché non è fatto | Cosa serve |
 |---|---|---|
-| Applicare il file SQL e collegare il gioco al saldo sul server | il progetto è quello dell'app pubblicata e Alex ha chiesto prima un backup: Supabase gratuito non ne fa e Claude non può farlo da qui | il backup (o la decisione che non serve), e l'ok alle sette funzioni in `public`: `docs/home-spec.md` §8.1 |
+| Saldo e storico sul server | deciso da Alex (21/11): **per ora niente sul database**. Il gioco è privato, saldo e storico restano sul telefono. `supabase/002-lapartita-economia.sql` resta pronto | vedi «Prima del lancio» qui sotto |
 | Logo | Alex deve dire se la corona giusta è la lime (quella che c'è) o la viola | la risposta, e il file se è la viola |
-| Testi in un unico file | è un lavoro che tocca quasi tutto il codice dell'interfaccia: va fatto da solo, dopo queste modifiche | niente, è il prossimo passo |
+| Testi in un unico file | la versione completa (PR #77) è stata chiusa: dopo lo spostamento della home va rifatta solo per i file della partita; la home userà lo stesso `src/testi.js` | in corso (sessione partita) |
 | Esultanza del capitano (negozio) | nel gioco ci sono solo due esultanze | altre animazioni da Mixamo |
 | Immagine di sfondo della home | la manda Alex | 3840 × 1800 pixel, indicazioni in `docs/home-spec.md` §6; ora c'è un gradiente |
 | Clip «mani in testa» e «indica» | le manda Alex | FBX, Without Skin, 30 fps |
 | fps veri su iPhone | qui non c'è un iPhone | aprire il gioco con `?debug` e dirmi i numeri |
 | Più gol e più tiri | Alex: pochi, puntare a 2–3 gol e 10–12 tiri per squadra | vedi `docs/dls-gameplay.md`, «Gol e tiri» |
 | Texture KTX2 | le texture dei giocatori le disegna il gioco coi colori della squadra | niente, salvo cambiare sistema |
+
+## Prima del lancio: saldo sul server
+Deciso da Alex il 21/11: sul progetto Supabase «fantasyfootball» (l'app pubblicata, circa 250 iscritti) **non si applica
+niente** finché il gioco è privato. Prima di passare al saldo sul server servono, nell'ordine:
+
+1. **Backup completo** del database dell'app (il piano gratuito non ne fa: va scaricato a mano).
+2. **Controllo di sicurezza delle sette funzioni in `public`** (`lapartita_stato`, `lapartita_partita_inizia`,
+   `lapartita_partita_chiudi`, `lapartita_riscuoti`, `lapartita_compra`, `lapartita_scambia`, `lapartita_movimenti`):
+   - sono `SECURITY DEFINER` con `search_path` vuoto e leggono l'utente solo da `public.current_user_id()`: nessun
+     parametro dice «per conto di chi»;
+   - nessuna permette di cambiare il saldo di un altro o di darsi monete: gli importi vengono dal listino, non dal telefono;
+   - chi non ha fatto l'accesso non può chiamarle; le tabelle e le funzioni interne dello schema `lapartita` non si
+     raggiungono da fuori;
+   - passare il controllo automatico di Supabase (advisor di sicurezza) dopo l'applicazione sul progetto di prova.
+   La prova `supabase/prove/002-economia-prova.sql` controlla già i primi tre punti su un database locale.
+3. **Prova su un progetto Supabase di test** (non quello dell'app): applicare il file, giocare qualche partita vera,
+   comprare al negozio, guardare lo storico.
+4. Solo dopo: applicarlo al progetto vero e cambiare l'interruttore del gioco da «telefono» a «server».
 
 ## Da sapere
 - Resta su GitHub il ramo `claude/dls-risposte-tastiera-gol`, creato per errore: si può cancellare dalla pagina dei rami.

@@ -47,6 +47,7 @@ const G = {
   in: { jx: 0, jy: 0, pressing: false }, idle: 0, stats: null, goals: [], cards: [], next: null, taker: null,
   headId: -1, fk: null, wait: 1.1, offs: null, noOff: false, pen: false, penId: -1, penWait: 0,
 };
+const G_INIZIO = { ...G }; // i valori al caricamento, per azzerare lo stato a ogni partita nuova (DI_PARTITA)
 
 /* ------------------------------------------------------------------ scena */
 const canvas = $('#c');
@@ -751,7 +752,11 @@ function capitanoDi(club, mia) {
   const c = club.xi.slice(1).sort((a, b) => b[3] - a[3])[0]; return c ? c[0] : null;
 }
 function creaGiocatore(t, i, [name, role, num, q]) {
-  const club = t.club, fig = (MODEL ? makeSkinned : makeFigure)(i === 0 ? t.gkit : t.kit, hash(club.id + name), num, i === 0 ? null : club.id, name, { capitano: name === t.capitano }); scene.add(fig.root);
+  // la figura si costruisce con numeri casuali suoi: ne consuma di più la prima volta (quando prepara cose in comune) e
+  // spostava quelli della partita, così la prima partita dopo il caricamento era diversa dalle successive
+  // In prova ogni figura ha un generatore che dipende solo da chi è.
+  if (PROVA.semi) PROVA.semi.figura = generatore(hash(t.club.id + name) % 2147483000 + 1);
+  const club = t.club, fig = colSeme('figura', () => (MODEL ? makeSkinned : makeFigure)(i === 0 ? t.gkit : t.kit, hash(club.id + name), num, i === 0 ? null : club.id, name, { capitano: name === t.capitano })); scene.add(fig.root);
   fig.root.traverse((o) => { if (o.isMesh && !(o.material && o.material.transparent) && !(fig.vicini && fig.vicini.includes(o))) o.castShadow = true; }); // ombra vera del sole (l'ombra di contatto resta)
   const base = 7.3 + clamp((q - 20) / 40, -.5, .6) + (club.str - 3) * .07;
   return { team: t, i, role, nat: role, name, num, q, x: 0, z: 0, vx: 0, vz: 0, dir: t.side > 0 ? Math.PI / 2 : -Math.PI / 2, fig, st: 'run', stT: 0, cool: 0, stun: 0, shield: 0, ph: rnd(6), tx: 0, tz: 0, sprint: false, maxV: i === 0 ? 6.6 : base, thinkT: 0, hold: 0, diveS: 0, hit: false, saveId: -1, run: null, mark: null, jock: false, slideCd: 0, inj: false, yel: 0, red: false, fkShot: false, en: 1, by: null, s: { g: 0, a: 0, kp: 0, sh: 0, sot: 0, pa: 0, pc: 0, tk: 0, int: 0, sv: 0, fl: 0, og: 0 }, massa: 72 + ({ P: 6, D: 5, C: -1, A: 2 }[role] || 0) + (hash(name + club.id) % 9) - 4, sbil: 0 }; // la massa conta nei duelli spalla a spalla
@@ -781,8 +786,12 @@ function aiSubs() {
 }
 // In trasferta la prima maglia è dell'avversaria: le divise si scelgono a parti invertite
 const kitsFor = (mia, loro, fuori) => { if (!fuori) return pickKits(mia, loro); const [a, b, c, d, e] = pickKits(loro, mia); return [b, a, d, c, e]; };
-function newMatch(home, away) {
-  clearMatch();
+// Lo stato che appartiene a una sola partita: a ogni partita nuova torna com'era al caricamento. Senza, la seconda partita
+// ereditava tempi e contatori della prima (l'istante dell'ultimo tiro, l'ultimo che ha toccato palla) e non era più la stessa
+const DI_PARTITA = ['lastTouch', 'lastKicker', 'intended', 'poss', 'shotId', 'charge', 'next', 'taker', 'headId', 'wait', 'idle', 'altoT', 'calcioT', 'tiroT', 'occasioneT', 'xAltaT', 'buioT',
+  'prossimo', 'prossimoT', 'rimessa', 'scorer', 'segno', 'tipoFermo', 'tocchi', 'land', 'path', 'caricaIdeale', 'caricaTipo', 'cine', 'delusoGol', 'delusoPunto', 'rivede', 'shooter', 'lastPass', 'ctrl', 'goalEnd'];
+function nuovaPartita(home, away) {
+  clearMatch(); for (const k of DI_PARTITA) G[k] = G_INIZIO[k]; TIFO.tiro = -1; TIFO.gol = 0;
   const fuori = !!(G.comp && G.comp.fuori), [kh, ka, g1, g2, arb] = kitsFor(home, away, fuori); G.arbKit = arb;
   // dal negozio: gli scarpini scelti per tutta la squadra dell'utente e, in casa, il suo pallone
   let scarpe = K && K.scelte && SCARPE_NEGOZIO[K.scelte.scarpini] && CAR.possiede(K, 'scarpini', K.scelte.scarpini) ? SCARPE_NEGOZIO[K.scelte.scarpini] : null;
@@ -1690,8 +1699,28 @@ function gkThink(p, dt) {
   if ((p.tx - gx) * s < .8) p.tx = gx + s * .8;
 }
 
+/* ------------------------------------------------------------------ modalità di prova: stessa partita, stesso risultato */
+/* Con ?seme=N nell'indirizzo, o chiamando __g.prova(N), l'audio resta spento e i numeri casuali vengono da tre generatori
+   col seme fisso: uno per preparare la partita, uno per il gioco e uno per la grafica (che crea particelle in quantità
+   che dipendono da cosa c'era prima, e consumerebbe i numeri della partita). Il gioco tira a sorte solo dentro queste tre
+   funzioni, quindi la stessa partita giocata dal computer finisce sempre uguale. Senza seme non cambia niente. */
+const PROVA = { semi: null };
+const generatore = (x) => () => (x = (x * 16807) % 2147483647) / 2147483647;
+function prova(seme) {
+  PROVA.semi = seme === null || seme === undefined ? null : { prepara: generatore(seme + 104729), gioco: generatore(seme), grafica: generatore(seme + 7919) };
+  AU.muto = !!PROVA.semi;
+}
+function colSeme(quale, fai) {
+  if (!PROVA.semi) return fai();
+  const prima = Math.random; Math.random = PROVA.semi[quale];
+  try { return fai(); } finally { Math.random = prima; }
+}
+function newMatch(home, away) { return colSeme('prepara', () => nuovaPartita(home, away)); }
+function step(dt) { return colSeme('gioco', () => passo(dt)); }
+function draw(dt) { return colSeme('grafica', () => disegna(dt)); }
+
 /* ------------------------------------------------------------------ passo di simulazione */
-function step(dt) {
+function passo(dt) {
   G.t += dt; G.stateT += dt; const b = G.ball; if (!b) return;
   if (G.state === 'play') {
     if (G.charge >= 0) { if (G.ball.owner !== G.ctrl) G.charge = -1; else { G.charge += dt; if (G.charge > CARICA.max) rilascia(); } } // persa la palla, la carica si annulla
@@ -2334,7 +2363,7 @@ function folla(dt) {
   if (h && G.ball) AU.pubblico(TIFO.base, G.state === 'play' ? clamp((Math.abs(G.ball.x) - (HL - 25)) / 12, 0, 1) : G.state === 'goal' ? 1 : 0);
   SPALTI.muovi(dt, G.t);
 }
-function draw(dt) {
+function disegna(dt) {
   const b = G.ball;
   if (b) {
     if (!REGIA.figure()) for (const p of all()) { allinea(p, dt); pose(p, dt); inclina(p, dt); if (p.fig.skinned && !G.senzaPiedi) bloccaPiedi(p.fig, dt, !!p.fig.piediAttivi); } // durante il replay le figure le mette in posa la regia
@@ -2647,6 +2676,7 @@ async function boot() {
   buildStadium(lock); paintBoards(CLUBS[0], CLUBS[1], null);
   RESA = creaResa(T, { renderer, scene, cam, torri: FARI.luci.map((l) => l.pos) }); // riflessi, tonalità e alone (src/grafica/resa.js)
   ATMO = creaAtmosfera(T, { scene, hemi, sun, sole: SOLE, fari: FARI, sfondo: SFONDO, campo: CAMPO, tribune: SPALTI.materiali, resa: RESA }); ATMO.applica(sel.ora); // giorno o notte, scelto prima della partita
+  { const m = /[?&]seme=(\d+)/.exec(location.search); if (m) prova(+m[1]); } // modalità di prova: partita ripetibile, audio spento
   buildMenu(); comandiPartita(); bindInput();
   caricaCarriera(); // la carriera salvata, le rose cambiate col mercato e il club dell'utente, prima di caricare gli stemmi
   Promise.all(CLUBS.map((c) => loadImg(img(c.id + '-mini')).then((i) => { CREST[c.id] = i; }))).then(() => { if (G.teams.length) paintBoards(G.teams[0].club, G.teams[1].club, CREST); });
@@ -2655,5 +2685,5 @@ async function boot() {
 }
 // quello che la home (src/casa/casa.js) prende da qui
 export { aiForm, $, rnd, clamp, hash, IMGX, img, G, renderer, cv, SCARPE_NEGOZIO, stemmi3d, makeSkinned, FIGURE, formaMaglia, pickKits, PALLONI, kitsFor, AU, tactics, club, chiudiPonte, startMatch, toMenu, CREST, loadImg, MODEL };
-window.__g = { avviaPartita, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { prova, avviaPartita, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
