@@ -1,7 +1,8 @@
 // Il set di icone del gioco: uno stile solo (tratto 1,8 su una griglia di 24, estremi tondi, colore del testo).
 // Moneta e diamante hanno i loro colori e sono identici in tutte le schermate. Le cornici delle carte dei giocatori
 // hanno una forma sola (scudo) in tre colori: bronzo, argento-azzurro, oro.
-// Scrive un file per icona in public/img/icone/, il foglio unico public/img/icone.svg (un <symbol> per icona) e, con
+// Scrive un file per icona in public/img/icone/, il foglio unico public/img/icone.svg (un <symbol> per icona, col nome
+// preceduto da «i-» perché nella pagina non si confonda con gli id delle schermate) e, con
 // «prova» come argomento, la pagina di controllo docs/icone.html.
 // Uso: node scripts/icone.mjs [prova]
 import { writeFileSync, mkdirSync, readdirSync, unlinkSync } from 'node:fs';
@@ -111,7 +112,7 @@ const dir = 'public/img/icone';
 mkdirSync(dir, { recursive: true });
 for (const f of readdirSync(dir)) if (f.endsWith('.svg')) unlinkSync(`${dir}/${f}`);
 for (const [n, [vb, d]] of Object.entries(icone)) writeFileSync(`${dir}/${n}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${d}</svg>\n`);
-writeFileSync('public/img/icone.svg', `<svg xmlns="http://www.w3.org/2000/svg">\n${Object.entries(icone).map(([n, [vb, d]]) => `<symbol id="${n}" viewBox="${vb}">${d}</symbol>`).join('\n')}\n</svg>\n`);
+writeFileSync('public/img/icone.svg', `<svg xmlns="http://www.w3.org/2000/svg">\n${Object.entries(icone).map(([n, [vb, d]]) => `<symbol id="i-${n}" viewBox="${vb}">${d}</symbol>`).join('\n')}\n</svg>\n`);
 console.log(`icone: ${Object.keys(icone).length} (${Object.keys(ALIAS).length} sono lo stesso disegno con un altro nome)`);
 
 // pagina di controllo: tutte le icone col nome, su blu notte, in oro, bianco e azzurro

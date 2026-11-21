@@ -17,7 +17,8 @@ Niente è disegnato col codice al posto di un'illustrazione e niente viene da in
 2. Salvala in `assets/arrivo/` col **nome esatto** della tabella (esempio `sfondo-home.png`). PNG o JPG; PNG con sfondo
    trasparente dove è scritto «trasparente».
 3. `python3 scripts/importa_immagini.py` controlla nome, misure e trasparenza, prepara le tre grandezze (1x, 2x, 3x) in
-   WebP dentro `public/img/illustrazioni/` e le collega: il gioco usa l'immagine se c'è, il segnaposto se manca.
+   WebP dentro `public/img/illustrazioni/` e le collega (scrive l'elenco in `src/casa/illustrazioni.js`): il gioco usa
+   l'immagine se c'è, il segnaposto se manca.
 4. `python3 scripts/importa_immagini.py stato` dice quali sono definitive e quali ancora segnaposto.
 
 Se il generatore non sa fare lo sfondo trasparente: sfondo **blu notte uniforme `#0B1530`**, senza sfumature, e dimmelo.

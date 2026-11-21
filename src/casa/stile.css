@@ -1,0 +1,151 @@
+/* Stili delle schermate nuove della home (barra in alto, carte di navigazione, Home). Blu notte e oro, accenti azzurri.
+   Regole di qualità: testo mai sotto 12 px, titoli da 18 px, aree da toccare alte almeno 44 px, niente testo tagliato.
+   Gli stili delle schermate non ancora rifatte restano in casa.css. */
+body{--barra:48px}
+#barraF,#casa{--notte:#0B1530;--oro:#E8B64C;--azz:#3FC6FF;--verde:#5BE37A;--rosso:#FF5A5A;font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff}
+
+/* pezzi comuni: icone, stelle, bollino «!», barretta di avanzamento */
+.ico{width:1em;height:1em;flex:none;display:inline-block;vertical-align:-.14em}
+.stelline{display:inline-flex;gap:1px;color:#E8B64C;font-size:12px;line-height:1}
+.bollino{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#E5262B;color:#fff;font:800 12px Montserrat,sans-serif;font-style:normal;display:grid;place-items:center;box-shadow:0 0 0 2px #0B1530;z-index:2}
+.barretta{display:block;height:6px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden}
+.barretta i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#3FC6FF,#9BE6FF)}
+
+/* ---------- barra in alto ---------- */
+#barraF{position:fixed;left:0;right:0;top:0;z-index:20;height:var(--barra);display:flex;align-items:center;gap:5px;
+  padding:0 max(6px,env(safe-area-inset-right)) 0 max(6px,env(safe-area-inset-left));
+  background:linear-gradient(180deg,rgba(4,9,24,.97),rgba(9,18,44,.94));border-bottom:1px solid rgba(63,198,255,.3);box-shadow:0 4px 14px rgba(0,0,0,.35)}
+#barraF .molla{flex:1 1 0;min-width:0}
+/* i pulsanti sono alti 44 px da toccare; il fondo che si vede è alto 36 (bordo trasparente sopra e sotto) */
+#barraF button{position:relative;flex:none;height:44px;display:flex;align-items:center;color:#fff;background:none;padding:0;border-top:4px solid transparent;border-bottom:4px solid transparent;background-clip:padding-box;border-radius:14px;transition:transform .08s,filter .08s}
+#barraF button:active{transform:scale(.95);filter:brightness(1.3)}
+#barraF .bt{width:44px;justify-content:center}
+#barraF .bt .ico{width:24px;height:24px}
+#barraF .bt.acceso{color:var(--oro);background-color:rgba(232,182,76,.16)}
+#barraF .pil,#barraF .val{background-color:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);white-space:nowrap}
+#barraF .pil{gap:5px;padding:0 9px;font:800 12px Montserrat,sans-serif}
+#barraF .pil .ico{width:16px;height:16px;color:var(--azz)}
+#barraF .pil i{font-style:normal;color:var(--oro)}
+#barraF .pil .barretta{width:36px}
+#barraF .pil .bollino,#barraF .val .bollino{top:-6px;right:-5px}
+#barraF .val{gap:5px;padding:0 5px 0 8px;font:800 13px Montserrat,sans-serif}
+#barraF .val .ico{width:18px;height:18px}
+#barraF .val u{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--oro);color:var(--notte);text-decoration:none}
+#barraF .val u .ico{width:12px;height:12px}
+#barraF .prof{flex:0 1 auto;gap:6px;padding:0 4px 0 2px;max-width:210px;min-width:0;text-align:left}
+#barraF .prof img{width:32px;height:32px;object-fit:contain;flex:none}
+#barraF .prof>span{flex:1 1 auto;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:4px;align-items:center;min-width:0;line-height:1.2}
+#barraF .prof b{grid-column:1/-1;font:800 12px Montserrat,sans-serif;white-space:nowrap;overflow:hidden}
+#barraF .prof i{font:600 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.78);white-space:nowrap;overflow:hidden}
+#barraF .prof .stelline{font-size:10px}
+/* quando la barra è stretta (iPhone piccoli) la barretta dei premi lascia il posto: resta il livello */
+#barraF{container-type:inline-size}
+@container (max-width:720px){#barraF .pil .barretta{display:none}#barraF{gap:4px}#barraF .pil{padding:0 7px}#barraF .prof .stelline{display:none}}
+
+/* con la barra le schermate di prima lasciano lo spazio in alto e non mostrano i loro «Indietro» né la barra vecchia */
+body.conBarra #hub,body.conBarra #pan,body.conBarra #scelta,body.conBarra #pre,body.conBarra #nuovo{padding-top:calc(var(--barra) + 6px)}
+body.conBarra .indietro,body.conBarra #hub .barra{display:none}
+
+/* ---------- carte di navigazione ---------- */
+.carta{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;padding:0;text-align:left;color:#fff;border-radius:12px;border:1px solid rgba(63,198,255,.5);
+  background:linear-gradient(165deg,rgba(14,28,64,.93),rgba(7,12,30,.93));box-shadow:0 0 0 1px rgba(0,0,0,.4),0 6px 16px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08);
+  font-family:Montserrat,Lato,system-ui,sans-serif;transition:transform .08s,filter .08s}
+.carta:active{transform:scale(.975);filter:brightness(1.2)}
+.carta.illustrata{background:linear-gradient(90deg,rgba(7,12,30,.95) 38%,rgba(7,12,30,.5)),var(--sfondo) right center/cover}
+.carta .fascia{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;height:26px;padding:0 10px;border-radius:11px 11px 0 0;
+  font:400 19px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.06em;text-transform:uppercase;background:linear-gradient(90deg,#1565B8,#0C3F7C)}
+.carta .fascia b{font-weight:400;white-space:nowrap}
+.carta .fascia .ico{width:18px;height:18px}
+.carta.tono-oro{border-color:rgba(232,182,76,.9);box-shadow:0 0 0 1px rgba(0,0,0,.4),0 0 16px rgba(232,182,76,.28),inset 0 1px 0 rgba(255,255,255,.1)}
+.carta.tono-oro .fascia{background:linear-gradient(90deg,#F2CC6B,#C4922F);color:#0B1530}
+.carta.tono-rossa{border-color:rgba(200,70,82,.8)}
+.carta.tono-rossa .fascia{background:linear-gradient(90deg,#8E1A28,#5A0E18)}
+.carta.tono-blu .fascia{background:linear-gradient(90deg,#17367A,#0B1C46)}
+.carta .corpo{flex:1 1 0;min-height:0;display:flex;align-items:center;gap:10px;padding:4px 10px}
+.carta .piede{flex:none;display:flex;align-items:center;gap:5px;height:20px;padding:0 10px;font:600 12px Montserrat,sans-serif;color:rgba(255,255,255,.84);background:rgba(0,0,0,.4);border-radius:0 0 11px 11px}
+.carta .piede i{font-style:normal;flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden}
+.carta .piede .ico{width:13px;height:13px;color:#3FC6FF}
+.carta .bollino{top:-6px;right:-6px}
+.carta.avvisa .fascia{padding-right:18px}
+.carta.chiusa .corpo{opacity:.62}
+.carta.chiusa .piede{color:#E8B64C;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.carta .testo{flex:1 1 0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:2px;align-content:center}
+.carta .testo b{font:800 13px Montserrat,sans-serif;line-height:1.15}
+.carta .testo i{font:600 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.78);line-height:1.25}
+.carta .riga{display:flex;align-items:center;gap:6px;min-width:0;font:600 12px Montserrat,sans-serif;line-height:1.3}
+.carta .riga .ico{width:16px;height:16px;color:#E8B64C}
+.carta .riga i{font-style:normal;flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden}
+.carta .ico.grande{width:34px;height:34px;color:#3FC6FF}
+.carta .mini{height:70%;max-height:38px;width:auto;flex:none}
+.carta .val{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;font:800 14px Montserrat,sans-serif;font-style:normal;color:#0B1530;background:linear-gradient(160deg,#FFE9A6,#E8B64C);box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.carta .val.argento{background:linear-gradient(160deg,#E6F4FF,#8FB8D8)}
+.carta .val.bronzo{background:linear-gradient(160deg,#E8B089,#A8683A)}
+
+/* ---------- Home: otto carte su tre righe (40%, 40%, 20%) ---------- */
+#casa{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:minmax(0,2fr) minmax(0,2fr) minmax(0,1fr);gap:6px;align-items:stretch;justify-items:stretch;overflow:hidden;
+  padding:calc(var(--barra) + 6px) max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));
+  background:radial-gradient(ellipse at 34% 34%,rgba(232,182,76,.2),rgba(232,182,76,0) 28%),radial-gradient(ellipse at 62% 80%,rgba(63,198,255,.22),rgba(63,198,255,0) 34%),linear-gradient(180deg,#070E24,#0E2150 58%,#060B1C)}
+#casa.illustrata{background:linear-gradient(rgba(6,11,28,.3),rgba(6,11,28,.55)),image-set(url(img/illustrazioni/sfondo-home@1x.webp) 1x,url(img/illustrazioni/sfondo-home@2x.webp) 2x,url(img/illustrazioni/sfondo-home@3x.webp) 3x) center/cover}
+#casa .c-carriera,#casa .c-percorso{grid-column:span 8}
+#casa .c-scenario,#casa .c-amichevole{grid-column:span 4}
+#casa .c-piccola{grid-column:span 3}
+.c-carriera .stemma{height:86%;max-height:72px;width:auto;flex:none}
+.c-carriera .nome{flex:1 1 0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:4px;align-content:center}
+.c-carriera .nome b{font:400 27px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.04em;line-height:1;white-space:nowrap;overflow:hidden}
+.c-carriera .nome .stelline{font-size:14px}
+.c-carriera .righe{flex:1.3 1 0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:2px;align-content:center}
+.c-scenario .testo b{font:400 19px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.04em;line-height:1.05}
+.c-percorso .livello{flex:none;display:grid;justify-items:center;line-height:1}
+.c-percorso .livello i{font:800 12px Montserrat,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.06em;color:#3FC6FF}
+.c-percorso .livello b{font:400 40px "Bebas Neue",Anton,Impact,sans-serif;color:#E8B64C}
+.c-percorso .avanza{flex:1 1 0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:4px;align-content:center}
+.c-percorso .avanza b{font:800 13px Montserrat,sans-serif}
+.c-percorso .avanza>i{font:600 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.78)}
+.c-percorso .avanza .barretta{height:9px;border-radius:5px}
+.c-percorso .prossimo{flex:none;display:grid;justify-items:center;gap:3px;padding-left:4px}
+.c-percorso .prossimo i{font:600 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.78)}
+.c-percorso .prossimo b{display:flex;align-items:center;gap:5px;font:800 16px Montserrat,sans-serif}
+.c-percorso .prossimo .ico{width:22px;height:22px}
+.c-piccola .fascia{height:24px;font-size:18px;padding:0 8px}
+.c-piccola .corpo{gap:7px;padding:2px 8px}
+.c-piccola .testo b{white-space:nowrap;overflow:hidden}
+.c-sfide .corpo{justify-content:space-around;gap:4px}
+.c-sfide .conto{display:grid;justify-items:center;gap:1px;line-height:1.1}
+.c-sfide .conto i{font:600 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.78)}
+.c-sfide .conto b{font:800 14px Montserrat,sans-serif;color:#E8B64C}
+.c-squadra .ritr{position:relative;flex:none;height:92%;max-height:50px;aspect-ratio:1}
+.c-squadra .ritr img,.c-squadra .ritr .ico{width:100%;height:100%;border-radius:8px;object-fit:cover;object-position:top;background:#16295C;box-shadow:0 0 0 1px rgba(63,198,255,.55)}
+.c-squadra .ritr .val{position:absolute;right:-5px;bottom:-3px;width:22px;height:22px;font-size:12px}
+.c-squadra .testo i{display:flex;align-items:center;gap:4px}
+.c-squadra .testo i .ico{width:14px;height:14px;color:#E8B64C}
+.c-club .voci{display:flex;gap:9px;color:#3FC6FF}
+.c-club .voci .ico{width:17px;height:17px}
+.c-club .stelline{font-size:14px}
+
+/* ---------- ingaggia il capitano: titolo e pulsante su una riga, sopra le carte ---------- */
+.testaCap{display:flex;align-items:center;gap:10px;width:min(980px,100%)}
+.testaCap .indietro{position:static;flex:none;min-height:44px;font-size:13px}
+.testaCap h2{flex:1 1 0;min-width:0;text-align:center}
+#nuovo .testaCap .btn.ingaggia{flex:none;min-height:44px;min-width:0;margin:0;padding:6px 16px;font-size:16px;white-space:nowrap}
+#nuovo .btn.ingaggia:disabled{opacity:.55}
+.cap .at span.forte i{color:#E8B64C}
+.cap .at span.forte b{box-shadow:0 0 0 2px #E8B64C}
+/* le nove carte stanno in una schermata anche sull'iPhone più piccolo: testi da 12 px, carte più basse */
+#nuovo{padding-top:4px;padding-bottom:4px}
+.cap{padding:3px 8px 3px}
+.cap .cn small{font:600 12px Montserrat,sans-serif}
+.cap .at{gap:1px 4px;align-content:center}
+.cap .at i{font:800 12px Montserrat,sans-serif;line-height:1.1}
+.cap .at b,.basso .cap .at b{width:21px;height:21px;font:800 12px Montserrat,sans-serif}
+.cap .sc{gap:2px;padding:3px 8px;min-width:52px}
+.cap .sc em{width:25px;height:25px;font:800 13px Montserrat,sans-serif}
+.cap .sc>b{display:none}
+.cap .sc u{font:800 12px Montserrat,sans-serif;padding:1px 6px}
+/* il logo senza la scritta è più largo: nella carta della classifica sta tutto dentro */
+.riq .logo{max-width:30%;height:auto;object-fit:contain}
+/* la schermata di prima della partita (da rifare al passo 7): con la barra il campo è più basso, così «Gioca» resta in vista */
+.conBarra .erba{height:clamp(190px,calc(var(--vh)*52 - 46px),400px)}
+.basso.conBarra .erba,.basso .conBarra .erba{height:calc(var(--vh)*55 - 46px);min-height:150px}
+/* e «Gioca» sta fisso in basso a destra, sempre in vista: le scelte di modulo e mentalità gli lasciano il posto */
+body.conBarra #pre #gioca{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));z-index:6;margin:0;min-width:0;min-height:44px;padding:8px 30px}
+body.conBarra #pre .tatt{align-self:stretch;align-items:flex-start;padding-right:150px}

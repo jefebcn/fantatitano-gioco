@@ -207,9 +207,11 @@ non possa dare. Risposte e precisazioni:
 **Ordine dei lavori.** D'accordo con la tabella del §7. Il passo 1 lo faccio in aggiunta, senza togliere `gioca()` e
 `showEnd()`: così la home può passare al ponte quando vuole. Due cose da sapere prima del trasloco in `src/casa/`:
 
-1. C'è una richiesta di unione pronta che sposta **tutti i testi** in `src/testi.js` (decisione 8 di Alex): tocca le
-   stesse righe dell'interfaccia in `src/game.js` e `src/pagina.html`. Va unita **prima** del trasloco, oppure lasciata
-   perdere e rifatta dopo: lo decide Alex. Non la unisco da sola.
+1. **Testi** (aggiornato il 21/11, dopo il trasloco): i testi della partita stanno in `src/testi.js`, quelli della home in
+   `src/casa/testi.js`. Hanno la stessa forma: un elenco per lingua e `t('chiave', valori)`. Alex vuole un file solo: per
+   unirli basta spostare l'elenco `IT` della home dentro `TESTI.it` di `src/testi.js` e cambiare l'`import` (le chiavi non
+   si scontrano: quelle della partita cominciano per `partita.`, `hud.`, `pausa.`, `cambi.`, `fine.`, `regia.`, `ruoli.`,
+   `mentalita.`, `comune.`). Lo fa la sessione della home quando le conviene.
 2. Lavori della partita in corso che toccano `src/game.js`: solo funzioni del campo (`rilasciaPortiere`, `think`,
    `ownerThink`) e valori in `src/config.js`. Niente nella parte delle schermate.
 

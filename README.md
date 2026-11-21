@@ -23,6 +23,7 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 |---|---|
 | `src/game.js` | La partita: scena, motore, IA, comandi, pausa, sostituzioni, fine partita, audio |
 | `src/casa/casa.js`, `casa.html`, `casa.css` | La home, i menu e le schermate fuori dalla partita (ingresso, club, carriera, pannelli, scelta squadre, prima della partita). `casa.js` aggiunge alla pagina schermate e stili all'avvio; con `src/game.js` si scambia solo i nomi elencati nei due `import` |
+| `src/casa/nav.js`, `barra.js`, `carte.js`, `home.js`, `icone.js`, `testi.js`, `stile.css` | Le schermate nuove della home: navigazione a livelli con Indietro, barra in alto, carte di navigazione, Home a otto carte, icone, testi in un file solo, stili |
 | `src/dati/scala.js`, `giocatori.js` | Valutazioni e statistiche mostrate (una sola conversione), ruoli precisi, piede e altezza dei giocatori |
 | `src/pagina.html` | Pagina, stili comuni e schermate della partita (comandi, VS, pausa, sostituzioni, fine partita). La build la copia in `public/index.html` con la versione negli indirizzi degli script |
 | `src/sw.js` | Service worker: app installabile, avvio dalla memoria e gioco offline. La build lo copia in `public/sw.js` con la versione e i file da precaricare |
@@ -46,12 +47,12 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 | `scripts/calciatore.mjs` · `scripts/maschera-divisa.py` | Gli stessi passi per il corpo di ripiego |
 | `scripts/animazioni.mjs` | Porta le clip Mixamo sullo scheletro del calciatore; in cima c'è l'elenco `CLIP` |
 | `src/carriera.js` | La logica della carriera, senza schermate: calendario, risultati simulati, classifica, coppa, salvataggio |
-| `src/testi.js` | Tutti i testi che si leggono, in un file solo (oggi solo italiano): `t('chiave')` nel codice, `data-t="chiave"` in `src/pagina.html`. In testa al file c'è come si aggiunge l'inglese |
+| `src/testi.js` | I testi della partita, in un file solo (oggi solo italiano; quelli della home in `src/casa/testi.js`, stessa forma): `t('chiave')` nel codice, `data-t="chiave"` in `src/pagina.html`. In testa al file c'è come si aggiunge l'inglese |
 | `scripts/prova-carriera.mjs` | Prove della logica della carriera: `npm run prova` |
 | `scripts/controlla-commenti.mjs` | Cerca i commenti che si sono mangiati del codice nelle righe lunghe: `npm run controlla` |
 | `scripts/simula.cjs` | Gioca partite simulate e stampa gol, tiri, possesso, inserimenti e scivolate: serve per tarare l'IA (richiede Playwright). Stampa anche falli, fuorigioco, rigori, cartellini, angoli, cross e colpi di testa |
 | `scripts/prove/partita.cjs` | Rete di sicurezza: partite intere computer contro computer con tutti i controlli (giocatori che saltano, gesti bloccati, corpi nell'erba, palla abbandonata, errori nella pagina) e le misure di gioco confrontate con gli obiettivi. `npm run partite` dopo `npm run build`; `RAPPORTO=prima.json` salva tutto per confrontare prima e dopo una modifica |
-| `scripts/prove/testi.cjs` | Confronto dei testi: salva quello che c'è scritto in tutte le schermate (più di cento, partite simulate comprese) e lo confronta con un salvataggio precedente. Si usa quando si toccano i testi o le schermate, non è nella CI |
+| `scripts/prove/testi.cjs` | Testi della partita: `chiavi` controlla che ogni chiave esista e sia usata (è in `npm run prova`); `salva` e `confronta` salvano le scritte di una partita intera sempre uguale e le confrontano con un salvataggio precedente |
 | `scripts/prove/rigori.cjs` | Sei rigori fischiati con i giocatori sparsi: tutti arrivano al loro posto correndo (nessun salto oltre 60 cm), il tiro parte e il gioco riprende |
 | `scripts/prove/fluidita.cjs` | Fluidità dei movimenti: quanto scivola il piede in appoggio e quanti scatti ha la posa (`PIEDI=0` per confrontare senza i piedi piantati) |
 | `.github/workflows/prove.yml` | A ogni PR: compilazione, `npm run controlla`, `npm run prova`, tre partite simulate e i rigori. Un'anomalia ferma la PR; le misure di gioco si leggono nel registro |
