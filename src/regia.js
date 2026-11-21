@@ -5,8 +5,6 @@
 // La grafica (scheda, scritte, transizione) la crea qui, senza toccare index.html.
 
 import { SEGNI, RIVEDI, GOLSEQ } from './config.js';
-// le scritte che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è spesso il tempo o la squadra
-import { t as tr } from './testi.js';
 import { Vector3, Quaternion, CanvasTexture, Sprite, SpriteMaterial, SRGBColorSpace, Group, Mesh, CylinderGeometry, PlaneGeometry, MeshBasicMaterial, MeshLambertMaterial, DoubleSide } from 'three';
 
 export function creaRegia(X) {
@@ -49,9 +47,8 @@ export function creaRegia(X) {
   document.head.appendChild(stile);
   const hud = $('#hud');
   const el = (id, html) => { const d = document.createElement('div'); d.id = id; d.innerHTML = html || ''; hud.appendChild(d); return d; };
-  const golc = el('golc', '<div class="sx"><img alt=""><b></b></div><div class="dx"><div class="r1"><span></span><i></i></div><div class="nm"></div><div class="as"></div><div class="cl"></div></div>');
-  golc.querySelector('.r1 span').textContent = tr('regia.gol');
-  const salta = el('salta', tr('regia.salta')), rep = el('rep', tr('regia.replay'));
+  const golc = el('golc', '<div class="sx"><img alt=""><b></b></div><div class="dx"><div class="r1"><span>Gol</span><i></i></div><div class="nm"></div><div class="as"></div><div class="cl"></div></div>');
+  const salta = el('salta', 'Tocca per saltare'), rep = el('rep', 'Replay');
   // stacco col logo Fantatitano (replay, angoli dopo una grande occasione): una fascia diagonale viola col logo attraversa
   // lo schermo da sinistra a destra, e a metà corsa lo copre tutto (lì cambia l'inquadratura)
   const stacco = el('stacco', '<i><img src="img/corona-lime.png" alt=""></i>');
@@ -310,7 +307,7 @@ export function creaRegia(X) {
   function inizio() {
     const g = G.goals[G.goals.length - 1], sc = G.scorer; S.visti = G.goals.length;
     if (!g || !sc || !sc.fig.skinned || G.noRegia) return;
-    const t = sc.team, auto = !!g.auto;
+    const t = sc.team, auto = /^Autogol/.test(g.name);
     // lo stacco sul primo piano arriva a GOLSEQ.stacco secondi veri: col rallentatore (G.stateT va più piano) un po' prima in G.stateT
     const v = G.auto ? 1 : GOLSEQ.vel, L = GOLSEQ;
     S.on = true; S.t1 = S.t2 = S.salvato = S.cut = false; S.c0 = L.lento + L.durataLento * v + Math.max(0, L.stacco - L.lento - L.durataLento); S.c1 = S.c0 + SEQ.festa; S.var = G.goals.length % 2; S.porta = sgn(G.ball.x) || 1;
@@ -322,10 +319,10 @@ export function creaRegia(X) {
     G.cine = { fx: sc.x + (cx - sc.x) / d * m, fz: sc.z + (cz - sc.z) / d * m };
     S.a0 = Math.atan2(cx - sc.x, cz - sc.z) + .4;
     golc.querySelector('img').src = X.img(t.club.id); golc.querySelector('.sx b').textContent = auto ? '' : sc.num;
-    golc.querySelector('.r1 span').textContent = tr(auto ? 'regia.autogol' : 'regia.gol'); golc.querySelector('.r1 i').textContent = `${g.min}'`;
-    golc.querySelector('.nm').textContent = auto ? (g.chi && g.chi.name) || tr('regia.autogol') : sc.name;
+    golc.querySelector('.r1 span').textContent = auto ? 'Autogol' : 'Gol'; golc.querySelector('.r1 i').textContent = `${g.min}'`;
+    golc.querySelector('.nm').textContent = auto ? g.name.replace(/^Autogol\s*\(?|\)$/g, '') || 'Autogol' : sc.name;
     const as = !auto && sc.by && sc.by.team === t && sc.by !== sc ? sc.by.name : '';
-    golc.querySelector('.as').innerHTML = as ? tr('regia.assist', esc(as)) : ''; golc.querySelector('.cl').textContent = t.club.name;
+    golc.querySelector('.as').innerHTML = as ? `Assist · <b>${esc(as)}</b>` : ''; golc.querySelector('.cl').textContent = t.club.name;
     tabelloniGol(auto ? t.club.name : sc.name, t.club.c1, X.lum(t.club.c1) > .55 ? '#0A0A0C' : '#fff');
   }
   // Il difensore deluso in primo piano: il più vicino al marcatore tra chi ha subito il gol, messo tra la telecamera e il punto
