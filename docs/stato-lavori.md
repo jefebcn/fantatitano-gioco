@@ -55,13 +55,13 @@ Un'altra sessione lavora sulla partita: questa non tocca i suoi file senza averl
 |---|---|---|
 | 1 | `docs/navigazione.md`: albero, da dove si entra, dove porta Indietro | fatto |
 | 2 | `docs/immagini-da-generare.md` (26 illustrazioni coi prompt), `scripts/importa_immagini.py`, icone SVG (`scripts/icone.mjs`, `public/img/icone/`), logo senza scritta (`public/img/logo-fantatitano.png`) | fatto |
-| 3 | Scala delle valutazioni e file di dati | fermo: servono le risposte di Alex (sotto) |
-| 4–11 | Barra, carte, Home, Carriera, Sfida, Squadra, Mercato, Il mio club, Sfide | da fare |
+| 3 | Scala delle valutazioni e file di dati: `SCALA` e `CARTE` in `src/config.js`, `src/dati/scala.js` (una sola conversione), `src/dati/giocatori.js` (ruolo, piede, altezza), `scripts/genera-giocatori.mjs`, `scripts/prova-dati.mjs`; `docs/ponte-partita.md` | pronto e provato, **non ancora collegato alle schermate** (si collega col trasloco) |
+| 4–11 | Barra, carte, Home, Carriera, Sfida, Squadra, Mercato, Il mio club, Sfide | da fare: cominciano col trasloco del codice della home in `src/casa/`, quando Alex conferma che la sessione «partita» è ferma |
 | 12 | Database dell'economia | da fare (condizioni in `docs/home-spec.md` §8.1) |
 
 Immagini: tutte le 26 illustrazioni sono **segnaposto** (nessuna consegnata); icone e cornici **definitive**; ritratti:
 quelli che il gioco disegna da sé, in attesa dei render da Blender.
 
-Domande aperte per Alex prima del passo 3: `docs/navigazione.md` §5 (campanella, Scenario, Allenamento, energia tra le
-partite, moduli, dove sta il codice della home) e la scala delle valutazioni (cambia solo il numero mostrato o anche la
-forza in partita; ruoli nuovi dei giocatori).
+Decisioni di Alex del 21/11: `docs/navigazione.md` §5. Da girare alla sessione «partita»: `docs/ponte-partita.md`.
+I nomi dei giocatori stanno ancora in `public/data.js` (lo usa la partita); `src/dati/giocatori.js` li ripete con ruolo,
+piede e altezza e una prova controlla che coincidano. Unirli in un file solo vuol dire toccare il file della partita.
