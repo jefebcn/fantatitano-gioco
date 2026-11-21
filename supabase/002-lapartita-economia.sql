@@ -145,6 +145,8 @@ insert into lapartita.listino (codice, valuta, importo) values
   -- negozio: aspetto e comodità (avatar, cornici, scarpini, pallone, disegni e terza maglia, pezzi dello stemma, rinnovo dei consigliati)
   ('negozio_avatar', 'diamanti', -10), ('negozio_cornice', 'diamanti', -10), ('negozio_scarpini', 'diamanti', -10), ('negozio_pallone', 'diamanti', -10),
   ('negozio_disegno', 'diamanti', -20), ('negozio_terza', 'diamanti', -30), ('negozio_rinnovo', 'diamanti', -5), ('negozio_stemma', 'monete', -300), ('negozio_stemma_raro', 'diamanti', -5),
+  -- riscaldamento prima di una partita: un po' di energia in più ai titolari
+  ('riscaldamento', 'monete', -150),
   -- regole: allenamento (base, passo, sedute di base, sconto per livello dell'allenatore in centesimi),
   -- mercato (coefficiente del prezzo in centesimi, valutazione da cui parte il prezzo, quota di cessione in centesimi), limiti delle partite
   ('allenamento_base', 'numero', 200), ('allenamento_passo', 'numero', 150), ('allenamento_sedute', 'numero', 6), ('allenatore_sconto', 'numero', 5),
@@ -291,8 +293,9 @@ end $$;
 
 -- Compra il livello dopo di stadio o allenatore, una seduta di allenamento
 -- per un giocatore (p_cosa = 'allenamento', p_nome = il giocatore), un
--- oggetto del negozio (p_cosa = il tipo, p_nome = quale) o il rinnovo del
--- giocatore consigliato (p_cosa = 'rinnovo').
+-- oggetto del negozio (p_cosa = il tipo, p_nome = quale), il rinnovo del
+-- giocatore consigliato (p_cosa = 'rinnovo') o il riscaldamento prima di
+-- una partita (p_cosa = 'riscaldamento').
 create or replace function public.lapartita_compra(p_cosa text, p_nome text default null)
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare chi text := public.current_user_id(); c lapartita.club; p lapartita.portafogli; liv integer; fatte integer; costo integer;
@@ -314,6 +317,8 @@ begin
       update lapartita.club set allenamenti = allenamenti || jsonb_build_object(p_nome, fatte + 1) where user_id = chi;
     elsif p_cosa = 'rinnovo' then
       perform lapartita.applica(chi, 'negozio_rinnovo', 'negozio', jsonb_build_object('cosa', 'rinnovo'));
+    elsif p_cosa = 'riscaldamento' then
+      perform lapartita.applica(chi, 'riscaldamento', 'riscaldamento', '{}'::jsonb);
     elsif p_cosa in ('avatar', 'cornice', 'scarpini', 'pallone', 'disegno', 'terza', 'stemma', 'stemma_raro') and p_nome is not null and length(p_nome) between 1 and 40 then
       -- un oggetto del negozio: si paga una volta sola e resta scritto tra gli oggetti del club
       if coalesce(c.oggetti -> p_cosa, '[]'::jsonb) ? p_nome then return jsonb_build_object('ok', false, 'motivo', 'presa'); end if;

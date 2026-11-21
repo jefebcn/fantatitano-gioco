@@ -23,7 +23,7 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 |---|---|
 | `src/game.js` | La partita: scena, motore, IA, comandi, pausa, sostituzioni, fine partita, audio |
 | `src/casa/casa.js`, `casa.html`, `casa.css` | La home, i menu e le schermate fuori dalla partita (ingresso, club, carriera, pannelli, scelta squadre, prima della partita). `casa.js` aggiunge alla pagina schermate e stili all'avvio; con `src/game.js` si scambia solo i nomi elencati nei due `import` |
-| `src/casa/nav.js`, `barra.js`, `carte.js`, `home.js`, `vista-carriera.js`, `finestra.js`, `icone.js`, `testi.js`, `stile.css` | Le schermate nuove della home: navigazione a livelli con Indietro, barra in alto, carte di navigazione, Home a otto carte, Carriera, finestre di conferma, icone, testi in un file solo, stili |
+| `src/casa/nav.js`, `barra.js`, `carte.js`, `home.js`, `vista-carriera.js`, `vista-sfida.js`, `giocatore.js`, `finestra.js`, `icone.js`, `testi.js`, `stile.css` | Le schermate nuove della home: navigazione a livelli con Indietro, barra in alto, carte di navigazione, Home a otto carte, Carriera, finestre di conferma, icone, testi in un file solo, stili |
 | `src/dati/scala.js`, `giocatori.js`, `squadre.js` | Valutazioni e statistiche mostrate (una sola conversione), ruoli precisi, piede e altezza dei giocatori; i tre nomi di ogni squadra (completo, breve, sigla) |
 | `src/pagina.html` | Pagina, stili comuni e schermate della partita (comandi, VS, pausa, sostituzioni, fine partita). La build la copia in `public/index.html` con la versione negli indirizzi degli script |
 | `src/sw.js` | Service worker: app installabile, avvio dalla memoria e gioco offline. La build lo copia in `public/sw.js` con la versione e i file da precaricare |
@@ -111,9 +111,11 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
     forza delle squadre nei risultati simulati non cambia con gli scambi.
   - Tutto è salvato sul dispositivo (`localStorage`, chiave `fantatitano-carriera`): non c'è ancora il
     collegamento all'account dell'app. Uscire a metà partita non registra il risultato.
-- **Prima della partita** (`showPre`, `drawSide`): dopo la scelta delle squadre si vedono le due formazioni
-  sul campo, con numero, nome, compito e valore di ogni giocatore (da 55 a 88, confrontato con quelli
-  del suo ruolo), stelle della squadra e modulo.
+- **Prima della partita** (la Sfida, `src/casa/vista-sfida.js`): due campi in prospettiva con le carte dei
+  giocatori secondo il modulo, la competizione, l'ora e il tempo al centro, sotto ogni campo stemma, nome,
+  stelle, modulo e maglia della partita. «Riscaldamento» dà un po' di energia ai titolari per monete, una
+  volta per partita. «Gioca» avvia la partita dal ponte (`docs/ponte-partita.md`); alla fine la home registra
+  il risultato e salva l'energia con cui i giocatori sono usciti dal campo (`energiaDopoPartita`).
 - **Tattica** (`FORMS`, `MENT`, `setTactics`): quattro moduli (4-3-3, 4-4-2, 3-5-2, 4-2-3-1) e tre
   mentalità. Si scelgono prima della partita e dalla pausa; in campo un tocco sulla scritta sopra la
   mappa cambia mentalità. Ogni avversaria ha il suo modulo e nel finale attacca se è sotto e si copre

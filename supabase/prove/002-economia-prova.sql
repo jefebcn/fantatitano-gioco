@@ -115,6 +115,8 @@ begin
   r := public.lapartita_compra('rinnovo'); r := public.lapartita_compra('rinnovo'); perform pg_temp.vero((r->>'ok')::boolean and (r->>'diamanti')::int = d0 - 20, 'rinnovo ripetuto: ' || r::text);
   r := public.lapartita_compra('stemma', 'forma:rombo'); perform pg_temp.vero((r->>'ok')::boolean and (r->>'monete')::int = 200, 'pezzo dello stemma: ' || r::text);
   s := public.lapartita_stato(); perform pg_temp.vero(s->'oggetti'->'avatar' = '["6"]'::jsonb and s->'oggetti'->'stemma' = '["forma:rombo"]'::jsonb, 'oggetti scritti: ' || (s->'oggetti')::text);
+  r := public.lapartita_compra('riscaldamento'); perform pg_temp.vero((r->>'ok')::boolean and (r->>'monete')::int = 50, 'riscaldamento pagato: ' || r::text);
+  r := public.lapartita_compra('riscaldamento'); perform pg_temp.vero(r->>'motivo' = 'saldo_insufficiente', 'riscaldamento senza monete: ' || r::text);
   r := public.lapartita_compra('boh', 'x'); perform pg_temp.vero(r->>'motivo' = 'cosa', 'tipo sconosciuto');
 end $$;
 

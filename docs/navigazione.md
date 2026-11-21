@@ -184,12 +184,12 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 
 | Schermata | Stato |
 |---|---|
-| Benvenuto, Crea il club, Ingaggia il capitano | fatti: logo senza scritta, scala nuova, nove candidati con ruoli diversi, pulsante fuori dalle carte. Le carte a scudo arrivano col passo 7 |
+| Benvenuto, Crea il club, Ingaggia il capitano | fatti: logo senza scritta, scala nuova, nove candidati con ruoli diversi, pulsante fuori dalle carte. Le carte a scudo ci sono nella Sfida; qui arrivano con la Squadra |
 | Barra in alto e navigazione a livelli | fatte: uguali in tutte le schermate, Indietro torna da dove si era arrivati |
 | Home (8 carte) | fatta, coi dati veri; illustrazioni ancora segnaposto |
 | Carriera | fatta: prossima partita, classifica a cinque righe, le due coppe, scorciatoie; stagione nuova con finestra di conferma |
 | Classifica completa, Trofeo dei Castelli, Coppa Titano | esistono |
-| Sfida | esiste come pre-partita con un campo, da rifare |
+| Sfida | fatta: due campi con le carte, competizione e tempo al centro, Squadra, Riscaldamento, Gioca; dopo la partita una finestra dice risultato e premio |
 | Scenario | da fare (serve l'aggancio nella partita) |
 | Percorso premi, Sfide | esistono, da risistemare (schede, giorni di fila) |
 | Amichevole | esiste |

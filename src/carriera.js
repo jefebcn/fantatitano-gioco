@@ -2,7 +2,7 @@
    sfide giornaliere, settimanali, di carriera e di stagione, stadio, allenamento, monete e gemme, statistiche e trofei.
    Qui c'è solo la logica, senza schermate: lo stato è un oggetto semplice che si salva così com'è sul dispositivo e, con
    l'accesso, anche sull'account (vedi cloud.js). */
-import { ECONOMIA } from './config.js';
+import { ECONOMIA, METEO } from './config.js';
 
 export const KEY = 'fantatitano-carriera';
 export const TURNI = ['Ottavi di finale', 'Quarti di finale', 'Semifinale', 'Finale'];
@@ -522,4 +522,48 @@ export function notifiche(C, oggi = new Date()) {
   if (sx && C.monete >= sx.monete && C.gemme >= sx.gemme) out.push({ t: 'Puoi ampliare lo stadio', vai: 'stadio' });
   if (ax && C.monete >= ax.monete && C.gemme >= ax.gemme) out.push({ t: 'Puoi migliorare l\'allenatore', vai: 'allenatore' });
   return out;
+}
+
+/* ---------- energia dei giocatori del club, tra una partita e l'altra ---------- */
+/** L'energia salvata di un giocatore del club, da 0 a 100 (100 se non ha ancora giocato). */
+export const energiaDi = (C, nome) => { const e = (C.energia || {})[nome]; return typeof e === 'number' ? Math.max(0, Math.min(100, Math.round(e))) : 100; };
+/**
+ * Dopo una partita di carriera: chi ha giocato resta con l'energia con cui è uscito dal campo, poi tutta la rosa
+ * recupera ECONOMIA.energia.recupero. `finali` è l'elenco { nome, energia } dei giocatori del club scesi in campo.
+ */
+export function energiaDopoPartita(C, clubs, finali) {
+  const mio = clubs.find((c) => c.id === C.club); if (!mio) return;
+  const E = C.energia || (C.energia = {});
+  for (const g of finali) E[g.nome] = Math.max(0, Math.min(100, Math.round(g.energia)));
+  const rosa = new Set(mio.xi.concat(mio.pan || []).map((x) => x[0]));
+  for (const nome of rosa) E[nome] = Math.min(100, energiaDi(C, nome) + ECONOMIA.energia.recupero);
+  // chi non è più in rosa non si tiene, e chi è al massimo non serve scriverlo
+  for (const nome of Object.keys(E)) if (!rosa.has(nome) || E[nome] >= 100) delete E[nome];
+}
+/** La chiave della prossima partita di una competizione: serve a fare il riscaldamento una volta sola per partita. */
+const chiavePartita = (C, tipo) => `${C.stagione}/${tipo}/${tipo === 'camp' ? C.giornata : tipo === 'coppa' ? C.coppa.turno : `${C.castelli.giornata}-${C.castelli.ko ? C.castelli.ko.turno : 'g'}`}`;
+/** Lo stato del riscaldamento per la prossima partita di `tipo`: costo, bonus, se è già fatto, se serve, se si può pagare. */
+export function statoRiscaldamento(C, clubs, tipo) {
+  const R = ECONOMIA.energia.riscaldamento, mio = clubs.find((c) => c.id === C.club);
+  const fatto = C.riscaldato === chiavePartita(C, tipo), serve = !!mio && mio.xi.some((x) => energiaDi(C, x[0]) < 100);
+  return { monete: R.monete, bonus: R.bonus, fatto, serve, puo: C.monete >= R.monete };
+}
+/** Riscaldamento: per ECONOMIA.energia.riscaldamento.monete i titolari guadagnano un po' di energia. Una volta per partita. */
+export function riscaldamento(C, clubs, tipo) {
+  const st = statoRiscaldamento(C, clubs, tipo), mio = clubs.find((c) => c.id === C.club);
+  if (st.fatto) return { ok: false, motivo: 'fatto' };
+  if (!st.serve) return { ok: false, motivo: 'pieni' };
+  if (!st.puo) return { ok: false, motivo: 'monete', monete: st.monete };
+  const E = C.energia || (C.energia = {});
+  for (const x of mio.xi) { const e = Math.min(100, energiaDi(C, x[0]) + st.bonus); if (e >= 100) delete E[x[0]]; else E[x[0]] = e; }
+  muovi(C, -st.monete, 0, 'riscaldamento', 'Riscaldamento prima della partita'); C.riscaldato = chiavePartita(C, tipo);
+  return { ok: true, monete: st.monete, bonus: st.bonus };
+}
+
+/* ---------- orario e tempo di una partita (solo da mostrare, più giorno o notte in campo) ---------- */
+/** Orario, cielo e gradi della prossima partita di `tipo`: sempre gli stessi per la stessa partita. */
+export function meteoPartita(C, tipo) {
+  let h = 2166136261; for (const ch of C ? chiavePartita(C, tipo) + C.id : String(tipo)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } h >>>= 0;
+  const [orario, ora] = METEO.orari[h % METEO.orari.length], cielo = METEO.cieli[(h >>> 4) % METEO.cieli.length];
+  return { orario, ora, cielo, gradi: METEO.gradi[0] + ((h >>> 8) % (METEO.gradi[1] - METEO.gradi[0] + 1)) };
 }
