@@ -96,7 +96,7 @@ const IT = {
   'squadra.nonSiPuo': 'Questo scambio non si può fare',
   'squadra.nessunaRiserva': 'Tutti i giocatori sono tra titolari e panchina',
   'modulo.scegli': 'Scegli il modulo',
-  'fisio.alMassimo': 'Tutti al massimo',
+  'fisio.alMassimo': 'Tutti al massimo', 'fisio.alMassimoCorto': 'Al massimo',
   'fisio.pieni': 'Tutta la rosa è già al massimo dell\'energia',
   'fisio.conferma': (m) => `Tutta la rosa torna al massimo dell'energia. Costa ${m} monete.`,
   'fisio.si': 'Cura',

@@ -44,7 +44,7 @@ export function disegnaSquadra() {
   radice.innerHTML = '<div class="qSx">'
     + `<button class="qB" data-az="modulo">${icona('modulo')}<span><b data-adatta data-min="13">${t('squadra.modulo')}</b><i>${m}</i></span></button>`
     + `<button class="qB${riserve ? ' accesa' : ''}" data-az="riserve">${icona('riserve')}<span><b data-adatta data-min="13">${t('squadra.riserve', extra)}</b></span></button>`
-    + `<button class="qB" data-az="fisio">${icona('fisioterapista')}<span><b data-adatta data-min="13">${t('squadra.fisio')}</b><i>${fisio.manca ? `${icona('moneta')} ${mon(fisio.monete)}` : t('fisio.alMassimo')}</i></span></button>`
+    + `<button class="qB" data-az="fisio">${icona('fisioterapista')}<span><b data-adatta data-min="13">${t('squadra.fisio')}</b>${fisio.manca ? `<i>${icona('moneta')} ${mon(fisio.monete)}</i>` : `<i data-adatta data-corto="${t('fisio.alMassimoCorto')}">${t('fisio.alMassimo')}</i>`}</span></button>`
     + `<button class="qB accesa" data-az="allenatore">${icona('allenatore')}<span><b data-adatta data-min="13">${t('squadra.allenatore')}</b></span>${allenabili ? `<em class="num">${allenabili}</em>` : ''}</button>`
     + `<div class="qInc">${CAR.INCARICHI.map((k) => `<button class="${armato === k ? 'armato' : ''}" data-inc="${k}">${icona(SEGNO[k])}<b>${t('inc.' + k)}</b></button>`).join('')}</div></div>`
     + `<div class="qCampo"></div>`
