@@ -68,7 +68,7 @@ export const PRESSING = { da: 18, primo: 3.5, raggio: 16, stretto: 2.2 };
 export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['In difesa', 'Equilibrata', 'In attacco'], push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
 
 /* ---------------------------------------------------------------- telecamera di gioco */
-// Misure di Alex (dai video DLS, corrette il 20/11; ritoccate il 21/11 per avere sullo schermo al calcio d'inizio cerchio 43%,
+// Misure di Alex (dai video DLS, corrette il 20/11, ritoccate il 21/11 per avere sullo schermo al calcio d'inizio cerchio 43%,
 // dischetto 40% e linea laterale lontana 10%, come nei suoi screenshot: FOV 29,1, inclinazione 21,75, 36,8 m): alto e dietro dove sta la telecamera rispetto al punto inquadrato, in
 // metri (dietro, in pianta, è verso la linea laterale vicina: 39 m in linea d'aria). inclina: gradi verso il basso, fissi:
 // così il punto inquadrato (il pallone) sta a circa il 40% dell'altezza dello schermo dall'alto. fov: campo visivo VERTICALE in gradi (quello della

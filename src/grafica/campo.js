@@ -6,27 +6,6 @@
 
 const RIS = 'textures/grass/';
 
-/** Le linee del campo su un canvas trasparente: s pixel per metro, M metri di bordo attorno al rettangolo di gioco. */
-function disegnaLinee(HL, HW, M, s, L) {
-  const c = document.createElement('canvas'); c.width = Math.round((HL * 2 + M * 2) * s); c.height = Math.round((HW * 2 + M * 2) * s);
-  const x = c.getContext('2d'), X = (wx) => (wx + HL + M) * s, Z = (wz) => (wz + HW + M) * s;
-  x.strokeStyle = '#fff'; x.fillStyle = '#fff'; x.lineWidth = 0.1 * s; x.lineJoin = 'round'; // linee sottili: lo shader ne fa i bordi netti
-  x.strokeRect(X(-HL), Z(-HW), HL * 2 * s, HW * 2 * s);
-  x.beginPath(); x.moveTo(X(0), Z(-HW)); x.lineTo(X(0), Z(HW)); x.stroke();
-  const [aL, aW] = L.area, [pL, pW] = L.piccola, R = L.cerchio, D = L.dischetto;
-  x.beginPath(); x.arc(X(0), Z(0), R * s, 0, 7); x.stroke();
-  x.beginPath(); x.arc(X(0), Z(0), 0.2 * s, 0, 7); x.fill();
-  for (const d of [-1, 1]) {
-    const gx = d * HL;
-    x.strokeRect(Math.min(X(gx), X(gx - d * aL)), Z(-aW / 2), aL * s, aW * s);
-    x.strokeRect(Math.min(X(gx), X(gx - d * pL)), Z(-pW / 2), pL * s, pW * s);
-    x.beginPath(); x.arc(X(gx - d * D), Z(0), 0.18 * s, 0, 7); x.fill();
-    x.beginPath(); const a = Math.acos((aL - D) / R);
-    x.arc(X(gx - d * D), Z(0), R * s, d > 0 ? Math.PI - a : -a, d > 0 ? Math.PI + a : a); x.stroke();
-    for (const e of [-1, 1]) { const f = Math.atan2(-e, -d); x.beginPath(); x.arc(X(gx), Z(e * HW), 1 * s, f - Math.PI / 4, f + Math.PI / 4); x.stroke(); } // quarto di cerchio dell'angolo, verso l'interno
-  }
-  return c;
-}
 // prato di riserva se le texture non arrivano: verde con un po' di grana
 function pratoDiRiserva(T) {
   const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
@@ -46,17 +25,39 @@ export async function creaCampo(T, { HL, HW, linee: L, M = 6, anisotropia = 8, p
     if (!t) return null; t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(W / passo, H / passo); t.anisotropy = anisotropia; if (srgb) t.colorSpace = T.SRGBColorSpace; return t;
   };
   const map = prepara(alb, true) || prepara(pratoDiRiserva(T), true);
-  const linee = new T.CanvasTexture(disegnaLinee(HL, HW, M, 20, L)); linee.anisotropy = anisotropia;
   const mat = new T.MeshStandardMaterial({ map, normalMap: prepara(nor), roughnessMap: prepara(rug), roughness: 1, metalness: 0, normalScale: new T.Vector2(0.55, 0.55) });
   mat.onBeforeCompile = (sh) => {
     // uTaglio: raggio del cerchio (dentro, scacchi di lato z), raggio fin dove arrivano gli anelli, larghezza degli anelli (w)
-    Object.assign(sh.uniforms, { uLinee: { value: linee }, uCampo: { value: new T.Vector4(HL, HW, M, strisce) }, uTaglio: { value: new T.Vector4(L.cerchio, 27, 2.3, 2.9) }, uTexel: { value: 1 / 20 } });
+    // uLin: mezza larghezza delle linee, raggio del cerchio, distanza del dischetto, raggio dei dischetti; uAree: area e area piccola
+    Object.assign(sh.uniforms, { uCampo: { value: new T.Vector4(HL, HW, M, strisce) }, uTaglio: { value: new T.Vector4(L.cerchio, 27, 2.3, 2.9) },
+      uLin: { value: new T.Vector4(0.06, L.cerchio, L.dischetto, 0.2) }, uAree: { value: new T.Vector4(L.area[0], L.area[1], L.piccola[0], L.piccola[1]) } });
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vMondo;')
       .replace('#include <project_vertex>', '#include <project_vertex>\nvMondo = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
-varying vec3 vMondo; uniform sampler2D uLinee; uniform vec4 uCampo; uniform vec4 uTaglio; uniform float uTexel; float gLinea;
-vec2 uvLinee(vec2 p) { return vec2((p.x + uCampo.x + uCampo.z) / (2.0 * (uCampo.x + uCampo.z)), 1.0 - (p.y + uCampo.y + uCampo.z) / (2.0 * (uCampo.y + uCampo.z))); }
-float linea(vec2 p) { return texture2D(uLinee, uvLinee(p)).a; }
+varying vec3 vMondo; uniform vec4 uCampo; uniform vec4 uTaglio; uniform vec4 uLin; uniform vec4 uAree; float gLinea;
+// Le linee calcolate nello shader (distanza in metri dalla linea più vicina) con il bordo sfumato su un pixel (fwidth):
+// niente seghettature né tratteggi, a qualsiasi distanza. Linee larghe 2·uLin.x metri.
+float dRett(vec2 p, vec2 c, vec2 h) { vec2 q = abs(p - c) - h; return abs(length(max(q, 0.0)) + min(max(q.x, q.y), 0.0)); }
+float linea(vec2 p) {
+  float HL = uCampo.x, HW = uCampo.y, R = uLin.y, D = uLin.z;
+  float d = dRett(p, vec2(0.0), vec2(HL, HW));
+  d = min(d, abs(p.y) <= HW ? abs(p.x) : length(vec2(p.x, abs(p.y) - HW)));
+  d = min(d, abs(length(p) - R));
+  for (int k = 0; k < 2; k++) {
+    float s = k == 0 ? -1.0 : 1.0;
+    d = min(d, dRett(p, vec2(s * (HL - uAree.x * 0.5), 0.0), vec2(uAree.x * 0.5, uAree.y * 0.5)));
+    d = min(d, dRett(p, vec2(s * (HL - uAree.z * 0.5), 0.0), vec2(uAree.z * 0.5, uAree.w * 0.5)));
+    vec2 dis = vec2(s * (HL - D), 0.0);
+    if (abs(p.x) < HL - uAree.x) d = min(d, abs(length(p - dis) - R)); // la lunetta, fuori dall'area
+    if (abs(p.x) < HL && abs(p.y) < HW) { d = min(d, abs(length(p - vec2(s * HL, HW)) - 1.0)); d = min(d, abs(length(p - vec2(s * HL, -HW)) - 1.0)); } // quarti di cerchio degli angoli
+  }
+  float aa = max(fwidth(d), 1e-4), w = uLin.x, we = max(w, aa * 0.75); // da lontano la linea resta larga almeno ~un pixel, più tenue
+  float cov = (1.0 - smoothstep(we - aa, we + aa, d)) * (w / we);
+  // dischetti: centrocampo e rigori
+  float dd = length(p) - uLin.w; for (int k = 0; k < 2; k++) dd = min(dd, length(p - vec2((k == 0 ? -1.0 : 1.0) * (HL - D), 0.0)) - uLin.w);
+  float ad = max(fwidth(dd), 1e-4);
+  return max(cov, 1.0 - smoothstep(-ad, ad, dd));
+}
 float rumore(vec2 p) { return fract(sin(dot(floor(p), vec2(12.9898, 78.233))) * 43758.5453); }
 float macchie(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(rumore(i), rumore(i + vec2(1, 0)), f.x), mix(rumore(i + vec2(0, 1)), rumore(i + vec2(1, 1)), f.x), f.y); }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
@@ -74,7 +75,7 @@ float macchie(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 
   u *= 0.35 + 0.9 * macchie(p * 0.9);
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.45, 0.37, 0.24) * (0.75 + 0.6 * luma), clamp(u, 0.0, 0.62));
   // linee: bianche ma con sotto la grana dell'erba
-  float L = clamp(linea(p) * 1.7, 0.0, 1.0); gLinea = L; // piene anche da lontano, dove la texture si sfuma (niente rilievo: faceva le linee tratteggiate)
+  float L = linea(p); gLinea = L; // letta una volta sola: la riusa la rugosità
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.96) * (0.9 + 0.2 * luma), L);
 }`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
