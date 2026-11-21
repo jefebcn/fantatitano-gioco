@@ -30,6 +30,37 @@ Le risposte sono nella tabella in fondo a `docs/home-spec.md` (§8). Fatto subit
 - **Database** (9, 10, 11): il file SQL ora lavora nello schema separato `lapartita`, non tocca niente di esistente, non
   importa i saldi vecchi (si riparte da zero) e conosce anche il negozio. Provato su un database locale. **Non applicato.**
 
+## Prova di Alex su iPhone (21/11): i nove punti
+Tutti in produzione. Dopo un aggiornamento, per vedere barra di stato e bordi sicuri bisogna **togliere l'app dalla
+schermata Home e rimetterla** (Safari → Condividi → Aggiungi alla schermata Home).
+
+| Punto | Cosa è stato fatto | Come provarlo |
+|---|---|---|
+| 1 Rotazione e tastiera | la pagina non si gira più da sola: in verticale compare «Gira il telefono» e la partita va in pausa; con la tastiera aperta la schermata si accorcia e il campo in cui scrivi resta visibile | girare il telefono in partita; in «Il mio club» scrivere il nome |
+| 2 Levetta | torna al centro a ogni tocco nuovo, quando il dito esce, quando l'app va in secondo piano | muovere la levetta, uscire col dito dallo schermo, rientrare |
+| 3 Velocità | corsa 5, scatto 7, conduzione 4,5, scatto con palla 6 m/s; da fermo alla corsa in circa un secondo; girando si perde velocità in proporzione all'angolo (metà nell'inversione) | `?debug` in fondo all'indirizzo: nel riquadro c'è «giocatore … m/s» |
+| 4 Animazioni | il passo della corsa segue la velocità vera, anche sopra i 6 m/s | guardare i piedi in scatto: non scivolano |
+| 5 Pallone al piede | un tocco ogni passo, pallone tra 0,6 e 1 m, mai oltre 1,5 m; disegno senza scatti tra un passo di calcolo e l'altro | condurre a zig-zag e invertire: il pallone resta lì |
+| 6 Telecamera | il pallone resta tra il 30% e il 70% dell'altezza dello schermo (prima sul lato lontano saliva al 19%); altezza, inclinazione e apertura non sono cambiate | portare il pallone sulla fascia lontana |
+| 7 Erba e pubblico | erba più scura e meno gialla, strisce più leggibili; pubblico con metà colori delle squadre e metà vestiti di tutti i giorni | guardare il calcio d'inizio |
+| 8 Riquadro del gol | **provvisorio: tolto, come in DLS** (Alex non ha scelto tra tenerlo, toglierlo o ridurlo a due secondi). È un numero solo: `GOLSEQ.riquadro` in `src/config.js` (0 = mai, 2 = due secondi, 9 = tutta l'esultanza) | segnare un gol |
+| 9 Giocatori MPFB | già fatti (PR #63) | — |
+
+**Registrazione di 10 secondi di conduzione con `?debug`** (giocatore comandato, avversari tenuti lontani). Velocità
+lette nel riquadro: conduzione **4,5 m/s** (4,1 dopo mezzo secondo), scatto con palla **6,0 m/s**, curva di 90° scende a
+4,0 e torna a 4,4, inversione scende a **2,5 m/s** (il 55%) e torna a 4,3 in un secondo, fermo in meno di mezzo secondo.
+Pallone tra 0,3 e 1,06 m dal giocatore, mai perso. Senza palla (misura a parte): da 0 a 6,6 m/s in 0,8 s, scatto 7,2 m/s.
+**Gli fps non si possono misurare qui**: il server non ha una scheda grafica e disegna a 2–5 fps, per questo il video è
+fatto un fotogramma alla volta (il «60 fps» che si legge nel riquadro del video è il passo imposto, non una misura). Gli
+fps veri li dà solo l'iPhone: aprire con `?debug` e leggere la prima riga del riquadro.
+
+Con le velocità nuove la partita tra computer fa meno gol e meno tiri di prima (1,75 gol e 5,9 tiri a partita su 32
+partite, senza anomalie): è il prossimo lavoro sulla partita, in `docs/dls-gameplay.md`, «Gol e tiri».
+
+Con la sessione della home (`docs/ponte-partita.md`): fatti il ponte (`ponte.avviaPartita`), l'energia iniziale, i
+quattro moduli nuovi (4-3-1-2, 5-3-2, 4-1-4-1, 3-4-3) e lo scenario con minuto e punteggio di partenza. Restano le
+modalità Tutorial, Allenamento libero, Calci di punizione e Calci d'angolo.
+
 ## Resta da fare
 
 | Cosa | Perché non è fatto | Cosa serve |
@@ -61,6 +92,11 @@ niente** finché il gioco è privato. Prima di passare al saldo sul server servo
 3. **Prova su un progetto Supabase di test** (non quello dell'app): applicare il file, giocare qualche partita vera,
    comprare al negozio, guardare lo storico.
 4. Solo dopo: applicarlo al progetto vero e cambiare l'interruttore del gioco da «telefono» a «server».
+
+**L'interruttore non c'è ancora nel codice.** Monete, diamanti e storico sono gestiti da `src/carriera.js` e dalle
+schermate in `src/casa/`, che sono della sessione della home (il suo passo 12). La proposta, scritta per lei in
+`docs/ponte-partita.md` §9: un valore solo in `src/config.js` (`ECONOMIA.saldo: 'telefono'`) e un solo punto del codice
+che lo legge, così passare al server è cambiare quella parola.
 
 ## Da sapere
 - Resta su GitHub il ramo `claude/dls-risposte-tastiera-gol`, creato per errore: si può cancellare dalla pagina dei rami.
