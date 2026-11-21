@@ -264,9 +264,8 @@ Prezzo di un giocatore = (valutazione − 45)² × 4, arrotondato alle decine.
 | 80 | forte | 4.900 |
 | 82 | il massimo senza allenamento | 5.480 |
 
-Stato: scala, ruoli e prove sono pronti (`npm run prova`); le schermate usano ancora i numeri vecchi (55–88, prezzo
-(valutazione − 50)² × 4) finché il codice della home non trasloca in `src/casa/`. Il prezzo cambia in quel momento, insieme
-ai numeri mostrati.
+Stato: accesi sulle schermate col passo 4 (21/11): valutazioni 55–82 e prezzi di questa tabella (`prezzoDa` in
+`ECONOMIA`, `src/config.js`). Il file del database dice gli stessi numeri (`mercato_base`), provato su un Postgres locale.
 
 ### 5.3 Quante partite servono
 Due giocatori tipo:
