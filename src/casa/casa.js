@@ -224,7 +224,7 @@ function drawNuovo() {
     anteprimaClub();
   } else {
     const cand = candidatiCapitano();
-    el.innerHTML = `<div class="testaCap"><button class="indietro" id="nvInd">‹ Il club</button><h2 class="h">Ingaggia il tuo capitano</h2><button class="btn ingaggia" id="nvAvanti" ${NV.cap ? '' : 'disabled'}>${NV.cap ? t('capitano.ingaggia', esc(club(NV.cap.split(':')[0]).xi[+NV.cap.split(':')[1]][0])) : t('capitano.tocca')}</button></div>
+    el.innerHTML = `<div class="testaCap"><button class="indietro" id="nvInd">‹ Il club</button><div class="titoloCap"><h2 class="h">${t('capitano.titolo')}</h2><p>${t('capitano.tocca')}</p></div>${NV.cap ? `<button class="btn ingaggia" id="nvAvanti">${t('capitano.ingaggia', esc(club(NV.cap.split(':')[0]).xi[+NV.cap.split(':')[1]][0]))}</button>` : '<span class="postoIngaggia"></span>'}</div>
       <div class="caps">${cand.map((c) => cartaGiocatore(c, NV.cap === `${c.c.id}:${c.i}`)).join('')}</div>`;
     adatta(el); riempiRitratti(el);
     // i caratteri dei titoli possono arrivare un attimo dopo e allargare i nomi: allora si rifà la misura
