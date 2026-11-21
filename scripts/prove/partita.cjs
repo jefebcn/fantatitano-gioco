@@ -21,9 +21,10 @@ const N = +process.argv[2] || 3, DIFFI = process.argv[3] || 'normale', SEME = +p
 // l'azione è più fitta (10 calci d'angolo a partita diventano 0,5; 4 fuorigioco 0,2). Il ritmo di tiri, contrasti e
 // passaggi è quello di un gioco, non quello della realtà.
 // Sono la direzione verso cui tarare l'IA; quelli ancora lontani escono segnati con ✗ ma non bloccano, salvo SEVERO=1.
+// Gol e tiri sono l'obiettivo dato da Alex il 21/11 guardando Dream League: 2-3 gol e 10-12 tiri per squadra.
 const OBIETTIVI = {
-  gol: [1, 6],
-  tiri: [7, 30],
+  gol: [4, 6],
+  tiri: [20, 24],
   'passaggi riusciti %': [70, 90],
   angoli: [.3, 3],
   'rimesse laterali': [1.5, 12],
