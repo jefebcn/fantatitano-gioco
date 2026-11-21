@@ -62,7 +62,7 @@ const OMBRA = { lato: 34, mappa: (navigator.hardwareConcurrency || 4) >= 6 ? 204
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFShadowMap; // in three r18x la PCF usa shadow.radius: ombre morbide senza il vecchio PCFSoft
 sun.castShadow = true; sun.shadow.mapSize.set(OMBRA.mappa, OMBRA.mappa); sun.shadow.bias = -.0006; sun.shadow.normalBias = .03; sun.shadow.radius = 3;
 Object.assign(sun.shadow.camera, { left: -OMBRA.lato, right: OMBRA.lato, top: OMBRA.lato, bottom: -OMBRA.lato, near: 10, far: 160 }); sun.shadow.camera.updateProjectionMatrix();
-const SOLE = new T.Vector3(30, 70, 40);
+const SOLE = new T.Vector3(-40, 38, -14); // la direzione del sole la mette creaAtmosfera (src/grafica/luce.js)
 function seguiOmbre() { // il sole si sposta con l'inquadratura, a passi di un texel (niente ombre che tremolano)
   const k = OMBRA.lato * 2 / OMBRA.mappa, x = Math.round(camLook.x / k) * k, z = Math.round(camLook.z / k) * k;
   sun.target.position.set(x, 0, z); sun.position.set(x + SOLE.x, SOLE.y, z + SOLE.z);
@@ -581,14 +581,21 @@ function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
 const FIGURE = new Set(), DETT = { vicino: 14 * 14, lontano: 16 * 16 }, OMBRE = { max: 64 };
 const ombreTutte = new T.InstancedMesh(GEO.shadow, shadowMat, OMBRE.max); ombreTutte.frustumCulled = false; ombreTutte.count = 0; scene.add(ombreTutte);
 const _m4 = new T.Matrix4(), _q = new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), -Math.PI / 2), _s = new T.Vector3(1.5, 1.5, 1.5), _p = new T.Vector3();
+const _qL = new T.Quaternion(), _sL = new T.Vector3(1.4, 3.2, 1.5), _asseY = new T.Vector3(0, 1, 0);
 function dettagliFigure() {
-  let n = 0;
+  let n = 0; const lunghe = !sun.castShadow, sl = Math.hypot(SOLE.x, SOLE.z) || 1;
+  // l'ombra lunga verso la parte opposta al sole: il piano steso (asse lungo verso -z) girato attorno alla verticale
+  if (lunghe) { const dx = -SOLE.x / sl, dz = -SOLE.z / sl; _qL.setFromAxisAngle(_asseY, Math.atan2(-dx, -dz)).multiply(_q); }
   if (FIGURE.size > 120) for (const f of FIGURE) if (!f.root.parent) FIGURE.delete(f); // giocatori di partite finite
   for (const f of FIGURE) {
     if (!f.root.parent) continue;
     const r = f.root, d2 = cam.position.distanceToSquared(r.position), su = f.dettagli ? d2 < DETT.lontano : d2 < DETT.vicino;
     if (su !== f.dettagli) { f.dettagli = su; for (const o of f.vicini) o.visible = su; }
-    if (n < OMBRE.max && r.parent === scene) { f.ombra.visible = false; if (r.visible) { _p.set(r.position.x, .03, r.position.z); _m4.compose(_p, _q, _s); ombreTutte.setMatrixAt(n++, _m4); } }
+    if (n < OMBRE.max && r.parent === scene) { f.ombra.visible = false; if (r.visible) {
+      // senza le ombre del sole (qualità bassa) l'ombra di contatto si allunga dalla parte opposta al sole: mai nessuno senza ombra
+      if (lunghe) { const k = .55 * (f.metri || 1.8); _p.set(r.position.x - SOLE.x / sl * k, .03, r.position.z - SOLE.z / sl * k); _m4.compose(_p, _qL, _sL); }
+      else { _p.set(r.position.x, .03, r.position.z); _m4.compose(_p, _q, _s); }
+      ombreTutte.setMatrixAt(n++, _m4); } }
     else f.ombra.visible = true; // dentro un altro gruppo o oltre il massimo: tiene la sua
   }
   ombreTutte.count = n; ombreTutte.instanceMatrix.needsUpdate = true;

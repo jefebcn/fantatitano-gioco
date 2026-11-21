@@ -17,7 +17,7 @@ export const RESA = {
   esposizione: 1,
   // foto: il cielo vero (Poly Haven, CC0, public/textures/cielo), per lo sfondo e per la parte alta della mappa d'ambiente;
   // sfondo: quanto è luminoso il cielo dietro gli spalti (la foto di notte è più chiara di come appare sotto i fari)
-  giorno: { alto: 0x5d97da, orizzonte: 0xcfe2f2, terra: 0x3d5a2c, sole: [30, 70, 40], luce: 0xfff1d8, forza: 5, ambiente: 0.4, alone: [0.12, 0.3, 0.97], foto: 'textures/cielo/giorno.webp', sfondo: 1, fotoInLuce: true },
+  giorno: { alto: 0x5d97da, orizzonte: 0xcfe2f2, terra: 0x3d5a2c, sole: [-40, 38, -14], luce: 0xfff1d8, forza: 5, ambiente: 0.3, alone: [0.12, 0.3, 0.97], foto: 'textures/cielo/giorno.webp', sfondo: 1, fotoInLuce: true },
   notte: { alto: 0x03050c, orizzonte: 0x161d33, terra: 0x0c120c, ambiente: 0.6, alone: [0.55, 0.5, 0.78], torri: 0xfff4dd, forzaTorri: 14, foto: 'textures/cielo/notte.webp', sfondo: 0.13, fotoInLuce: false },
 };
 
