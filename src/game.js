@@ -1033,9 +1033,12 @@ function duelloAereo(b) {
 // Passaggi rasoterra: velocità d'arrivo (tesi, che non si fermano a metà) e, per ogni distanza, con che forza partire e quanto
 // ci mettono. La tabella si fa una volta sola con la fisica del pallone: così il punto d'incontro si cerca in fretta.
 const vArr = (d) => clamp(PASSAGGIO.arrivo[0] + d * PASSAGGIO.arrivo[1], PASSAGGIO.arrivo[2], PASSAGGIO.arrivo[3]);
-const RASO = (() => { const v = [], t = []; for (let d = 0; d <= 70; d++) { const s = FIS.rasoterra(Math.max(d, .5), vArr(d), 30); v.push(s); t.push(FIS.rotolaFino(s, Math.max(d, .5)).t); } return { v, t }; })();
+const tabellaRaso = (arr) => { const v = [], t = []; for (let d = 0; d <= 70; d++) { const s = FIS.rasoterra(Math.max(d, .5), arr(d), 30); v.push(s); t.push(FIS.rotolaFino(s, Math.max(d, .5)).t); } return { v, t }; };
+// Due tabelle: il passaggio sui piedi e quello al compagno che corre, più morbido man mano che è lungo (PASSAGGIO.inCorsa):
+// col pallone più svelto di lui il compagno gli correva accanto senza prenderlo.
+const RASO = tabellaRaso(vArr), RASO_CORSA = tabellaRaso((d) => { const pieno = vArr(d), [v, da, a] = PASSAGGIO.inCorsa; return pieno + (Math.min(pieno, v) - pieno) * clamp((d - da) / (a - da), 0, 1); });
 const daTabella = (arr, d) => { const k = clamp(d, 0, 69.999), i = Math.floor(k); return arr[i] + (arr[i + 1] - arr[i]) * (k - i); };
-const tempoPalla = (o, x, z) => daTabella(RASO.t, hyp(x - o.x, z - o.z));
+const tempoPalla = (o, x, z, tab = RASO) => daTabella(tab.t, hyp(x - o.x, z - o.z));
 // Quanta strada fa p in t secondi correndo nella direzione (ux, uz): parte dalla velocità che ha in quel verso e accelera
 // Quanto costa a chi corre girarsi verso (ux, uz), come lo fa il corpo (src/fisica/corpo.js): i secondi persi a girare e la
 // velocità che gli resta in quel verso. Senza, le stime credevano che chi corre dall'altra parte ripartisse subito.
@@ -1060,8 +1063,8 @@ function puntoIncontro(p, m) {
   const L = hyp(dx, dz) || 1, ux = dx / L, uz = dz / L, scatto = !!(m.run || m.sprint);
   for (let t = .25; t <= 2.8; t += .05) {
     const s = Math.min(lim, corsaIn(m, ux, uz, t, scatto)), x = clamp(m.x + ux * s, -HL + 1, HL - 1), z = clamp(m.z + uz * s, -HW + 1, HW - 1);
-    if (tempoPalla(o, x, z) <= t + .04) return { x, z, t, spazio: s > 2 };
-    if (s >= lim) return { x, z, t: tempoPalla(o, x, z), spazio: true };
+    if (tempoPalla(o, x, z, RASO_CORSA) <= t + .04) return { x, z, t, spazio: s > 2, corsa: true };
+    if (s >= lim) return { x, z, t: tempoPalla(o, x, z, RASO_CORSA), spazio: true, corsa: true };
   }
   return { x: m.x, z: m.z, t: tempoPalla(o, m.x, m.z), spazio: false };
 }
@@ -1101,8 +1104,8 @@ function margine(p, x, z, sp, m) {
   return min;
 }
 /** La forza di un rasoterra verso un punto a distanza d: quella dosata, o più tesa se così passa più sicuro. */
-function forzaPassaggio(p, x, z, m) {
-  const d = hyp(x - p.x, z - p.z), base = daTabella(RASO.v, d), teso = Math.min(base * 1.28, 33), mb = margine(p, x, z, base, m);
+function forzaPassaggio(p, x, z, m, tab = RASO) {
+  const d = hyp(x - p.x, z - p.z), base = daTabella(tab.v, d), teso = Math.min(base * 1.28, 33), mb = margine(p, x, z, base, m);
   if (mb > .2) return { sp: base, mg: mb }; const mt = margine(p, x, z, teso, m); return mt > mb + .05 ? { sp: teso, mg: mt } : { sp: base, mg: mb };
 }
 function openness(m) { let d = 99; for (const o of m.team.opp.players) d = Math.min(d, hyp(o.x - m.x, o.z - m.z)); return d; }
@@ -1133,7 +1136,7 @@ function bestPass(p, ix, iz, voglio) {
       if (cono < .55) continue;
       sc = (cono > .82 ? 40 : 18) * cono - d * .25 + lib * .8 - (chiusa ? 6 : 0) + (pt.spazio ? 3 : 0) + dx * s * .08 - (off ? 12 : 0) - (voglio ? Math.abs(d - voglio) * .9 : 0); // con la barra: il compagno alla distanza scelta
     } else { // l'IA: avanzare, ma solo se il pallone arriva davvero (margine sui tempi di tutti gli avversari)
-      const f = d > 18 && chiusa ? null : forzaPassaggio(p, pt.x, pt.z, m), mg = f ? f.mg : (chiusa ? -.3 : .3), gx = s * HL, vic = Math.max(0, 30 - hyp(gx - pt.x, pt.z));
+      const f = d > 18 && chiusa ? null : forzaPassaggio(p, pt.x, pt.z, m, pt.corsa ? RASO_CORSA : RASO), mg = f ? f.mg : (chiusa ? -.3 : .3), gx = s * HL, vic = Math.max(0, 30 - hyp(gx - pt.x, pt.z));
       const oltre = pt.x * s > p.team.offLine - 3 && !off ? 8 : 0; // dietro la linea difensiva avversaria (in gioco): il passaggio che rompe la difesa
       sc = dx * s * .55 + Math.min(lib, 6) * 1.1 + clamp(mg, -.6, .6) * 26 - (mg < 0 ? 14 : 0) - d * .06 + vic * .5 + oltre + (m.run ? 5 : 0) + (pt.spazio ? 2 : 0) - (pt.x * s < -30 ? 6 : 0) - (over > CALCI.vedeFuori && off ? 30 : 0) + rnd(2); // il fuorigioco di meno di un metro chi passa non lo vede
       if (m.stun > 0 || m.inj) sc -= 6;
@@ -1164,7 +1167,7 @@ function pass(p, m, pow = null, rivisto = false, molt = 1) {
     const T = clamp(d / 17, .85, 1.7), vm = hyp(m.vx, m.vz), run = m.run || vm > 2.5, L = run ? hyp(m.run ? m.run.x - m.x : m.vx, m.run ? m.run.z - m.z : m.vz) || 1 : 1;
     const ux = run ? (m.run ? m.run.x - m.x : m.vx) / L : 0, uz = run ? (m.run ? m.run.z - m.z : m.vz) / L : 0, k = run ? corsaIn(m, ux, uz, T + .25, true) : 0;
     const tx = clamp(m.x + ux * k, -HL + 1, HL - 1), tz = clamp(m.z + uz * k, -HW + 1, HW - 1), v = FIS.mira(o, { x: tx, y: 1, z: tz }, T, 0, -.35); kick(p, v.vx, v.vy, v.vz, 'tiro', 0, -.35);
-  } else { const f = pow === null ? 1 : clamp(1 + (pow - powPer('pass', d)) * .8, .7, 1.4), sp = (pow === null && !userDrives(p) ? forzaPassaggio(p, pt.x, pt.z, m).sp : daTabella(RASO.v, d) * f) * molt; kick(p, dx / d * sp, 0, dz / d * sp, d > 26 ? 'tiro' : 'passaggio'); } // forza dosata (con la barra: più o meno forte di quella giusta)
+  } else { const f = pow === null ? 1 : clamp(1 + (pow - powPer('pass', d)) * .8, .7, 1.4), sp = (pow === null && !userDrives(p) ? forzaPassaggio(p, pt.x, pt.z, m, pt.corsa ? RASO_CORSA : RASO).sp : daTabella((pt.corsa ? RASO_CORSA : RASO).v, d) * f) * molt; kick(p, dx / d * sp, 0, dz / d * sp, d > 26 ? 'tiro' : 'passaggio'); } // forza dosata (con la barra: più o meno forte di quella giusta)
   G.intended = m; if (p.team.human) setCtrl(m);
   p.s.pa++; G.lastPass = p;
   // dai e vai: chi ha passato in avanti si butta nello spazio

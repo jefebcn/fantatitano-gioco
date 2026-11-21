@@ -85,6 +85,11 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Passo 2 FATTO: il lancio con le mani del portiere sbagliava 8 volte su 10 (palla ad altezza petto a 20 m/s): ora arriva
   di rimbalzo (`RINVIO.mano`, `vicino`, `rimbalzo`). 32 partite, semi 7–38: gol da 2,31 a 2,56, tiri da 9,53 a 9,84,
   rimesse laterali da 3,3 a 2,3, 0 anomalie.
+- Passo 3 FATTO: il rasoterra al compagno che corre arrivava più svelto di lui (6,5–10,5 m/s contro 7 di scatto) e il
+  compagno gli correva accanto per più di un secondo. Ora arriva al massimo a 5,5 m/s, solo sui passaggi medi e lunghi
+  (`PASSAGGIO.inCorsa`). 32 partite, semi 7–38: rasoterra lungo in avanti riuscito da 53 a 73 su 100, medio da 64 a 76,
+  corto fermo a 80, tiri da 6,16 a 7,59, gol da 2,22 a 2,09 (dentro il rumore), rimesse laterali da 2,75 a 1,25, 0
+  anomalie. Provati e scartati: 4,5 e 5,0 m/s e il tetto anche sui corti (più intercetti su chi riceve, meno gol).
 - Scartati perché non spostano i numeri: reazione ritardata dei difensori al passaggio, passaggi più sicuri, più attesa.
 - Prossimo: passaggi presi sull'uomo che riceve (riescono 75 su 100), traversoni (1 su 3), lanci lunghi troppo lunghi.
 - Simulazione ripetibile (21/11): modalità di prova `?seme=N` o `__g.prova(N)` (audio spento, semi fissi); lo stato di una
