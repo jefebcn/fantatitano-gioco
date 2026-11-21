@@ -167,19 +167,18 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Scenario | nuovo |
 | Finanze, notifiche | lo storico sta in «Come guadagnare»; gli avvisi sono i bollini |
 
-## 5. Cose da decidere o da chiedere all'altra sessione
+## 5. Decisioni di Alex (21/11)
 
-1. **Campanella**: nella barra nuova non c'è. Proposta: gli avvisi restano solo come bollini «!» sulle carte.
-2. **Scenario** (si parte al 70' sotto 0-1): la partita deve poter iniziare da un minuto e da un punteggio dati. È un
-   aggancio nel codice della partita (altra sessione).
-3. **Allenamento**: oggi la partita sa fare solo la partita intera e i rigori. Tutorial, allenamento libero, punizioni e
-   angoli vanno costruiti nella partita (altra sessione). Finché non ci sono, le carte dicono «In arrivo».
-4. **Energia tra una partita e l'altra** (serve a Fisioterapista, Riscaldamento, barretta sulle carte): oggi l'energia
-   vive solo dentro la partita. Va salvata nella carriera e passata alla partita all'inizio (aggancio nell'altra sessione).
-5. **Moduli**: nella partita ce ne sono 4 (4-3-3, 4-4-2, 3-5-2, 4-2-3-1). Gli altri 4 (4-3-1-2, 5-3-2, 4-1-4-1, 3-4-3) vanno aggiunti a `FORMS` in `src/config.js` (file
-   condiviso).
-6. **Codice**: oggi la home sta dentro `src/game.js` e `src/pagina.html`, gli stessi file della partita. Proposta: la
-   sposto in file miei (`src/casa/…`) e in quelli condivisi lascio solo poche righe di collegamento.
+| # | Cosa | Decisione |
+|---|---|---|
+| 1 | Campanella | non c'è: solo bollini «!» sulle carte e sui pulsanti della barra |
+| 2 | Scenario | carta «In arrivo» finché la partita non sa partire da un minuto e da un punteggio dati |
+| 3 | Allenamento | Rigori attivo; Tutorial, Allenamento libero, Punizioni e Calci d'angolo «In arrivo» |
+| 4 | Energia tra le partite e risultati | formato dei dati in `docs/ponte-partita.md`, da girare alla sessione «partita» |
+| 5 | Moduli | i 4 nuovi li aggiunge la sessione «partita» in `FORMS`; la home mostra quelli che esistono e i nuovi compaiono da soli (`moduli()` in `src/dati/scala.js`) |
+| 6 | Codice della home | trasloca in `src/casa/` con un solo commit che tocca `src/game.js` e `src/pagina.html`, quando Alex conferma che la sessione «partita» è ferma |
+| 7 | Valutazioni | cambia solo il numero mostrato, con una sola conversione (`scala` in `src/dati/scala.js`) per valutazione e statistiche; la forza in partita resta quella |
+| 8 | Ruoli | ogni giocatore ha un ruolo preciso fisso in `src/dati/giocatori.js`, modificabile; il modulo dice i posti e chi è fuori ruolo viene segnalato |
 
 ## 6. Stato delle schermate
 
