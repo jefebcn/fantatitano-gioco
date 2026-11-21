@@ -3,7 +3,7 @@
 Dati raccolti da Alex il 20/11/2026: quattro video analizzati fotogramma per fotogramma e le sue conferme dirette.
 Di Dream League replichiamo **solo il funzionamento** (comandi, tempi, ritmo, comportamento dell'IA e del portiere,
 flusso delle palle ferme e del gol). Grafica, loghi, testi, animazioni e nomi sono di Fantatitano.
-Tutti i numeri stanno in `src/config.js` (oggetti `TELECAMERA`, `LEVETTA`, `ANDATURA`, `PRESSIONE`, `SEGNI`, `RITMO`,
+Tutti i numeri stanno in `src/config.js` (oggetti `CAMERA`, `LEVETTA`, `ANDATURA`, `PRESSIONE`, `SEGNI`, `RITMO`,
 `RIVEDI`, `AREA_IA`, `PORTIERE`, `FERMI`, `GOLSEQ`); qui sotto c'è da dove vengono e dove sono nel codice. Quando un comportamento non è descritto qui si chiede ad
 Alex, non si inventa (vedi «Domande aperte» in fondo).
 
@@ -11,14 +11,13 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
 
 ## 0. Campo e telecamera (valori di Alex, corretti il 20/11)
 - Scala vera dalla PR #57 (prompt precedente): campo 105 × 68, porta 7,32 × 2,44, pallone di 22 cm, giocatori 1,70-1,95 m.
-- Telecamera di gioco (`CAMERA` in `src/config.js`): **36,9 m in pianta** dal punto inquadrato, **12,5 m** di altezza
-  (39,0 m in linea d'aria), inclinazione **21,3°** verso il basso, campo visivo verticale **28°** (fisso in orizzontale,
-  56,8°, uguale su ogni schermo). Mai girata a destra o sinistra, niente zoom in area. Il punto inquadrato è il pallone,
-  seguito per intero lungo il campo e in profondità, e sta a circa il **40%** dell'altezza dello schermo dall'alto.
-- Controllo (`scripts/prove/inquadratura.cjs`, anche nella CI, 844 × 390): cerchio 44,6% (rif. 43), bordo lontano 28,6% (29),
-  dischetto 41,0% (40), bordo vicino 60,3% (60), linea laterale lontana 10,0% (10), giocatore 8,5% (9), pallone 1,1% (1).
-  Pallone fermo in sei punti del campo: 40,4% dall'alto e al centro in larghezza. Eccezione: negli ultimi ~9 m verso la
-  tribuna vicina la telecamera si ferma per non entrarci (`CAMERA.zMax`) e il pallone scende fino al ~52%.
+- Telecamera di gioco (`CAMERA` in `src/config.js`): misure di Alex **36,9 m in pianta**, **12,5 m** di altezza, **21,3°**,
+  campo visivo verticale **28°**; ritoccate di poco (36,8 m, 21,75°, campo visivo orizzontale fisso 58,7°) perché il cerchio
+  di centrocampo occupi il **43%** della larghezza, come chiesto il 21/11. Mai girata a destra o sinistra, niente zoom in
+  area. Segue il pallone per intero lungo il campo e al 45% in profondità.
+- Controllo (`scripts/prove/inquadratura.cjs`, anche nella CI, 844 × 390): cerchio 43,0% (rif. 43), bordo lontano 28,0% (29),
+  dischetto 40,0% (40), bordo vicino 58,7% (60), linea laterale lontana 10,0% (10), giocatore 8,2% (9), pallone 1,0% (1).
+- La vista dall'alto è solo di controllo: `?alto` nell'indirizzo.
 
 ## 1. Comandi
 - **Levetta a sinistra**: la base è un cerchio fisso, la levetta si muove dentro. Poco inclinata si cammina, poi si
@@ -83,7 +82,8 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
 - Scritta sotto il tabellone col tipo («CALCIO D'ANGOLO», «RIMESSA LATERALE»…). Comandi nascosti, cronometro lento.
 - **Rimessa laterale**: breve dissolvenza scura, stacco della telecamera sul punto di battuta, comandi di nuovo visibili
   dopo ~2 s.
-- **Angolo dopo una grande occasione** (es. una parata): stacco col logo (~0,3 s), breve replay con il pulsante «REPLAY»
+- **Angolo dopo una grande occasione** (es. una parata): stacco col logo (~0,3 s: una fascia diagonale viola col logo
+  Fantatitano attraversa lo schermo, e a metà corsa lo copre tutto), breve replay con il pulsante «REPLAY»
   in basso a destra per saltarlo, stacco col logo, poi l'inquadratura dell'angolo. Logo degli stacchi: Fantatitano.
   Vale per ogni palla ferma dopo una grande occasione (vedi «Replay automatico»).
 - Durante il calcio piazzato: tre icone in alto a destra (guanti, maglia, pallone): **segnaposto senza funzione**
@@ -103,6 +103,14 @@ Esultanze e reazioni: esultanze di GameplayFootball (`esulta`, `esulta_corsa`). 
 `mani_testa` (entrambe le mani sopra la testa; finché manca resta la `delusione` di GameplayFootball). Arbitro: clip Mixamo
 `indica` (braccio teso in avanti verso il centro; finché manca si ferma e guarda il centro, senza braccio). Tempi in `GOLSEQ`;
 nel codice `inizio()` e `delusoDavanti()` in `src/regia.js`, `rallenta()` in `src/game.js`.
+
+## Vista di controllo dell'IA (solo per sviluppare)
+`?ia` nell'indirizzo, o il tasto **O** della tastiera durante la partita (`src/debug-ia.js`). Sopra il campo compaiono: la
+posizione base di ogni giocatore (cerchietto: azzurro la squadra di chi gioca, arancione l'altra) e la linea verso dove sta
+andando; le linee di passaggio che il portatore ha valutato all'ultima decisione, col punteggio (verde la migliore, rosso le
+peggiori, tratteggiata se un avversario la chiude); sopra ogni giocatore la decisione in corso (pressing, raddoppio,
+copertura, marcatura, linea, smarcamento, sostegno, inserimento, sovrapposizione, area, rientro; per il portatore: tira,
+passa a…, cross per…, porta palla); la linea difensiva delle due squadre. Legge soltanto: le partite restano identiche.
 
 ## Energia
 Non si vede durante il gioco. Sta nel menu di pausa, nella schermata «Sostituzioni»: una barretta per giocatore (verde,

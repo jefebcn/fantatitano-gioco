@@ -45,6 +45,15 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   squadra, quindi non c'è un file da comprimere; maschera e pelle sono due immagini piccole (PNG e WebP).
 - Da vedere su iPhone: fps veri con `?debug`.
 
+## Fase 4 (verifica delle sezioni 2-6 del prompt del 21/11) — FATTO
+- C'era già tutto tranne due cose, aggiunte ora: la vista di controllo dell'IA (`?ia` o tasto O, `src/debug-ia.js`) e lo
+  stacco col logo come fascia diagonale.
+- Diverso da DLS per scelta o in attesa di Alex: scritta «GOL!» (non «GOAL!») sui cartelloni; icone dei calci piazzati e
+  pulsante replay in alto a destra come segnaposto; clip Mixamo «mani in testa» e «indica» da ricevere; logo: usiamo
+  `img/corona-lime.png`, se Alex vuole la corona viola serve il file.
+- Da tarare giocando: gol tra computer (0,7-1 a partita), fuorigioco rari, conduzione a 4,5 m/s.
+- Prossimo: Fase 5, `docs/home-spec.md` da far approvare ad Alex prima di scrivere codice della home.
+
 ## Decisioni recenti di Alex ancora valide
 - "Merge fallo sempre tu": PR → controlli verdi + anteprima Vercel → squash merge → verifica produzione.
 - Il gioco non è pubblico finché non lo dice lui (PR #114 dell'app non va unita).
