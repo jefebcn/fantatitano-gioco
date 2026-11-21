@@ -64,6 +64,11 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Resta: saldo sul server (SQL da far leggere ad Alex), immagine di sfondo (la genera Alex, 3840 × 1800), stemma a pezzi,
   oggetti da comprare coi diamanti, altre schermate nello stesso stile (decisione 7), `docs/stato-lavori.md` alla fine.
 
+## Taratura dei tiri del computer (21/11)
+- Soglie in `TIRO_IA` (`src/config.js`). Su 16 partite, semi 7-22, difficoltà normale: prima 0,88 gol e 5,44 tiri a partita,
+  dopo 1,31 e 7,31 (obiettivi 1-6 e 7-30); 0 anomalie, altre misure invariate. Rapporti: prima e dopo sugli stessi semi.
+- Fuorigioco: 0 su 32 partite. Da capire (regola e conteggio ci sono: `markOffside`, `offside` in `src/game.js`).
+
 ## Decisioni recenti di Alex ancora valide
 - "Merge fallo sempre tu": PR → controlli verdi + anteprima Vercel → squash merge → verifica produzione.
 - Il gioco non è pubblico finché non lo dice lui (PR #114 dell'app non va unita).

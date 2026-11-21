@@ -258,7 +258,7 @@ export const SCIVOLATA = { v0: 8.5, spinta: 1.1, attrito: 2.2, durata: 0.75, att
 // Tira sempre sopra `buona`. Tira sopra il primo numero di `pressato` se l'avversario arriva entro il secondo (in secondi).
 // Con un'occasione almeno `minima` tira sempre entro `vicino` metri dalla porta e, entro il primo numero di `daFuori`
 // (metri), con la probabilità del secondo a ogni decisione.
-export const TIRO_IA = { buona: .22, pressato: [.12, .7], minima: .05, vicino: 16, daFuori: [27, .3] };
+export const TIRO_IA = { buona: .18, pressato: [.1, .7], minima: .05, vicino: 18, daFuori: [27, .5] };
 
 // Economia della carriera (docs/home-spec.md). Monete e diamanti si guadagnano solo giocando: niente acquisti.
 // prezzo: il prezzo di un giocatore è (valutazione meno 50) al quadrato, per questo numero, per dieci monete.
