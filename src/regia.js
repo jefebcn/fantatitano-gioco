@@ -38,17 +38,20 @@ export function creaRegia(X) {
 #salta.su{opacity:1}
 #rep{position:absolute;right:14px;bottom:14px;font-family:Anton;font-size:15px;letter-spacing:.1em;background:var(--lime);color:var(--ink);padding:5px 13px 4px;border-radius:8px;opacity:0;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.4)}
 #rep.su{opacity:1;pointer-events:auto}#rep::before{content:'⟲ '}
-#stacco{position:absolute;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;z-index:21}
-#stacco img{height:32%}#stacco.va{animation:stacco var(--d) linear both}
-@keyframes stacco{0%{opacity:0}35%,65%{opacity:1}100%{opacity:0}}
+#stacco{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:21}
+#stacco i{position:absolute;top:-10%;bottom:-10%;left:-45%;width:190%;display:flex;align-items:center;justify-content:center;transform:translateX(-125%) skewX(-18deg);
+  background:linear-gradient(90deg,var(--lime) 0 2.5%,var(--viola7) 2.5% 6%,var(--viola) 6% 94%,var(--viola7) 94% 97.5%,var(--lime) 97.5%)}
+#stacco img{height:30%;transform:skewX(18deg)}#stacco.va i{animation:stacco var(--d) linear both}
+@keyframes stacco{0%{transform:translateX(-125%) skewX(-18deg)}38%,62%{transform:translateX(0) skewX(-18deg)}100%{transform:translateX(125%) skewX(-18deg)}}
 #hud.cine #replay{display:none!important}`;
   document.head.appendChild(stile);
   const hud = $('#hud');
   const el = (id, html) => { const d = document.createElement('div'); d.id = id; d.innerHTML = html || ''; hud.appendChild(d); return d; };
   const golc = el('golc', '<div class="sx"><img alt=""><b></b></div><div class="dx"><div class="r1"><span>Gol</span><i></i></div><div class="nm"></div><div class="as"></div><div class="cl"></div></div>');
   const salta = el('salta', 'Tocca per saltare'), rep = el('rep', 'Replay');
-  // stacco col logo Fantatitano (replay, angoli dopo una grande occasione): il logo copre lo schermo a metà dello stacco
-  const stacco = el('stacco', '<img src="img/corona-lime.png" alt="">');
+  // stacco col logo Fantatitano (replay, angoli dopo una grande occasione): una fascia diagonale viola col logo attraversa
+  // lo schermo da sinistra a destra, e a metà corsa lo copre tutto (lì cambia l'inquadratura)
+  const stacco = el('stacco', '<i><img src="img/corona-lime.png" alt=""></i>');
   const staccoLogo = (d) => { stacco.style.setProperty('--d', `${d}s`); stacco.classList.remove('va'); void stacco.offsetWidth; stacco.classList.add('va'); };
   const esc = (s) => String(s).replace(/[<>&]/g, '');
 

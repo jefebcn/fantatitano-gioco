@@ -3,6 +3,7 @@ import * as T from 'three';
 import { creaRegia } from './regia.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { creaDebugIA } from './debug-ia.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { creaDivisa, creaZone, creaRilievo, TONI, DISEGNI } from './divisa.js';
 import * as CLOUD from './cloud.js';
@@ -790,6 +791,8 @@ function newMatch(home, away) {
 const all = () => G.teams[0].players.concat(G.teams[1].players);
 const diffOf = (p) => (p.team.human ? MATE : G.diff);
 const userDrives = (p) => p === G.ctrl && p.team.human && !G.auto;
+// vista di controllo dell'IA: ?ia nell'indirizzo o tasto O (src/debug-ia.js). Legge soltanto, non cambia il gioco
+const DBG_IA = creaDebugIA({ cam, G, homeOf, HW, attiva: /[?&]ia\b/.test(location.search) });
 
 function kickoff(team) {
   const b = G.ball; b.x = b.z = 0; b.y = BR; b.vx = b.vy = b.vz = 0; b.c = b.t = 0; b.owner = null;
@@ -1065,6 +1068,7 @@ function bestPass(p, ix, iz, voglio) {
       const oltre = pt.x * s > p.team.offLine - 3 && !off ? 8 : 0; // dietro la linea difensiva avversaria (in gioco): il passaggio che rompe la difesa
       sc = dx * s * .55 + Math.min(lib, 6) * 1.1 + clamp(mg, -.6, .6) * 26 - (mg < 0 ? 14 : 0) - d * .06 + vic * .5 + oltre + (m.run ? 5 : 0) + (pt.spazio ? 2 : 0) - (pt.x * s < -30 ? 6 : 0) - (over > CALCI.vedeFuori && off ? 30 : 0) + rnd(2); // il fuorigioco di meno di un metro chi passa non lo vede
       if (m.stun > 0 || m.inj) sc -= 6;
+      DBG_IA.passaggio(p, m, sc, pt.x, pt.z, chiusa);
     }
     if (sc > bs) { bs = sc; best = m; }
   }
@@ -1548,13 +1552,13 @@ function ownerThink(p, dt) {
   p.conduci = conduzione(p, press < .6);
   const tiro = valoreTiro(p), errore = D.err * (1 + (1 - clamp(press, 0, 1)) * .5);
   // si tira con una buona occasione, prima se pressati, sempre da vicino; e ogni tanto anche da fuori
-  if (tiro.q > .22 || (tiro.q > .12 && press < .7) || (tiro.q > .05 && tiro.d < 16) || (tiro.q > .05 && tiro.d < 27 && rnd() < .3)) { const f = tiro.d < 13 ? rnd(.5, .68) : rnd(.68, .84); return prepara(p, 'calcia', s * HL, tiro.tz, () => shoot(p, tiro.tz, f, errore * 1.1), f > .7); }
-  if (canCross(p) && rnd() < AIR.cross * 1.4) { const m = crossTarget(p); if (m && openness(m) > 1.4) return prepara(p, 'lancia', m.x, m.z, () => cross(p, m)); }
+  if (tiro.q > .22 || (tiro.q > .12 && press < .7) || (tiro.q > .05 && tiro.d < 16) || (tiro.q > .05 && tiro.d < 27 && rnd() < .3)) { const f = tiro.d < 13 ? rnd(.5, .68) : rnd(.68, .84); DBG_IA.scelta(p, 'tira'); return prepara(p, 'calcia', s * HL, tiro.tz, () => shoot(p, tiro.tz, f, errore * 1.1), f > .7); }
+  if (canCross(p) && rnd() < AIR.cross * 1.4) { const m = crossTarget(p); if (m && openness(m) > 1.4) { DBG_IA.scelta(p, 'cross per ' + m.name); return prepara(p, 'lancia', m.x, m.z, () => cross(p, m)); } }
   const m = bestPass(p), sp = bestPass.punteggio, cd = p.conduci;
   // valore del portare palla: lo spazio trovato, meno la pressione; vicino alla porta avversaria conviene giocarla
   const portare = cd.sc + (press > 1.5 ? 9 : press > 1 ? 5 : press > .6 ? 0 : -10) - (p.x * s > HL - 12 ? 6 : 0);
   const soglia = TENUTA.soglia + (p.hold < TENUTA.appena ? TENUTA.diPrima : 0);
-  if (m && (sp > portare + soglia || (press < TENUTA.addosso && sp > TENUTA.scarico))) return prepara(p, 'passa', m.x, m.z, () => pass(p, m));
+  if (m && (sp > portare + soglia || (press < TENUTA.addosso && sp > TENUTA.scarico))) { DBG_IA.scelta(p, 'passa a ' + m.name); return prepara(p, 'passa', m.x, m.z, () => pass(p, m)); }
 }
 /**
  * Il portiere con la palla in mano. Appena la prende decide come rimetterla in gioco: lancio con le mani a un compagno
@@ -2323,6 +2327,7 @@ function draw(dt) {
   }
   if (G.buioT && G.t >= G.buioT) { G.buioT = 0; updateCamera(9); } // a metà della dissolvenza della rimessa: stacco sul punto di battuta
   updateCamera(dt); REGIA.dopo(dt); seguiOmbre(); dettagliFigure(); if (RESA) RESA.disegna(); else renderer.render(scene, cam);
+  DBG_IA.disegna();
 }
 const REGIA = creaRegia({ scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, ring, arrow, camPos, camLook, boards, img, cdist, lum,
   makeSkinned, pickKits, paintBoards, updateCamera, offsideLine, hasFx, potenza: () => potenzaBarra(), model: () => MODEL, crest: () => CREST });
@@ -2404,7 +2409,7 @@ function bindInput() {
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; if (e.repeat) return;
     if (k.startsWith('Arrow') || k === ' ') e.preventDefault();
     keys.add(k); axis();
-    if (k === 'x' || k === 'k') pressA(true); else if (k === 'c' || k === 'i') pressD(true); else if (k === ' ' || k === 'j') pressB(true); else if (k === 'p' || k === 'Escape') pause(!G.paused);
+    if (k === 'x' || k === 'k') pressA(true); else if (k === 'c' || k === 'i') pressD(true); else if (k === ' ' || k === 'j') pressB(true); else if (k === 'p' || k === 'Escape') pause(!G.paused); else if (k === 'o') DBG_IA.alterna();
   });
   window.addEventListener('keyup', (e) => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; keys.delete(k); axis(); if (k === ' ' || k === 'j') pressB(false); else if (k === 'x' || k === 'k') pressA(false); else if (k === 'c' || k === 'i') pressD(false); });
   window.addEventListener('contextmenu', (e) => e.preventDefault());
