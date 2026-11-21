@@ -260,6 +260,10 @@ export const SCIVOLATA = { v0: 8.5, spinta: 1.1, attrito: 2.2, durata: 0.75, att
 // (metri), con la probabilità del secondo a ogni decisione.
 export const TIRO_IA = { buona: .18, pressato: [.1, .7], minima: .05, vicino: 18, daFuori: [27, .5] };
 
+// Le punte quando la squadra ha palla: aspettano `sullaLinea` metri dietro la linea del fuorigioco (l'ultimo difensore),
+// mai oltre `massimo` metri dal centro del campo verso la porta avversaria.
+export const ATTACCO = { sullaLinea: 1.2, massimo: 44 };
+
 // Economia della carriera (docs/home-spec.md). Monete e diamanti si guadagnano solo giocando: niente acquisti.
 // prezzo: il prezzo di un giocatore è (valutazione meno 50) al quadrato, per questo numero, per dieci monete.
 // percorso: il percorso premi della stagione. Punti per fonte, punti che servono per ogni livello e premio di ogni livello

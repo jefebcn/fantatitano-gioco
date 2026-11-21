@@ -67,7 +67,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 ## Taratura dei tiri del computer (21/11)
 - Soglie in `TIRO_IA` (`src/config.js`). Su 16 partite, semi 7-22, difficoltà normale: prima 0,88 gol e 5,44 tiri a partita,
   dopo 1,31 e 7,31 (obiettivi 1-6 e 7-30); 0 anomalie, altre misure invariate. Rapporti: prima e dopo sugli stessi semi.
-- Fuorigioco: 0 su 32 partite. Da capire (regola e conteggio ci sono: `markOffside`, `offside` in `src/game.js`).
+- Fuorigioco: era 0 su 32 partite perché in possesso le punte restavano una decina di metri dietro l'ultima linea
+  avversaria. Ora aspettano sulla linea dell'ultimo difensore (`ATTACCO` in `src/config.js`, `homeOf` in `src/game.js`):
+  stesse 16 partite, fuorigioco 0,44, gol 1,00, tiri 7,00, 0 anomalie, tutte le 11 misure dentro gli obiettivi.
 
 ## Decisioni recenti di Alex ancora valide
 - "Merge fallo sempre tu": PR → controlli verdi + anteprima Vercel → squash merge → verifica produzione.
