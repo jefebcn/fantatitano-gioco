@@ -54,8 +54,9 @@ function casuale(seme) { let s = seme >>> 0 || 1; return () => ((s = (s * 166452
 
 export function creaSpalti(T, scene, { HL, HW, max = 18000, renderer = null }) {
   const loader = new T.TextureLoader(), materiali = [];
-  const cemento = new T.MeshStandardMaterial({ color: 0xc9c5bd, roughness: 0.95, metalness: 0, map: cementoDiRiserva(T) });
-  const scaleM = new T.MeshStandardMaterial({ color: 0xe9e1cf, roughness: 0.9, metalness: 0 });
+  // tribune scure, come uno stadio ripreso in TV di sera: il pubblico e il campo risaltano
+  const cemento = new T.MeshStandardMaterial({ color: 0x8b8882, roughness: 0.95, metalness: 0, map: cementoDiRiserva(T) });
+  const scaleM = new T.MeshStandardMaterial({ color: 0xa39d90, roughness: 0.9, metalness: 0 });
   loader.load(RIS + 'concrete_albedo.webp', (t) => { t.wrapS = t.wrapT = T.RepeatWrapping; t.colorSpace = T.SRGBColorSpace; cemento.map = t; scaleM.map = t; cemento.needsUpdate = scaleM.needsUpdate = true; });
   loader.load(RIS + 'concrete_roughness.webp', (t) => { t.wrapS = t.wrapT = T.RepeatWrapping; cemento.roughnessMap = t; cemento.needsUpdate = true; });
   materiali.push(cemento, scaleM);
@@ -282,17 +283,22 @@ diffuseColor = vec4((vMaglia * masc.r + vPelle * masc.g + vScuro * masc.b) / max
   // colori: maglie della squadra di casa negli spalti di casa, degli ospiti nella curva ospiti (più un po' di neutri)
   let squadre = null;
   function colora(casa, ospiti) {
-    squadre = [casa, ospiti]; const r = casuale(hashStr((casa.name || '') + (ospiti.name || ''))), neutri = [0x2a2f45, 0xd8d8e0, 0x3b3f4f].map((c) => new T.Color(c)), col = new T.Color();
+    squadre = [casa, ospiti]; const r = casuale(hashStr((casa.name || '') + (ospiti.name || ''))), col = new T.Color(), grigio = new T.Color();
+    // Il pubblico di uno stadio vero: metà coi colori della squadra (smorzati: nessuno ha la maglia accesa come in campo),
+    // l'altra metà vestita come capita, con giacche e felpe di tutti i giorni
+    const comuni = [0x23283a, 0x2f3338, 0x4a4f58, 0x6b6f76, 0x9a9c9f, 0xd6d3cc, 0x2d3b55, 0x3e5a78, 0x5a4a3c, 0x7a6a55, 0x4c5a40, 0x6e2f35, 0x8a5a2f, 0x1c1c20, 0xb8a98f, 0x55606e].map((c) => new T.Color(c));
+    const smorza = (c, quanto, luce) => { const l = c.r * 0.3 + c.g * 0.59 + c.b * 0.11; grigio.setRGB(l, l, l); c.lerp(grigio, quanto).multiplyScalar(luce); };
     const capelli = [0x1c1410, 0x2e2018, 0x5a3a20, 0x8a6a3a, 0x111111, 0xc9a25a, 0x9c9a96].map((c) => new T.Color(c)), c2 = new T.Color();
     for (const { m, info, A, n, capo, sciarpa } of folle) {
       for (let i = 0; i < n; i++) {
-        // colori misti: nel settore di una squadra soprattutto i suoi colori, ma anche un po' dell'altra e qualche neutro
-        const mia = info[i * 4 + 1] > 0.5 ? 1 : 0, u = r(), altra = u >= 0.72 && u < 0.86, sq = squadre[altra ? 1 - mia : mia], tifa = u < 0.86;
-        col.set(u < 0.5 ? sq.c1 : u < 0.72 ? sq.c2 : r() < 0.6 ? sq.c1 : sq.c2); if (!tifa) col.copy(neutri[Math.floor(r() * neutri.length)]);
+        const mia = info[i * 4 + 1] > 0.5 ? 1 : 0, u = r(), altra = u >= 0.42 && u < 0.5, sq = squadre[altra ? 1 - mia : mia], tifa = u < 0.5;
+        if (tifa) { col.set(u < 0.27 ? sq.c1 : u < 0.42 ? sq.c2 : r() < 0.6 ? sq.c1 : sq.c2); smorza(col, 0.3 + r() * 0.2, 0.72 + r() * 0.2); }
+        else { col.copy(comuni[Math.floor(r() * comuni.length)]).multiplyScalar(0.8 + r() * 0.3); }
         m.setColorAt(i, col); info[i * 4 + 2] = r() < 0.3 ? 1 : 0; // maniche lunghe o braccia scoperte
-        const conSciarpa = tifa && r() < 0.55, berretto = r() < 0.22; info[i * 4 + 3] = (conSciarpa ? 1 : 0) + (berretto ? 2 : 0);
-        (berretto ? (r() < 0.6 ? c2.set(sq.c1) : c2.set(sq.c2)) : c2.copy(capelli[Math.floor(r() * capelli.length)])).toArray(capo, i * 3);
-        c2.set(u < 0.55 ? sq.c2 : sq.c1).toArray(sciarpa, i * 3); // la sciarpa ha l'altro colore della squadra, a strisce con quello della maglia
+        const conSciarpa = tifa && r() < 0.45, berretto = r() < 0.18; info[i * 4 + 3] = (conSciarpa ? 1 : 0) + (berretto ? 2 : 0);
+        if (berretto) { c2.set(tifa && r() < 0.6 ? sq.c1 : tifa ? sq.c2 : 0x2a2c33); smorza(c2, 0.3, 0.85); } else c2.copy(capelli[Math.floor(r() * capelli.length)]);
+        c2.toArray(capo, i * 3);
+        c2.set(u < 0.3 ? sq.c2 : sq.c1); smorza(c2, 0.2, 0.9); c2.toArray(sciarpa, i * 3); // la sciarpa ha l'altro colore della squadra, a strisce con quello della maglia
       }
       m.instanceColor.needsUpdate = A.aInfo.needsUpdate = A.aCapo.needsUpdate = A.aSciarpa.needsUpdate = true;
     }

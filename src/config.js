@@ -138,6 +138,11 @@ export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco
 
 // Livelli di dettaglio del calciatore: sotto `vicino` metri dalla telecamera il corpo pieno (circa 4.300 triangoli: primi
 // piani, replay, esultanze), fino a `lontano` quello medio (1.500: la telecamera di gioco), oltre quello leggero (600)
+// Il prato (Alex, 21/11): `tinta` moltiplica rosso, verde e blu dell'erba (meno rosso e meno blu: verde più pieno e meno
+// giallo). `strisce`: quanto sono scure e chiare le strisce di taglio. `anelli`: lo stesso per gli anelli concentrici e
+// gli scacchi del cerchio, più leggeri delle strisce. `rilievo`: quanto risalta la grana dell'erba. `piastrella`: ogni
+// quanti metri si ripete la texture (più piccola, più nitida).
+export const PRATO = { tinta: [.8, 1.04, .7], strisce: [.74, 1.18], anelli: [.9, 1.05], rilievo: .8, piastrella: 3 };
 export const LOD = { vicino: 22, lontano: 62 };
 // Cartelloni LED a bordo campo: scorrono piano di continuo (frazione di tutta la striscia al secondo: 4 pannelli)
 export const LED = { scorre: .02 };
