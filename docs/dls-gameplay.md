@@ -80,6 +80,29 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
 - Reagisce al tiro entro ~**0,3 s**, col tuffo. Respinge di lato (spesso in angolo) o lascia la palla in area e poi va a
   riprenderla. A volte para in presa (`PORTIERE`). Nel codice: `gkThink()` e le parate in `contacts()`.
 
+## Gol e tiri (obiettivo di Alex del 21/11)
+Alex, giocando: «pochi gol». In Dream League a difficoltà media una partita finisce spesso con più gol. Obiettivo:
+**2–3 gol e 10–12 tiri per squadra a partita** (4–6 e 20–24 in tutto), poi si tara giocando.
+
+Si misura tra computer con `node scripts/prove/partita.cjs 16 normale` (16 partite, semi 7–22). La partita dura 4 minuti:
+di questi il pallone è in gioco per circa 215 secondi.
+
+| | Gol a partita | Tiri a partita | Anomalie |
+|---|---|---|---|
+| Prima (20/11) | 1,00 | 7,00 | 0 |
+| Passo 1 (21/11) | 2,69 | 10,38 | 0 |
+
+**Passo 1**, tre cose insieme (ognuna da sola sposta poco):
+- il computer tira più volentieri e da un po' più lontano (`TIRO_IA`);
+- i portieri parano meno a tutte le difficoltà (`save` in `DIFF` e `MATE`: a normale da 0,70 a 0,58);
+- chi difende va sul portatore dalla metà campo, non più 18 metri dentro la metà avversaria (`PRESSING.da`): prima si
+  perdevano troppi palloni a centrocampo e le azioni non arrivavano in fondo.
+
+**Dove si perde ancora** (diagnosi su 8 partite): su 80 passaggi a partita ne riescono 74. Quelli sbagliati sono quasi
+tutti presi dal difensore proprio sull'uomo che riceve; i traversoni riescono una volta su cinque. Il passo dopo lavora lì.
+Siamo a metà strada dall'obiettivo: i numeri di Alex restano scritti negli obiettivi dello script (escono con ✗ finché
+non ci si arriva, senza bloccare).
+
 ## 7. Palle ferme
 - Scritta sotto il tabellone col tipo («CALCIO D'ANGOLO», «RIMESSA LATERALE»…). Comandi nascosti, cronometro lento.
 - **Rimessa laterale**: breve dissolvenza scura, stacco della telecamera sul punto di battuta, comandi di nuovo visibili

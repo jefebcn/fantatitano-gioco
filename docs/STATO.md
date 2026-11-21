@@ -75,6 +75,12 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   avversaria. Ora aspettano sulla linea dell'ultimo difensore (`ATTACCO` in `src/config.js`, `homeOf` in `src/game.js`):
   stesse 16 partite, fuorigioco 0,44, gol 1,00, tiri 7,00, 0 anomalie, tutte le 11 misure dentro gli obiettivi.
 
+## Più gol e più tiri (21/11, obiettivo di Alex: 2–3 gol e 10–12 tiri per squadra)
+- Passo 1 FATTO: `TIRO_IA` più pronto, portieri meno forti (`save`), pressing dalla metà campo (`PRESSING.da` da 18 a 0).
+  16 partite, semi 7–22: gol da 1,00 a 2,69, tiri da 7,00 a 10,38, 0 anomalie. Tabella in `docs/dls-gameplay.md`.
+- Le prove con 6 partite ingannano (lo stesso valore dà da 10 a 15 tiri): si decide solo su 16.
+- Prossimo: i passaggi intercettati sull'uomo che riceve (riescono 74 passaggi su 100) e i traversoni (1 su 5).
+
 ## Decisioni recenti di Alex ancora valide
 - "Merge fallo sempre tu": PR → controlli verdi + anteprima Vercel → squash merge → verifica produzione.
 - Il gioco non è pubblico finché non lo dice lui (PR #114 dell'app non va unita).

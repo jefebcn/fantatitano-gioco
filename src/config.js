@@ -17,11 +17,12 @@ export const LINEE = { area: [16.5, 40.32], piccola: [5.5, 18.32], dischetto: 11
 export const RITMO = { gioco: 22.5, fermo: 3.5, conduzione: 4.5 };
 export const HALF_SECS = 45 * 60 / RITMO.gioco;
 export const DIFF = {
-  facile:    { spd: .88, steal: .7,  save: .58, err: 1.7, think: .6, wait: 1.2, slide: 1.5 },
-  normale:   { spd: .97, steal: 1.25, save: .7, err: 1.0, think: .4, wait: 1.0, slide: 4 },
-  difficile: { spd: 1.04, steal: 1.9, save: .87, err: .6, think: .26, wait: .6, slide: 6 },
+  facile:    { spd: .88, steal: .7,  save: .48, err: 1.7, think: .6, wait: 1.2, slide: 1.5 },
+  normale:   { spd: .97, steal: 1.25, save: .58, err: 1.0, think: .4, wait: 1.0, slide: 4 },
+  difficile: { spd: 1.04, steal: 1.9, save: .8, err: .6, think: .26, wait: .6, slide: 6 },
 };
-export const MATE = { spd: 1, steal: .95, save: .72, err: 1, think: .4, wait: .9, slide: 4 };
+export const MATE = { spd: 1, steal: .95, save: .6, err: 1, think: .4, wait: .9, slide: 4 };
+// `save`: quanto para il portiere (da 0 a 1). Quello di MATE è il portiere della squadra di chi gioca.
 // `wait`: secondi in cui chi difende temporeggia prima di andare sul pallone; `slide`: scivolate al secondo quando ce n'è l'occasione
 // Inserimenti senza palla: ogni quanti secondi si valuta, quanti insieme, quanto durano, punteggio minimo per partire, profondità in metri,
 // probabilità del dai e vai dopo un passaggio e di cercare chi si inserisce
@@ -61,10 +62,11 @@ for (const f of Object.values(FORMS)) f.pos = f.pos.map(([x, z]) => [x * HL / 50
 // Mentalità (-1, 0, 1): quanti metri in più si sale quando si attacca, quanto restano alti gli attaccanti quando si difende
 // (con la difensiva rientrano), quanto spesso ci si inserisce, quanto prima si va sul pallone con l'offensiva;
 // con la difensiva: a quanti metri dal portatore sta il secondo uomo in copertura, quanti metri prima si smette di temporeggiare
-// Pressing senza palla: da dove (metri dalla metà campo verso la porta avversaria, mentalità equilibrata) si va sul portatore;
-// il secondo uomo raddoppia quando il primo è a meno di `primo` metri dal portatore e lui a meno di `raggio`, stringendo a
+// Pressing senza palla: da dove (metri dalla metà campo verso la porta avversaria, mentalità equilibrata) si va sul portatore.
+// Zero vuol dire dalla metà campo: più avanti il primo uomo lo accompagna soltanto, come fa il computer in Dream League.
+// Il secondo uomo raddoppia quando il primo è a meno di `primo` metri dal portatore e lui a meno di `raggio`, stringendo a
 // `stretto` metri
-export const PRESSING = { da: 18, primo: 3.5, raggio: 16, stretto: 2.2 };
+export const PRESSING = { da: 0, primo: 3.5, raggio: 16, stretto: 2.2 };
 export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['In difesa', 'Equilibrata', 'In attacco'], push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
 
 /* ---------------------------------------------------------------- telecamera di gioco */
@@ -258,7 +260,7 @@ export const SCIVOLATA = { v0: 8.5, spinta: 1.1, attrito: 2.2, durata: 0.75, att
 // Tira sempre sopra `buona`. Tira sopra il primo numero di `pressato` se l'avversario arriva entro il secondo (in secondi).
 // Con un'occasione almeno `minima` tira sempre entro `vicino` metri dalla porta e, entro il primo numero di `daFuori`
 // (metri), con la probabilità del secondo a ogni decisione.
-export const TIRO_IA = { buona: .18, pressato: [.1, .7], minima: .05, vicino: 18, daFuori: [27, .5] };
+export const TIRO_IA = { buona: .12, pressato: [.06, .9], minima: .03, vicino: 20, daFuori: [30, .8] };
 
 // Le punte quando la squadra ha palla: aspettano `sullaLinea` metri dietro la linea del fuorigioco (l'ultimo difensore),
 // mai oltre `massimo` metri dal centro del campo verso la porta avversaria.
