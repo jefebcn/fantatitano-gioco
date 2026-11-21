@@ -1,3 +1,6 @@
+-- ATTENZIONE (21/11): questo file NON è applicato e NON è più allineato al gioco. I numeri qui sotto sono quelli
+-- dell'economia di prima; quella nuova (cinque divisioni, valore dei giocatori, allenatori, strutture: docs/home-spec.md
+-- §5) va riportata qui quando si farà il passo del database. Per ora saldo e storico restano sul telefono.
 -- =====================================================================
 -- La Partita — monete e diamanti sul server
 --

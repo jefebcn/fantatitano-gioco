@@ -358,6 +358,11 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 #finestra .scelte{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin:4px 0 6px}
 #finestra .scelte .bottone{padding:0 8px}
 #finestra .scelte .bottone b{font-weight:400}
+/* scelte con una nota sotto il nome (fisioterapista, allenatori, vendita): due colonne, la nota su una riga sua in piccolo */
+#finestra .scelte.note{grid-template-columns:repeat(2,minmax(0,1fr))}
+#finestra .scelte.note .bottone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:auto;min-height:52px;padding:6px 8px}
+#finestra .scelte .bottone i{font:600 12px/1.2 Montserrat,system-ui,sans-serif;font-style:normal;letter-spacing:0;text-transform:none;display:flex;align-items:center;gap:4px}
+#finestra .scelte .bottone i svg{width:14px;height:14px;flex:none}
 
 /* ---------- Squadra: pulsanti e incarichi a sinistra, campo con gli undici al centro, panchina a destra ---------- */
 #squadra{--oro:#E8B64C;--azz:#3FC6FF;font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff;

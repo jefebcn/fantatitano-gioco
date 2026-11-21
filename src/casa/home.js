@@ -3,9 +3,9 @@
 // Riga 3 (35%): Sfide, Squadra, Mercato, Il mio club. Ogni carta riassume la sua sezione coi dati salvati e la apre.
 import * as CAR from '../carriera.js';
 import { ECONOMIA } from '../config.js';
-import { img, club } from '../game.js';
+import { img } from '../game.js';
 import { nomiDi } from '../dati/squadre.js';
-import { K, DATI, mon, ritratto, consigliato, avviso, esc } from './casa.js';
+import { K, DATI, mon, ritratto, consigliato, avviso, esc, club } from './casa.js';
 import { ILLUSTRAZIONI } from './illustrazioni.js';
 import { icona, stelline } from './icone.js';
 import { carta, adatta, attrNome } from './carte.js';
@@ -47,7 +47,7 @@ export function disegnaHome() {
       + `${riga('campionato', t('carriera.campionatoNome'), campionato)}${riga('coppa', t('carriera.coppa'), coppa)}${riga('castelli', t('carriera.castelli'), castelli)}</span>`
       + (avv ? `<span class="prossima"><i>${t('carriera.prossima')}</i><span><img src="${img(avv.id + '-mini')}" alt=""><b ${attrNome({ breve: nAvv.sigla, sigla: nAvv.sigla })}>${esc(nAvv.breve)}</b></span><i>${t(p.inCasa ? 'carriera.inCasa' : 'carriera.trasferta')}</i></span>`
         : `<span class="prossima"><i>${t('carriera.prossima')}</i><b>${t('carriera.nuova')}</b></span>`),
-    piede: `<i data-adatta>${t('carriera.motto')}</i>` });
+    piede: `<i data-adatta>${t('carriera.motto', CAR.divisione(K).nome, K.stagione)}</i>` });
 
   // scenario: ancora chiuso, finché la partita non sa partire da un minuto e da un punteggio dati; si vede il premio
   const scenario = carta({ rotta: 'scenario', titolo: t('home.scenario'), colore: 'rossa', chiusa: true, sfondo: 'carta-scenario', classe: 'c-scenario',
@@ -74,15 +74,16 @@ export function disegnaHome() {
     corpo: `<span class="conC">${miniCarta({ val: sc.val, fascia: sc.fascia, foto })}${mioCap ? '<em class="fasciaC">C</em>' : ''}</span>`
       + `<span class="testo"><i class="su">${t(mioCap ? 'squadra.capitano' : 'squadra.migliore')}</i><b data-adatta data-due-righe>${esc(cap[0])}</b><span class="gDati"><u>${sc.ruolo}</u></span></span>` });
 
-  // mercato: il giocatore in evidenza con la sua carta, il nome, il ruolo, lo stemma della sua squadra e il prezzo
+  // mercato: il giocatore in evidenza della lista trasferimenti con la sua carta, il nome, il ruolo, il prezzo e, se
+  // arriva da una squadra vera, il suo stemma
   const c = consigliato(), cs = c && DATI.scheda(c.x, c.c.id);
   const mercato = carta({ rotta: 'mercato', titolo: t('home.mercato'), colore: 'blu', classe: 'c-piccola c-mercato',
-    corpo: c ? `${miniCarta({ val: cs.val, fascia: cs.fascia, foto: ritratto(c.c.id, c.x[0], c.x[2], c.x[1] === 'P') })}<span class="testo"><b data-adatta data-due-righe>${esc(c.x[0])}</b><span class="gDati"><u>${cs.ruolo}</u><img src="${img(c.c.id + '-mini')}" alt=""></span><span class="prezzo">${icona('moneta')}<b>${mon(CAR.prezzo(cs.val))}</b></span></span>`
+    corpo: c ? `${miniCarta({ val: cs.val, fascia: cs.fascia, foto: ritratto(c.c.id, c.x[0], c.x[2], c.x[1] === 'P') })}<span class="testo"><b data-adatta data-due-righe>${esc(c.x[0])}</b><span class="gDati"><u>${cs.ruolo}</u>${c.da ? `<img src="${img(c.da + '-mini')}" alt="">` : ''}</span><span class="prezzo">${icona('moneta')}<b>${mon(c.costo)}</b></span></span>`
       : `${icona('mercato', 'grande')}<span class="testo"><b>${t('mercato.vuoto')}</b></span>` });
 
   // il mio club: lo stemma, le stelle e le tre voci, ognuna con la sua icona e il suo nome
   const voce = (ico, chiave) => `<span class="voce">${icona(ico)}<i>${t(chiave)}</i></span>`;
-  const clubC = carta({ rotta: 'club', titolo: t('home.club'), colore: 'blu', bollino: note.some((n) => n.vai === 'stadio' || n.vai === 'allenatore'), classe: 'c-piccola c-club',
+  const clubC = carta({ rotta: 'club', titolo: t('home.club'), colore: 'blu', bollino: note.some((n) => n.vai === 'club'), classe: 'c-piccola c-club',
     corpo: `<img class="stemma" src="${img(me.id)}" alt=""><span class="voci">${stelline(me.str)}${voce('stadio', 'club.stadio')}${voce('personalizza', 'club.personalizza')}${voce('allenamento', 'club.allenamento')}</span>` });
 
   radice.classList.toggle('illustrata', !!ILLUSTRAZIONI['sfondo-home']);

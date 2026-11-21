@@ -3,12 +3,11 @@
 // l'ora e il tempo; sotto ogni campo stemma, nome, stelle e la maglia che si userà; in basso Squadra, Riscaldamento e
 // Gioca. La partita parte dal ponte (docs/ponte-partita.md): la home manda la richiesta e alla fine riceve l'esito.
 import * as CAR from '../carriera.js';
-import { FORMS } from '../config.js';
 import { ponte } from '../ponte.js';
-import { img, club, kitsFor, aiForm } from '../game.js';
+import { img, kitsFor, aiForm } from '../game.js';
 import { adatto, postiModulo } from '../dati/scala.js';
 import { nomiDi } from '../dati/squadre.js';
-import { K, DATI, sel, salvaK, maglia, avviso, esc, mon } from './casa.js';
+import { K, DATI, sel, salvaK, maglia, avviso, esc, mon, club, moduloMio } from './casa.js';
 import { ILLUSTRAZIONI } from './illustrazioni.js';
 import { icona, stelline } from './icone.js';
 import { adatta, attrNome } from './carte.js';
@@ -35,7 +34,7 @@ function campo(el, c, modulo, mio) {
   el.style.setProperty('--gw', `${d.gw}px`); el.style.setProperty('--gf', `${d.scritta}px`);
   el.innerHTML = erba() + c.xi.map((x, i) => {
     const sc = schede[i], q = d.dove[i];
-    return cartaCampo(sc, { club: c.id, energia: mio ? CAR.energiaDi(K, x[0]) : 100, capitano: inc.capitano === x[0], fuori: adatto(sc.ruolo, posti[i].ruolo), migliorato: mio && ((K.allen || {})[x[0]] || 0) > 0, stile: `left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px;width:${Math.floor(q.posto - 2)}px` });
+    return cartaCampo(sc, { club: c.id, energia: mio ? CAR.energiaDi(K, x[0]) : 100, capitano: inc.capitano === x[0], fuori: adatto(sc.ruolo, posti[i].ruolo), migliorato: mio && !!(K.crescita || {})[x[0]], stile: `left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px;width:${Math.floor(q.posto - 2)}px` });
   }).join('');
 }
 // la striscia sotto il campo: stemma, nome, stelle, modulo e la maglia che la squadra userà in questa partita
@@ -57,7 +56,7 @@ function competizione() {
 export function disegnaSfida(partita) {
   if (partita) S = partita;
   const H = club(S.mia), A = club(S.loro), mio = diCarriera(), [kh, ka] = kitsFor(H, A, !!S.fuori);
-  const mioModulo = FORMS[sel.form] ? sel.form : '4-3-3', loroModulo = aiForm(A), comp = competizione(), m = CAR.meteoPartita(mio ? K : null, S.tipo);
+  const mioModulo = moduloMio(), loroModulo = aiForm(A), comp = competizione(), m = CAR.meteoPartita(mio ? K : null, S.tipo);
   const logo = comp.immagine && ILLUSTRAZIONI[comp.immagine] ? `<img class="logo" src="img/illustrazioni/${comp.immagine}@2x.webp" alt="">` : icona(comp.ico, 'logo');
   const risc = mio ? CAR.statoRiscaldamento(K, CLUBS, S.tipo) : null;
   radice.classList.toggle('illustrata', !!ILLUSTRAZIONI['sfondo-sfida']);
@@ -68,7 +67,7 @@ export function disegnaSfida(partita) {
     + `<div class="sClub sx">${striscia(H, mioModulo, kh, 'sf1')}</div><div class="sClub dx">${striscia(A, loroModulo, ka, 'sf2')}</div>`
     + `<div class="sAzioni${mio ? '' : ' coppia'}">`
     + (mio ? `<button class="azione" data-az="squadra">${icona('squadra')}<b>${t('home.squadra')}</b></button>` : `<button class="azione" data-az="cambia">${icona('indietro')}<b>${t('sfida.cambia')}</b></button>`)
-    + (mio ? `<button class="azione risc${risc.fatto || !risc.serve ? ' spento' : ''}" data-az="riscaldamento">${icona('energia')}<span><b>${t('risc.nome')}</b><i>${risc.fatto ? t('risc.fatto') : !risc.serve ? t('risc.pieni') : `${t('risc.effetto', risc.bonus)} · ${icona('moneta')} ${mon(risc.monete)}`}</i></span></button>` : '')
+    + (mio ? `<button class="azione risc${risc.fatto ? ' spento' : ''}" data-az="riscaldamento">${icona('energia')}<span><b>${t('risc.nome')}</b><i>${risc.fatto ? t('risc.fatto') : `${t('risc.effetto', risc.bonus)} · ${icona('moneta')} ${mon(risc.monete)}`}</i></span></button>` : '')
     + `<button class="azione gioca" data-az="gioca"><b>${t('sfida.gioca')}</b>${icona('avanti')}</button></div>`;
   // le carte si mettono dopo, quando si sa quanto sono grandi i campi su questo schermo
   campo(radice.querySelector('.sCampo.sx'), H, mioModulo, mio); campo(radice.querySelector('.sCampo.dx'), A, loroModulo, false);
@@ -86,19 +85,21 @@ radice.addEventListener('click', (e) => {
   if (!esito.ok) avviso(esito.errori[0]);
 });
 
-/** Riscaldamento: un po' di energia in più ai titolari, per monete, una volta per partita. Si conferma in una finestra. */
+/** Riscaldamento: per monete le statistiche dei titolari salgono per la prossima partita (o più, col Centro allenamento). Si conferma in una finestra. */
 function riscalda() {
   const st = CAR.statoRiscaldamento(K, CLUBS, S.tipo);
   if (st.fatto) return avviso(t('risc.giaFatto'));
-  if (!st.serve) return avviso(t('risc.nonServe'));
   if (!st.puo) return avviso(t('risc.monete', mon(st.monete)));
-  finestra({ titolo: t('risc.nome'), testo: t('risc.conferma', st.bonus, mon(st.monete)), si: t('risc.si'), fatto: () => { const r = CAR.riscaldamento(K, CLUBS, S.tipo); if (r.ok) { salvaK(); avviso(t('risc.ok', r.bonus)); } disegnaSfida(); } });
+  finestra({ titolo: t('risc.nome'), testo: t('risc.conferma', st.bonus, mon(st.monete), st.partite), si: t('risc.si'), fatto: () => { const r = CAR.riscaldamento(K); if (r.ok) { salvaK(); avviso(t('risc.ok', r.bonus)); } disegnaSfida(); } });
 }
 
 // una squadra nella forma del ponte: identità, modulo, maglia, titolari nell'ordine dei posti e panchina
-function squadraPonte(c, modulo, utente, mio) {
+function squadraPonte(c, modulo, utente, mio, bonus = 0) {
   const posti = postiModulo(modulo);
-  const g = (x, i) => { const sc = DATI.scheda(x, c.id); return { id: `${sc.origine}/${x[0]}`, nome: x[0], numero: x[2], reparto: x[1], ruolo: sc.ruolo, forza: x[3], energia: mio ? CAR.energiaDi(K, x[0]) : 100, altezza: sc.altezza, piede: sc.piede, fuoriRuolo: i < 0 ? 0 : adatto(sc.ruolo, posti[i].ruolo) }; };
+  // La partita conosce un solo numero per giocatore, la forza. Per i giocatori del club cresciuti con gli allenatori, o
+  // con riscaldamento e Curva dei tifosi, è la quotazione che dà la valutazione di adesso, più il bonus della partita.
+  const forza = (x, sc) => (mio && (sc.val !== sc.base || bonus) ? DATI.quotazione(x[1], sc.val * (1 + bonus)) : x[3]);
+  const g = (x, i) => { const sc = DATI.scheda(x, c.id); return { id: `${sc.origine}/${x[0]}`, nome: x[0], numero: x[2], reparto: x[1], ruolo: sc.ruolo, forza: forza(x, sc), energia: mio ? CAR.energiaDi(K, x[0]) : 100, altezza: sc.altezza, piede: sc.piede, fuoriRuolo: i < 0 ? 0 : adatto(sc.ruolo, posti[i].ruolo) }; };
   const ha = (tipo) => (mio && K.scelte && CAR.possiede(K, tipo, K.scelte[tipo]) ? K.scelte[tipo] : null);
   // capitano e incaricati di rigori, punizioni e angoli: quelli scelti nella Squadra, o i più adatti tra i titolari
   const inc = mio ? incarichi(K, CLUBS, c.xi.map((x) => DATI.scheda(x, c.id))) : {};
@@ -110,7 +111,8 @@ function squadraPonte(c, modulo, utente, mio) {
 /** La richiesta per il ponte (docs/ponte-partita.md §3): la prima squadra è quella di casa. */
 function richiesta() {
   const H = club(S.mia), A = club(S.loro), mio = diCarriera(), comp = competizione(), m = CAR.meteoPartita(mio ? K : null, S.tipo), partita = S;
-  const noi = squadraPonte(H, FORMS[sel.form] ? sel.form : '4-3-3', true, mio), loro = squadraPonte(A, aiForm(A), false, false);
+  // riscaldamento e Curva dei tifosi: per questa partita i giocatori del club valgono un po' di più
+  const noi = squadraPonte(H, moduloMio(), true, mio, mio ? CAR.bonusPartita(K, !S.fuori) : 0), loro = squadraPonte(A, aiForm(A), false, false);
   return { versione: 1, tipo: TIPO_PONTE[S.tipo], titolo: `${comp.nome} · ${comp.fase}`, difficolta: sel.diff, ora: m.ora, meteo: { cielo: m.cielo, gradi: m.gradi, orario: m.orario },
     supplementariERigori: !!S.rigori, squadre: S.fuori ? [loro, noi] : [noi, loro], allaFine: (esito) => finePartita(partita, esito) };
 }

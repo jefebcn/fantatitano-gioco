@@ -97,7 +97,7 @@ srv.listen(0, async () => {
     await vai('#casa .c-sfide', 'sfide-d', async () => { for (const t of ['w', 'c', 's']) { await tocca(`[data-stab="${t}"]`); await foto(`sfide-${t}`); } });
     // la Squadra: scelta e scambio a tocchi, il portiere solo in porta, incarichi, modulo, squadra migliore, scheda, trascinamento
     await vai('#casa .c-squadra', 'squadra', async () => {
-      const rosa = () => pg.evaluate(() => { const g = window.__g, K = g.carriera(), c = g.club(K.club); return { xi: c.xi.map((x) => x[0]), pan: c.pan.map((x) => x[0]), salvata: JSON.parse(localStorage.getItem('fantatitano-carriera')).rose[c.id].map((x) => x[0]), inc: K.incarichi || {}, cap: (K.mio || {}).capitano, form: g.sel.form, monete: K.monete, allen: K.allen }; });
+      const rosa = () => pg.evaluate(() => { const g = window.__g, K = g.carriera(), c = g.club(K.club); return { xi: c.xi.map((x) => x[0]), pan: c.pan.map((x) => x[0]), salvata: JSON.parse(localStorage.getItem('fantatitano-carriera')).rose[c.id].map((x) => x[0]), inc: K.incarichi || {}, cap: (K.mio || {}).capitano, form: g.sel.form, monete: K.monete, crescita: K.crescita || {}, allenatori: g.CAR.quantiAllenatori(K) }; });
       const carta = (g) => `#squadra .gC[data-g="${g}"]`, centro = async (g) => { const r = await (await pg.$(carta(g))).boundingBox(); return [r.x + r.width / 2, r.y + r.height / 2]; };
       const r0 = await rosa();
       await tocca(carta('xi:5')); await foto('squadra-scelto'); await tocca(carta('pan:3')); await foto('squadra-scambio');
@@ -114,13 +114,22 @@ srv.listen(0, async () => {
       const r5 = await rosa(), [ax, ay] = await centro('pan:1'), [bx, by] = await centro('xi:7');
       await pg.mouse.move(ax, ay); await pg.mouse.down(); await pg.mouse.move(ax + 20, ay + 6, { steps: 3 }); await pg.mouse.move(bx, by, { steps: 6 }); await foto('squadra-trascina'); await pg.mouse.up();
       const r6 = await rosa(); if (r6.xi[7] !== r5.pan[1] || r6.pan[1] !== r5.xi[7]) errori.push(`${w}: il trascinamento non ha scambiato i due giocatori`);
-      // tocco lungo: si apre la scheda; da lì un allenamento costa monete e resta scritto
+      // tocco lungo: si apre la scheda; da lì si usa un allenatore dell'inventario (qui regalati per la prova) e resta scritto
+      await pg.evaluate(() => { const K = window.__g.carriera(); K.allenatori.raro.tecnico = 2; K.allenatori.comune.fisico = 1; });
       const [cx2, cy2] = await centro('xi:8'); await pg.mouse.move(cx2, cy2); await pg.mouse.down(); await pg.waitForTimeout(700); await pg.mouse.up(); await foto('scheda-giocatore');
       if (await pg.evaluate(() => document.querySelector('#schedaG').classList.contains('nas'))) errori.push(`${w}: il tocco lungo non apre la scheda del giocatore`);
-      else { await tocca('#schedaG [data-az="allena"]'); await foto('scheda-allenato'); const r7 = await rosa(); if (r7.monete >= r6.monete || !r7.allen[r6.xi[8]]) errori.push(`${w}: l'allenamento dalla scheda non è riuscito`); await tocca('#schedaG [data-az="chiudi"]'); }
+      else { await tocca('#schedaG [data-az="allena"]'); await foto('finestra-allenatore'); await tocca('#finS [data-scelta="0"]'); await foto('scheda-allenato'); const r7 = await rosa(); if (r7.allenatori !== 2 || !r7.crescita[r6.xi[8]]) errori.push(`${w}: l'allenamento dalla scheda non è riuscito`);
+        await tocca('#schedaG [data-az="vendi"]'); await foto('finestra-vendi'); await tocca('#finestra [data-az="no"]'); await tocca('#schedaG [data-az="chiudi"]'); }
       await foto('squadra-alla-fine');
     });
-    await vai('#casa .c-mercato', 'mercato', async () => { if (await tocca('#panC [data-p]', 0)) await foto('mercato-scelto'); });
+    await vai('#casa .c-mercato', 'mercato', async () => {
+      // un acquisto dalla lista trasferimenti e una ricerca dell'osservatore: la rosa cresce di uno e il giocatore trovato resta in attesa
+      const prima = await pg.evaluate(() => { const g = window.__g, K = g.carriera(); return g.CAR.quantiInRosa(K, window.CLUBS); });
+      if (await tocca('#panC [data-lista]:not([disabled])', 0)) await foto('mercato-comprato');
+      if (await tocca('#panC [data-osserva]:not(.no)', 0)) await foto('mercato-osservatore');
+      const dopo = await pg.evaluate(() => { const g = window.__g, K = g.carriera(); return [g.CAR.quantiInRosa(K, window.CLUBS), !!K.mercato.osservato]; });
+      if (dopo[0] !== prima + 1 || !dopo[1]) errori.push(`${w}: mercato: rosa da ${prima} a ${dopo[0]}, osservatore ${dopo[1]}`);
+    });
     await vai('#casa .c-club', 'club', async () => { const tab = await pg.$$eval('#panC [data-ctab]', (l) => l.map((b) => b.dataset.ctab)); for (const t of tab) { await tocca(`#panC [data-ctab="${t}"]`); await foto(`club-${t}`); } });
     // dalla barra
     await vai('#barraF [data-vai="impostazioni"]', 'impostazioni'); await vai('#barraF [data-vai="info"]', 'info'); await vai('#barraF [data-vai="profilo"]', 'profilo');
@@ -154,10 +163,10 @@ srv.listen(0, async () => {
     await tocca('#carriera .k-prossima'); await foto('sfida-stanchi'); await tocca('#sfida [data-az="riscaldamento"]'); await foto('finestra-riscaldamento'); await tocca('#finSi'); await foto('sfida-riscaldati');
     const risc = await pg.evaluate(() => { const g = window.__g, K = g.carriera(); return { monete: K.monete, spento: document.querySelector('#sfida .azione.risc').classList.contains('spento') }; });
     if (risc.monete >= dopo.monete || !risc.spento) errori.push(`${w}: riscaldamento ${JSON.stringify(risc)} (prima ${dopo.monete} monete)`);
-    // il fisioterapista: tutta la rosa torna al massimo, per monete
+    // il fisioterapista: con l'intervento completo tutta la rosa torna al massimo, per monete
     const mf = await pg.evaluate(() => { const K = window.__g.carriera(); K.monete += 3000; return K.monete; });
     await tocca('#sfida [data-az="squadra"]'); await foto('squadra-stanchi');
-    await tocca('#squadra [data-az="fisio"]'); await foto('finestra-fisioterapista'); await tocca('#finSi'); await foto('squadra-curati');
+    await tocca('#squadra [data-az="fisio"]'); await foto('finestra-fisioterapista'); await tocca('#finS [data-scelta="completo"]'); await foto('squadra-curati');
     const fis = await pg.evaluate(() => { const K = window.__g.carriera(); return { monete: K.monete, stanchi: Object.keys(K.energia || {}).length }; });
     if (fis.monete >= mf || fis.stanchi) errori.push(`${w}: fisioterapista ${JSON.stringify(fis)} (prima ${mf} monete)`);
     await tocca('#bCasa'); await tocca('#bCasa');
@@ -166,11 +175,11 @@ srv.listen(0, async () => {
     await tocca('#carriera .scorc[data-vai="sfide"]'); await tocca('#bCasa'); await foto('carriera-fine-campionato');
     await tocca('#carriera .k-prossima'); await foto('finestra-nuova-stagione');
     if (!(await pg.evaluate(() => !document.querySelector('#finestra').classList.contains('nas')))) errori.push(`${w}: la finestra della stagione nuova non si apre`);
-    await tocca('#finNo'); await tocca('#carriera .k-prossima'); await tocca('#finSi'); await foto('carriera-stagione-2');
+    await tocca('#finNo'); await tocca('#carriera .k-prossima'); await tocca('#finSi'); await foto('finestra-premi-stagione'); await tocca('#finSi'); await foto('carriera-stagione-2');
     if ((await pg.evaluate(() => window.__g.carriera().stagione)) !== 2) errori.push(`${w}: la stagione nuova non è cominciata`);
     await tocca('#bCasa'); await foto('home-stagione-2');
     // prova coi casi scomodi: nomi lunghi e saldi grandi non devono tagliare né spingere niente fuori
-    await pg.evaluate(() => { const g = window.__g, K = g.carriera(); K.nome = 'Massimiliano Bianchi'.slice(0, 18); K.mio.nome = 'Sporting Serravalle U'; K.mio.sigla = 'SSE'; K.monete = 1234567; K.gemme = 98765; g.applicaMio(); g.salvaK(); });
+    await pg.evaluate(() => { const g = window.__g, K = g.carriera(); K.nome = 'Massimiliano Bianchi'.slice(0, 18); K.mio.nome = 'Sporting Serravalle U'; K.mio.sigla = 'SSE'; K.monete = 1234567; K.gemme = 98765; K.div = 2; g.applicaMio(); g.salvaK(); });
     await tocca('#casa .c-sfide'); await tocca('#bCasa'); await foto('home-nomi-lunghi');
     await tocca('#casa .c-carriera'); await foto('carriera-nomi-lunghi'); await tocca('#bCasa');
     fs.writeFileSync(path.join(OUT, `${w}-testi.json`), JSON.stringify(testi, null, 1));
