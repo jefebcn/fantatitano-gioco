@@ -271,17 +271,19 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 
 /* ---------- HUD ---------- */
 #hud{position:fixed;inset:0;pointer-events:none}
-#sb{position:absolute;top:10px;left:56px;display:flex;align-items:center;gap:7px;background:var(--ink);
-  border-radius:12px;padding:5px 10px;box-shadow:0 0 0 2px var(--viola),0 6px 18px rgba(0,0,0,.45);white-space:nowrap}
-#sb img{height:30px;width:auto}
-#sb b{font-family:Anton;font-weight:400;font-size:19px;letter-spacing:.04em}
-#sb #sbS{font-family:Anton;font-size:23px;background:var(--lime);color:var(--ink);border-radius:7px;padding:1px 9px;min-width:62px;text-align:center}
-#sb #sbT{font-family:Anton;font-style:normal;font-size:16px;color:var(--lime);margin-left:4px;min-width:44px;text-align:right}
+/* in alto a sinistra come Dream League: pausa, tabellone (stemma, sigla, punteggio, sigla, stemma) e il cronometro in un
+   riquadro a parte, tutti alti il 6,5% dello schermo; tabellone + cronometro larghi il 29%. Dentro la safe area dell'iPhone */
+#hud{--su:calc(var(--vh)*1.5 + env(safe-area-inset-top,0px));--alto:calc(var(--vh)*6.5);--sx:calc(env(safe-area-inset-left,0px) + 8px)}
+#sb{position:absolute;top:var(--su);left:calc(var(--sx) + var(--alto) + 6px);height:var(--alto);width:calc(var(--vw)*21);box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 6px;background:rgba(10,10,12,.82);border-radius:6px;box-shadow:0 0 0 1px rgba(75,6,252,.7);white-space:nowrap}
+#sb img{height:78%;width:auto}
+#sb b{font-family:Anton;font-weight:400;font-size:calc(var(--alto)*.55);letter-spacing:.04em;line-height:1}
+#sb #sbS{font-family:Anton;font-size:calc(var(--alto)*.6);line-height:1;background:rgba(75,6,252,.85);color:#fff;border-radius:4px;padding:2px 7px 1px;text-align:center}
+#sbT{position:absolute;top:var(--su);left:calc(var(--sx) + var(--alto) + 6px + var(--vw)*21 + 4px);height:var(--alto);width:calc(var(--vw)*8 - 4px);box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:Anton;font-style:normal;font-size:calc(var(--alto)*.55);color:var(--lime);background:rgba(10,10,12,.82);border-radius:6px;box-shadow:0 0 0 1px rgba(75,6,252,.7)}
 #chi,#en{display:none!important}
 /* palle ferme come Dream League: tipo sotto il tabellone, comandi nascosti, icone dei calci piazzati, dissolvenza della rimessa */
-#tipo{position:absolute;top:58px;left:56px;font-family:Anton;font-size:14px;letter-spacing:.08em;text-transform:uppercase;background:var(--lime);color:var(--ink);padding:3px 12px 2px;border-radius:7px;display:none}
+#tipo{position:absolute;top:calc(var(--su) + var(--alto) + 6px);left:calc(var(--sx) + var(--alto) + 6px);font-family:Anton;font-size:14px;letter-spacing:.08em;text-transform:uppercase;background:var(--lime);color:var(--ink);padding:3px 12px 2px;border-radius:7px;display:none}
 #hud.fermo #tipo:not(:empty){display:block}#hud.fermo #stickZona,#hud.fermo #tasti{visibility:hidden}
-#icone{position:absolute;top:56px;right:10px;display:none;gap:6px}#hud.piazzato #icone{display:flex}
+#icone{position:absolute;top:calc(var(--su) + var(--alto) + 6px);right:calc(env(safe-area-inset-right,0px) + 8px);display:none;gap:6px}#hud.piazzato #icone{display:flex}
 #icone button{width:38px;height:38px;border-radius:10px;background:rgba(10,10,12,.6);color:#fff;pointer-events:auto;padding:7px}#icone svg{width:100%;height:100%}
 #buio{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:19}#buio.va{animation:buio var(--d) ease-in-out both}
 @keyframes buio{0%{opacity:0}45%,55%{opacity:.85}100%{opacity:0}}
@@ -294,8 +296,8 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 #hud.rigori #rig{display:block}#hud.rigori #chi,#hud.rigori #en,#hud.rigori #ment,#hud.rigori #radar,#hud.rigori #bA,#hud.rigori #bD,#hud.rigori #replay{display:none!important}
 #en i{display:block;height:100%;width:100%;background:var(--lime)}
 #radar{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);width:calc(var(--vw)*12);height:calc(var(--vw)*12*.66);min-width:96px;min-height:63px;border-radius:6px}
-#pausa,#audio{position:absolute;top:10px;width:38px;height:38px;border-radius:10px;background:rgba(10,10,12,.6);pointer-events:auto;font-size:16px}
-#pausa{left:10px}#audio{right:54px}#replay{position:absolute;top:10px;right:10px;width:38px;height:38px;border-radius:10px;background:rgba(10,10,12,.6);pointer-events:auto;font-size:18px;color:var(--lime)}
+#pausa,#audio,#replay{position:absolute;top:var(--su);width:var(--alto);height:var(--alto);border-radius:6px;background:rgba(10,10,12,.6);pointer-events:auto;font-size:calc(var(--alto)*.45);line-height:1;padding:0}
+#pausa{left:var(--sx)}#replay{right:calc(env(safe-area-inset-right,0px) + 8px);color:var(--lime)}#audio{right:calc(env(safe-area-inset-right,0px) + 14px + var(--alto))}
 #banner{position:absolute;left:0;right:0;top:27%;text-align:center;pointer-events:none;opacity:0;transition:opacity .25s}
 #banner.su{opacity:1}
 #banner .t{font-family:Anton;font-size:clamp(46px,calc(var(--vw)*13),120px);color:var(--lime);text-shadow:0 5px 0 var(--viola),0 10px 30px rgba(0,0,0,.6);text-transform:uppercase;letter-spacing:.03em}
@@ -335,7 +337,7 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 <canvas id="c"></canvas>
 
 <div id="hud" class="nas">
-  <div id="sb"><img id="sbH" alt=""><b id="sbHn"></b><span id="sbS">0 - 0</span><b id="sbAn"></b><img id="sbA" alt=""><i id="sbT">00:00</i></div>
+  <div id="sb"><img id="sbH" alt=""><b id="sbHn"></b><span id="sbS">0 - 0</span><b id="sbAn"></b><img id="sbA" alt=""></div><i id="sbT">00:00</i>
   <div id="ment"><button data-d="-1" aria-label="Più difensiva">‹</button><span>Equilibrata</span><button data-d="1" aria-label="Più offensiva">›</button></div>
   <div id="rig"></div>
   <div id="tipo"></div>
