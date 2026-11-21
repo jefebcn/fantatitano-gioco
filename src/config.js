@@ -124,6 +124,9 @@ export const FERMI = { comandi: 2, buio: .5, occasione: 4, fuori: 2.5, corto: [7
 // Il deluso sta a `deluso` = [parte della distanza dalla telecamera, metri di lato]
 export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.7, camDist: 4.6, deluso: [.55, 1.7] };
 
+// Cartelloni LED a bordo campo: scorrono piano di continuo (frazione di tutta la striscia al secondo: 4 pannelli)
+export const LED = { scorre: .02 };
+
 /* ---------------------------------------------------------------- replay e stacchi */
 // Replay automatico e breve (da confermare con DLS): dopo un gol e alla prima palla ferma dopo una grande occasione rivede gli
 // ultimi `secs` secondi registrati a velocità `vel` (circa 3,5 s veri), tra due stacchi col logo di `stacco` secondi. Si salta
