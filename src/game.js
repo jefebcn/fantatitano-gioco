@@ -23,7 +23,7 @@ import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { PRATO, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -99,7 +99,7 @@ function ctex(c, repX = 1, repY = 1) {
 function cv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
 
 async function buildPitch() {
-  const { campo, fuori } = await creaCampo(T, { HL, HW, linee: LINEE, anisotropia: renderer.capabilities.getMaxAnisotropy() }); scene.add(campo, fuori); CAMPO = campo; // prato PBR, strisce, usura e linee: src/grafica/campo.js
+  const { campo, fuori } = await creaCampo(T, { HL, HW, linee: LINEE, anisotropia: renderer.capabilities.getMaxAnisotropy(), passo: PRATO.piastrella, prato: PRATO }); scene.add(campo, fuori); CAMPO = campo; // prato PBR, strisce, usura e linee: src/grafica/campo.js
   // porte con la rete che si deforma e bandierine che si flettono (src/grafica/stadio.js)
   PORTE = [-1, 1].map((d) => new Porta(T, scene, { d, gx: d * HL, GH, GT }));
   BANDIERINE = new Bandierine(T, scene, { HL, HW });
@@ -2357,9 +2357,13 @@ function updateCamera(dt) {
     // (dopo un gol chi ha segnato): per intero lungo il campo, solo in parte in profondità, senza uscire dai bordi.
     const C = CAMERA; gioco = true;
     const tx = clamp(fx * C.seguiX, -(HL - C.bordoX), HL - C.bordoX), tz = Math.min(clamp(fz, -HW, HW) * C.seguiZ, C.zMax - C.dietro);
-    px = tx; py = C.alto; pz = tz + C.dietro; lx = tx; lz = tz;
     // la stessa larghezza di campo su ogni schermo: l'angolo orizzontale è fisso, quello verticale segue le proporzioni
     fov = 2 * Math.atan(Math.tan(C.fovOriz * Math.PI / 360) / cam.aspect) * 180 / Math.PI;
+    // In profondità il pallone resta dentro la fascia dello schermo (CAMERA.fascia): a che distanza dalla telecamera un punto
+    // a terra appare a una certa altezza dello schermo lo dicono altezza, inclinazione e campo visivo, che non cambiano.
+    const lontano = (f) => C.alto / Math.tan(C.inclina * Math.PI / 180 - Math.atan((1 - 2 * f) * Math.tan(fov * Math.PI / 360))), fzc = clamp(fz, -HW, HW);
+    pz = Math.min(clamp(tz + C.dietro, fzc + lontano(C.fascia[1]), fzc + lontano(C.fascia[0])), C.zMax);
+    px = tx; py = C.alto; lx = tx; lz = pz - C.dietro;
   }
   // movimento morbido: una molla smorzata al punto giusto, senza scatti né oscillazioni, più lenta nel menu. In gioco è il
   // leggero ritardo con cui l'inquadratura segue il pallone
