@@ -1,0 +1,31 @@
+{
+  "nota": "Elenco delle illustrazioni del gioco. Misure in pixel alla grandezza 3x (quella che serve all'iPhone più grande); alfa = sfondo trasparente. Descrizioni e prompt in docs/immagini-da-generare.md. Lo legge scripts/importa_immagini.py.",
+  "immagini": [
+    { "nome": "sfondo-home", "w": 2796, "h": 1290, "alfa": false, "priorita": "A" },
+    { "nome": "trofeo-campionato", "w": 1024, "h": 1024, "alfa": true, "priorita": "A" },
+    { "nome": "coppa-titano", "w": 1024, "h": 1024, "alfa": true, "priorita": "A" },
+    { "nome": "trofeo-castelli", "w": 1024, "h": 1024, "alfa": true, "priorita": "A" },
+    { "nome": "carta-scenario", "w": 900, "h": 510, "alfa": false, "priorita": "A" },
+    { "nome": "carta-percorso", "w": 1800, "h": 510, "alfa": false, "priorita": "A" },
+    { "nome": "carta-amichevole", "w": 900, "h": 510, "alfa": false, "priorita": "A" },
+    { "nome": "sfondo-sfida", "w": 2796, "h": 1290, "alfa": false, "priorita": "B" },
+    { "nome": "tre-torri", "w": 1800, "h": 900, "alfa": true, "priorita": "B" },
+    { "nome": "stadio-alto", "w": 1800, "h": 1200, "alfa": false, "priorita": "B" },
+    { "nome": "struttura-allenamento", "w": 600, "h": 600, "alfa": false, "priorita": "B" },
+    { "nome": "struttura-infermeria", "w": 600, "h": 600, "alfa": false, "priorita": "B" },
+    { "nome": "struttura-foresteria", "w": 600, "h": 600, "alfa": false, "priorita": "B" },
+    { "nome": "struttura-ufficio", "w": 600, "h": 600, "alfa": false, "priorita": "B" },
+    { "nome": "struttura-osservatori", "w": 600, "h": 600, "alfa": false, "priorita": "B" },
+    { "nome": "struttura-curva", "w": 600, "h": 600, "alfa": false, "priorita": "B" },
+    { "nome": "evento-scelte", "w": 1200, "h": 360, "alfa": false, "priorita": "B" },
+    { "nome": "evento-occasioni", "w": 1200, "h": 360, "alfa": false, "priorita": "B" },
+    { "nome": "premio-monete", "w": 512, "h": 512, "alfa": true, "priorita": "B" },
+    { "nome": "premio-diamanti", "w": 512, "h": 512, "alfa": true, "priorita": "B" },
+    { "nome": "carta-carriera", "w": 1800, "h": 510, "alfa": false, "priorita": "C" },
+    { "nome": "allenamento-tutorial", "w": 600, "h": 400, "alfa": false, "priorita": "C" },
+    { "nome": "allenamento-libero", "w": 600, "h": 400, "alfa": false, "priorita": "C" },
+    { "nome": "allenamento-rigori", "w": 600, "h": 400, "alfa": false, "priorita": "C" },
+    { "nome": "allenamento-punizioni", "w": 600, "h": 400, "alfa": false, "priorita": "C" },
+    { "nome": "allenamento-angoli", "w": 600, "h": 400, "alfa": false, "priorita": "C" }
+  ]
+}

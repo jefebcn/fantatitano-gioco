@@ -47,3 +47,21 @@ Le risposte sono nella tabella in fondo a `docs/home-spec.md` (§8). Fatto subit
 ## Da sapere
 - Resta su GitHub il ramo `claude/dls-risposte-tastiera-gol`, creato per errore: si può cancellare dalla pagina dei rami.
 - Come provare ogni cosa: `docs/dls-gameplay.md` (partita), `docs/home-spec.md` §7 (home), `modelli/mpfb/LEGGIMI.md` (giocatori).
+
+## Sessione «Home, menu e sezioni» (prompt del 21/11, 14 passi)
+Un'altra sessione lavora sulla partita: questa non tocca i suoi file senza averlo detto prima ad Alex.
+
+| Passo | Cosa | Stato |
+|---|---|---|
+| 1 | `docs/navigazione.md`: albero, da dove si entra, dove porta Indietro | fatto |
+| 2 | `docs/immagini-da-generare.md` (26 illustrazioni coi prompt), `scripts/importa_immagini.py`, icone SVG (`scripts/icone.mjs`, `public/img/icone/`), logo senza scritta (`public/img/logo-fantatitano.png`) | fatto |
+| 3 | Scala delle valutazioni e file di dati | fermo: servono le risposte di Alex (sotto) |
+| 4–11 | Barra, carte, Home, Carriera, Sfida, Squadra, Mercato, Il mio club, Sfide | da fare |
+| 12 | Database dell'economia | da fare (condizioni in `docs/home-spec.md` §8.1) |
+
+Immagini: tutte le 26 illustrazioni sono **segnaposto** (nessuna consegnata); icone e cornici **definitive**; ritratti:
+quelli che il gioco disegna da sé, in attesa dei render da Blender.
+
+Domande aperte per Alex prima del passo 3: `docs/navigazione.md` §5 (campanella, Scenario, Allenamento, energia tra le
+partite, moduli, dove sta il codice della home) e la scala delle valutazioni (cambia solo il numero mostrato o anche la
+forza in partita; ruoli nuovi dei giocatori).
