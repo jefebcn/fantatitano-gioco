@@ -8,7 +8,8 @@
 <meta name="theme-color" content="#0A0A0C">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Fantatitano — La Partita (prototipo)</title>
 <style>
 @font-face{font-family:Anton;src:url(font/anton-400-latin.woff2) format("woff2");font-display:block}
@@ -22,17 +23,23 @@
 html,body{margin:0;overflow:hidden;background:var(--ink);color:#fff;font:700 14px Lato,system-ui,sans-serif;
   touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
 html{height:100%;--vw:1vw;--vh:1vh}
-/* Il gioco è solo in orizzontale: resize() dà al corpo la misura del gioco e, se lo schermo è in verticale, lo ruota di lato */
-body{position:fixed;left:0;top:0;width:100%;height:100%;transform-origin:0 0}
-html.rot .scr{touch-action:pan-x pan-y}
+/* Il gioco è solo in orizzontale. Col telefono in verticale non si gira da solo (su iOS la tastiera e la barra di stato
+   resterebbero in verticale): compare #ruota, che chiede di girarlo. --tast è lo spazio coperto dalla tastiera a schermo */
+body{position:fixed;left:0;top:0;width:100%;height:100%}
+#ruota{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:linear-gradient(180deg,#070E24,#0E2150 58%,#060B1C);font-family:Montserrat,Lato,sans-serif}
+html.verticale #ruota{display:flex}
+#ruota svg{width:96px;height:96px;color:#E8B64C;animation:ruota 2.4s ease-in-out infinite}
+#ruota b{font-family:"Bebas Neue",Anton,Impact,sans-serif;font-weight:400;font-size:34px;letter-spacing:.05em;text-transform:uppercase}
+#ruota span{font-size:14px;font-weight:600;color:rgba(255,255,255,.8);max-width:300px;line-height:1.35}
+@keyframes ruota{0%,25%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
 canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .h{font-family:Anton,Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.02em;line-height:1}
 .nas{display:none!important}
 button{font:inherit;color:inherit;border:0;cursor:pointer}
 
 /* ---------- schermate ---------- */
-.scr{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;overflow:hidden auto;touch-action:pan-y;
-  background:linear-gradient(180deg,rgba(7,14,36,.78),rgba(14,33,80,.9) 55%,rgba(6,11,28,.97));padding:18px 16px 22px}
+.scr{position:fixed;inset:0 0 var(--tast,0px) 0;display:flex;flex-direction:column;align-items:center;overflow:hidden auto;touch-action:pan-y;
+  background:linear-gradient(180deg,rgba(7,14,36,.78),rgba(14,33,80,.9) 55%,rgba(6,11,28,.97));padding:18px calc(16px + env(safe-area-inset-right,0px)) 22px calc(16px + env(safe-area-inset-left,0px))}
 .btn{font-family:Anton,Impact,sans-serif;text-transform:uppercase;letter-spacing:.04em;font-size:22px;padding:14px 26px;border-radius:14px;
   background:var(--lime);color:var(--ink);box-shadow:0 6px 0 #9a7420;min-width:230px}
 .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #9a7420}
@@ -127,11 +134,11 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 #banner[data-c=g] .s{background:#FFD21F;color:#111}
 #banner[data-c=r] .s{background:#E5262B;color:#fff}
 #cart{font-size:13px;opacity:.9;margin:2px 0 6px}#cart span{display:inline-block;margin:0 7px}#cart i{display:inline-block;width:9px;height:13px;border-radius:2px;margin-right:5px;vertical-align:-2px}#cart i.g{background:#FFD21F}#cart i.r{background:#E5262B}#cart:empty{display:none}
-#stickZona{position:absolute;left:0;bottom:0;width:50%;top:90px;pointer-events:auto}
-#stick{position:absolute;width:148px;height:148px;border-radius:50%;border:2px solid rgba(255,255,255,.3);left:22px;bottom:24px;transform:none;
+#stickZona{position:absolute;left:0;bottom:0;width:50%;top:90px;pointer-events:auto;touch-action:none}
+#stick{position:absolute;width:148px;height:148px;border-radius:50%;border:2px solid rgba(255,255,255,.3);left:calc(22px + env(safe-area-inset-left,0px));bottom:max(24px,calc(env(safe-area-inset-bottom,0px) + 8px));transform:none;
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='rgba(255,255,255,.55)'%3E%3Cpath d='M50 9l6 9H44z'/%3E%3Cpath d='M50 91l6-9H44z'/%3E%3Cpath d='M9 50l9 6V44z'/%3E%3Cpath d='M91 50l-9 6V44z'/%3E%3C/g%3E%3C/svg%3E") center/100% no-repeat,radial-gradient(circle,rgba(255,255,255,.04) 0 58%,rgba(255,255,255,.1) 59% 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
 #stick i{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px;border-radius:50%;background:rgba(235,238,245,.3);border:2px solid rgba(255,255,255,.5);box-shadow:0 2px 8px rgba(0,0,0,.25)}
-#tasti{position:absolute;right:14px;bottom:22px;width:176px;height:168px;pointer-events:none}
+#tasti{position:absolute;right:calc(14px + env(safe-area-inset-right,0px));bottom:max(22px,calc(env(safe-area-inset-bottom,0px) + 6px));width:176px;height:168px;pointer-events:none}
 #tasti button{position:absolute;pointer-events:auto;border-radius:50%;font-family:Anton;text-transform:uppercase;font-size:13px;letter-spacing:.04em;
   box-shadow:0 4px 12px rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.5)}
 #tasti button.giu{transform:scale(.92);filter:brightness(1.25)}
@@ -154,47 +161,50 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 </style>
 </head>
 <body>
+<!-- I testi non stanno qui ma in src/testi.js: gli elementi portano la chiave (data-t testo, data-th testo con grassetti
+     o a capo, data-t-aria etichetta per chi non vede) e li riempie riempiTesti() in src/game.js all'avvio. Qui restano
+     solo il titolo, la scritta del caricamento, i nomi propri e i simboli. -->
 <canvas id="c"></canvas>
 
 <div id="hud" class="nas">
   <div id="sb"><img id="sbH" alt=""><b id="sbHn"></b><span id="sbS">0 - 0</span><b id="sbAn"></b><img id="sbA" alt=""></div><i id="sbT">00:00</i>
-  <div id="ment"><button data-d="-1" aria-label="Più difensiva">‹</button><span>Equilibrata</span><button data-d="1" aria-label="Più offensiva">›</button></div>
+  <div id="ment"><button data-d="-1" data-t-aria="hud.piuDifensiva">‹</button><span></span><button data-d="1" data-t-aria="hud.piuOffensiva">›</button></div>
   <div id="rig"></div>
   <div id="tipo"></div>
-  <div id="icone"><button aria-label="Portiere"><svg viewBox="0 0 24 24"><path d="M7 21v-8L4 9V5l2-1 1 4h1V3h2v5h1V2h2v6h1V3h2v6l1-2 2 1-2 7v6z" fill="currentColor"/></svg></button><button aria-label="Maglia"><svg viewBox="0 0 24 24"><path d="M8 3l-6 3 2 5 3-1v11h10V10l3 1 2-5-6-3a4 4 0 0 1-8 0z" fill="currentColor"/></svg></button><button aria-label="Pallone"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7l4 3-1.5 5h-5L8 10z" fill="currentColor"/></svg></button></div>
+  <div id="icone"><button data-t-aria="hud.portiere"><svg viewBox="0 0 24 24"><path d="M7 21v-8L4 9V5l2-1 1 4h1V3h2v5h1V2h2v6h1V3h2v6l1-2 2 1-2 7v6z" fill="currentColor"/></svg></button><button data-t-aria="hud.maglia"><svg viewBox="0 0 24 24"><path d="M8 3l-6 3 2 5 3-1v11h10V10l3 1 2-5-6-3a4 4 0 0 1-8 0z" fill="currentColor"/></svg></button><button data-t-aria="hud.pallone"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7l4 3-1.5 5h-5L8 10z" fill="currentColor"/></svg></button></div>
   <div id="buio"></div>
   <div id="chi"></div>
   <div id="en"><i></i></div>
-  <button id="audio" aria-label="Audio">♪</button>
-  <button id="replay" aria-label="Replay">⟲</button>
-  <button id="pausa" aria-label="Pausa">II</button>
+  <button id="audio" data-t-aria="hud.audio">♪</button>
+  <button id="replay" data-t-aria="hud.replay">⟲</button>
+  <button id="pausa" data-t-aria="hud.pausa">II</button>
   <div id="banner"><div class="t"></div><div class="s"></div></div>
   <canvas id="radar" width="256" height="168"></canvas>
   <div id="stickZona"><div id="stick"><i></i></div></div>
-  <div id="tasti"><button id="bD" aria-label="Calcio alto"><svg viewBox="0 0 100 100"><path id="arcobD" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobD" startOffset="50%" text-anchor="middle">Calcio alto</textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">C</text></svg></button><button id="bA" aria-label="Calcio basso"><svg viewBox="0 0 100 100"><path id="arcobA" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobA" startOffset="50%" text-anchor="middle">Calcio basso</textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">B</text></svg></button><button id="bB" aria-label="Calcio forte"><svg viewBox="0 0 100 100"><path id="arcobB" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobB" startOffset="50%" text-anchor="middle">Calcio forte</textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">A</text></svg></button></div>
+  <div id="tasti"><button id="bD" data-t-aria="tasti.calcioAlto"><svg viewBox="0 0 100 100"><path id="arcobD" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobD" startOffset="50%" text-anchor="middle" data-t="tasti.calcioAlto"></textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">C</text></svg></button><button id="bA" data-t-aria="tasti.calcioBasso"><svg viewBox="0 0 100 100"><path id="arcobA" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobA" startOffset="50%" text-anchor="middle" data-t="tasti.calcioBasso"></textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">B</text></svg></button><button id="bB" data-t-aria="tasti.calcioForte"><svg viewBox="0 0 100 100"><path id="arcobB" d="M 13,52 A 37,37 0 0 1 87,52" fill="none"/><text class="nome"><textPath href="#arcobB" startOffset="50%" text-anchor="middle" data-t="tasti.calcioForte"></textPath></text><text class="lettera" x="50" y="70" text-anchor="middle">A</text></svg></button></div>
 </div>
 
 <!-- le schermate della home e dei menu (ingresso, club, carriera, pannelli, scelta squadre, prima della partita) le
      aggiunge qui src/casa/casa.js, da src/casa/casa.html -->
 
 <div id="vs" class="scr nas">
-  <div class="lato"><img id="vsH" alt=""><b id="vsHn"></b></div><div class="x">VS</div><div class="lato"><img id="vsA" alt=""><b id="vsAn"></b></div>
+  <div class="lato"><img id="vsH" alt=""><b id="vsHn"></b></div><div class="x" data-t="contro.vs"></div><div class="lato"><img id="vsA" alt=""><b id="vsAn"></b></div>
 </div>
 
 <div id="stop" class="scr nas">
-  <div class="h">Pausa</div>
-  <p>Levetta: muovi il giocatore, spinta fino al bordo <b>scatta</b><br>Con la palla: <b>Calcio forte</b> tiro · <b>Calcio basso</b> passaggio · <b>Calcio alto</b> lancio o cross<br>(tieni premuto: più a lungo, più forte)<br>Senza palla: <b>Calcio forte</b> scivolata · <b>Pressing</b> (tieni premuto) · <b>Cambia giocatore</b><br>Tastiera: frecce (Maiusc per non scattare), Spazio calcio forte, X calcio basso, C calcio alto<br>In campo: le frecce della mentalità sotto la mappa la cambiano</p>
+  <div class="h" data-t="pausa.titolo"></div>
+  <p data-th="pausa.istruzioni"></p>
   <div class="tatt"><div class="seg" id="segFormP"></div><div class="seg" id="segMentP"></div></div>
-  <button class="btn sec nas" id="apriCambi">Sostituzioni</button>
-  <button class="btn" id="riprendi">Riprendi</button>
-  <button class="btn sec" id="esci">Esci dalla partita</button>
+  <button class="btn sec nas" id="apriCambi" data-t="pausa.sostituzioni"></button>
+  <button class="btn" id="riprendi" data-t="pausa.riprendi"></button>
+  <button class="btn sec" id="esci" data-t="pausa.esci"></button>
 </div>
 
 <div id="cambi" class="scr nas">
-  <h2 class="h" id="cambiT">Sostituzioni</h2>
+  <h2 class="h" id="cambiT" data-t="cambi.sostituzioni"></h2>
   <div class="passo" id="cambiM"></div>
   <div id="cambiL"></div>
-  <button class="btn" id="cambiOk">Fatto</button>
+  <button class="btn" id="cambiOk" data-t="cambi.ok"></button>
 </div>
 
 <div id="fine" class="scr nas">
@@ -203,14 +213,15 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
   <div class="ris"><img id="fH" alt=""><span id="fS"></span><img id="fA" alt=""></div>
   <div class="marc" id="marc"></div>
   <div id="cart"></div>
-  <table><tr><td id="tH"></td><td>Tiri</td><td id="tA"></td></tr><tr><td id="pH"></td><td>Possesso</td><td id="pA"></td></tr><tr><td id="flH"></td><td>Falli</td><td id="flA"></td></tr><tr><td id="fgH"></td><td>Fuorigioco</td><td id="fgA"></td></tr></table>
+  <table><tr><td id="tH"></td><td data-t="fine.tiri"></td><td id="tA"></td></tr><tr><td id="pH"></td><td data-t="fine.possesso"></td><td id="pA"></td></tr><tr><td id="flH"></td><td data-t="fine.falli"></td><td id="flA"></td></tr><tr><td id="fgH"></td><td data-t="fine.fuorigioco"></td><td id="fgA"></td></tr></table>
   <div id="mvp"></div>
-  <details id="pag"><summary>Pagelle</summary><div id="pagL"></div></details>
+  <details id="pag"><summary data-t="fine.pagelle"></summary><div id="pagL"></div></details>
   <img class="tito" id="fTito" alt="Tito">
-  <div class="az"><button class="btn nas" id="continua">Continua</button><button class="btn" id="rivincita">Rivincita</button><button class="btn sec" id="cambia">Cambia squadre</button></div>
+  <div class="az"><button class="btn nas" id="continua" data-t="fine.continua"></button><button class="btn" id="rivincita" data-t="fine.rivincita"></button><button class="btn sec" id="cambia" data-t="fine.cambia"></button></div>
 </div>
 
 <div id="avviso"></div>
+<div id="ruota"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="20" y="6" width="24" height="52" rx="5"/><path d="M29 51h6"/></svg><b data-t="ruota.titolo"></b><span data-t="ruota.aiuto"></span></div>
 <div id="carica">CARICAMENTO…</div>
 
 <script src="data.js"></script>

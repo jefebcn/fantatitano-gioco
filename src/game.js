@@ -21,6 +21,8 @@ import { creaAudio } from './audio.js';
 import { creaPrestazioni } from './prestazioni.js';
 import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
+// i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
+import { t as tr } from './testi.js';
 import { HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
@@ -33,6 +35,17 @@ function setTactics(t, name, ment) {
 }
 const aiForm = (c) => Object.keys(FORMS)[hash(c.id) % 4];
 const $ = (s) => document.querySelector(s);
+/* I testi fissi della pagina (src/pagina.html), presi da src/testi.js nella lingua in uso. Nella pagina l'elemento porta solo
+   la chiave: data-t (testo), data-th (testo con grassetti o a capo), data-t-aria, data-t-placeholder, data-t-title e
+   data-t-alt (gli attributi che si leggono). Va richiamata se cambia la lingua. */
+// la sigla del ruolo (POR, DIF, CEN, ATT) dalla lettera del reparto
+const ruolo = (r) => tr('ruoli.sigle')[r];
+function riempiTesti(radice = document) {
+  for (const e of radice.querySelectorAll('[data-t]')) e.textContent = tr(e.getAttribute('data-t'));
+  for (const e of radice.querySelectorAll('[data-th]')) e.innerHTML = tr(e.getAttribute('data-th'));
+  for (const [k, attributo] of [['aria', 'aria-label'], ['placeholder', 'placeholder'], ['title', 'title'], ['alt', 'alt']]) for (const e of radice.querySelectorAll(`[data-t-${k}]`)) e.setAttribute(attributo, tr(e.getAttribute(`data-t-${k}`)));
+}
+riempiTesti();
 const rnd = (a = 1, b) => (b === undefined ? Math.random() * a : a + Math.random() * (b - a));
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const hyp = Math.hypot;
@@ -781,7 +794,7 @@ function aiSubs() {
     const fresco = prog > SUB.from + t.subs * SUB.every; // forze fresche: dal secondo tempo inoltrato esce il più stanco
     const out = t.players.filter((p) => p.i && (p.inj || fresco)).sort((a, c) => (c.inj - a.inj) || a.en - c.en)[0]; if (!out) continue;
     let k = -1; t.bench.forEach((b, i) => { if (!b.used && b.role === out.nat && (k < 0 || b.q > t.bench[k].q)) k = i; });
-    if (k >= 0) { const p = sostituisci(t, out, k); if (p) banner('', `Cambio ${t.club.short} · entra ${p.name}`, 1500); }
+    if (k >= 0) { const p = sostituisci(t, out, k); if (p) banner('', tr('partita.cambio', t.club.short, p.name), 1500); }
   }
 }
 // In trasferta la prima maglia è dell'avversaria: le divise si scelgono a parti invertite
@@ -838,7 +851,7 @@ function kickoff(team) {
   }
   G.taker = team.players.find((p) => p.i === 9) || nearestTo(team, 0, 0); G.taker.x = -.7 * team.side; G.taker.z = 0; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penWait = 0;
   G.next = team; G.poss = team; G.lastTouch = G.taker; G.intended = null;
-  setState('kickoff'); banner(G.half === 1 && G.clock === 0 ? "Calcio d'inizio" : '', '', 1100); AU.fischio(G.clock === 0 ? 'inizio' : 'ripresa');
+  setState('kickoff'); banner(G.half === 1 && G.clock === 0 ? tr('partita.calcioInizio') : '', '', 1100); AU.fischio(G.clock === 0 ? 'inizio' : 'ripresa');
   if (team.human) setCtrl(G.taker); else setCtrl(nearestTo(G.teams[0], 0, 0));
 }
 function setState(s) { G.state = s; G.stateT = 0; }
@@ -851,7 +864,7 @@ function offsideLine(t, bx = G.ball.x) {
   const s = t.side; let a = -1e9, c = -1e9; for (const o of t.opp.players) { const x = o.x * s; if (x > a) { c = a; a = x; } else if (x > c) c = x; }
   return Math.max(c, bx * s, 0);
 }
-function offside(p) { G.stats.offs[p.team.idx]++; G.offs = null; freeKick(p.team.opp, p.x, p.z, 'Fuorigioco'); }
+function offside(p) { G.stats.offs[p.team.idx]++; G.offs = null; freeKick(p.team.opp, p.x, p.z, 'fuorigioco'); }
 const qf = (p) => clamp(1.2 - (p.q - 20) / 45, .75, 1.25); // chi vale di più sbaglia di meno
 function gain(p) {
   if (p.i === 0) { p.presaT = G.t; p.rinvio = null; p.hold = 0; }
@@ -1728,9 +1741,9 @@ function passo(dt) {
     else {
       G.clock += dt; if (G.poss) G.stats.poss[G.poss.idx] += dt;
       if (G.clock >= HALF_SECS) {
-        if (G.half === 1) { setState('half'); banner('Intervallo', `${G.teams[0].club.short} ${G.teams[0].score} - ${G.teams[1].score} ${G.teams[1].club.short}`, 2300); AU.fischio('intervallo'); }
+        if (G.half === 1) { setState('half'); banner(tr('partita.intervallo'), `${G.teams[0].club.short} ${G.teams[0].score} - ${G.teams[1].score} ${G.teams[1].club.short}`, 2300); AU.fischio('intervallo'); }
         else if (G.comp && G.comp.rigori && G.teams[0].score === G.teams[1].score) startShootout();
-        else { setState('full'); banner('Fine partita', '', 1800); AU.fischio('fine'); }
+        else { setState('full'); banner(tr('partita.fine'), '', 1800); AU.fischio('fine'); }
       }
     }
   } else if (G.state === 'kickoff') { if (G.stateT > 1.2) { gain(G.taker); G.taker.thinkT = .2; setState('play'); } }
@@ -1752,7 +1765,7 @@ function passo(dt) {
       if (fk && fk.pen) { // rigore: tutti fuori dall'area, portiere sulla linea
         for (const o of all()) if (o !== k) { const q = penSpot(o); sposta(o, q[0], q[1]); }
         gain(k); k.shield = 9; G.pen = true; setState('play');
-        if (userDrives(k)) { G.penWait = 6; banner('', 'Mira con la levetta e tira', 2200); }
+        if (userDrives(k)) { G.penWait = 6; banner('', tr('partita.miraRigore'), 2200); }
         else shoot(k, sgn(rnd(-1, 1)) * GH * rnd(.5, .88), rnd(.58, .78), diffOf(k).err * .8);
       } else {
         const far = fk ? FOUL.wall : 6;
@@ -2015,23 +2028,25 @@ function bounds() {
     if (G.shooter && az < GH + FERMI.fuori && b.y < GT + 1.5) G.occasioneT = G.t; // grande occasione: replay prima della rimessa dal fondo
     const def = G.teams.find((t) => t.side === -e);
     if (G.lastTouch && G.lastTouch.team === def) corner(def.opp, e * (HL - .6), sgn(b.z) * (HW - .6));
-    else restart(def, e * (HL - 6), 0, 'Rimessa dal fondo', def.players[0]);
+    else restart(def, e * (HL - 6), 0, 'fondo', def.players[0]);
   } else if (Math.abs(b.z) > HW) {
     if (G.so) return soEsito(false);
     const t = G.lastTouch ? G.lastTouch.team.opp : G.teams[0];
-    restart(t, clamp(b.x, -HL + 1.5, HL - 1.5), sgn(b.z) * (HW - .5), 'Rimessa laterale');
+    restart(t, clamp(b.x, -HL + 1.5, HL - 1.5), sgn(b.z) * (HW - .5), 'laterale');
   }
 }
 /** Dove si mette chi batte: sulla linea laterale col pallone in mano per la rimessa, appena dietro il pallone per il resto. */
 function postoBattitore(k, b, oltre = 0) { return G.rimessa && G.rimessa.chi === k ? [b.x, sgn(b.z) * (RIMESSA.linea + oltre)] : [b.x - k.team.side * (.5 + oltre), b.z]; }
-function restart(team, x, z, label, taker) {
+// tipo: il codice della palla ferma (fondo, laterale, angolo, rigore, punizione, fuorigioco, oppure niente). La scritta che
+// si legge sotto il tabellone è in src/testi.js ('partita.fermo')
+function restart(team, x, z, tipo, taker) {
   const b = G.ball; b.owner = null; b.x = x; b.z = z; b.y = BR; b.vx = b.vy = b.vz = 0; b.c = b.t = 0; G.charge = -1;
   G.fk = null; G.wait = 1.1; G.offs = null; G.noOff = true; G.pen = false; G.penWait = 0; for (const p of all()) p.fkShot = p.cornerKick = false;
   aiSubs();
   G.next = team; G.poss = team; G.intended = null; G.taker = taker || nearestTo(team, x, z);
   if (team.human) setCtrl(G.taker); else setCtrl(nearestTo(G.teams[0], x, z));
-  setState('restart'); G.tipoFermo = label; const fi = { Punizione: 'fallo', Fuorigioco: 'fuorigioco' }[label]; if (fi) AU.fischio(fi); // rimesse, angoli e fondo: l'arbitro non fischia
-  G.rimessa = label === 'Rimessa laterale' && G.taker ? { chi: G.taker } : null;
+  setState('restart'); G.tipoFermo = tr('partita.fermo')[tipo] || ''; const fi = { punizione: 'fallo', fuorigioco: 'fuorigioco' }[tipo]; if (fi) AU.fischio(fi); // rimesse, angoli e fondo: l'arbitro non fischia
+  G.rimessa = tipo === 'laterale' && G.taker ? { chi: G.taker } : null;
   // rimessa laterale come Dream League: dissolvenza scura, a metà stacco della telecamera sul punto di battuta; i comandi
   // tornano dopo FERMI.comandi secondi, quando si può battere
   // dopo una grande occasione (parata, tiro deviato, palo, tiro fuori di poco): prima il replay breve, poi la palla ferma
@@ -2039,9 +2054,9 @@ function restart(team, x, z, label, taker) {
   if (G.rimessa) { G.wait = Math.max(G.wait, FERMI.comandi); if (!G.auto && !replay) { buio(); G.buioT = G.t + FERMI.buio / 2; } }
 }
 // Punizione per `team`. Se è a tiro dalla porta, tre avversari fanno barriera e chi calcia (se lo guida l'IA) tira in porta
-function freeKick(team, x, z, label, skip) {
+function freeKick(team, x, z, tipo, skip) {
   x = clamp(x, -HL + 1, HL - 1); z = clamp(z, -HW + 1, HW - 1);
-  restart(team, x, z, label, nearestTo(team, x, z, skip)); G.noOff = false; G.wait = 1.9;
+  restart(team, x, z, tipo, nearestTo(team, x, z, skip)); G.noOff = false; G.wait = 1.9;
   const s = team.side, gx = s * HL, dG = hyp(gx - x, z), fk = G.fk = { wall: null, direct: false };
   if (dG < 31 && dG > FOUL.wall + 4 && Math.abs(z) < 23) {
     const ux = (gx - x) / dG, uz = -z / dG, cx = x + ux * FOUL.wall, cz = z + uz * FOUL.wall;
@@ -2051,7 +2066,7 @@ function freeKick(team, x, z, label, skip) {
 }
 // Calcio d'angolo: quattro o cinque attaccanti in area (primo palo, dischetto, secondo palo, limite), ognuno con un marcatore
 function corner(team, x, z) {
-  restart(team, x, z, "Calcio d'angolo"); G.wait = 2.5; G.stats.corners[team.idx]++;
+  restart(team, x, z, 'angolo'); G.wait = 2.5; G.stats.corners[team.idx]++;
   const s = team.side, e = sgn(z), pos = new Map(), slots = [[5.5, 3.2], [10.5, -.5], [7, -5.5], [13, 4], [18.5, -2]];
   const quanti = rnd() < .5 ? AREA_IA.angolo[0] : AREA_IA.angolo[1]; // 4 o 5 attaccanti in area
   const att = team.players.filter((p) => p.i && p !== G.taker).sort((a, c) => team.form[c.i][0] - team.form[a.i][0]).slice(0, quanti);
@@ -2070,8 +2085,8 @@ function penSpot(p) { // dove sta ciascuno durante un rigore
 }
 function penalty(team) {
   let k = null; for (const p of team.players) if (p.i && (!k || p.q > k.q)) k = p;
-  restart(team, team.side * (HL - 11), 0, 'Rigore', k); G.noOff = false; G.wait = 2.3; G.fk = { pen: true }; G.stats.pens[team.idx]++;
-  banner('Rigore!', team.club.name, 1900); AU.fischio('rigore');
+  restart(team, team.side * (HL - 11), 0, 'rigore', k); G.noOff = false; G.wait = 2.3; G.fk = { pen: true }; G.stats.pens[team.idx]++;
+  banner(tr('partita.rigore'), team.club.name, 1900); AU.fischio('rigore');
 }
 function card(p, red) {
   const t = p.team; G.cards.push({ t: t.idx, name: p.name, min: minute(), c: red ? 'r' : 'g' }); G.stats[red ? 'red' : 'yel'][t.idx]++;
@@ -2099,25 +2114,25 @@ function foul(d, own, sliding, behind, grave = false) {
   if (!sliding && !inBox && c !== 'r' && b.owner === own && x * s > -20 && rnd() < FOUL.adv && !d.team.players.some((o) => o !== d && o.i && hyp(o.x - x, o.z - z) < 3.5)) {
     G.stats.adv[t.idx]++; d.stun = .9; d.cool = 1.3; own.shield = 1;
     if (c) card(d, false);
-    return banner('', c ? `Vantaggio · ammonito ${d.name}` : 'Vantaggio', 1300, c);
+    return banner('', c ? tr('partita.vantaggioAmmonito', d.name) : tr('partita.vantaggio'), 1300, c);
   }
   b.owner = null; G.lastPass = null;
   own.stun = sliding ? DOWN.fall : .5; own.cool = Math.max(.8, own.stun); if (sliding) { own.fallen = true; cade(own, d); }
   const male = own.i !== 0 && !own.inj && t.bench.length > 0 && rnd() < FOUL.inj[sliding ? 1 : 0]; if (male) { own.inj = true; G.stats.inj[t.idx]++; } // infortunio: resta in campo ma va piano; solo se c'è una panchina da cui sostituire
-  if (inBox) penalty(t); else freeKick(t, x, z, 'Punizione', sliding || male ? own : null);
-  if (male && !c) { banner(inBox ? 'Rigore!' : '', `Infortunio · ${own.name}`, 2300); G.wait += .6; }
-  if (c) { card(d, c === 'r'); banner(c === 'r' ? 'Espulso!' : (inBox ? 'Rigore!' : ''), `${c === 'r' ? 'Cartellino rosso' : 'Ammonito'} · ${d.name}`, 2300, c); G.wait += .8; }
+  if (inBox) penalty(t); else freeKick(t, x, z, 'punizione', sliding || male ? own : null);
+  if (male && !c) { banner(inBox ? tr('partita.rigore') : '', tr('partita.infortunio', own.name), 2300); G.wait += .6; }
+  if (c) { card(d, c === 'r'); banner(c === 'r' ? tr('partita.espulso') : (inBox ? tr('partita.rigore') : ''), tr(c === 'r' ? 'partita.rosso' : 'partita.ammonito', d.name), 2300, c); G.wait += .8; }
   // dopo un'espulsione barriera e battitore vanno riscelti senza di lui
-  if (c === 'r' && !inBox) { freeKick(t, x, z, '', sliding ? own : null); G.wait += .8; banner('Espulso!', `Cartellino rosso · ${d.name}`, 2300, 'r'); }
+  if (c === 'r' && !inBox) { freeKick(t, x, z, '', sliding ? own : null); G.wait += .8; banner(tr('partita.espulso'), tr('partita.rosso', d.name), 2300, 'r'); }
 }
 /* ------------------------------------------------------------------ calci di rigore dopo una partita di coppa finita in parità */
 // Cinque a testa, poi a oltranza. Ognuno tira nella porta verso cui attaccava. Tira chi vale di più, a turno.
 function startShootout() {
   G.so = { g: [0, 0], n: [0, 0], seq: [[], []], turn: 0, fase: 'pausa', t: 1.9, fine: false, k: null, gk: null, calciato: false };
   G.charge = -1; G.offs = null; G.penWait = 0; for (const p of all()) { p.run = p.mark = null; p.fkShot = p.cornerKick = false; }
-  $('#hud').classList.add('rigori'); soHud(); banner('Calci di rigore', '', 1700); AU.fischio('intervallo');
+  $('#hud').classList.add('rigori'); soHud(); banner(tr('partita.calciDiRigore'), '', 1700); AU.fischio('intervallo');
 }
-function soHud() { const so = G.so, d = (i) => so.seq[i].slice(-5).map((v) => (v ? '●' : '○')).join(''); $('#rig').textContent = `${d(0)}  Rigori ${so.g[0]} - ${so.g[1]}  ${d(1)}`; }
+function soHud() { const so = G.so, d = (i) => so.seq[i].slice(-5).map((v) => (v ? '●' : '○')).join(''); $('#rig').textContent = tr('partita.rigoriHud', d(0), so.g[0], so.g[1], d(1)); }
 function soKick() {
   const so = G.so, t = G.teams[so.turn], ord = t.players.filter((p) => p.i).sort((a, c) => c.q - a.q), k = ord[so.n[so.turn] % ord.length];
   restart(t, t.side * (HL - 11), 0, '', k); G.noOff = false; G.wait = 1.4; G.fk = { pen: true };
@@ -2128,14 +2143,14 @@ function soEsito(gol) {
   so.n[i]++; so.seq[i].push(gol); if (gol) so.g[i]++; so.fase = 'pausa'; so.t = 1.5; so.turn = 1 - i; G.charge = -1; G.penWait = 0;
   const [a, c] = so.g, ra = Math.max(0, 5 - so.n[0]), rc = Math.max(0, 5 - so.n[1]);
   so.fine = so.n[0] >= 5 && so.n[1] >= 5 ? so.n[0] === so.n[1] && a !== c : a > c + rc || c > a + ra; // nei primi cinque finisce quando uno non può più essere raggiunto
-  banner(gol ? 'Gol!' : G.lastTouch === so.gk ? 'Parato!' : 'Fuori!', `${so.k.name} · rigori ${a} - ${c}`, 1400); if (gol) { AU.boato(); AU.rete(); } else AU.ooh(.9); soHud();
+  banner(tr(gol ? 'partita.gol' : G.lastTouch === so.gk ? 'partita.parato' : 'partita.fuori'), tr('partita.rigoriTiro', so.k.name, a, c), 1400); if (gol) { AU.boato(); AU.rete(); } else AU.ooh(.9); soHud();
 }
 function soStep(dt) {
   const so = G.so, b = G.ball;
   if (so.fase === 'pausa') {
     so.t -= dt; if (so.t > 0) return;
     if (!so.fine) return soKick();
-    G.soRes = so.g.slice(); G.so = null; $('#hud').classList.remove('rigori'); setState('full'); banner('Fine partita', `Rigori ${G.soRes[0]} - ${G.soRes[1]}`, 1800); AU.fischio('fine'); return;
+    G.soRes = so.g.slice(); G.so = null; $('#hud').classList.remove('rigori'); setState('full'); banner(tr('partita.fine'), tr('partita.rigoriFine', G.soRes[0], G.soRes[1]), 1800); AU.fischio('fine'); return;
   }
   if (!so.calciato) { if (b.owner !== so.k) so.calciato = true; return; }
   so.t += dt;
@@ -2146,15 +2161,16 @@ function goal(team) {
   team.score++; const lt = G.lastTouch; let k = G.lastKicker; if (!k || k.team !== team) k = lt && lt.team === team ? lt : null;
   const own = !k; G.scorer = own ? nearestTo(team, G.ball.x, G.ball.z) : k;
   const min = minute();
-  const name = own ? `Autogol${lt ? ' (' + lt.name + ')' : ''}` : k.name;
+  const name = own ? tr('partita.autogol', lt ? lt.name : '') : k.name;
   if (!own && G.headId === G.shotId && G.lastKicker === k) G.stats.headGoals[team.idx]++;
   if (own) { if (lt) lt.s.og++; } else { k.s.g++; if (G.shooter === k) { k.s.sot++; G.shooter = null; } if (k.by && k.by.team === team) k.by.s.a++; }
-  // per l'esito del ponte: chi ha segnato, chi gli ha dato la palla e come (rigore, punizione, testa, azione, autogol)
+  // auto: è un autogol (name è la scritta da mostrare). Per l'esito del ponte: chi ha segnato (o chi ha fatto l'autogol), chi
+  // gli ha dato la palla e come (rigore, punizione, testa, azione, autogol)
   const tipo = own ? 'autogol' : G.penId === G.shotId ? 'rigore' : G.fkId === G.shotId ? 'punizione' : G.headId === G.shotId && G.lastKicker === k ? 'testa' : 'azione';
-  G.goals.push({ t: team.idx, name, min, chi: own ? lt : k, assist: !own && k.by && k.by.team === team ? k.by : null, tipo }); G.next = team.opp; G.charge = -1;
+  G.goals.push({ t: team.idx, name, min, auto: own, chi: own ? lt : k, assist: !own && k.by && k.by.team === team ? k.by : null, tipo }); G.next = team.opp; G.charge = -1;
   for (const p of team.players) if (p.i) { p.st = 'run'; }
   // con la regia niente scritta al centro: tabelloni e primo piano (Dream League)
-  setState('goal'); if (!MODEL || G.noRegia) banner('Gol!', `${name} ${min}' · ${team.club.name}`, 3400); AU.boato(); AU.rete(hyp(G.ball.vx, G.ball.vz)); setTimeout(() => AU.fischio('gol'), 450); hud();
+  setState('goal'); if (!MODEL || G.noRegia) banner(tr('partita.gol'), tr('partita.golDi', name, min, team.club.name), 3400); AU.boato(); AU.rete(hyp(G.ball.vx, G.ball.vz)); setTimeout(() => AU.fischio('gol'), 450); hud();
 }
 
 /* ------------------------------------------------------------------ animazione delle figure */
@@ -2408,7 +2424,7 @@ function hud() {
   if (G.ctrl !== lastChi) { lastChi = G.ctrl; $('#chi').innerHTML = G.ctrl ? `<i>${G.ctrl.num}</i>${G.ctrl.name.replace(/[<>&]/g, '')}` : ''; }
   // le scritte dei tre tasti cambiano col possesso (A tiro o scivolata, B passaggio o pressing, C lancio o cambio)
   const att = modoAttacco();
-  if (att !== lastAtt) { lastAtt = att; $('#bA textPath').textContent = att ? 'Calcio basso' : 'Pressing'; $('#bD textPath').textContent = att ? 'Calcio alto' : 'Cambia giocatore'; $('#bD .nome').style.fontSize = att ? '' : '9.5px'; $('#hud').classList.toggle('difesa', !att); }
+  if (att !== lastAtt) { lastAtt = att; $('#bA textPath').textContent = tr(att ? 'tasti.calcioBasso' : 'tasti.pressing'); $('#bD textPath').textContent = tr(att ? 'tasti.calcioAlto' : 'tasti.cambia'); $('#bD .nome').style.fontSize = att ? '' : '9.5px'; $('#hud').classList.toggle('difesa', !att); }
   if (G.ctrl) $('#en').firstElementChild.style.width = `${G.ctrl.en * 100}%`;
   // palle ferme: la scritta col tipo sotto il tabellone, comandi nascosti (tornano quando si può battere). Sui calci piazzati le
   // tre icone in alto a destra (per ora solo lo spazio)
@@ -2441,17 +2457,22 @@ const AU = creaAudio();
 function bindInput() {
   // levetta a base fissa (come Dream League): il centro è quello del cerchio disegnato, ovunque si tocchi la metà sinistra
   const zona = $('#stickZona'), stick = $('#stick'), knob = stick.firstElementChild; let sid = null, ox = 0, oy = 0; const R = LEVETTA.raggio;
-  const loc = (e) => (G.rot ? [e.clientY, window.innerWidth - e.clientX] : [e.clientX, e.clientY]); // dal tocco sullo schermo al punto nel gioco
   const centro = () => { ox = zona.offsetLeft + stick.offsetLeft + stick.offsetWidth / 2; oy = zona.offsetTop + stick.offsetTop + stick.offsetHeight / 2; };
   const muovi = (e) => {
-    const q = loc(e); let dx = q[0] - ox, dy = q[1] - oy; const l = hyp(dx, dy);
+    let dx = e.clientX - ox, dy = e.clientY - oy; const l = hyp(dx, dy);
     if (l > R) { dx *= R / l; dy *= R / l; } G.in.jx = dx / R; G.in.jy = dy / R; knob.style.transform = `translate(${dx}px,${dy}px)`;
     stick.classList.toggle('scatto', hyp(dx, dy) >= R * LEVETTA.scatto);
   };
-  zona.addEventListener('pointerdown', (e) => { if (sid !== null) return; sid = e.pointerId; zona.setPointerCapture(sid); centro(); muovi(e); e.preventDefault(); });
+  const molla = () => { sid = null; G.in.jx = G.in.jy = 0; knob.style.transform = ''; stick.classList.remove('scatto'); };
+  // Un dito alla volta comanda la levetta. Se il dito di prima è sparito senza avvisare (scivolato oltre il bordo, gesto di
+  // sistema) quello nuovo prende il suo posto: prima il pomello restava spinto di lato, come un secondo cerchio sul bordo.
+  zona.addEventListener('pointerdown', (e) => { if (sid !== null && sid !== e.pointerId) molla(); sid = e.pointerId; try { zona.setPointerCapture(sid); } catch (err) { /* il dito è già andato via */ } centro(); muovi(e); e.preventDefault(); });
   zona.addEventListener('pointermove', (e) => { if (e.pointerId === sid) muovi(e); });
-  const end = (e) => { if (e.pointerId !== sid) return; sid = null; G.in.jx = G.in.jy = 0; knob.style.transform = ''; stick.classList.remove('scatto'); };
-  zona.addEventListener('pointerup', end); zona.addEventListener('pointercancel', end);
+  const end = (e) => { if (e.pointerId === sid) molla(); };
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) zona.addEventListener(ev, end);
+  // senza più dita sullo schermo, o tornando da un'altra app, la levetta torna sempre al centro
+  window.addEventListener('touchend', (e) => { if (sid !== null && !e.touches.length) molla(); }); window.addEventListener('touchcancel', molla);
+  window.addEventListener('blur', molla); document.addEventListener('visibilitychange', () => { if (document.hidden) molla(); });
   const btn = (id, down, up) => {
     const el = $(id);
     el.addEventListener('pointerdown', (e) => { e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('giu'); down(); });
@@ -2478,10 +2499,10 @@ function bindInput() {
 // Pulsanti a scelta singola per modulo e mentalità: gli stessi prima della partita e in pausa
 function tactics() {
   const forms = Object.keys(FORMS).map((n) => `<button data-f="${n}" class="${n === sel.form ? 'on' : ''}">${n}</button>`).join('');
-  const ments = MENT.names.map((n, k) => `<button data-m="${k - 1}" class="${k - 1 === sel.ment ? 'on' : ''}">${n}</button>`).join('');
+  const ments = tr('mentalita.nomi').map((n, k) => `<button data-m="${k - 1}" class="${k - 1 === sel.ment ? 'on' : ''}">${n}</button>`).join('');
   for (const id of ['#segForm', '#segFormP']) $(id).innerHTML = forms; for (const id of ['#segMent', '#segMentP']) $(id).innerHTML = ments;
-  $('#segOra').innerHTML = [['giorno', '☀ Giorno'], ['notte', '☾ Notte']].map(([k, n]) => `<button data-o="${k}" class="${k === sel.ora ? 'on' : ''}">${n}</button>`).join(''); if (ATMO) ATMO.applica(sel.ora);
-  $('#ment span').textContent = MENT.hud[sel.ment + 1]; save();
+  $('#segOra').innerHTML = Object.entries(tr('tattica.ora')).map(([k, n]) => `<button data-o="${k}" class="${k === sel.ora ? 'on' : ''}">${n}</button>`).join(''); if (ATMO) ATMO.applica(sel.ora);
+  $('#ment span').textContent = tr('mentalita.hud')[sel.ment + 1]; save();
   const t = G.teams[0]; if (t && t.human) setTactics(t, sel.form, sel.ment);
   if (!$('#pre').classList.contains('nas')) showPre();
 }
@@ -2562,17 +2583,17 @@ let cOut = null, cIn = -1;
 // L'energia non si vede durante il gioco (come Dream League): sta qui, una barretta per giocatore (in panchina sono freschi)
 const barraEn = (en) => `<s class="enb" data-l="${en < .4 ? 'b' : en < .7 ? 'm' : 'a'}"><i style="width:${Math.round(clamp(en, 0, 1) * 100)}%"></i></s>`;
 function drawCambi(msg) {
-  const t = G.teams[0], fuori = (p) => `${p.inj ? ' <u class="inf">infortunato</u>' : ''}${p.yel ? ' <i class="g"></i>' : ''}`;
-  $('#cambiT').textContent = `Sostituzioni · ${t.subs} di ${SUB.max}`; $('#cambiM').textContent = msg || (t.subs >= SUB.max ? 'Cambi finiti' : 'Tocca chi esce e chi entra');
-  $('#cambiL').innerHTML = `<div><h4>In campo</h4>${t.players.map((p, k) => `<button class="gioc${cOut === p ? ' sel' : ''}" data-o="${k}"><b>${p.num} ${esc(p.name)}</b><span>${RUOLO[p.role]}${fuori(p)}</span><em>${Math.round(p.en * 100)}%</em>${barraEn(p.en)}</button>`).join('')}</div>`
-    + `<div><h4>Panchina</h4>${t.bench.map((b, k) => `<button class="gioc${cIn === k ? ' sel' : ''}" data-b="${k}" ${b.used ? 'disabled' : ''}><b>${b.num} ${esc(b.name)}</b><span>${RUOLO[b.role]}${b.used ? ' · già entrato' : ''}</span><em>${ovr(b.role, b.q)}</em>${barraEn(1)}</button>`).join('')}</div>`;
+  const t = G.teams[0], fuori = (p) => `${p.inj ? ` <u class="inf">${tr('cambi.infortunato')}</u>` : ''}${p.yel ? ' <i class="g"></i>' : ''}`;
+  $('#cambiT').textContent = tr('cambi.titolo', t.subs, SUB.max); $('#cambiM').textContent = msg || tr(t.subs >= SUB.max ? 'cambi.finiti' : 'cambi.tocca');
+  $('#cambiL').innerHTML = `<div><h4>${tr('cambi.inCampo')}</h4>${t.players.map((p, k) => `<button class="gioc${cOut === p ? ' sel' : ''}" data-o="${k}"><b>${p.num} ${esc(p.name)}</b><span>${ruolo(p.role)}${fuori(p)}</span><em>${Math.round(p.en * 100)}%</em>${barraEn(p.en)}</button>`).join('')}</div>`
+    + `<div><h4>${tr('cambi.panchina')}</h4>${t.bench.map((b, k) => `<button class="gioc${cIn === k ? ' sel' : ''}" data-b="${k}" ${b.used ? 'disabled' : ''}><b>${b.num} ${esc(b.name)}</b><span>${ruolo(b.role)}${b.used ? ` · ${tr('cambi.giaEntrato')}` : ''}</span><em>${ovr(b.role, b.q)}</em>${barraEn(1)}</button>`).join('')}</div>`;
 }
 function tapCambi(e) {
   const b = e.target.closest('button'), t = G.teams[0]; if (!b) return;
   if (b.dataset.o) cOut = t.players[+b.dataset.o]; else if (b.dataset.b) cIn = +b.dataset.b; else return;
   if (!cOut || cIn < 0) return drawCambi();
   const esce = cOut, p = sostituisci(t, esce, cIn), ruoli = (esce.i === 0) !== (t.bench[cIn].role === 'P'); cOut = null; cIn = -1;
-  drawCambi(p ? `Entra ${p.name}, esce ${esce.name}` : ruoli ? 'Il portiere si cambia solo con un portiere' : 'Cambio non possibile'); hud();
+  drawCambi(p ? tr('cambi.fatto', p.name, esce.name) : tr(ruoli ? 'cambi.portiere' : 'cambi.no')); hud();
 }
 function pause(v) { if (G.state === 'menu' || G.state === 'full') return; G.paused = v; show(v ? '#stop' : null); AU.pausa(v); $('#apriCambi').classList.toggle('nas', !G.teams[0] || !!G.so); } // sempre: lì si vede anche l'energia
 function toMenu() { G.state = 'menu'; clearMatch(); G.ball = null; G.ctrl = null; ballMesh.visible = ballShadow.visible = ring.visible = arrow.visible = freccia.visible = false; $('#hud').classList.add('nas'); casa(); AU.amb(0); AU.pausa(false); AU.musica(true); }
@@ -2585,31 +2606,31 @@ function vote(p) {
 }
 function showEnd() {
   const [h, a] = G.teams, w = h.score > a.score, l = h.score < a.score;
-  $('#esito').textContent = w ? 'Vittoria!' : l ? 'Sconfitta' : 'Pareggio';
+  $('#esito').textContent = tr(w ? 'fine.vittoria' : l ? 'fine.sconfitta' : 'fine.pareggio');
   $('#fH').src = img(h.club.id); $('#fA').src = img(a.club.id); $('#fS').textContent = `${h.score} - ${a.score}`;
   const c = G.comp, carr = !!(K && c && ['camp', 'coppa', 'castelli'].includes(c.tipo)); let nota = '';
   if (carr) { // carriera: si registra il risultato e si simulano le altre partite
-    const marc = G.goals.filter((g) => g.t === 0 && !g.name.startsWith('Autogol')).map((g) => g.name);
-    if (c.tipo === 'camp') { const r = CAR.giocaCampionato(K, CLUBS, h.score, a.score, marc); G.premio = r ? r.monete : 0; if (r) nota = r.finita ? (r.campione === K.club ? 'Campioni!' : `Stagione finita · ${r.posizione}º posto`) : `Campionato · ora sei ${r.posizione}º`; }
+    const marc = G.goals.filter((g) => g.t === 0 && !g.auto).map((g) => g.name);
+    if (c.tipo === 'camp') { const r = CAR.giocaCampionato(K, CLUBS, h.score, a.score, marc); G.premio = r ? r.monete : 0; if (r) nota = r.finita ? (r.campione === K.club ? tr('fine.campioni') : tr('fine.stagioneFinita', r.posizione)) : tr('fine.campionatoOra', r.posizione); }
     else {
-      const ko = (r, nome) => { if (r.rigori) { $('#esito').textContent = r.passa ? 'Avanti ai rigori!' : 'Fuori ai rigori'; $('#fS').textContent = `${h.score} - ${a.score} (${r.rigori[0]}-${r.rigori[1]} rig.)`; } return r.vinta ? `${nome}: è tuo!` : r.passa ? `${nome} · ${r.turno.toLowerCase()} superato` : `${nome} · eliminato: ${r.turno.toLowerCase()}`; };
-      if (c.tipo === 'coppa') { const r = CAR.giocaCoppa(K, CLUBS, h.score, a.score, marc, Math.random, G.soRes); G.premio = r ? r.monete : 0; if (r) nota = ko(r, 'Coppa Titano'); }
-      else { const r = CAR.giocaCastelli(K, CLUBS, h.score, a.score, marc, Math.random, G.soRes); G.premio = r ? r.monete : 0; if (r) nota = r.fase === 'gironi' ? `Trofeo dei Castelli · ${r.posizione}º nel girone${r.finiti ? (r.passa ? ': ai quarti!' : ': eliminato') : ''}` : ko(r, 'Trofeo dei Castelli'); }
+      const ko = (r, nome) => { if (r.rigori) { $('#esito').textContent = tr(r.passa ? 'fine.avantiRigori' : 'fine.fuoriRigori'); $('#fS').textContent = `${h.score} - ${a.score} ${tr('comune.rigori', r.rigori[0], r.rigori[1])}`; } return r.vinta ? tr('fine.tuo', nome) : tr(r.passa ? 'fine.superato' : 'fine.eliminato', nome, r.turno.toLowerCase()); };
+      if (c.tipo === 'coppa') { const r = CAR.giocaCoppa(K, CLUBS, h.score, a.score, marc, Math.random, G.soRes); G.premio = r ? r.monete : 0; if (r) nota = ko(r, tr('gare.coppa')); }
+      else { const r = CAR.giocaCastelli(K, CLUBS, h.score, a.score, marc, Math.random, G.soRes); G.premio = r ? r.monete : 0; if (r) nota = r.fase === 'gironi' ? `${tr('fine.girone', r.posizione)}${r.finiti ? tr(r.passa ? 'fine.gironeAiQuarti' : 'fine.gironeEliminato') : ''}` : ko(r, tr('gare.castelli')); }
     }
     salvaK(); G.comp = null;
   }
-  if (carr && G.premio) nota += ` · +${mon(G.premio)} monete`;
+  if (carr && G.premio) nota += ` · ${tr('comune.piuMonete', mon(G.premio))}`;
   // dal ponte si esce solo con «Continua»: è lì che l'esito torna alla home
   const esce = carr || !!G.ponte; $('#esitoC').textContent = nota; $('#continua').classList.toggle('nas', !esce); $('#rivincita').classList.toggle('nas', esce); $('#cambia').classList.toggle('nas', esce);
   $('#marc').textContent = G.goals.map((g) => `${g.name} ${g.min}' (${G.teams[g.t].club.short})`).join(' · ');
   const tot = G.stats.poss[0] + G.stats.poss[1] || 1, ph = Math.round(G.stats.poss[0] / tot * 100);
   $('#cart').innerHTML = G.cards.map((c) => `<span><i class="${c.c}"></i>${c.name.replace(/[<>&]/g, '')} ${c.min}' (${G.teams[c.t].club.short})</span>`).join('');
   $('#flH').textContent = G.stats.fouls[0]; $('#flA').textContent = G.stats.fouls[1]; $('#fgH').textContent = G.stats.offs[0]; $('#fgA').textContent = G.stats.offs[1];
-  const esc = (n) => n.replace(/[<>&]/g, ''), fmt = (v) => String(v).replace('.', ',');
+  const esc = (n) => n.replace(/[<>&]/g, ''), fmt = (v) => String(v).replace('.', tr('formato.decimale'));
   const rows = G.teams.map((t) => t.players.concat(t.off, t.out).sort((p, q) => p.i - q.i).map((p) => ({ p, v: vote(p) })));
   const best = rows.flat().sort((x, y) => y.v - x.v || y.p.s.g - x.p.s.g || y.p.s.a - x.p.s.a)[0];
-  $('#mvp').innerHTML = `Migliore in campo <b>${esc(best.p.name)}</b> (${best.p.team.club.short}) <b>${fmt(best.v)}</b>`;
-  $('#pagL').innerHTML = rows.map((r, k) => `<div><h4>${G.teams[k].club.short}</h4>${r.map(({ p, v }) => `<p><b>${fmt(v)}</b> ${esc(p.name)}${p.s.g ? ` <u>${p.s.g > 1 ? p.s.g + ' gol' : 'gol'}</u>` : ''}${p.s.a ? ' <u>assist</u>' : ''}${p.red ? '<i class="r"></i>' : p.yel ? '<i class="g"></i>' : ''}</p>`).join('')}</div>`).join('');
+  $('#mvp').innerHTML = `${tr('fine.migliore')} <b>${esc(best.p.name)}</b> (${best.p.team.club.short}) <b>${fmt(best.v)}</b>`;
+  $('#pagL').innerHTML = rows.map((r, k) => `<div><h4>${G.teams[k].club.short}</h4>${r.map(({ p, v }) => `<p><b>${fmt(v)}</b> ${esc(p.name)}${p.s.g ? ` <u>${p.s.g > 1 ? tr('fine.nGol', p.s.g) : tr('fine.gol')}</u>` : ''}${p.s.a ? ` <u>${tr('fine.assist')}</u>` : ''}${p.red ? '<i class="r"></i>' : p.yel ? '<i class="g"></i>' : ''}</p>`).join('')}</div>`).join('');
   $('#tH').textContent = G.stats.shots[0]; $('#tA').textContent = G.stats.shots[1]; $('#pH').textContent = `${ph}%`; $('#pA').textContent = `${100 - ph}%`;
   $('#fTito').src = img(w ? 'saluta' : l ? 'braccia' : 'indica');
   $('#hud').classList.add('nas'); show('#fine'); AU.amb(0); AU.pausa(false); AU.musica(true); // fine partita: torna la musica
@@ -2617,14 +2638,29 @@ function showEnd() {
 
 /* ------------------------------------------------------------------ avvio */
 // Solo orizzontale: se lo schermo è in verticale (anche col blocco della rotazione) il gioco si disegna ruotato di lato
+// Solo orizzontale, senza girare il gioco a forza: col telefono in verticale compare «Ruota il telefono» (#ruota) e la
+// partita si ferma. Su iOS l'orientamento del manifest non vale e girando il gioco via CSS barra di stato e tastiera
+// restavano in verticale. Su un computer la finestra stretta resta com'è (non c'è niente da girare).
 function resize() {
-  const iw = window.innerWidth, ih = window.innerHeight, rot = ih > iw, w = rot ? ih : iw, h = rot ? iw : ih, root = document.documentElement, st = document.body.style;
-  G.rot = rot; st.width = `${w}px`; st.height = `${h}px`; st.left = rot ? `${iw}px` : '0'; st.transform = rot ? 'rotate(90deg)' : 'none';
-  root.style.setProperty('--vw', `${w / 100}px`); root.style.setProperty('--vh', `${h / 100}px`);
+  const iw = window.innerWidth, ih = window.innerHeight, root = document.documentElement, st = document.body.style;
+  const verticale = ih > iw && matchMedia('(pointer: coarse)').matches;
+  root.classList.toggle('verticale', verticale); if (verticale && G.state !== 'menu' && G.state !== 'full' && !G.paused && !G.auto) pause(true);
+  st.width = `${iw}px`; st.height = `${ih}px`;
+  root.style.setProperty('--vw', `${iw / 100}px`); root.style.setProperty('--vh', `${ih / 100}px`);
   // la dashboard è disegnata per un telefono in orizzontale (circa 430 px di altezza): sugli schermi più alti si ingrandisce tutta
-  root.style.setProperty('--zh', String(clamp(Math.min(h / 420, w / 880), 1, 1.8)));
-  root.classList.toggle('rot', rot); root.classList.toggle('largo', w / h >= 1.3); root.classList.toggle('basso', h <= 480); root.classList.toggle('bassissimo', h <= 430);
-  renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+  root.style.setProperty('--zh', String(clamp(Math.min(ih / 420, iw / 880), 1, 1.8)));
+  root.classList.toggle('largo', iw / ih >= 1.3); root.classList.toggle('basso', ih <= 480); root.classList.toggle('bassissimo', ih <= 430);
+  renderer.setSize(iw, ih, false); cam.aspect = iw / ih; cam.updateProjectionMatrix();
+}
+// Tastiera a schermo: --tast è lo spazio che copre in basso (da visualViewport). Le schermate finiscono sopra la tastiera
+// e il campo che si sta scrivendo viene portato in vista, così né lui né il pulsante sotto restano coperti.
+function tastiera() {
+  const vv = window.visualViewport; if (!vv) return;
+  const coperto = Math.max(0, window.innerHeight - vv.height - vv.offsetTop), aperta = coperto > 60;
+  document.documentElement.style.setProperty('--tast', `${aperta ? Math.round(coperto) : 0}px`);
+  if (!aperta) return;
+  window.scrollTo(0, 0); const a = document.activeElement;
+  if (a && /^(INPUT|TEXTAREA)$/.test(a.tagName)) a.scrollIntoView({ block: 'center' });
 }
 const CREST = {};
 function loadImg(src) { return new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
@@ -2670,6 +2706,8 @@ function loop(ts) {
 }
 async function boot() {
   resize(); window.addEventListener('resize', resize);
+  if (window.visualViewport) { window.visualViewport.addEventListener('resize', tastiera); window.visualViewport.addEventListener('scroll', tastiera); }
+  document.addEventListener('focusin', () => setTimeout(tastiera, 300)); document.addEventListener('focusout', () => setTimeout(tastiera, 100));
   await Promise.all([buildPitch(), loadModel()]); // il campo carica le sue texture mentre arriva il modello
   try { await Promise.race([document.fonts.load('40px Anton'), new Promise((r) => setTimeout(r, 2500))]); } catch (e) { /* si disegna col font di sistema */ }
   const lock = await loadImg('img/corona-lime.png');
@@ -2685,5 +2723,5 @@ async function boot() {
 }
 // quello che la home (src/casa/casa.js) prende da qui
 export { aiForm, $, rnd, clamp, hash, IMGX, img, G, renderer, cv, SCARPE_NEGOZIO, stemmi3d, makeSkinned, FIGURE, formaMaglia, pickKits, PALLONI, kitsFor, AU, tactics, club, chiudiPonte, startMatch, toMenu, CREST, loadImg, MODEL };
-window.__g = { prova, avviaPartita, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { prova, avviaPartita, hud, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
