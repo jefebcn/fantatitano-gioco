@@ -288,3 +288,11 @@ Il codice del saldo è tuo (`src/carriera.js`, `src/casa/`), quindi la proposta 
 
 Dalla partita non serve niente: l'esito del ponte ha già `secondiVeri`, che il server usa per accettare il premio.
 
+
+## 10. Nota per la sessione della home: il logo
+
+Alex ha deciso il 21/11: il logo è **solo la corona gialla su fondo nero, senza scritte**. Nel progetto resta un file
+solo, `public/img/logo-fantatitano.png` (stesso nome di prima, quindi `src/casa/casa.html` non è stato toccato): ora
+contiene la corona da sola su trasparente, 600 × 521. Il file con le scritte (`corona-lime.png`) non c'è più. Se la home
+mostra il logo su uno sfondo chiaro, gli metta dietro il nero (`var(--ink)`). La riga 1 della tabella in
+`docs/home-spec.md` §«decisioni» («corona lime o viola») è da segnare come decisa.

@@ -108,12 +108,12 @@ let RESA = null, PORTE = [], BANDIERINE = null, FARI = null, CAMPO = null, SFOND
 const PART = new Particelle(T, scene); // ciuffi d'erba e polvere: scivolate, frenate, tiri forti
 
 let boards = [], standMat = null, titoSprite = null;
-function buildStadium(lockup) {
+function buildStadium() {
   // spalti in cemento con scale, ringhiere, tunnel, striscioni, bandiere e la folla (src/grafica/spalti.js)
   SPALTI = creaSpalti(T, scene, { HL, HW, renderer }); BORDO = creaBordoCampo(T, scene, { HL, HW }); // e steward e fotografi a bordo campo (src/grafica/bordocampo.js)
   // cartelloni
   const [bc, bx] = cv(2048, 64);
-  const tex = ctex(bc); boards.tex = tex; boards.cv = bc; boards.ctx = bx; boards.lockup = lockup;
+  const tex = ctex(bc); boards.tex = tex; boards.cv = bc; boards.ctx = bx;
   const bm = new T.MeshBasicMaterial({ map: tex });
   const board = (len, px, pz, ry) => {
     const m = new T.Mesh(new T.PlaneGeometry(len, 1.05), bm.clone()); m.material.map = tex.clone(); m.material.map.needsUpdate = true;
@@ -2744,8 +2744,7 @@ async function boot() {
   document.addEventListener('focusin', () => setTimeout(tastiera, 300)); document.addEventListener('focusout', () => setTimeout(tastiera, 100));
   await Promise.all([buildPitch(), loadModel()]); // il campo carica le sue texture mentre arriva il modello
   try { await Promise.race([document.fonts.load('40px Anton'), new Promise((r) => setTimeout(r, 2500))]); } catch (e) { /* si disegna col font di sistema */ }
-  const lock = await loadImg('img/corona-lime.png');
-  buildStadium(lock); paintBoards(CLUBS[0], CLUBS[1], null);
+  buildStadium(); paintBoards(CLUBS[0], CLUBS[1], null);
   RESA = creaResa(T, { renderer, scene, cam, torri: FARI.luci.map((l) => l.pos) }); // riflessi, tonalità e alone (src/grafica/resa.js)
   ATMO = creaAtmosfera(T, { scene, hemi, sun, sole: SOLE, fari: FARI, sfondo: SFONDO, campo: CAMPO, tribune: SPALTI.materiali, resa: RESA }); ATMO.applica(sel.ora); // giorno o notte, scelto prima della partita
   { const m = /[?&]seme=(\d+)/.exec(location.search); if (m) prova(+m[1]); } // modalità di prova: partita ripetibile, audio spento

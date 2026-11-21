@@ -49,8 +49,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - C'era già tutto tranne due cose, aggiunte ora: la vista di controllo dell'IA (`?ia` o tasto O, `src/debug-ia.js`) e lo
   stacco col logo come fascia diagonale.
 - Diverso da DLS per scelta o in attesa di Alex: scritta «GOL!» (non «GOAL!») sui cartelloni; icone dei calci piazzati e
-  pulsante replay in alto a destra come segnaposto; clip Mixamo «mani in testa» e «indica» da ricevere; logo: usiamo
-  `img/corona-lime.png`, se Alex vuole la corona viola serve il file.
+  pulsante replay in alto a destra come segnaposto; clip Mixamo «mani in testa» e «indica» da ricevere.
+- Logo (deciso da Alex il 21/11): solo la corona gialla su fondo nero, senza scritte. Un file solo,
+  `public/img/logo-fantatitano.png` (corona su trasparente: il nero lo mette chi la mostra), più le due icone dell'app.
 - Da tarare giocando: gol tra computer (0,7-1 a partita), fuorigioco rari, conduzione a 4,5 m/s.
 - Prossimo: Fase 5, `docs/home-spec.md` da far approvare ad Alex prima di scrivere codice della home.
 
@@ -65,8 +66,7 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   (variabili su `.scr` in `src/pagina.html`); negozio a quattro schede con stemma a pezzi, disegni speciali, terza maglia,
   avatar, cornici, scarpini, pallone di casa, rinnovo del consigliato (`NEGOZIO` in `src/carriera.js`, prezzi in
   `ECONOMIA.negozio`, `panNegozio` in `src/game.js`); SQL nello schema separato `lapartita`, senza importazione dei saldi.
-- Resta: applicare l'SQL (progetto dell'app pubblicata: Alex vuole prima un backup, vedi `docs/home-spec.md` §8.1), logo
-  (lime o viola: decide Alex), esultanza del capitano (servono animazioni), immagine di sfondo.
+- Resta: applicare l'SQL (progetto dell'app pubblicata: Alex vuole prima un backup, vedi `docs/home-spec.md` §8.1), esultanza del capitano (servono animazioni), immagine di sfondo.
 - Testi della partita in un file solo — FATTO: `src/testi.js` (93 chiavi; in testa al file come si aggiunge l'inglese). Nel
   codice `tr('chiave')`, nella pagina `data-t`. La home ha i suoi in `src/casa/testi.js`, stessa forma: unirli è uno
   spostamento. Controllo: `node scripts/prove/testi.cjs chiavi` (in `npm run prova`), `salva` e `confronta` per le scritte.

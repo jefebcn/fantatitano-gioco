@@ -42,7 +42,7 @@ export function creaRegia(X) {
 #rep.su{opacity:1;pointer-events:auto}#rep::before{content:'⟲ '}
 #stacco{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:21}
 #stacco i{position:absolute;top:-10%;bottom:-10%;left:-45%;width:190%;display:flex;align-items:center;justify-content:center;transform:translateX(-125%) skewX(-18deg);
-  background:linear-gradient(90deg,var(--lime) 0 2.5%,var(--viola7) 2.5% 6%,var(--viola) 6% 94%,var(--viola7) 94% 97.5%,var(--lime) 97.5%)}
+  background:linear-gradient(90deg,var(--lime) 0 2.5%,var(--ink) 2.5% 97.5%,var(--lime) 97.5%)}
 #stacco img{height:30%;transform:skewX(18deg)}#stacco.va i{animation:stacco var(--d) linear both}
 @keyframes stacco{0%{transform:translateX(-125%) skewX(-18deg)}38%,62%{transform:translateX(0) skewX(-18deg)}100%{transform:translateX(125%) skewX(-18deg)}}
 #hud.cine #replay{display:none!important}`;
@@ -52,9 +52,9 @@ export function creaRegia(X) {
   const golc = el('golc', '<div class="sx"><img alt=""><b></b></div><div class="dx"><div class="r1"><span></span><i></i></div><div class="nm"></div><div class="as"></div><div class="cl"></div></div>');
   golc.querySelector('.r1 span').textContent = tr('regia.gol');
   const salta = el('salta', tr('regia.salta')), rep = el('rep', tr('regia.replay'));
-  // stacco col logo Fantatitano (replay, angoli dopo una grande occasione): una fascia diagonale viola col logo attraversa
+  // stacco col logo Fantatitano (replay, angoli dopo una grande occasione): una fascia diagonale nera con la corona gialla attraversa
   // lo schermo da sinistra a destra, e a metà corsa lo copre tutto (lì cambia l'inquadratura)
-  const stacco = el('stacco', '<i><img src="img/corona-lime.png" alt=""></i>');
+  const stacco = el('stacco', '<i><img src="img/logo-fantatitano.png" alt=""></i>');
   const staccoLogo = (d) => { stacco.style.setProperty('--d', `${d}s`); stacco.classList.remove('va'); void stacco.offsetWidth; stacco.classList.add('va'); };
   const esc = (s) => String(s).replace(/[<>&]/g, '');
 
