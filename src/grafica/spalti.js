@@ -13,6 +13,11 @@ const RIS = 'textures/stadium/';
 const hyp = Math.hypot;
 // gradoni: quante file, quanto profonda e quanto alta ogni fila, altezza del muretto davanti
 export const GRADONI = { file: 20, prof: 0.85, alt: 0.5, muro: 1.6, posto: 0.78, scale: 16 };
+// Lo stadio chiuso come in Dream League (una conca): i lati lunghi arrivano fino agli angoli (le curve ci si appoggiano,
+// niente buchi) e hanno un secondo anello (`sopra`: file, quota del muretto, quanto sta indietro rispetto al primo). Il tetto
+// è alla stessa quota su tutti e quattro i lati, arriva fino a `sporge` metri dal muretto (negativo: copre solo la parte
+// alta, come una pensilina), con travi a sbalzo ogni `trave` metri e i fari sul bordo
+export const CONCA = { sopra: { file: 14, y: 15, z: -13 }, tetto: { y: 29, sporge: -7, spessore: 0.5, trave: 12 } };
 
 function cementoDiRiserva(T) {
   const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
@@ -22,8 +27,8 @@ function cementoDiRiserva(T) {
 }
 
 /** I gradoni di una tribuna lunga `len` (coordinate locali: x lungo la tribuna, z verso il dietro negativo, y in alto). */
-function geometriaGradoni(T, len) {
-  const G = GRADONI, pos = [], uv = [], nor = [], idx = [];
+function geometriaGradoni(T, len, file = GRADONI.file) {
+  const G = { ...GRADONI, file }, pos = [], uv = [], nor = [], idx = [];
   const quad = (a, b, c, d, n) => {
     // giro dei vertici coerente con la normale (altrimenti la faccia viene scartata vista dal lato giusto)
     const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]], cr = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
@@ -47,7 +52,7 @@ function geometriaGradoni(T, len) {
 // colori a caso ma sempre uguali (dal seme)
 function casuale(seme) { let s = seme >>> 0 || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
-export function creaSpalti(T, scene, { HL, HW, max = 7200, renderer = null }) {
+export function creaSpalti(T, scene, { HL, HW, max = 18000, renderer = null }) {
   const loader = new T.TextureLoader(), materiali = [];
   const cemento = new T.MeshStandardMaterial({ color: 0xc9c5bd, roughness: 0.95, metalness: 0, map: cementoDiRiserva(T) });
   const scaleM = new T.MeshStandardMaterial({ color: 0xe9e1cf, roughness: 0.9, metalness: 0 });
@@ -56,17 +61,39 @@ export function creaSpalti(T, scene, { HL, HW, max = 7200, renderer = null }) {
   materiali.push(cemento, scaleM);
   const ferro = new T.MeshStandardMaterial({ color: 0x9aa3b2, metalness: 0.7, roughness: 0.35 });
   const tetto = new T.MeshStandardMaterial({ color: 0x2b3245, roughness: 0.6, metalness: 0.3 });
-  // le quattro tribune: posizione, lunghezza e rotazione. Il settore 1 è quello degli ospiti, la curva dalla parte delle x positive
+  // le quattro tribune: posizione, lunghezza e rotazione. Il settore 1 è quello degli ospiti, la curva dalla parte delle x positive.
+  // I lati lunghi vanno da un angolo all'altro (fino al fondo delle curve) e hanno il secondo anello: la conca è chiusa
+  const fondoCurva = HL + 8.5 + GRADONI.file * GRADONI.prof, C = CONCA;
   const tribune = [
-    { len: HL * 2 + 30, x: 0, z: -(HW + 6.5), ry: 0, settore: 0, tetto: true, tunnel: true },
-    { len: HL * 2 + 30, x: 0, z: HW + 6.5, ry: Math.PI, settore: 0 }, // senza copertura: è alle spalle della telecamera di gioco
+    { len: fondoCurva * 2, x: 0, z: -(HW + 6.5), ry: 0, settore: 0, tunnel: true, sopra: true },
+    { len: fondoCurva * 2, x: 0, z: HW + 6.5, ry: Math.PI, settore: 0, sopra: true }, // alle spalle della telecamera di gioco: la folla qui non si disegna (vedi sotto)
     { len: HW * 2 + 13, x: HL + 8.5, z: 0, ry: -Math.PI / 2, settore: 1 },
     { len: HW * 2 + 13, x: -(HL + 8.5), z: 0, ry: Math.PI / 2, settore: 0 },
   ];
+  const fascia = new T.MeshStandardMaterial({ color: 0x1d2540, roughness: 0.7, metalness: 0.2 }); // la fronte del secondo anello
+  const acciaio = new T.MeshStandardMaterial({ color: 0xb8c0cc, metalness: 0.75, roughness: 0.35 }); // travi del tetto, a vista
   const G = GRADONI, posti = [], striscioni = [], bandiere = [];
   for (const tr of tribune) {
     const g = new T.Group(); g.position.set(tr.x, 0, tr.z); g.rotation.y = tr.ry; scene.add(g); tr.g = g;
     g.add(new T.Mesh(geometriaGradoni(T, tr.len), cemento));
+    // secondo anello: gli stessi gradoni più in alto e più indietro, con la fronte scura
+    const S = C.sopra;
+    if (tr.sopra) {
+      const su = new T.Mesh(geometriaGradoni(T, tr.len, S.file), cemento); su.position.set(0, S.y, S.z); g.add(su);
+      const fr = new T.Mesh(new T.BoxGeometry(tr.len, 2.4, 0.5), fascia); fr.position.set(0, S.y + 0.4, S.z + 0.3); g.add(fr);
+    }
+    // tetto alla stessa quota su tutti i lati, dal fondo della tribuna fino a poco oltre il muretto, con le travi a sbalzo a vista
+    const fondo = tr.sopra ? S.z - S.file * G.prof : -G.file * G.prof, Tt = C.tetto, prof = Tt.sporge - fondo;
+    const cop = new T.Mesh(new T.BoxGeometry(tr.len, Tt.spessore, prof), tetto); cop.position.set(0, Tt.y, fondo + prof / 2); g.add(cop);
+    const nT = Math.max(2, Math.round(tr.len / Tt.trave));
+    for (let k = 0; k <= nT; k++) {
+      const x = -tr.len / 2 + k * tr.len / nT;
+      const trave = new T.Mesh(new T.BoxGeometry(0.35, 1.2, prof), acciaio); trave.position.set(x, Tt.y - 0.85, fondo + prof / 2); g.add(trave);
+      const pil = new T.Mesh(new T.BoxGeometry(0.6, Tt.y, 0.6), acciaio); pil.position.set(x, Tt.y / 2, fondo - 0.4); g.add(pil);
+      const tir = new T.Mesh(new T.BoxGeometry(0.15, 0.15, Math.hypot(prof * 0.7, 6)), acciaio); tir.position.set(x, Tt.y + 3, fondo + prof * 0.35); tir.rotation.x = Math.atan2(6, prof * 0.7); g.add(tir); // tirante
+      const ant = new T.Mesh(new T.BoxGeometry(0.4, 6, 0.4), acciaio); ant.position.set(x, Tt.y + 3, fondo - 0.4); g.add(ant); // antenna del tirante
+    }
+    const bordo = new T.Mesh(new T.BoxGeometry(tr.len, 1.4, 0.5), acciaio); bordo.position.set(0, Tt.y - 0.5, Tt.sporge); g.add(bordo); // trave di bordo
     // scale di accesso: ogni GRADONI.scale metri una fascia di gradini più chiari, senza posti
     const nS = Math.floor(tr.len / G.scale), scaleX = [];
     for (let k = 1; k < nS; k++) scaleX.push(-tr.len / 2 + k * tr.len / nS);
@@ -78,11 +105,6 @@ export function creaSpalti(T, scene, { HL, HW, max = 7200, renderer = null }) {
     for (let k = 0; k <= nP; k++) { m4.makeTranslation(-tr.len / 2 + k * tr.len / nP, G.muro + 0.5, 0.05); mont.setMatrixAt(k, m4); }
     g.add(mont);
     for (const hy of [0.55, 1]) { const c = new T.Mesh(new T.CylinderGeometry(0.03, 0.03, tr.len, 6), ferro); c.rotation.z = Math.PI / 2; c.position.set(0, G.muro + hy, 0.05); g.add(c); }
-    // copertura sulle tribune lunghe
-    if (tr.tetto) {
-      const t = new T.Mesh(new T.BoxGeometry(tr.len, 0.6, 15), tetto); t.position.set(0, G.muro + G.file * G.alt + 4, -G.file * G.prof + 5); t.rotation.x = -0.06; g.add(t);
-      for (let k = -2; k <= 2; k++) { const p = new T.Mesh(new T.CylinderGeometry(0.35, 0.35, G.muro + G.file * G.alt + 4, 8), tetto); p.position.set(k * tr.len / 5, (G.muro + G.file * G.alt + 4) / 2, -G.file * G.prof - 0.5); g.add(p); }
-    }
     // tunnel d'ingresso al campo, sotto la tribuna principale
     if (tr.tunnel) {
       const bocca = new T.Mesh(new T.BoxGeometry(4.6, 2.9, 0.4), new T.MeshBasicMaterial({ color: 0x07080c })); bocca.position.set(0, 1.45, 0.05); g.add(bocca);
@@ -94,6 +116,11 @@ export function creaSpalti(T, scene, { HL, HW, max = 7200, renderer = null }) {
       if (scaleX.some((sx) => Math.abs(x - sx) < 1.1) || (tr.tunnel && r < 6 && Math.abs(x) < 3.4)) continue;
       const p = new T.Vector3(x, G.muro + r * G.alt, -r * G.prof - G.prof * 0.45).applyMatrix4(g.matrixWorld.compose(g.position, g.quaternion, g.scale));
       posti.push({ p, ry: tr.ry, settore: tr.settore, tr, fila: r });
+    }
+    if (tr.sopra) for (let r = 0; r < S.file; r++) for (let x = -tr.len / 2 + 0.8; x < tr.len / 2 - 0.8; x += G.posto) { // il secondo anello (sempre sagome: è lontano)
+      if (scaleX.some((sx) => Math.abs(x - sx) < 1.1)) continue;
+      const p = new T.Vector3(x, S.y + G.muro + r * G.alt, S.z - r * G.prof - G.prof * 0.45).applyMatrix4(g.matrixWorld.compose(g.position, g.quaternion, g.scale));
+      posti.push({ p, ry: tr.ry, settore: tr.settore, tr, fila: G.file + r });
     }
     // striscioni sul muretto e bandiere sui gradoni
     for (let k = 0; k < 3; k++) {
@@ -108,17 +135,17 @@ export function creaSpalti(T, scene, { HL, HW, max = 7200, renderer = null }) {
       asta.position.set(x, G.muro + r * G.alt + 1.6, -r * G.prof); f.position.set(x + 1.1, G.muro + r * G.alt + 2.5, -r * G.prof); g.add(asta, f);
       bandiere.push({ f, pg, settore: tr.settore, fase: Math.random() * 6 });
     }
-    unisci(T, g, [cemento, ferro, tetto]); // gradoni e muri, corrimano e aste, tetto e piloni: una mesh per materiale
+    unisci(T, g, [cemento, ferro, tetto, fascia, acciaio]); // gradoni e muri, corrimano e aste, tetto, travi: una mesh per materiale
   }
   // ---------------------------------------------------------------- la folla
   // Una folla per tribuna (una InstancedMesh), ognuna con la sua sfera d'ingombro: quella alle
   // spalle della telecamera non si disegna affatto. I posti sono in ordine sparso, così i primi n sono sparsi su tutto lo spalto.
   const rand = casuale(20261118), totale = Math.min(max, posti.length);
   // Il tifoso è una persona vera: il modello dei calciatori messo in piedi e semplificato (scripts/tifoso.mjs, circa 170
-  // vertici). In 3D nelle prime tre file, dietro è una sagoma (vedi sagome più sotto), cioè la stessa persona fotografata in
+  // vertici). In 3D nelle prime due file, dietro è una sagoma (vedi sagome più sotto), cioè la stessa persona fotografata in
   // tre pose e colorata coi suoi colori, due triangoli. Ogni vertice del 3D sa che cos'è: 0 maglia, 1 pelle, 2 braccio,
   // 3 avambraccio, 4 capelli o berretto, 5 visiera, 6 sciarpa, 7 pantaloni, 8 scarpe. Visiera e sciarpa sono due pannelli.
-  const H = 1.72, FILE_VICINE = 3, SP = TIFOSO.spalla.map((v) => v * H), GOM = TIFOSO.gomito[1] * H;
+  const H = 1.72, FILE_VICINE = 2, SP = TIFOSO.spalla.map((v) => v * H), GOM = TIFOSO.gomito[1] * H;
   const MANI_SU = SP[1] + Math.hypot(...TIFOSO.mano.map((v, i) => (v - TIFOSO.spalla[i]) * H)); // dove arrivano le mani con le braccia alzate
   const tifoso = () => {
     const L = TIFOSO.lod[0], pos = L.p.map((v) => v / 1000 * H), parte = L.c.slice(), idx = L.i.slice();
@@ -259,8 +286,9 @@ diffuseColor = vec4((vMaglia * masc.r + vPelle * masc.g + vScuro * masc.b) / max
     const capelli = [0x1c1410, 0x2e2018, 0x5a3a20, 0x8a6a3a, 0x111111, 0xc9a25a, 0x9c9a96].map((c) => new T.Color(c)), c2 = new T.Color();
     for (const { m, info, A, n, capo, sciarpa } of folle) {
       for (let i = 0; i < n; i++) {
-        const sq = squadre[info[i * 4 + 1] > 0.5 ? 1 : 0], u = r(), tifa = u < 0.85;
-        col.set(u < 0.55 ? sq.c1 : u < 0.85 ? sq.c2 : 0); if (!tifa) col.copy(neutri[Math.floor(r() * neutri.length)]);
+        // colori misti: nel settore di una squadra soprattutto i suoi colori, ma anche un po' dell'altra e qualche neutro
+        const mia = info[i * 4 + 1] > 0.5 ? 1 : 0, u = r(), altra = u >= 0.72 && u < 0.86, sq = squadre[altra ? 1 - mia : mia], tifa = u < 0.86;
+        col.set(u < 0.5 ? sq.c1 : u < 0.72 ? sq.c2 : r() < 0.6 ? sq.c1 : sq.c2); if (!tifa) col.copy(neutri[Math.floor(r() * neutri.length)]);
         m.setColorAt(i, col); info[i * 4 + 2] = r() < 0.3 ? 1 : 0; // maniche lunghe o braccia scoperte
         const conSciarpa = tifa && r() < 0.55, berretto = r() < 0.22; info[i * 4 + 3] = (conSciarpa ? 1 : 0) + (berretto ? 2 : 0);
         (berretto ? (r() < 0.6 ? c2.set(sq.c1) : c2.set(sq.c2)) : c2.copy(capelli[Math.floor(r() * capelli.length)])).toArray(capo, i * 3);

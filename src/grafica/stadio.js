@@ -161,15 +161,17 @@ export function panchine(T, scene, { HW, colore = 0x4B06FC }) {
   }
 }
 
-/** Le quattro torri faro agli angoli, girate verso il campo. Risponde i pannelli delle luci (per accenderli di notte). */
-export function torriFaro(T, scene, { HL, HW }) {
+/** I fari: quattro file di proiettori sul bordo del tetto, vicino agli angoli, girate verso il campo (la conca è chiusa: le
+ *  torri agli angoli finirebbero dentro le tribune). `tetto` = { y, bordo }: quota del tetto e distanza del bordo dalla
+ *  linea laterale. Risponde i pannelli delle luci (per accenderli di notte). */
+export function torriFaro(T, scene, { HL, HW, tetto = { y: 29, bordo: 4.5 } }) {
   const pal = new T.MeshStandardMaterial({ color: 0x8c93a3, metalness: 0.6, roughness: 0.4 }), luci = [];
   const pann = new T.MeshStandardMaterial({ color: 0x2a2f3a, emissive: 0xfff4d6, emissiveIntensity: 0.15, roughness: 0.3 });
   for (const d of [-1, 1]) for (const e of [-1, 1]) {
-    const x = d * (HL + 17), z = e * (HW + 15), g = new T.Group(); g.position.set(x, 0, z); g.lookAt(0, 0, 0); scene.add(g);
-    const fusto = new T.Mesh(new T.CylinderGeometry(0.35, 0.7, 40, 10), pal); fusto.position.y = 20; g.add(fusto);
-    const testa = new T.Mesh(new T.BoxGeometry(7, 3.6, 0.6), pann); testa.position.set(0, 41, 0.6); testa.rotation.x = 0.35; g.add(testa);
-    luci.push({ testa, pos: { x, y: 41, z } });
+    const x = d * (HL - 10), z = e * (HW + tetto.bordo), y = tetto.y - 0.6, g = new T.Group(); g.position.set(x, y, z); g.lookAt(d * HL * 0.25, 0, e * HW * 0.15); scene.add(g);
+    const telaio = new T.Mesh(new T.BoxGeometry(12, 0.3, 0.3), pal); telaio.position.set(0, 1.6, 0); g.add(telaio);
+    const testa = new T.Mesh(new T.BoxGeometry(12, 2.6, 0.5), pann); testa.position.set(0, 0, 0.3); g.add(testa);
+    luci.push({ testa, pos: { x, y, z } });
   }
   return { luci, materiale: pann };
 }

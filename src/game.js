@@ -12,13 +12,13 @@ import * as URTO from './fisica/contatti.js';
 import { creaCampo, texturaOmbra } from './grafica/campo.js';
 import { Porta, Bandierine, panchine, torriFaro, Particelle } from './grafica/stadio.js';
 import { creaAtmosfera } from './grafica/luce.js';
-import { creaSpalti } from './grafica/spalti.js';
+import { creaSpalti, CONCA } from './grafica/spalti.js';
 import { creaBordoCampo } from './grafica/bordocampo.js';
 import { creaAudio } from './audio.js';
 import { creaPrestazioni } from './prestazioni.js';
 import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
-import { HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 
 (() => {
 // i valori di gioco (campo, tempi, difficoltà, IA, comandi, fisica) stanno tutti in src/config.js
@@ -101,13 +101,24 @@ function buildStadium(lockup) {
   };
   board(HL * 2 + 8, 0, -(HW + 4.2), 0); board(HL * 2 + 8, 0, HW + 4.2, Math.PI);
   board(HW * 2 + 8, HL + 5.2, 0, -Math.PI / 2); board(HW * 2 + 8, -(HL + 5.2), 0, Math.PI / 2);
-  panchine(T, scene, { HW }); FARI = torriFaro(T, scene, { HL, HW }); // panchine tecniche e torri faro agli angoli
+  panchine(T, scene, { HW }); FARI = torriFaro(T, scene, { HL, HW, tetto: { y: CONCA.tetto.y, bordo: 6.5 - CONCA.tetto.sporge } }); // panchine tecniche e fari sul bordo del tetto
   // Monte Titano con le tre torri, sullo sfondo
   const sh = new T.Shape(); const pts = [[-130, 0], [-110, 8], [-84, 20], [-62, 34], [-52, 44], [-47, 44], [-47, 52], [-41, 52], [-41, 45], [-24, 40], [-8, 48], [-3, 56], [-3, 66], [3, 66], [3, 57], [12, 50], [30, 38], [44, 41], [50, 46], [50, 53], [55, 53], [55, 45], [70, 30], [92, 16], [112, 7], [130, 0]];
   sh.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) sh.lineTo(p[0], p[1]);
   const tg = new T.ShapeGeometry(sh), tm = new T.MeshBasicMaterial({ color: 0x4d6f9c }); SFONDO = tm;
-  const t1 = new T.Mesh(tg, tm); t1.position.set(0, 0, -190); t1.scale.set(1.5, 1.25, 1); scene.add(t1);
-  const t2 = new T.Mesh(tg, tm); t2.position.set(215, 0, 0); t2.rotation.y = -Math.PI / 2; t2.scale.set(1.5, 1.25, 1); scene.add(t2);
+  // lontano e basso, sull'orizzonte: dal campo si vede appena sopra il tetto, non copre il cielo
+  const t1 = new T.Mesh(tg, tm); t1.position.set(0, 0, -310); t1.scale.set(1.6, .7, 1); scene.add(t1);
+  const t2 = new T.Mesh(tg, tm); t2.position.set(320, 0, 0); t2.rotation.y = -Math.PI / 2; t2.scale.set(1.6, .7, 1); scene.add(t2);
+  // tutto intorno, lontano, l'orizzonte: colline e sagome di case e palazzi in bassa definizione, del colore del Titano
+  // (velato come lui, di giorno e di notte). Un cilindro solo con una texture piccola
+  const [oc, ox] = cv(1024, 64); ox.fillStyle = '#fff'; ox.beginPath(); ox.moveTo(0, 64);
+  for (let i = 0; i <= 1024; i += 8) ox.lineTo(i, 38 - 14 * Math.sin(i * .012) - 8 * Math.sin(i * .037 + 1) - 4 * Math.sin(i * .11));
+  ox.lineTo(1024, 64); ox.fill();
+  for (let i = 0; i < 70; i++) { const x = (i * 149) % 1024, w = 6 + (i * 37) % 16, h = 8 + (i * 53) % 22; ox.fillRect(x, 64 - h - 10, w, h + 10); }
+  const ot = new T.CanvasTexture(oc); ot.wrapS = T.RepeatWrapping; ot.repeat.set(3, 1);
+  const om = new T.MeshBasicMaterial({ map: ot, color: 0x4d6f9c, transparent: true, alphaTest: .5, side: T.BackSide, fog: false, depthWrite: false });
+  const orizzonte = new T.Mesh(new T.CylinderGeometry(330, 330, 46, 48, 1, true), om); orizzonte.position.y = 18; orizzonte.renderOrder = -1;
+  orizzonte.onBeforeRender = () => om.color.copy(SFONDO.color); scene.add(orizzonte);
 }
 function paintBoards(home, away, imgs) {
   const x = boards.ctx, c = boards.cv; if (!x) return;
@@ -2214,6 +2225,7 @@ function updateCamera(dt) {
   const b = G.ball; let fx = 0, fz = 0;
   if (b) { fx = b.x; fz = b.z; if (G.state === 'goal' && G.scorer && G.stateT > .9) { fx = G.scorer.x; fz = G.scorer.z; } }
   let px, py, pz, lx, lz, fov, gioco = false;
+  if (!G.dbgCam && /[?&]alto\b/.test(location.search) && G.state !== 'menu') G.dbgCam = CAMERA_ALTO; // vista dall'alto, solo per controlli
   if (G.dbgCam) { cam.position.set(G.dbgCam[0], G.dbgCam[1], G.dbgCam[2]); cam.lookAt(G.dbgCam[3], G.dbgCam[4], G.dbgCam[5]); cam.fov = G.dbgCam[6] || 30; cam.updateProjectionMatrix(); return; }
   if (G.state === 'menu') { const a = G.t * .07; px = Math.sin(a) * 74; pz = Math.cos(a) * 62; py = 30; lx = 0; lz = 0; fov = 40; }
   else if ((G.inquadra = inquadratura())) { const q = G.inquadra; [px, py, pz] = q.p; [lx, , lz] = q.l; fov = q.fov; } // piazzati: inquadratura dedicata
@@ -2243,7 +2255,7 @@ function updateCamera(dt) {
 }
 // La folla: alla nuova partita prende i colori delle due squadre e si riempie secondo l'importanza (amichevole meno gente,
 // carriera secondo il livello dello stadio, coppe a eliminazione e finali piene); esulta sui tiri pericolosi e sui gol.
-const TIFO = { partita: null, tiro: -1, gol: 0, base: .55 };
+const TIFO = { partita: null, tiro: -1, gol: 0, base: .85 };
 // quanta gente si disegna: l'importanza della partita per la qualità grafica (meno tifosi se il dispositivo arranca)
 function pienone() { if (SPALTI) SPALTI.densita(TIFO.base * [1, .8, .6, .4][QUAL.livello || 0]); }
 function folla(dt) {
@@ -2251,7 +2263,7 @@ function folla(dt) {
   if (h && TIFO.partita !== h.club.id + a.club.id) {
     TIFO.partita = h.club.id + a.club.id; SPALTI.colora(h.club, a.club); TIFO.tiro = G.shotId; TIFO.gol = G.goals.length;
     const c = G.comp, liv = K ? K.stadio || 1 : 1, ko = c && (c.tipo === 'coppa' || (c.tipo === 'castelli' && /final|semi|quart/i.test(c.titolo || '')));
-    TIFO.base = !c ? .55 : ko ? (/finale/i.test(c.titolo || '') ? 1 : .85) : .55 + .09 * (liv - 1); pienone();
+    TIFO.base = !c ? .85 : ko ? (/finale/i.test(c.titolo || '') ? 1 : .95) : .82 + .04 * (liv - 1); pienone(); // stadio quasi pieno, come in Dream League
   }
   if (h && G.shotId !== TIFO.tiro) { TIFO.tiro = G.shotId; if (G.shooter && G.state === 'play') SPALTI.esulta(G.shooter.team.idx, .55, 1); } // tiro: un sussulto
   if (h && G.goals.length !== TIFO.gol) { TIFO.gol = G.goals.length; if (G.scorer) SPALTI.esulta(G.scorer.team.idx, 1, 6); } // gol: salti e braccia al cielo

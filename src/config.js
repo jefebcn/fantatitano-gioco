@@ -68,8 +68,8 @@ export const PRESSING = { da: 18, primo: 3.5, raggio: 16, stretto: 2.2 };
 export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['In difesa', 'Equilibrata', 'In attacco'], push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
 
 /* ---------------------------------------------------------------- telecamera di gioco */
-// Misure di Alex (dai video DLS, corrette il 20/11, ritoccate il 21/11 per avere sullo schermo al calcio d'inizio cerchio 43%,
-// dischetto 40% e linea laterale lontana 10%, come nei suoi screenshot: FOV 29,1, inclinazione 21,75, 36,8 m): alto e dietro dove sta la telecamera rispetto al punto inquadrato, in
+// Valori verificati da Alex sui suoi screenshot (21/11): al calcio d'inizio cerchio 43-45%, dischetto 40%, linea laterale
+// lontana 10%. Non cambiarli senza rifare la misura (scripts/prove/inquadratura.cjs). alto e dietro dove sta la telecamera rispetto al punto inquadrato, in
 // metri (dietro, in pianta, è verso la linea laterale vicina: 39 m in linea d'aria). inclina: gradi verso il basso, fissi:
 // così il punto inquadrato (il pallone) sta a circa il 40% dell'altezza dello schermo dall'alto. fov: campo visivo VERTICALE in gradi (quello della
 // PerspectiveCamera di three.js), fisso: su un telefono 19,5:9 in orizzontale sono circa 57° in orizzontale. seguiX e
@@ -77,7 +77,10 @@ export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['I
 // Scelte nostre, da confrontare coi video: molla è la prontezza con cui segue (più alta, meno ritardo), bordoX i metri dalla
 // linea di fondo a cui si ferma, zMax fin dove arriva verso la tribuna vicina (oltre ci entrerebbe: col pallone negli ultimi
 // metri verso la tribuna vicina il pallone scende un po' sullo schermo)
-export const CAMERA = { alto: 12.5, dietro: 36.8, inclina: 21.75, fov: 29.1, seguiX: 1, seguiZ: 1, molla: 6, bordoX: 16, zMax: 56 };
+export const CAMERA = { alto: 12.5, dietro: 36.9, inclina: 21.3, fov: 28, seguiX: 1, seguiZ: 1, molla: 6, bordoX: 16, zMax: 56 };
+// Vista dall'alto di tutto lo stadio, solo per controlli: si accende con ?alto nell'indirizzo. [x, y, z della telecamera,
+// x, y, z del punto guardato, FOV verticale]
+export const CAMERA_ALTO = [0, 95, 40, 0, 0, 0, 55];
 
 /* ---------------------------------------------------------------- comandi dell'utente (come Dream League, docs/dls-gameplay.md) */
 // La levetta: base fissa (un cerchio di `raggio` px), la levetta si muove dentro. Poco inclinata si cammina, poi si corre;

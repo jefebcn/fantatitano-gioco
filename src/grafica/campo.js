@@ -82,9 +82,8 @@ float macchie(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 
 roughnessFactor = mix(roughnessFactor, 0.62, gLinea);`);
   };
   const campo = new T.Mesh(new T.PlaneGeometry(W, H), mat); campo.rotation.x = -Math.PI / 2; campo.receiveShadow = true;
-  // il prato oltre il bordo, più scuro e con la stessa grana
-  const fm = map.clone(); fm.repeat.set(700 / passo / 2, 700 / passo / 2); fm.needsUpdate = true;
-  const fuori = new T.Mesh(new T.PlaneGeometry(700, 700), new T.MeshStandardMaterial({ map: fm, color: 0x9cb08c, roughness: 1, metalness: 0 }));
+  // oltre il bordo del campo: il cemento della pista ai piedi delle tribune e il piazzale fuori dallo stadio (niente prato)
+  const fuori = new T.Mesh(new T.PlaneGeometry(700, 700), new T.MeshStandardMaterial({ color: 0x5b5f63, roughness: 1, metalness: 0 }));
   fuori.rotation.x = -Math.PI / 2; fuori.position.y = -0.05; fuori.receiveShadow = true;
   return { campo, fuori, ok: !!alb };
 }
