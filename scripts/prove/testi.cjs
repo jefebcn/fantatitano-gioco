@@ -3,7 +3,7 @@
      node scripts/prove/testi.cjs chiavi
         senza browser: ogni chiave usata nel codice e nella pagina esiste in src/testi.js, e nessuna resta inutilizzata
      npm run build && node scripts/prove/testi.cjs salva prima.txt
-        gioca una partita intera sempre uguale (modalità di prova, passi fissi) e salva ogni riga di testo che compare:
+        gioca una partita intera sempre uguale (modalità di prova, passi fissi, senza il ciclo dei fotogrammi) e salva ogni riga di testo che compare:
         tabellone, tasti, striscioni, pausa, sostituzioni, fine partita. I numeri diventano #
      node scripts/prove/testi.cjs confronta prima.txt dopo.txt
    Quando si toccano i testi: salva prima, modifica, build, salva dopo, confronta. Serve Playwright per «salva». */
@@ -23,18 +23,21 @@ async function chiavi() {
   process.exitCode = mancano.length || inutili.length || estranee ? 1 : 0;
 }
 
-/** Nella pagina: una partita intera a passi fissi, raccogliendo ogni riga di testo che compare. */
+/** Nella pagina: una partita intera giocata dal computer a passi fissi, raccogliendo ogni riga di testo che compare. */
 function raccogli() {
-  const g = window.__g, G = g.G, visti = new Set(); let ts = 1e6;
+  const g = window.__g, G = g.G, visti = new Set();
   const prendi = () => {
     for (const l of document.body.innerText.split('\n')) { const s = l.trim().replace(/\d+/g, '#'); if (s) visti.add(s); }
     for (const e of document.querySelectorAll('[aria-label],[title],[placeholder]')) for (const a of ['aria-label', 'title', 'placeholder']) if (e.getAttribute(a)) visti.add(`${a}=${e.getAttribute(a)}`);
   };
-  const avanti = (n) => { for (let i = 0; i < n; i++) { ts += 1000 / 60; window.__raf(ts); } };
-  avanti(2); prendi(); g.pause(); avanti(2); prendi(); document.querySelector('#apriCambi').click(); prendi(); document.querySelector('#cambiOk').click(); g.pause();
+  // stessa partita a ogni giro: modalità di prova, tempo da zero, il ciclo del gioco fermo (si avanza da qui)
+  g.prova(7); G.t = 0; G.diff = g.DIFF.normale; G.shown = false; G.paused = false; g.newMatch(window.CLUBS[2], window.CLUBS[5]);
+  for (const e of document.querySelectorAll('.scr')) e.classList.add('nas'); document.querySelector('#hud').classList.remove('nas');
+  const avanti = (n) => { for (let i = 0; i < n; i++) { g.step(1 / 60); g.draw(1 / 60); } g.hud(); };
+  avanti(2); prendi(); g.pause(); prendi(); document.querySelector('#apriCambi').click(); prendi(); document.querySelector('#cambiOk').click(); g.pause();
   G.auto = true; const disegna = g.renderer.render; g.renderer.render = () => {}; let n = 0;
   while (!G.shown && n++ < 4000) { avanti(20); prendi(); }
-  g.renderer.render = disegna; avanti(2); prendi();
+  g.renderer.render = disegna; prendi();
   return [...visti].sort();
 }
 
@@ -47,9 +50,8 @@ async function salva() {
   pg.on('pageerror', (e) => errori.push(String(e)));
   await pg.goto(`http://localhost:${srv.address().port}/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
   await pg.waitForFunction(() => window.__g && !document.querySelector('#carica'), null, { timeout: 90000 });
-  // il ciclo del gioco passa in mano alla prova: avanza solo quando lo si chiama, a sessantesimi di secondo esatti
-  await pg.evaluate(async () => { window.requestAnimationFrame = (f) => { window.__raf = f; return 0; }; await new Promise((ok) => setTimeout(ok, 200)); window.__g.prova(7); window.__g.startMatch(window.CLUBS[2].id, window.CLUBS[5].id, 'normale'); });
-  await pg.waitForFunction(() => window.__g.G.teams.length === 2 && window.__raf, null, { timeout: 30000 });
+  // il ciclo dei fotogrammi del gioco si ferma: la partita avanza solo dalla prova, a sessantesimi di secondo esatti
+  await pg.evaluate(() => new Promise((ok) => { window.requestAnimationFrame = () => 0; setTimeout(ok, 200); }));
   const righe = await pg.evaluate(raccogli);
   fs.writeFileSync(f1, righe.join('\n') + '\n'); console.log(`${righe.length} righe di testo salvate in ${f1}${errori.length ? ` · ERRORI NELLA PAGINA: ${errori.slice(0, 3).join(' · ')}` : ''}`);
   await br.close(); srv.close(); process.exitCode = errori.length ? 1 : 0;

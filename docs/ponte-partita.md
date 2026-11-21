@@ -209,9 +209,9 @@ non possa dare. Risposte e precisazioni:
 
 1. **Testi** (aggiornato il 21/11, dopo il trasloco): i testi della partita stanno in `src/testi.js`, quelli della home in
    `src/casa/testi.js`. Hanno la stessa forma: un elenco per lingua e `t('chiave', valori)`. Alex vuole un file solo: per
-   unirli basta spostare l'elenco `IT` della home dentro `TESTI.it` di `src/testi.js` e cambiare l'`import` (le chiavi non
-   si scontrano: quelle della partita cominciano per `partita.`, `hud.`, `pausa.`, `cambi.`, `fine.`, `regia.`, `ruoli.`,
-   `mentalita.`, `comune.`). Lo fa la sessione della home quando le conviene.
+   unirli basta spostare l'elenco `IT` della home dentro `TESTI.it` di `src/testi.js` e cambiare l'`import` (oggi nessuna
+   chiave è in comune: quelle della partita cominciano per `partita.`, `hud.`, `tasti.`, `pausa.`, `cambi.`, `fine.`,
+   `regia.`, `ruoli.`, `mentalita.`, `tattica.`, `contro.`, `gare.`, `formato.`, `comune.`). Lo fa la sessione della home quando le conviene.
 2. Lavori della partita in corso che toccano `src/game.js`: solo funzioni del campo (`rilasciaPortiere`, `think`,
    `ownerThink`) e valori in `src/config.js`. Niente nella parte delle schermate.
 
