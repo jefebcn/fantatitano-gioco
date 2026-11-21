@@ -2357,9 +2357,13 @@ function updateCamera(dt) {
     // (dopo un gol chi ha segnato): per intero lungo il campo, solo in parte in profondità, senza uscire dai bordi.
     const C = CAMERA; gioco = true;
     const tx = clamp(fx * C.seguiX, -(HL - C.bordoX), HL - C.bordoX), tz = Math.min(clamp(fz, -HW, HW) * C.seguiZ, C.zMax - C.dietro);
-    px = tx; py = C.alto; pz = tz + C.dietro; lx = tx; lz = tz;
     // la stessa larghezza di campo su ogni schermo: l'angolo orizzontale è fisso, quello verticale segue le proporzioni
     fov = 2 * Math.atan(Math.tan(C.fovOriz * Math.PI / 360) / cam.aspect) * 180 / Math.PI;
+    // In profondità il pallone resta dentro la fascia dello schermo (CAMERA.fascia): a che distanza dalla telecamera un punto
+    // a terra appare a una certa altezza dello schermo lo dicono altezza, inclinazione e campo visivo, che non cambiano.
+    const lontano = (f) => C.alto / Math.tan(C.inclina * Math.PI / 180 - Math.atan((1 - 2 * f) * Math.tan(fov * Math.PI / 360))), fzc = clamp(fz, -HW, HW);
+    pz = Math.min(clamp(tz + C.dietro, fzc + lontano(C.fascia[1]), fzc + lontano(C.fascia[0])), C.zMax);
+    px = tx; py = C.alto; lx = tx; lz = pz - C.dietro;
   }
   // movimento morbido: una molla smorzata al punto giusto, senza scatti né oscillazioni, più lenta nel menu. In gioco è il
   // leggero ritardo con cui l'inquadratura segue il pallone

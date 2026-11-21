@@ -84,7 +84,9 @@ export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['I
 // seguiX e seguiZ: quanto il punto inquadrato segue il pallone lungo il campo (tutto) e in profondità (il 45%: pallone a
 // +30 m, telecamera avanti di circa 14). molla è la prontezza con cui segue (più alta, meno ritardo), bordoX i metri dalla
 // linea di fondo a cui si ferma, zMax fin dove arriva verso la tribuna vicina (oltre ci entrerebbe)
-export const CAMERA = { alto: 12.5, dietro: 36.8, inclina: 21.75, fovOriz: 58.7, seguiX: 1, seguiZ: .45, molla: 6, bordoX: 16, zMax: 56 };
+// fascia: il pallone resta sempre tra queste due altezze dello schermo (0 in alto, 1 in basso). Se seguendolo al 45% ne
+// uscirebbe (verso la linea laterale lontana finiva sotto il tabellone), la telecamera lo segue per intero in profondità.
+export const CAMERA = { alto: 12.5, dietro: 36.8, inclina: 21.75, fovOriz: 58.7, seguiX: 1, seguiZ: .45, molla: 6, bordoX: 16, zMax: 56, fascia: [.3, .7] };
 // Vista dall'alto di tutto lo stadio, solo per controlli: si accende con ?alto nell'indirizzo. [x, y, z della telecamera,
 // x, y, z del punto guardato, FOV verticale]
 export const CAMERA_ALTO = [0, 95, 40, 0, 0, 0, 55];
@@ -130,7 +132,9 @@ export const FERMI = { comandi: 2, buio: .5, occasione: 4, fuori: 2.5, corto: [7
 // con gli avversari fermi a disperarsi per `fermi` secondi e l'arbitro che indica il centro; a `stacco` la telecamera passa
 // al primo piano del marcatore: alta `camAlt` metri, a `camDist` metri da lui, con un difensore deluso in primo piano
 // Il deluso sta a `deluso` = [parte della distanza dalla telecamera, metri di lato]
-export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.7, camDist: 4.6, deluso: [.55, 1.7] };
+// `riquadro`: per quanti secondi resta il riquadro in basso col nome di chi ha segnato. 0 = mai, come in Dream League
+// (scelta provvisoria: Alex non ha ancora deciso tra tenerlo, toglierlo o mostrarlo 2 secondi). 9 = per tutta l'esultanza.
+export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.7, camDist: 4.6, deluso: [.55, 1.7], riquadro: 0 };
 
 // Livelli di dettaglio del calciatore: sotto `vicino` metri dalla telecamera il corpo pieno (circa 4.300 triangoli: primi
 // piani, replay, esultanze), fino a `lontano` quello medio (1.500: la telecamera di gioco), oltre quello leggero (600)
