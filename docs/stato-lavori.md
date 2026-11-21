@@ -77,14 +77,15 @@ Un'altra sessione lavora sulla partita: questa non tocca i suoi file senza averl
 | trasloco | Il codice della home è in `src/casa/` (`casa.js`, `casa.html`, `casa.css`): righe spostate così com'erano da `src/game.js` e `src/pagina.html`. Verifica: 153 foto delle schermate identiche a prima, tre partite simulate identiche | fatto |
 | 4 | Barra fissa (`barra.js`), carte di navigazione (`carte.js`), navigazione a livelli con Indietro (`nav.js`), icone nella pagina (`icone.js`), testi delle schermate nuove in un file (`testi.js`), stili nuovi (`stile.css`). Scala 55–82, ruoli precisi e prezzi nuovi accesi sulle schermate. «Ingaggia il tuo capitano» coi nove candidati nuovi e il pulsante fuori dalle carte | fatto |
 | 5 | Home a otto carte (`home.js`) | fatta la prima versione, coi dati veri; restano le illustrazioni (segnaposto) e il premio ridotto dell'amichevole |
-| 6–11 | Carriera, Sfida, Squadra, Mercato, Il mio club, Sfide | da fare: per ora sono le schermate di prima, sotto la barra nuova |
+| 6 | Carriera (`vista-carriera.js`): prossima partita con «Gioca adesso», classifica a cinque righe con le medaglie, Trofeo dei Castelli, Coppa Titano, quattro scorciatoie. Stagione nuova con finestra di conferma (`finestra.js`). Classifica a pari punti: differenza reti, gol fatti, nome. Tolta la schermata di prima e 200 regole di stile rimaste senza uso | fatto |
+| 7–11 | Sfida, Squadra, Mercato, Il mio club, Sfide | da fare: per ora sono le schermate di prima, sotto la barra nuova |
 | 12 | Database dell'economia | da fare (condizioni in `docs/home-spec.md` §8.1) |
 
 Immagini: tutte le 26 illustrazioni sono **segnaposto** (nessuna consegnata); icone e cornici **definitive**; ritratti:
 quelli che il gioco disegna da sé, in attesa dei render da Blender.
 
 Controllo delle schermate: `node scripts/prove/schermate.cjs cartella` fotografa tutto alle tre misure di iPhone e, nelle
-parti rifatte (barra e Home), controlla le regole di qualità: testo mai sotto 12 px, niente tagli, niente fuori schermo,
+parti rifatte (barra, Home, Carriera, finestre), controlla le regole di qualità: testo mai sotto 12 px, niente tagli, niente fuori schermo,
 pulsanti della barra da 44 px, anche con nomi lunghi e saldi grandi.
 Provvisorio fino al passo 7: nella schermata prima della partita «Gioca» sta fisso in basso a destra e, sull'iPhone più
 piccolo, giorno e notte si raggiungono scorrendo.

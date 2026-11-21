@@ -73,6 +73,17 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
   const vecchia = JSON.parse(JSON.stringify(M)); delete vecchia.monete; delete vecchia.rose; delete vecchia.movimenti;
   const letta = K.carica({ getItem: () => JSON.stringify(vecchia) }); assert.equal(letta.monete, P.inizio); assert.deepEqual(letta.rose, {}); assert.deepEqual(letta.movimenti, []);
 }
+// classifica a pari punti: prima la differenza reti, poi i gol fatti, poi il nome della squadra (non la sigla interna)
+{
+  const cl = JSON.parse(JSON.stringify(clubs)), Z = K.nuova(cl, 'z', 'academy', rnd), t0 = K.classifica(Z, cl);
+  const nomi = t0.map((r) => cl.find((c) => c.id === r.id).name);
+  assert.deepEqual(nomi, nomi.slice().sort((a, b) => a.localeCompare(b, 'it')), 'a zero punti la classifica va in ordine di nome');
+  // il club dell'utente con un nome nuovo cambia posto: conta il nome che si vede
+  cl.find((c) => c.id === 'academy').name = 'Aaa Primi'; assert.equal(K.classifica(Z, cl)[0].id, 'academy');
+  // una vittoria per 3-0 batte una per 1-0, e a pari differenza reti chi ha segnato di più sta davanti
+  Z.ris[0] = Z.cal[0].map((_, k) => (k === 0 ? [3, 0] : k === 1 ? [1, 0] : k === 2 ? [4, 1] : [0, 0])); const t1 = K.classifica(Z, cl);
+  assert.equal(t1[0].id, Z.cal[0][2][0]); assert.equal(t1[1].id, Z.cal[0][0][0]); assert.equal(t1[2].id, Z.cal[0][1][0]);
+}
 // mercato: prezzi, scambio, monete insufficienti, ruolo diverso, numeri di maglia, ritorno alle rose di partenza
 {
   const cl = JSON.parse(JSON.stringify(clubs)), valore = (ruolo, q) => 50 + q; // valore di prova: cresce col prezzo del listone
