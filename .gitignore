@@ -4,3 +4,6 @@ public/app.js
 *.log
 public/index.html
 public/sw.js
+
+# Python
+__pycache__/

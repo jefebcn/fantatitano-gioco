@@ -164,3 +164,24 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   agente, offerte, allenatori e potenziale, strutture, energia, serie di sette giorni, sfide e percorso, obiettivi,
   promozione e retrocessione fino al Campionato Sammarinese. `scripts/lib/mondo.mjs` prepara fuori dal browser quello che
   la home prepara all'avvio.
+
+## Ritratti (21/11)
+Come sono fatti e come si rifanno: `docs/ritratti.md`. Strumenti: `scripts/blender/render_ritratti.py`, `scripts/ritratti_webp.py`.
+
+- **Stato**: secondo foglio di prova da 12 mandato ad Alex; **gli altri non si generano prima del suo OK**. Nel gioco i
+  ritratti sono ancora quelli vecchi.
+- **Decisioni di Alex**: maglia neutra colorata dal gioco; un ritratto per ogni giocatore vero e circa 150 volti
+  condivisi per inventati e mercato, mai due facce uguali nella stessa rosa o nella stessa partita.
+- **Secondo giro, fatto**: ritratto a due strati (testa del giocatore + maglia uguale per tutti, colorata dopo), polo col
+  colletto vero e pieghe, busto da calciatore, niente riflessi gialli sui capelli, tratti maschili, calvo senza ciocche,
+  capelli a ciuffi, espressioni e teste girate, tutta la testa nell'inquadratura.
+- **Giudizio sul secondo foglio** (mio): molto meglio del primo. Restano deboli: le pieghe della stoffa (leggere), il
+  taglio «corto» (a ciuffetti), le espressioni (si vedono poco in piccolo). `docs/riferimenti/modello-carte.png` non è
+  nel repository: il confronto affiancato manca ancora.
+- **Tempi** (computer cloud, 4 processori, senza scheda grafica, 800 punti di lato, 256 campioni con soglia di rumore):
+  circa 50 secondi a testa più 3 di preparazione; la maglia 35 secondi una volta sola. 265 veri + 150 condivisi = 415
+  teste: circa 6 ore; a 1024 punti circa 10.
+- **Peso**: testa a 512 e 256 punti insieme circa 26 KB a volto (415 volti: circa 11 MB); maglia comune 183 KB.
+- **Dopo l'OK, da fare**: l'«aspetto» di ogni giocatore vero nei dati e l'insieme dei 150 condivisi; la regola che
+  assegna i volti senza doppioni in rosa e in partita; nel gioco, il conto che colora la maglia (lo stesso di `componi`
+  in `scripts/ritratti_webp.py`) e i ritratti nuovi al posto di quelli disegnati dal modello 3D.

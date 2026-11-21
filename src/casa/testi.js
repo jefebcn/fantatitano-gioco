@@ -176,7 +176,8 @@ const IT = {
   'club.allenamento': 'Allenatori',
   'mercato.vuoto': 'Rinforza la squadra',
   // ingresso
-  'capitano.tocca': 'Tocca un giocatore',
+  'capitano.titolo': 'Ingaggia il tuo capitano',
+  'capitano.tocca': 'Tocca un giocatore per sceglierlo',
   'capitano.ingaggia': (nome) => `Ingaggia ${nome}`,
   'capitano.forte': 'Punto forte',
   // statistiche dei giocatori: sigla e nome intero
