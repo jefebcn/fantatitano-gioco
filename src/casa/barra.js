@@ -7,6 +7,7 @@ import { img, club } from '../game.js';
 import { K, mon, fmtTempo } from './casa.js';
 import { icona, stelline } from './icone.js';
 import { adatta } from './carte.js';
+import { nomiDi } from '../dati/squadre.js';
 import { t } from './testi.js';
 import { apri, indietro, livello, quandoCambia } from './nav.js';
 
@@ -18,11 +19,11 @@ document.getElementById('vs').insertAdjacentHTML('beforebegin', `<div id="barraF
   <span class="molla"></span>
   <button class="val" data-vai="guadagna" aria-label="${t('barra.diamanti')}">${icona('diamante')}<b id="bDia"></b><u>${icona('piu')}</u></button>
   <button class="val" data-vai="guadagna" aria-label="${t('barra.monete')}">${icona('moneta')}<b id="bMon"></b><u>${icona('piu')}</u></button>
-  <button class="prof" data-vai="profilo" aria-label="${t('barra.profilo')}"><img id="bStemma" alt=""><span><b id="bNome" data-adatta data-sparisce></b><i id="bClub" data-adatta></i><span id="bStelle"></span></span></button>
+  <button class="prof" data-vai="profilo" aria-label="${t('barra.profilo')}"><img id="bStemma" alt=""><span><b id="bNome" data-adatta data-due-righe></b><i id="bClub" data-adatta></i><span id="bStelle"></span></span></button>
 </div>`);
 const el = (id) => document.getElementById(id);
-// Il saldo nella barra: intero fino a 99.999, poi in migliaia («123 k») e in milioni («1,2 M»), perché stia sempre nel suo posto
-const saldo = (n) => (n < 1e5 ? mon(n) : n < 1e6 ? `${Math.floor(n / 1e3)} k` : `${(Math.floor(n / 1e5) / 10).toLocaleString('it-IT')} M`);
+// Il saldo nella barra: col punto delle migliaia fino a 99.999, poi in migliaia («120 K») e in milioni («1,2 M»)
+const saldo = (n) => (n < 1e5 ? mon(n) : n < 1e6 ? `${Math.floor(n / 1e3)} K` : `${(Math.floor(n / 1e5) / 10).toLocaleString('it-IT')} M`);
 el('barraF').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.id === 'bCasa') return livello() ? indietro() : undefined;
@@ -41,14 +42,14 @@ export function aggiornaBarra() {
   const casa = el('bCasa'); casa.innerHTML = icona(inHome ? 'home' : 'indietro'); casa.classList.toggle('acceso', inHome); casa.setAttribute('aria-label', t(inHome ? 'barra.home' : 'barra.indietro'));
   el('bSettT').textContent = fmtTempo(CAR.fineSettimana(oggi) - oggi); el('bSettP').textContent = `${st.conti.w[0]}/${st.conti.w[1]}`;
   el('bSettB').classList.toggle('nas', !st.w.some((x) => x.fatto && !x.preso) && !(st.bonus.w && st.bonus.w.fatto && !st.bonus.w.preso));
-  el('bPremiL').textContent = t('barra.livello', pe.livello); el('bPremiP').style.width = `${pe.livello >= pe.livelli ? 100 : Math.round(pe.nelLivello / pe.perLivello * 100)}%`;
+  el('bPremiL').textContent = t('barra.livello', pe.inCorso); el('bPremiP').style.width = `${pe.livello >= pe.livelli ? 100 : Math.round(pe.nelLivello / pe.perLivello * 100)}%`;
   el('bPremiB').classList.toggle('nas', !pe.daRitirare);
   el('bDia').textContent = saldo(K.gemme); el('bMon').textContent = saldo(K.monete);
   el('bStemma').src = img(me.id + '-mini'); el('bStelle').innerHTML = stelline(me.str);
-  // un nome di manager troppo lungo per il suo posto lascia il posto alla prima parola
-  const nm = el('bNome'); nm.textContent = K.nome; delete nm.dataset.intero; nm.dataset.corto = K.nome.split(' ')[0];
-  // un nome di club troppo lungo per il suo posto lascia il posto alla sigla
-  const cl = el('bClub'); cl.textContent = me.name; delete cl.dataset.intero; cl.dataset.corto = me.short; adatta(el('barraF'));
+  // un nome di manager troppo lungo per il suo posto: prima si rimpicciolisce, poi resta la prima parola, poi va su due righe
+  const nm = el('bNome'); nm.textContent = nm.dataset.intero = K.nome; nm.dataset.corto = K.nome.split(' ')[0];
+  // il nome del club: intero, poi breve, poi la sigla
+  const cl = el('bClub'), nomi = nomiDi(me); cl.textContent = cl.dataset.intero = nomi.nome; cl.dataset.corto = nomi.breve; cl.dataset.sigla = nomi.sigla; adatta(el('barraF'));
 }
 quandoCambia(aggiornaBarra);
 addEventListener('resize', aggiornaBarra);

@@ -161,7 +161,8 @@ export function puntiPercorso(C, fonte, n = 1) { percorsoDi(C).punti += (ECONOMI
 export function statoPercorso(C) {
   const P = percorsoDi(C), E = ECONOMIA.percorso, livello = Math.min(E.premi.length, Math.floor(P.punti / E.perLivello));
   const premi = E.premi.map((x, i) => ({ livello: i + 1, monete: x.m || 0, gemme: x.g || 0, raggiunto: i < livello, preso: P.presi.includes(i + 1) }));
-  return { livello, livelli: E.premi.length, punti: P.punti, nelLivello: livello >= E.premi.length ? E.perLivello : P.punti % E.perLivello, perLivello: E.perLivello, premi, daRitirare: premi.filter((x) => x.raggiunto && !x.preso).length };
+  // livello: quanti livelli sono stati raggiunti, 0 all'inizio. inCorso: il livello che si sta facendo, da 1: è quello che si mostra
+  return { livello, inCorso: Math.min(E.premi.length, livello + 1), livelli: E.premi.length, punti: P.punti, nelLivello: livello >= E.premi.length ? E.perLivello : P.punti % E.perLivello, perLivello: E.perLivello, premi, daRitirare: premi.filter((x) => x.raggiunto && !x.preso).length };
 }
 /** Ritira il premio di un livello raggiunto (0 = tutti quelli da ritirare). */
 export function ritiraPercorso(C, livello = 0) {

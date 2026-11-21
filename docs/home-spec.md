@@ -267,6 +267,9 @@ Prezzo di un giocatore = (valutazione − 45)² × 4, arrotondato alle decine.
 Stato: accesi sulle schermate col passo 4 (21/11): valutazioni 55–82 e prezzi di questa tabella (`prezzoDa` in
 `ECONOMIA`, `src/config.js`). Il file del database dice gli stessi numeri (`mercato_base`), provato su un Postgres locale.
 
+Formato dei numeri nella barra: punto delle migliaia fino a 99.999, poi «120 K» e «1,2 M». Uno scenario vinto darà 15
+diamanti (`ECONOMIA.scenario`), quando la partita saprà giocarlo.
+
 ### 5.3 Quante partite servono
 Due giocatori tipo:
 - **medio**: vince il 45% delle partite, ne pareggia il 25%, segna 1,5 gol a partita → **210 monete a partita**; con le
