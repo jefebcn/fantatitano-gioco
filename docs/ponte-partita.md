@@ -215,3 +215,27 @@ non possa dare. Risposte e precisazioni:
 
 Scoperta utile a tutte e due: con l'audio acceso la stessa partita simulata cambia, perché l'audio usa gli stessi numeri
 casuali della partita. Le prove automatiche non se ne accorgono (non accendono l'audio).
+
+### 8.1 Passo 1 fatto dalla sessione «partita» (21/11)
+Nel codice, in aggiunta a quello che c'era (`gioca()` e `showEnd()` restano):
+
+- `src/ponte.js`: `SA_FARE`, `controllaRichiesta(richiesta, moduli)`, `controllaEsito(esito)` e l'oggetto `ponte`. La home
+  importa `ponte` da lì e chiama **`ponte.avviaPartita(richiesta)`**: risponde `{ ok: true }`, oppure
+  `{ ok: false, errori: [...] }` senza far partire niente.
+- La partita parte subito dalla schermata «contro» (il pre-partita lo mostra la home prima di chiamare).
+- Dalla richiesta usa: squadre, titolari e panchina (nome, reparto, numero, forza), modulo e mentalità dell'utente, modulo
+  dell'avversario, maglie, capitano, scarpini e pallone, difficoltà, ora, rigori se finisce pari, **energia iniziale**.
+  Se l'utente è la seconda squadra gioca in trasferta. Ignora per ora: `altezza`, `fuoriRuolo`, `rigorista`, `punizioni`,
+  `angoli`, `meteo`, `scenario`, `allenamento`.
+- A fine partita c'è solo il tasto «Continua»: lì la partita torna al menu e chiama `allaFine(esito)` una volta sola.
+  Dalla pausa, «Esci dalla partita» consegna l'esito con `finita: false`.
+- Nell'esito c'è tutto il §4. Il `tipo` del gol è azione, rigore, punizione, testa o autogol («angolo» non c'è ancora).
+  Negli autogol `id` è il giocatore che l'ha fatto, nella squadra che ha subito.
+- Prova: `node scripts/prove/ponte.cjs` (una partita intera avviata da una richiesta, più un abbandono); gira anche nella CI.
+
+Esempio minimo per la home:
+```js
+import { ponte, SA_FARE } from './ponte.js';
+const risposta = ponte.avviaPartita({ versione: 1, tipo: 'campionato', squadre: [casa, ospite], allaFine: (esito) => { /* conti e schermata */ } });
+if (!risposta.ok) console.warn(risposta.errori);
+```
