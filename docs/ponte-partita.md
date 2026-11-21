@@ -271,3 +271,20 @@ Nell'esito cambia questo:
 Una richiesta con lo scenario sbagliato (minuto fuori misura, punteggio mancante) viene rifiutata con `{ ok: false, errori }`.
 Prova: `node scripts/prove/ponte.cjs` gioca anche uno scenario dal 70' sullo 0-1.
 
+## 9. Nota per la sessione della home: saldo sul telefono o sul server (21/11)
+Alex ha deciso che per ora **non si applica niente al database** dell'app: saldo e storico restano sul telefono. Ha
+chiesto però che passare al server sia «un solo cambio». Il file `supabase/002-lapartita-economia.sql` è pronto (non
+applicato) e le cose da fare prima sono in `docs/stato-lavori.md`, «Prima del lancio».
+
+Il codice del saldo è tuo (`src/carriera.js`, `src/casa/`), quindi la proposta è questa, da fare nel tuo passo 12:
+
+- un valore solo in `src/config.js`: `ECONOMIA.saldo: 'telefono'` (l'altro valore sarà `'server'`). Se vuoi lo aggiungo
+  io, il file è della partita: basta dirlo ad Alex;
+- un solo punto del codice che lo legge: un piccolo oggetto «cassa» con le stesse sette azioni delle funzioni del
+  database (`stato`, `partitaInizia`, `partitaChiudi`, `riscuoti`, `compra`, `scambia`, `movimenti`). Con `'telefono'`
+  le fa con `muovi`, `compraOggetto` e le altre di `src/carriera.js`, come oggi; con `'server'` chiama le funzioni
+  `lapartita_*` e tiene sul telefono solo una copia da mostrare;
+- le schermate chiamano sempre la cassa, mai direttamente `K.monete` o `K.diamanti` per scrivere.
+
+Dalla partita non serve niente: l'esito del ponte ha già `secondiVeri`, che il server usa per accettare il premio.
+
