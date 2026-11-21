@@ -33,6 +33,9 @@ export const LINGUE = ['it'];
 
 export const TESTI = {
   it: {
+    /* ---------- telefono in verticale */
+    'ruota.titolo': 'Ruota il telefono',
+    'ruota.aiuto': 'Se non si gira, disattiva il blocco rotazione dal Centro di Controllo',
     /* ---------- comuni */
     'formato.decimale': ',',
     'comune.rigori': (a, b) => `(${a}-${b} rig.)`,

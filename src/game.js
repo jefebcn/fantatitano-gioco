@@ -2457,17 +2457,22 @@ const AU = creaAudio();
 function bindInput() {
   // levetta a base fissa (come Dream League): il centro è quello del cerchio disegnato, ovunque si tocchi la metà sinistra
   const zona = $('#stickZona'), stick = $('#stick'), knob = stick.firstElementChild; let sid = null, ox = 0, oy = 0; const R = LEVETTA.raggio;
-  const loc = (e) => (G.rot ? [e.clientY, window.innerWidth - e.clientX] : [e.clientX, e.clientY]); // dal tocco sullo schermo al punto nel gioco
   const centro = () => { ox = zona.offsetLeft + stick.offsetLeft + stick.offsetWidth / 2; oy = zona.offsetTop + stick.offsetTop + stick.offsetHeight / 2; };
   const muovi = (e) => {
-    const q = loc(e); let dx = q[0] - ox, dy = q[1] - oy; const l = hyp(dx, dy);
+    let dx = e.clientX - ox, dy = e.clientY - oy; const l = hyp(dx, dy);
     if (l > R) { dx *= R / l; dy *= R / l; } G.in.jx = dx / R; G.in.jy = dy / R; knob.style.transform = `translate(${dx}px,${dy}px)`;
     stick.classList.toggle('scatto', hyp(dx, dy) >= R * LEVETTA.scatto);
   };
-  zona.addEventListener('pointerdown', (e) => { if (sid !== null) return; sid = e.pointerId; zona.setPointerCapture(sid); centro(); muovi(e); e.preventDefault(); });
+  const molla = () => { sid = null; G.in.jx = G.in.jy = 0; knob.style.transform = ''; stick.classList.remove('scatto'); };
+  // Un dito alla volta comanda la levetta. Se il dito di prima è sparito senza avvisare (scivolato oltre il bordo, gesto di
+  // sistema) quello nuovo prende il suo posto: prima il pomello restava spinto di lato, come un secondo cerchio sul bordo.
+  zona.addEventListener('pointerdown', (e) => { if (sid !== null && sid !== e.pointerId) molla(); sid = e.pointerId; try { zona.setPointerCapture(sid); } catch (err) { /* il dito è già andato via */ } centro(); muovi(e); e.preventDefault(); });
   zona.addEventListener('pointermove', (e) => { if (e.pointerId === sid) muovi(e); });
-  const end = (e) => { if (e.pointerId !== sid) return; sid = null; G.in.jx = G.in.jy = 0; knob.style.transform = ''; stick.classList.remove('scatto'); };
-  zona.addEventListener('pointerup', end); zona.addEventListener('pointercancel', end);
+  const end = (e) => { if (e.pointerId === sid) molla(); };
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) zona.addEventListener(ev, end);
+  // senza più dita sullo schermo, o tornando da un'altra app, la levetta torna sempre al centro
+  window.addEventListener('touchend', (e) => { if (sid !== null && !e.touches.length) molla(); }); window.addEventListener('touchcancel', molla);
+  window.addEventListener('blur', molla); document.addEventListener('visibilitychange', () => { if (document.hidden) molla(); });
   const btn = (id, down, up) => {
     const el = $(id);
     el.addEventListener('pointerdown', (e) => { e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('giu'); down(); });
@@ -2633,14 +2638,29 @@ function showEnd() {
 
 /* ------------------------------------------------------------------ avvio */
 // Solo orizzontale: se lo schermo è in verticale (anche col blocco della rotazione) il gioco si disegna ruotato di lato
+// Solo orizzontale, senza girare il gioco a forza: col telefono in verticale compare «Ruota il telefono» (#ruota) e la
+// partita si ferma. Su iOS l'orientamento del manifest non vale e girando il gioco via CSS barra di stato e tastiera
+// restavano in verticale. Su un computer la finestra stretta resta com'è (non c'è niente da girare).
 function resize() {
-  const iw = window.innerWidth, ih = window.innerHeight, rot = ih > iw, w = rot ? ih : iw, h = rot ? iw : ih, root = document.documentElement, st = document.body.style;
-  G.rot = rot; st.width = `${w}px`; st.height = `${h}px`; st.left = rot ? `${iw}px` : '0'; st.transform = rot ? 'rotate(90deg)' : 'none';
-  root.style.setProperty('--vw', `${w / 100}px`); root.style.setProperty('--vh', `${h / 100}px`);
+  const iw = window.innerWidth, ih = window.innerHeight, root = document.documentElement, st = document.body.style;
+  const verticale = ih > iw && matchMedia('(pointer: coarse)').matches;
+  root.classList.toggle('verticale', verticale); if (verticale && G.state !== 'menu' && G.state !== 'full' && !G.paused && !G.auto) pause(true);
+  st.width = `${iw}px`; st.height = `${ih}px`;
+  root.style.setProperty('--vw', `${iw / 100}px`); root.style.setProperty('--vh', `${ih / 100}px`);
   // la dashboard è disegnata per un telefono in orizzontale (circa 430 px di altezza): sugli schermi più alti si ingrandisce tutta
-  root.style.setProperty('--zh', String(clamp(Math.min(h / 420, w / 880), 1, 1.8)));
-  root.classList.toggle('rot', rot); root.classList.toggle('largo', w / h >= 1.3); root.classList.toggle('basso', h <= 480); root.classList.toggle('bassissimo', h <= 430);
-  renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+  root.style.setProperty('--zh', String(clamp(Math.min(ih / 420, iw / 880), 1, 1.8)));
+  root.classList.toggle('largo', iw / ih >= 1.3); root.classList.toggle('basso', ih <= 480); root.classList.toggle('bassissimo', ih <= 430);
+  renderer.setSize(iw, ih, false); cam.aspect = iw / ih; cam.updateProjectionMatrix();
+}
+// Tastiera a schermo: --tast è lo spazio che copre in basso (da visualViewport). Le schermate finiscono sopra la tastiera
+// e il campo che si sta scrivendo viene portato in vista, così né lui né il pulsante sotto restano coperti.
+function tastiera() {
+  const vv = window.visualViewport; if (!vv) return;
+  const coperto = Math.max(0, window.innerHeight - vv.height - vv.offsetTop), aperta = coperto > 60;
+  document.documentElement.style.setProperty('--tast', `${aperta ? Math.round(coperto) : 0}px`);
+  if (!aperta) return;
+  window.scrollTo(0, 0); const a = document.activeElement;
+  if (a && /^(INPUT|TEXTAREA)$/.test(a.tagName)) a.scrollIntoView({ block: 'center' });
 }
 const CREST = {};
 function loadImg(src) { return new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
@@ -2686,6 +2706,8 @@ function loop(ts) {
 }
 async function boot() {
   resize(); window.addEventListener('resize', resize);
+  if (window.visualViewport) { window.visualViewport.addEventListener('resize', tastiera); window.visualViewport.addEventListener('scroll', tastiera); }
+  document.addEventListener('focusin', () => setTimeout(tastiera, 300)); document.addEventListener('focusout', () => setTimeout(tastiera, 100));
   await Promise.all([buildPitch(), loadModel()]); // il campo carica le sue texture mentre arriva il modello
   try { await Promise.race([document.fonts.load('40px Anton'), new Promise((r) => setTimeout(r, 2500))]); } catch (e) { /* si disegna col font di sistema */ }
   const lock = await loadImg('img/corona-lime.png');
