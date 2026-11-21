@@ -1,6 +1,7 @@
 # Ritratti dei giocatori
 
 Stato (21/11): **foglio di prova da 12 fatto, in attesa dell'OK di Alex**. Gli altri ritratti non si generano prima.
+Il foglio di prova è stato reso a 800 punti di lato; i ritratti definitivi si rendono a 1024.
 I ritratti di oggi nel gioco sono ancora quelli vecchi, disegnati al momento dal modello 3D della partita.
 
 ## Come sono fatti

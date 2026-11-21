@@ -164,3 +164,17 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   agente, offerte, allenatori e potenziale, strutture, energia, serie di sette giorni, sfide e percorso, obiettivi,
   promozione e retrocessione fino al Campionato Sammarinese. `scripts/lib/mondo.mjs` prepara fuori dal browser quello che
   la home prepara all'avvio.
+
+## Ritratti (21/11)
+Come sono fatti e come si rifanno: `docs/ritratti.md`. Strumenti: `scripts/blender/render_ritratti.py`, `scripts/ritratti_webp.py`.
+
+- **Stato**: foglio di prova da 12 mandato ad Alex; **gli altri non si generano prima del suo OK**. Nel gioco i ritratti
+  sono ancora quelli vecchi.
+- **Giudizio sul foglio** (mio): volti, pelle, occhi e barbe vanno; **capelli lisci** (ciuffo, riga, lunghi, stempiato),
+  **maglia** (sembra una felpa, spalle gonfie) ed **espressione** (uguale e spenta per tutti) non sono ancora da
+  «qualità eccellente». `docs/riferimenti/modello-carte.png` non è nel repository: il confronto affiancato manca.
+- **Tempi** (computer cloud, 4 processori, senza scheda grafica, 800 punti di lato, 256 campioni con soglia di rumore):
+  circa 62 secondi a ritratto più 3 di preparazione. 265 giocatori veri: circa 5 ore; a 1024 punti circa 8.
+- **Peso**: WebP a 512 e 256 punti insieme circa 32 KB a giocatore (265 giocatori: circa 8,5 MB).
+- **Da decidere con Alex**: maglia resa nel ritratto o colorata dal gioco (cambia con trasferimenti e maglia
+  dell'utente); quanti volti per i 1080 giocatori inventati e per quelli del mercato, che sono senza fine.
