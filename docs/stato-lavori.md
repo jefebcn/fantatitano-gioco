@@ -166,25 +166,24 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   la home prepara all'avvio.
 
 ## Ritratti (21/11)
-Come sono fatti e come si rifanno: `docs/ritratti.md`. Strumenti: `scripts/blender/render_ritratti.py`, `scripts/ritratti_webp.py`.
+Come sono fatti, chi ha quale volto e come si rifanno: `docs/ritratti.md`. Strumenti: `scripts/aspetti.mjs`,
+`scripts/blender/render_ritratti.py`, `scripts/blender/tutti.sh`, `scripts/ritratti_webp.py`, `scripts/volti.mjs`.
 
-- **Stato**: terzo foglio di prova da 12 mandato ad Alex; **gli altri non si generano prima del suo OK**. Nel gioco i
-  ritratti sono ancora quelli vecchi.
-- **Decisioni di Alex**: maglia neutra colorata dal gioco; un ritratto per ogni giocatore vero e circa 150 volti
-  condivisi per inventati e mercato, mai due facce uguali nella stessa rosa o nella stessa partita; di base girocollo o
-  scollo a V, colletto piccolo solo come variante di alcune squadre; colore degli occhi legato alla pelle.
-- **Terzo giro, fatto**: ritratto a strati (testa del giocatore, maglia uguale per tutti e colorata dopo, capelli e
-  barba che le cadono davanti); girocollo e scollo a V al posto della polo; righe e scacchi che seguono la stoffa; pelle
-  meno liscia e meno lucida con la luce di contorno neutra; sopracciglia a peli veri; occhi scuri con le pelli scure;
-  attaccatura dei capelli sfumata; velo di barba.
-- **Ancora da fare sui ritratti**: il colletto piccolo (due prove non all'altezza: serve un modello suo).
-  `docs/riferimenti/modello-carte.png` non è nel repository: il confronto affiancato manca ancora.
+- **Stato**: Alex ha approvato il terzo foglio di prova e ha chiesto tutti i ritratti. **In generazione**: 415 volti (265
+  giocatori veri + 150 condivisi), a blocchi, prima i condivisi. I file arrivano in `public/img/ritratti/`; l'elenco
+  per il gioco è `src/dati/volti.json` (da rifare con `node scripts/volti.mjs` quando arrivano altri volti).
+- **Nel gioco, fatto**: la home compone i ritratti nuovi (`src/casa/ritratti.js`, numeri in `RITRATTI` di
+  `src/config.js`): testa, maglia coi colori e i disegni della squadra in cui il giocatore gioca adesso, capelli
+  davanti. Carte piccole col viso, carta grande col busto. Chi non ha ancora il ritratto nuovo tiene quello vecchio.
+- **Regola dei volti, fatta**: un volto per ogni giocatore vero; 150 condivisi per inventati e mercato, mai due facce
+  uguali nella stessa rosa né tra un'altra squadra e la mia (nella mia rosa i volti restano scritti nella carriera).
+- **Decisioni di Alex**: maglia neutra colorata dal gioco; di base girocollo o scollo a V, colletto piccolo solo come
+  variante di alcune squadre; colore degli occhi legato alla pelle.
+- **Ancora da fare**: il colletto piccolo (per ora chi ha la polo in partita ha il girocollo nel ritratto); gli avatar
+  del manager sono ancora quelli vecchi del modello 3D; il giro completo delle foto alle tre misure di iPhone con tutti
+  i volti, prima di unire. `docs/riferimenti/modello-carte.png` non è nel repository.
 - **Tempi** (computer cloud, 4 processori, senza scheda grafica, 800 punti di lato, 256 campioni con soglia di rumore):
-  in media 77 secondi a volto (da 50 a 160: il più lento è chi ha i capelli lunghi, che ha anche lo strato «sopra»), più
-  3 di preparazione; ogni maglia 26 secondi, una volta sola. 265 veri + 150 condivisi = 415 volti: circa 9 ore; a 1024
-  punti circa 15.
+  in media 80-95 secondi a volto (chi ha i capelli lunghi arriva a 160, perché ha anche lo strato «sopra»); ogni maglia
+  26 secondi, una volta sola. 415 volti: circa 10-11 ore.
 - **Peso**: testa a 512 e 256 punti insieme circa 27 KB a volto (415 volti: circa 11 MB); le due maglie 345 KB in tutto.
-- **Dopo l'OK, da fare**: l'«aspetto» di ogni giocatore vero nei dati e l'insieme dei 150 condivisi; lo scollo di ogni
-  squadra nei dati; la regola che assegna i volti senza doppioni in rosa e in partita; nel gioco, il conto che colora la
-  maglia (lo stesso di `componi` in `scripts/ritratti_webp.py`) e i ritratti nuovi al posto di quelli disegnati dal
-  modello 3D.
+  I ritratti non si precaricano: ogni telefono prende solo quelli che guarda.
