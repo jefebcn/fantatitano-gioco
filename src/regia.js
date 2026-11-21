@@ -24,18 +24,16 @@ export function creaRegia(X) {
   const stile = document.createElement('style');
   stile.textContent = `
 #hud.cine #stickZona,#hud.cine #tasti,#hud.cine #radar,#hud.cine #chi,#hud.cine #en,#hud.cine #pow,#hud.cine #ment{display:none!important}
-#golc{position:absolute;left:50%;bottom:11%;transform:translate(-50%,26px);display:flex;opacity:0;transition:opacity .28s,transform .28s;pointer-events:none;filter:drop-shadow(0 8px 20px rgba(0,0,0,.55));white-space:nowrap}
-#golc.su{opacity:1;transform:translate(-50%,0)}
-#golc .sx{position:relative;width:84px;background:var(--lime);border-radius:12px 0 0 12px;display:flex;align-items:center;justify-content:center;padding:6px}
-#golc .sx img{height:62px;width:auto;max-width:66px;object-fit:contain}
-#golc .sx b{position:absolute;right:5px;bottom:2px;font-family:Anton;font-weight:400;font-size:20px;color:var(--ink);line-height:1;text-shadow:0 0 3px var(--lime),0 0 3px var(--lime)}
-#golc .dx{background:var(--ink);border-radius:0 12px 12px 0;min-width:210px;overflow:hidden;box-shadow:inset 0 0 0 2px var(--viola)}
-#golc .r1{display:flex;justify-content:space-between;align-items:center;background:var(--viola);font-family:Anton;font-size:17px;letter-spacing:.08em;padding:3px 12px 2px;text-transform:uppercase}
+#golc{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);transform:translateX(-50%);display:flex;height:30px;opacity:0;transition:opacity .35s;pointer-events:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5));white-space:nowrap}
+#golc.su{opacity:1}
+#golc .sx{width:36px;background:var(--lime);border-radius:8px 0 0 8px;display:flex;align-items:center;justify-content:center}
+#golc .sx img{height:24px;width:auto;max-width:28px;object-fit:contain}
+#golc .dx{display:flex;align-items:center;gap:9px;background:var(--ink);border-radius:0 8px 8px 0;padding-right:12px;overflow:hidden;box-shadow:inset 0 0 0 1.5px var(--viola)}
+#golc .r1{align-self:stretch;display:flex;align-items:center;gap:6px;background:var(--viola);font-family:Anton;font-size:13px;letter-spacing:.08em;padding:0 9px;text-transform:uppercase}
 #golc .r1 i{font-style:normal;color:var(--lime)}
-#golc .nm{font-family:Anton;font-size:23px;text-transform:uppercase;letter-spacing:.02em;padding:6px 12px 0;line-height:1.05}
-#golc .as,#golc .cl{font-size:11px;padding:1px 12px;color:rgba(255,255,255,.72);letter-spacing:.04em}
+#golc .nm{font-family:Anton;font-size:16px;text-transform:uppercase;letter-spacing:.02em;line-height:1}
+#golc .as{font-size:10px;color:rgba(255,255,255,.72);letter-spacing:.04em}
 #golc .as:empty{display:none}#golc .as b{color:#fff}
-#golc .cl{padding-bottom:7px;color:var(--lime);text-transform:uppercase;font-weight:900;font-size:10px;letter-spacing:.1em}
 #salta{position:absolute;left:50%;bottom:3.5%;transform:translateX(-50%);font:900 10px Lato,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.8);text-shadow:0 1px 4px #000;opacity:0;transition:opacity .3s;pointer-events:none}
 #salta.su{opacity:1}
 #rep{position:absolute;right:14px;bottom:14px;font-family:Anton;font-size:15px;letter-spacing:.1em;background:var(--lime);color:var(--ink);padding:5px 13px 4px;border-radius:8px;opacity:0;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.4)}
@@ -49,7 +47,7 @@ export function creaRegia(X) {
   document.head.appendChild(stile);
   const hud = $('#hud');
   const el = (id, html) => { const d = document.createElement('div'); d.id = id; d.innerHTML = html || ''; hud.appendChild(d); return d; };
-  const golc = el('golc', '<div class="sx"><img alt=""><b></b></div><div class="dx"><div class="r1"><span></span><i></i></div><div class="nm"></div><div class="as"></div><div class="cl"></div></div>');
+  const golc = el('golc', '<div class="sx"><img alt=""></div><div class="dx"><div class="r1"><span></span><i></i></div><div class="nm"></div><div class="as"></div></div>');
   golc.querySelector('.r1 span').textContent = tr('regia.gol');
   const salta = el('salta', tr('regia.salta')), rep = el('rep', tr('regia.replay'));
   // stacco col logo Fantatitano (replay, angoli dopo una grande occasione): una fascia diagonale nera con la corona gialla attraversa
@@ -321,11 +319,11 @@ export function creaRegia(X) {
     const cx = sgn(sc.x || 1) * (HL - 7), cz = sgn(sc.z || 1) * (HW - 7), d = hyp(cx - sc.x, cz - sc.z) || 1, m = Math.min(d, 10);
     G.cine = { fx: sc.x + (cx - sc.x) / d * m, fz: sc.z + (cz - sc.z) / d * m };
     S.a0 = Math.atan2(cx - sc.x, cz - sc.z) + .4;
-    golc.querySelector('img').src = X.img(t.club.id); golc.querySelector('.sx b').textContent = auto ? '' : sc.num;
+    golc.querySelector('img').src = X.img(t.club.id);
     golc.querySelector('.r1 span').textContent = tr(auto ? 'regia.autogol' : 'regia.gol'); golc.querySelector('.r1 i').textContent = `${g.min}'`;
     golc.querySelector('.nm').textContent = auto ? (g.chi && g.chi.name) || tr('regia.autogol') : sc.name;
     const as = !auto && sc.by && sc.by.team === t && sc.by !== sc ? sc.by.name : '';
-    golc.querySelector('.as').innerHTML = as ? tr('regia.assist', esc(as)) : ''; golc.querySelector('.cl').textContent = t.club.name;
+    golc.querySelector('.as').innerHTML = as ? tr('regia.assist', esc(as)) : '';
     tabelloniGol(auto ? t.club.name : sc.name, t.club.c1, X.lum(t.club.c1) > .55 ? '#0A0A0C' : '#fff');
   }
   // Il difensore deluso in primo piano: il più vicino al marcatore tra chi ha subito il gol, messo tra la telecamera e il punto
@@ -415,7 +413,8 @@ export function creaRegia(X) {
       for (const b of boards) b.material.map.offset.x += dt * .22;
       if (t >= S.c0) { hud.classList.add('cine'); $('#banner').classList.remove('su'); }
       golc.classList.toggle('su', inFesta() && t > S.c0 + .25 && t < Math.min(S.c1 - .2, S.c0 + .25 + GOLSEQ.riquadro));
-      salta.classList.toggle('su', t > S.c0 + .6 && t < S.c2 - SEQ.stacco);
+      // «tocca per saltare» sta nello stesso punto della striscia del marcatore: compare quando quella se n'è andata
+      salta.classList.toggle('su', t > S.c0 + Math.max(.6, .6 + GOLSEQ.riquadro) && t < S.c2 - SEQ.stacco);
       rep.classList.toggle('su', replay && t < S.c2 - .15);
       if (!S.t1 && S.rp && t >= S.c1 - SEQ.stacco) { S.t1 = true; staccoLogo(RIVEDI.stacco); } // stacco col logo prima e dopo il replay
       if (!S.t2 && t >= S.c2 - SEQ.stacco) { S.t2 = true; staccoLogo(RIVEDI.stacco); }
