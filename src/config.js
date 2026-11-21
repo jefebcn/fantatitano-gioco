@@ -65,7 +65,7 @@ for (const f of Object.values(FORMS)) f.pos = f.pos.map(([x, z]) => [x * HL / 50
 // il secondo uomo raddoppia quando il primo è a meno di `primo` metri dal portatore e lui a meno di `raggio`, stringendo a
 // `stretto` metri
 export const PRESSING = { da: 18, primo: 3.5, raggio: 16, stretto: 2.2 };
-export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['In difesa', 'Equilibrata', 'In attacco'], push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
+export const MENT = { push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
 
 /* ---------------------------------------------------------------- telecamera di gioco */
 // Telecamera di gioco come in Dream League. Valori di partenza di Alex (36,9 m in pianta, 12,5 m, 21,3°, 28° verticali),
@@ -280,7 +280,7 @@ export const ECONOMIA = {
       { m: 200 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 400 }, { g: 3 }, { m: 200 }, { g: 3 }, { m: 400 }, { g: 20 }],
   },
   allenatore: { livelli: [{ voto: 60 }, { voto: 70, monete: 2000, gemme: 0 }, { voto: 80, monete: 5000, gemme: 0 }, { voto: 90, monete: 10000, gemme: 15 }, { voto: 99, monete: 20000, gemme: 30 }], sedute: 1, sconto: .05 },
-  finanze: [[500, 'Scarse'], [2000, 'Discrete'], [6000, 'Buone'], [Infinity, 'Eccellenti']],
+  finanze: [[500, 'scarse'], [2000, 'discrete'], [6000, 'buone'], [Infinity, 'eccellenti']],
   storico: 120,
   negozio: {
     avatar: { g: 10 }, cornice: { g: 10 }, scarpini: { g: 10 }, pallone: { g: 10 }, disegno: { g: 20 }, terza: { g: 30 }, rinnovo: { g: 5 },
