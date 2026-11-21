@@ -90,6 +90,13 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Da sapere: con l'audio acceso la stessa partita simulata cambia (l'audio usa i numeri casuali della partita). Le prove
   non se ne accorgono perché non accendono l'audio.
 
+## Due sessioni insieme (dal 21/11)
+- Questa sessione lavora sulla **partita** (campo, giocatori, IA, comandi). Un'altra lavora su **home, menu e sezioni**:
+  il suo stato è in fondo a `docs/stato-lavori.md`, l'accordo tra le due in `docs/ponte-partita.md`.
+- Ponte, passo 1 FATTO: `ponte.avviaPartita(richiesta)` in `src/ponte.js` e `src/game.js`, esito a fine partita con
+  `allaFine(esito)`. Prova: `scripts/prove/ponte.cjs` (anche in CI). `gioca()` e `showEnd()` restano finché la home non passa di lì.
+- Non toccare le schermate della home senza dirlo ad Alex: l'altra sessione le sta rifacendo e le sposterà in `src/casa/`.
+
 ## Decisioni recenti di Alex ancora valide
 - "Merge fallo sempre tu": PR → controlli verdi + anteprima Vercel → squash merge → verifica produzione.
 - Il gioco non è pubblico finché non lo dice lui (PR #114 dell'app non va unita).

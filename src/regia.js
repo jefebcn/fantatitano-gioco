@@ -323,7 +323,7 @@ export function creaRegia(X) {
     S.a0 = Math.atan2(cx - sc.x, cz - sc.z) + .4;
     golc.querySelector('img').src = X.img(t.club.id); golc.querySelector('.sx b').textContent = auto ? '' : sc.num;
     golc.querySelector('.r1 span').textContent = tr(auto ? 'regia.autogol' : 'regia.gol'); golc.querySelector('.r1 i').textContent = `${g.min}'`;
-    golc.querySelector('.nm').textContent = auto ? g.chi || tr('regia.autogol') : sc.name;
+    golc.querySelector('.nm').textContent = auto ? (g.chi && g.chi.name) || tr('regia.autogol') : sc.name;
     const as = !auto && sc.by && sc.by.team === t && sc.by !== sc ? sc.by.name : '';
     golc.querySelector('.as').innerHTML = as ? tr('regia.assist', esc(as)) : ''; golc.querySelector('.cl').textContent = t.club.name;
     tabelloniGol(auto ? t.club.name : sc.name, t.club.c1, X.lum(t.club.c1) > .55 ? '#0A0A0C' : '#fff');
