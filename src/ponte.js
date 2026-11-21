@@ -3,7 +3,7 @@
    esito, usati da tutte e due le parti e dalle prove. Niente che tocchi lo schermo: questo file gira anche in Node. */
 
 /** Cosa sa fare la partita oggi: la home accende solo quello che compare qui. */
-export const SA_FARE = { tipi: ['campionato', 'coppa', 'castelli', 'amichevole'], allenamenti: ['rigori'], energiaIniziale: true };
+export const SA_FARE = { tipi: ['campionato', 'coppa', 'castelli', 'amichevole', 'scenario'], allenamenti: ['rigori'], energiaIniziale: true };
 
 /** La partita mette qui la sua funzione quando è pronta: la home chiama ponte.avviaPartita(richiesta). */
 export const ponte = { avviaPartita: null };
@@ -32,6 +32,15 @@ export function controllaRichiesta(r, moduli = null) {
   if (!r || typeof r !== 'object') return ['manca la richiesta'];
   if (r.versione !== 1) errori.push('versione deve essere 1');
   if (!SA_FARE.tipi.includes(r.tipo)) errori.push(`tipo «${r.tipo}» non ancora giocabile (la partita sa fare: ${SA_FARE.tipi.join(', ')})`);
+  if (r.tipo === 'scenario') {
+    const sc = r.scenario;
+    if (!sc || typeof sc !== 'object') errori.push('scenario: servono minuto e punteggio');
+    else {
+      if (!Number.isInteger(sc.minuto) || !numero(sc.minuto, 1, 89)) errori.push('scenario.minuto: intero tra 1 e 89');
+      if (!coppia(sc.punteggio) || !sc.punteggio.every(Number.isInteger)) errori.push('scenario.punteggio: [casa, ospite]');
+      if (sc.palla !== undefined && !['utente', 'avversario'].includes(sc.palla)) errori.push("scenario.palla: 'utente' o 'avversario'");
+    }
+  }
   if (r.difficolta !== undefined && !DIFFICOLTA.includes(r.difficolta)) errori.push('difficolta deve essere facile, normale o difficile');
   if (r.allaFine !== undefined && typeof r.allaFine !== 'function') errori.push('allaFine deve essere una funzione');
   if (!Array.isArray(r.squadre) || r.squadre.length !== 2) { errori.push('squadre: ne servono due'); return errori; }
@@ -55,6 +64,9 @@ export function controllaEsito(e) {
   const errori = [];
   if (!e || typeof e !== 'object') return ["manca l'esito"];
   if (e.versione !== 1) errori.push('versione deve essere 1');
+  // partenza: solo negli scenari, il minuto e il punteggio da cui si è cominciato
+  const da = e.partenza;
+  if (da !== null && da !== undefined && !(numero(da.minuto, 1, 89) && coppia(da.punteggio))) errori.push('partenza: null oppure { minuto, punteggio }');
   if (typeof e.finita !== 'boolean') errori.push('finita deve essere vero o falso');
   if (!numero(e.minuti, 0, 120)) errori.push('minuti tra 0 e 120');
   if (!numero(e.secondiVeri, 0, 1e6)) errori.push('secondiVeri deve essere un numero');
@@ -76,8 +88,8 @@ export function controllaEsito(e) {
   });
   const S = e.squadre || {};
   for (const k of ['tiri', 'tiriInPorta', 'possesso', 'parate', 'falli', 'fuorigioco', 'angoli', 'ammonizioni', 'espulsioni', 'pali']) if (!coppia(S[k])) errori.push(`squadre.${k}: [casa, ospite]`);
-  // i conti devono tornare: i gol dei marcatori sono il punteggio
-  if (!errori.length) for (const k of [0, 1]) if (e.marcatori.filter((m) => m.squadra === k).length !== e.punteggio[k]) errori.push(`i marcatori della squadra ${k} non tornano col punteggio`);
+  // i conti devono tornare: i gol dei marcatori sono il punteggio, tolti quelli che c'erano già alla partenza di uno scenario
+  if (!errori.length) for (const k of [0, 1]) if (e.marcatori.filter((m) => m.squadra === k).length !== e.punteggio[k] - (da ? da.punteggio[k] : 0)) errori.push(`i marcatori della squadra ${k} non tornano col punteggio`);
   if (e.migliore !== null && !testo(e.migliore)) errori.push('migliore: id di un giocatore oppure null');
   return errori;
 }

@@ -831,7 +831,10 @@ function nuovaPartita(home, away) {
   paintBoards(home, away, CREST);
   $('#sbH').src = img(home.id + '-mini'); $('#sbA').src = img(away.id + '-mini'); $('#sb').style.setProperty('--sq', G.teams[0].kit.shirt); // la barretta sul bordo destro del tabellone: il colore della nostra maglia
   $('#sbHn').textContent = home.short; $('#sbAn').textContent = away.short;
-  hud(); kickoff(G.teams[0]);
+  // scenario del ponte: si parte da un minuto e da un punteggio dati, e la richiesta dice chi batte
+  const sc = G.ponte && G.ponte.r.tipo === 'scenario' ? G.ponte.r.scenario : null;
+  if (sc) partiDa(sc, G.ponte.iu);
+  hud(); kickoff(sc && sc.palla === 'avversario' ? G.teams[1] : G.teams[0]);
   // la telecamera parte già al suo posto di gioco: prima arrivava da 46 m di altezza e 70 m di distanza in un paio di secondi,
   // e al calcio d'inizio si vedeva tutto il campo da lontano
   updateCamera(9);
@@ -842,6 +845,17 @@ const userDrives = (p) => p === G.ctrl && p.team.human && !G.auto;
 // vista di controllo dell'IA: ?ia nell'indirizzo o tasto O (src/debug-ia.js). Legge soltanto, non cambia il gioco
 const DBG_IA = creaDebugIA({ cam, G, homeOf, HW, attiva: /[?&]ia\b/.test(location.search) });
 
+/** Scenario: orologio, tempo, campo e punteggio come al minuto chiesto. iu: quale squadra della richiesta è l'utente. */
+function partiDa(sc, iu) {
+  const fatti = sc.minuto - 1;
+  // un soffio dentro il minuto: così i conti con la virgola non lo fanno scivolare in quello prima
+  G.half = fatti >= 45 ? 2 : 1; G.clock = (fatti % 45 + 1e-6) / 45 * HALF_SECS;
+  // nel secondo tempo le squadre hanno già cambiato campo
+  if (G.half === 2) for (const t of G.teams) t.side = -t.side;
+  G.teams[0].score = sc.punteggio[iu]; G.teams[1].score = sc.punteggio[1 - iu];
+  // i minuti dei giocatori si contano da qui
+  for (const p of all()) p.dentroMin = fatti;
+}
 function kickoff(team) {
   const b = G.ball; b.x = b.z = 0; b.y = BR; b.vx = b.vy = b.vz = 0; b.c = b.t = 0; b.owner = null;
   for (const t of G.teams) for (const p of t.players) {
@@ -2567,13 +2581,13 @@ function avviaPartita(r) {
 ponte.avviaPartita = avviaPartita;
 /** L'esito della partita in corso nella forma del ponte (docs/ponte-partita.md, §4). finita: falso se si abbandona. */
 function esitoPartita(finita) {
-  const P = G.ponte, sq = (k) => (k === 0 ? P.iu : 1 - P.iu), paio = (v) => (P.iu === 0 ? [v[0], v[1]] : [v[1], v[0]]), fine = finita ? 90 : minute();
+  const P = G.ponte, sq = (k) => (k === 0 ? P.iu : 1 - P.iu), paio = (v) => (P.iu === 0 ? [v[0], v[1]] : [v[1], v[0]]), fine = finita ? 90 : minute(), sc = P.r.tipo === 'scenario' ? P.r.scenario : null, prima = sc ? sc.minuto - 1 : 0;
   const id = (p) => p.pid || `${p.team.club.id}/${p.name}`, somma = (k, c) => G.teams[k].players.concat(G.teams[k].off, G.teams[k].out).reduce((a, p) => a + (p.s[c] || 0), 0);
   const tot = G.stats.poss[0] + G.stats.poss[1] || 1, ph = Math.round(G.stats.poss[0] / tot * 100);
   const righe = G.teams.flatMap((t, k) => t.players.concat(t.off, t.out).map((p) => ({ p, k, v: vote(p) })));
   const migliore = righe.slice().sort((x, y) => y.v - x.v || y.p.s.g - x.p.s.g || y.p.s.a - x.p.s.a)[0];
   return {
-    versione: 1, finita, minuti: fine, secondiVeri: Math.round((performance.now() - P.t0) / 1000),
+    versione: 1, finita, minuti: fine - prima, partenza: sc ? { minuto: sc.minuto, punteggio: [sc.punteggio[0], sc.punteggio[1]] } : null, secondiVeri: Math.round((performance.now() - P.t0) / 1000),
     punteggio: paio([G.teams[0].score, G.teams[1].score]), rigori: G.soRes ? paio(G.soRes) : null,
     marcatori: G.goals.map((g) => ({ squadra: sq(g.t), id: g.chi ? id(g.chi) : '', nome: g.chi ? g.chi.name : g.name, minuto: g.min, ruolo: g.chi ? g.chi.ruoloP || RUOLO[g.chi.nat] : '', assist: g.assist ? { id: id(g.assist), nome: g.assist.name } : null, tipo: g.tipo })),
     cartellini: G.cards.map((c) => { const t = G.teams[c.t], p = t.players.concat(t.off, t.out).find((x) => x.name === c.name); return { squadra: sq(c.t), id: p ? id(p) : `${t.club.id}/${c.name}`, nome: c.name, minuto: c.min, colore: c.c === 'r' ? 'rosso' : 'giallo' }; }),

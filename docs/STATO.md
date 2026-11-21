@@ -111,7 +111,11 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   il suo stato è in fondo a `docs/stato-lavori.md`, l'accordo tra le due in `docs/ponte-partita.md`.
 - Ponte, passo 1 FATTO: `ponte.avviaPartita(richiesta)` in `src/ponte.js` e `src/game.js`, esito a fine partita con
   `allaFine(esito)`. Prova: `scripts/prove/ponte.cjs` (anche in CI). `gioca()` e `showEnd()` restano finché la home non passa di lì.
-- Non toccare le schermate della home senza dirlo ad Alex: l'altra sessione le sta rifacendo e le sposterà in `src/casa/`.
+- Ponte, passi 3, 4 e 5 FATTI: energia iniziale, otto moduli in `FORMS` (i quattro nuovi li usa solo chi li chiede), scenario
+  (`tipo: 'scenario'` con minuto, punteggio e chi batte; nell'esito `partenza`): `docs/ponte-partita.md` §8.2 e §8.3.
+  Restano il passo 6 (tutorial, allenamento libero, punizioni, angoli) e i campi ignorati (`altezza`, `fuoriRuolo`,
+  `rigorista`, `punizioni`, `angoli`, gol di tipo «angolo»).
+- Le schermate della home ora sono in `src/casa/` (dell'altra sessione): non toccarle senza dirlo ad Alex.
 
 ## Decisioni recenti di Alex ancora valide
 - "Merge fallo sempre tu": PR → controlli verdi + anteprima Vercel → squash merge → verifica produzione.

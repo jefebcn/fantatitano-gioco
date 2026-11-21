@@ -1,6 +1,7 @@
 /* Prova del ponte tra home e partita (docs/ponte-partita.md): una partita avviata da una richiesta e giocata dal computer
    fino alla fine, poi l'esito consegnato alla funzione della home. Controlla la forma dell'esito, che i conti tornino,
-   l'energia iniziale, la squadra dell'utente in trasferta e l'abbandono dalla pausa.
+   l'energia iniziale, la squadra dell'utente in trasferta, l'abbandono dalla pausa e lo scenario (partenza da un minuto
+   e da un punteggio dati).
    Uso: npm run build && node scripts/prove/ponte.cjs */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
@@ -36,7 +37,7 @@ srv.listen(0, async () => {
   await pg.addScriptTag({ content: `window.__richiesta = ${richiesta.toString()};` });
 
   // una richiesta sbagliata viene rifiutata senza far partire niente
-  const no = await pg.evaluate(() => { const r = window.__richiesta(); r.squadre[1].titolari.pop(); r.tipo = 'scenario'; return window.__g.avviaPartita(r); });
+  const no = await pg.evaluate(() => { const r = window.__richiesta(); r.squadre[1].titolari.pop(); r.tipo = 'torneo'; return window.__g.avviaPartita(r); });
   vero(no.ok === false && no.errori.length >= 2, `richiesta sbagliata rifiutata (${(no.errori || []).length} errori)`);
   vero(controllaRichiesta({ versione: 1 }).length > 0 && SA_FARE.energiaIniziale === true, 'i controlli di forma girano anche fuori dal browser');
 
@@ -83,6 +84,31 @@ srv.listen(0, async () => {
   await pg.evaluate(() => { const g = window.__g; g.G.auto = true; for (let i = 0; i < 1500; i++) g.step(1 / 60); document.querySelector('#esci').click(); });
   const ab = (await pg.evaluate(() => window.__esiti))[0] || {}, errAb = controllaEsito(ab);
   vero(errAb.length === 0 && ab.finita === false && ab.minuti < 90, `abbandono: esito con finita falso al minuto ${ab.minuti}${errAb.length ? ' · ' + errAb.slice(0, 3).join(' · ') : ''}`);
+  await pg.waitForFunction(() => window.__g.G.state === 'menu');
+
+  // scenario: dal 70' sullo 0-1 per l'utente (che è la seconda squadra), batte l'avversario
+  const scen = (cosa) => pg.evaluate((c) => { const r = window.__richiesta(); r.tipo = 'scenario'; r.scenario = c; return window.__g.avviaPartita(r); }, cosa);
+  const noSc = await scen({ minuto: 95, punteggio: [0, 1] });
+  vero(noSc.ok === false, `scenario col minuto sbagliato rifiutato (${(noSc.errori || []).join(' · ')})`);
+  const siSc = await scen({ minuto: 70, punteggio: [0, 1], palla: 'avversario' });
+  vero(siSc.ok === true && SA_FARE.tipi.includes('scenario'), 'scenario accettato');
+  await pg.waitForFunction(() => ['kickoff', 'play'].includes(window.__g.G.state) && window.__g.G.teams.length === 2, null, { timeout: 30000 });
+  const via = await pg.evaluate(() => { const g = window.__g, G = g.G; return { tempo: G.half, punteggio: [G.teams[0].score, G.teams[1].score], batte: G.taker.team.idx, lati: [G.teams[0].side, G.teams[1].side], orologio: document.querySelector('#sbT').textContent, tab: document.querySelector('#sbS').textContent }; });
+  vero(via.tempo === 2 && via.orologio.startsWith('69:') && via.tab.replace(/\s/g, '') === '1-0', `si parte nel secondo tempo, orologio ${via.orologio}, tabellone ${via.tab}`);
+  vero(via.punteggio[0] === 1 && via.punteggio[1] === 0 && via.batte === 1, `punteggio di partenza girato dalla parte dell'utente (${via.punteggio.join('-')}), batte l'avversario`);
+  const fineSc = await pg.evaluate(() => {
+    const g = window.__g, G = g.G; G.auto = true; const disegna = g.renderer.render; g.renderer.render = () => {}; let n = 0;
+    while (!G.shown && n++ < 60000) { g.step(1 / 60); g.draw(1 / 60); }
+    g.renderer.render = disegna; document.querySelector('#continua').click();
+    return { stato: G.state, passi: n, esito: window.__esiti[0] };
+  });
+  const es = fineSc.esito || {}, errSc = controllaEsito(es);
+  vero(errSc.length === 0, `esito dello scenario con la forma giusta${errSc.length ? ': ' + errSc.slice(0, 4).join(' · ') : ''}`);
+  if (!errSc.length) {
+    vero(es.finita === true && es.minuti === 21 && es.partenza && es.partenza.minuto === 70, `scenario finito: ${es.minuti} minuti giocati dal ${es.partenza && es.partenza.minuto}'`);
+    vero(es.punteggio[0] >= 0 && es.punteggio[1] >= 1 && es.marcatori.every((m) => m.minuto >= 70), `punteggio finale ${es.punteggio.join('-')}, gol solo dal 70' (${es.marcatori.map((m) => m.minuto).join(', ') || 'nessuno'})`);
+    vero(es.giocatori.every((g) => g.minuti <= 21) && es.giocatori.filter((g) => g.minuti === 21).length >= 16, 'i minuti dei giocatori si contano dalla partenza');
+  }
   vero(errori.length === 0, `nessun errore nella pagina${errori.length ? ': ' + errori.slice(0, 3).join(' · ') : ''}`);
   await br.close(); srv.close();
   console.log(falliti ? `\nPonte: ${falliti} controlli falliti` : '\nPonte: tutte le prove passate');
