@@ -114,7 +114,10 @@ export const PRESSIONE = { anticipo: .25, vicino: 1.6 };
 // lontano si passa (DIST)
 // `arrivo`: a che velocità il rasoterra arriva al compagno, in m/s: base, più tanto per ogni metro di distanza, tra un
 // minimo e un massimo. Sono in proporzione alla corsa dei giocatori (VELOCITA): una palla troppo tesa non si ferma.
-export const PASSAGGIO = { assistito: true, dosa: .15, arrivo: [6, .15, 6.5, 10.5] };
+// `inCorsa`: al compagno che corre il rasoterra arriva più morbido, al massimo a questa velocità (m/s): più svelto di
+// così lui non lo prende, gli corre accanto finché il pallone rallenta. Vale per intero dai 16 metri in su, per niente
+// sotto gli 8 (il corto resta teso, se no lo intercettano), a metà strada in mezzo: [velocità, da metri, a metri].
+export const PASSAGGIO = { assistito: true, dosa: .15, arrivo: [6, .15, 6.5, 10.5], inCorsa: [5.5, 8, 16] };
 // Passa, Cross e Tira si tengono premuti: la barra sotto il giocatore si riempie (in 0,8 s) e al rilascio parte il colpo
 // con quella potenza. Un tocco veloce su Passa o Cross fa il passaggio dosato da solo, come prima.
 export const CARICA = { piena: .8, tocco: .12, max: .95 };
