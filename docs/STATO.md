@@ -79,7 +79,13 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Passo 1 FATTO: `TIRO_IA` più pronto, portieri meno forti (`save`), pressing dalla metà campo (`PRESSING.da` da 18 a 0).
   16 partite, semi 7–22: gol da 1,00 a 2,69, tiri da 7,00 a 10,38, 0 anomalie. Tabella in `docs/dls-gameplay.md`.
 - Le prove con 6 partite ingannano (lo stesso valore dà da 10 a 15 tiri): si decide solo su 16.
-- Prossimo: i passaggi intercettati sull'uomo che riceve (riescono 74 passaggi su 100) e i traversoni (1 su 5).
+- Passo 2 FATTO: il lancio con le mani del portiere sbagliava 8 volte su 10 (palla ad altezza petto a 20 m/s): ora arriva
+  di rimbalzo (`RINVIO.mano`, `vicino`, `rimbalzo`). 32 partite, semi 7–38: gol da 2,31 a 2,56, tiri da 9,53 a 9,84,
+  rimesse laterali da 3,3 a 2,3, 0 anomalie.
+- Scartati perché non spostano i numeri: reazione ritardata dei difensori al passaggio, passaggi più sicuri, più attesa.
+- Prossimo: passaggi presi sull'uomo che riceve (riescono 75 su 100), traversoni (1 su 3), lanci lunghi troppo lunghi.
+- Da sapere: con l'audio acceso la stessa partita simulata cambia (l'audio usa i numeri casuali della partita). Le prove
+  non se ne accorgono perché non accendono l'audio.
 
 ## Decisioni recenti di Alex ancora valide
 - "Merge fallo sempre tu": PR → controlli verdi + anteprima Vercel → squash merge → verifica produzione.
