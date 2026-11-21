@@ -21,8 +21,10 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 
 | Percorso | Contenuto |
 |---|---|
-| `src/game.js` | Tutto il gioco: scena, motore della partita, IA, comandi, schermate, audio |
-| `src/pagina.html` | Pagina, stile e schermate (home, scelta squadre, VS, pausa, fine partita). La build la copia in `public/index.html` con la versione negli indirizzi degli script |
+| `src/game.js` | La partita: scena, motore, IA, comandi, pausa, sostituzioni, fine partita, audio |
+| `src/casa/casa.js`, `casa.html`, `casa.css` | La home, i menu e le schermate fuori dalla partita (ingresso, club, carriera, pannelli, scelta squadre, prima della partita). `casa.js` aggiunge alla pagina schermate e stili all'avvio; con `src/game.js` si scambia solo i nomi elencati nei due `import` |
+| `src/dati/scala.js`, `giocatori.js` | Valutazioni e statistiche mostrate (una sola conversione), ruoli precisi, piede e altezza dei giocatori |
+| `src/pagina.html` | Pagina, stili comuni e schermate della partita (comandi, VS, pausa, sostituzioni, fine partita). La build la copia in `public/index.html` con la versione negli indirizzi degli script |
 | `src/sw.js` | Service worker: app installabile, avvio dalla memoria e gioco offline. La build lo copia in `public/sw.js` con la versione e i file da precaricare |
 | `src/prestazioni.js` | Risoluzione dinamica e indicatore delle prestazioni (`?debug` nell'indirizzo) |
 | `src/debug-ia.js` | Vista di controllo dell'IA (`?ia` nell'indirizzo o tasto O): posizioni base, linee di passaggio col punteggio, decisioni |
@@ -234,7 +236,7 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   sono un passo solo e non si ripetono bene); dopo una presa in tuffo si rialza col pallone stretto (`rialza_palla`); le
   prese senza parata preparata (cross, tiro addosso) scelgono la clip per altezza: terra, ginocchio, busto, alta.
   Tuffi già in sei zone (terra, mezza altezza, vicino/lontano, busto, alto) e rinvio con le mani o di collo.
-- **Dashboard** (`drawHub` in `src/game.js`, CSS «Dashboard» in `src/pagina.html`). Impaginazione dal disegno di Alex
+- **Dashboard** (`drawHub` in `src/casa/casa.js`, CSS «Dashboard» in `src/casa/casa.css`). Impaginazione dal disegno di Alex
   (20/11/2026) con i colori Fantatitano: a sinistra il campionato alto (prossima partita, maglia grande, matchday, ultimi
   risultati), al centro classifica, la sagoma del Titano sopra lo stadio 3D e le coppe, a destra squadra, mercato, sfide
   e club. I ritratti (mister e capitano) li disegna `ritratto()` dal modello 3D del gioco, una volta sola. Le misure sono
