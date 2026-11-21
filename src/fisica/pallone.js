@@ -168,8 +168,11 @@ export function controlla(b, p, q = 0.5, caso = Math.random, verso = null) {
  * `caso` è una funzione che dà numeri tra 0 e 1 (per le prove si passa una sequenza fissa).
  */
 export function conduci(b, p, dt, q = 0.5, caso = Math.random, verso = null) {
-  const rx = b.x - p.x, rz = b.z - p.z, d = hyp(rx, rz);
+  let rx = b.x - p.x, rz = b.z - p.z, d = hyp(rx, rz);
   if (d > COND.perde) return 'perso';
+  // il guinzaglio: in conduzione la palla non si allontana mai più di così dal portatore (la perde solo un contrasto o un
+  // calcio). Se ci arriva, resta a quella distanza e prende la sua velocità, finché il tocco dopo non la rimette davanti
+  if (d > COND.guinzaglio && b.y < 0.9) { const k = COND.guinzaglio / d; b.x = p.x + rx * k; b.z = p.z + rz * k; b.vx = p.vx; b.vz = p.vz; rx *= k; rz *= k; d = COND.guinzaglio; }
   p.tocco = (p.tocco || 0) - dt;
   const v = hyp(p.vx, p.vz), fx = Math.sin(p.dir), fz = Math.cos(p.dir);
   if (b.y > 0.9) return null; // palla alta: prima deve scendere

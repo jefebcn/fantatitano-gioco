@@ -2191,7 +2191,7 @@ function startFx(f, name, da = 0, sp = null) {
   a.setLoop(T.LoopOnce, 1); a.clampWhenFinished = true; a.reset(); a.timeScale = sp || FX[name].sp; a.time = da; a.play(); f.act = a;
 }
 function poseSkinned(p, dt) {
-  const f = p.fig, v = hyp(p.vx, p.vz), alt = f.alt || 1; f.root.position.set(p.x, 0, p.z);
+  const f = p.fig, v = hyp(p.vx, p.vz), alt = f.alt || 1; f.root.position.set(p.x + p.vx * avanzo(p), 0, p.z + p.vz * avanzo(p));
   // il corpo segue la direzione con una molla rapida: tiri, passaggi e scivolate girano p.dir di colpo, il bacino no
   // (oltre i 150° o dopo un salto di posizione, come a un calcio d'inizio, si gira subito)
   if (dt > 0) movimento(p, v);
@@ -2288,7 +2288,7 @@ function poseSkinned(p, dt) {
 function pose(p, dt) {
   if (p.fig.skinned) return poseSkinned(p, dt);
   const f = p.fig, v = hyp(p.vx, p.vz), a = Math.min(1, v / 6.5);
-  f.root.position.set(p.x, 0, p.z); f.root.rotation.y = p.dir;
+  f.root.position.set(p.x + p.vx * avanzo(p), 0, p.z + p.vz * avanzo(p)); f.root.rotation.y = p.dir;
   p.ph += v * dt * 2.35;
   const s = Math.sin(p.ph), c = Math.cos(p.ph);
   let lL = -s * a * .95, lR = s * a * .95, kL = Math.max(0, c) * a * 1.5 + .08, kR = Math.max(0, -c) * a * 1.5 + .08;
@@ -2307,6 +2307,10 @@ function pose(p, dt) {
 // Gambe al passo: camminata, corsetta e corsa girano tutte sulla fase p.passo del corpo (src/fisica/corpo.js), così il
 // piede scende proprio quando parte il tocco di palla e le tre clip si fondono senza piedi che scivolano. Si sistema il tempo
 // delle clip prima che l'animazione avanzi, tenendo conto di quanto avanzerà in questo fotogramma.
+// Giocatori e pallone avanzano a passi fissi di 1/120 di secondo: tra un fotogramma e l'altro resta sempre un avanzo di
+// tempo non ancora simulato (fino a 8 millesimi), diverso per ognuno. A schermo lo si aggiunge alla posizione, così pallone
+// e portatore non si staccano e non vanno a scatti quando i fotogrammi non arrivano regolari.
+const avanzo = (p) => (p.st === 'run' ? p.restoC || 0 : 0);
 function allinea(p, dt) {
   const f = p.fig; if (!f.skinned || !f.A) return;
   const v = hyp(p.vx, p.vz);
@@ -2395,8 +2399,10 @@ function disegna(dt) {
     if (!REGIA.figure()) for (const p of all()) { allinea(p, dt); pose(p, dt); inclina(p, dt); if (p.fig.skinned && !G.senzaPiedi) bloccaPiedi(p.fig, dt, !!p.fig.piediAttivi); } // durante il replay le figure le mette in posa la regia
     else for (const p of all()) p.fig.root.rotation.x = p.fig.root.rotation.z = 0;
     const sp = hyp(b.vx, b.vz);
-    ballMesh.position.set(b.x, b.y, b.z); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; ballMesh.rotation.y += (b.c || 0) * dt * 25; }
-    ballShadow.position.set(b.x, .04, b.z); ballShadow.scale.setScalar(1.25 + b.y * .16); ballShadow.material.opacity = .62 / (1 + Math.max(0, b.y - BR) * .32); // a terra scura e stretta, in aria larga e chiara: si capisce dove scende un cross
+    // il pallone si disegna dove sarà tra un attimo (il tempo non ancora simulato), come i giocatori: restano insieme
+    const ar = b.resto || 0, bxd = b.x + b.vx * ar, bzd = b.z + b.vz * ar, byd = Math.max(BR, b.y + b.vy * ar);
+    ballMesh.position.set(bxd, byd, bzd); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; ballMesh.rotation.y += (b.c || 0) * dt * 25; }
+    ballShadow.position.set(bxd, .04, bzd); ballShadow.scale.setScalar(1.25 + b.y * .16); ballShadow.material.opacity = .62 / (1 + Math.max(0, b.y - BR) * .32); // a terra scura e stretta, in aria larga e chiara: si capisce dove scende un cross
     // segni sopra le teste come Dream League (li disegna la regia): niente anello ai piedi né freccia della levetta
     const c = G.ctrl; G.segno = !!c && !G.auto && G.state !== 'full'; ring.visible = arrow.visible = freccia.visible = false;
     // in difesa: il compagno che si prenderebbe con «Cambia giocatore» (segnalino grigio), ricalcolato ogni tanto

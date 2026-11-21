@@ -227,6 +227,7 @@ export const FIS = {
  *  vicino:  sotto questa distanza "davanti al piede" scatta il tocco successivo
  *  passo:   tocco normale = velocità di corsa · passo; scatto: passoScatto
  *  perde:   oltre questa distanza dal giocatore la palla non è più sua
+ *  guinzaglio: in conduzione la palla non va mai più lontano di così (Alex, 21/11: circa 1,5 m)
  *  fermo:   sotto questa velocità si tiene la palla sotto la suola
  *  errore:  di quanto (radianti) può andare storto un tocco per chi ha la tecnica più bassa
  *  pausa:   tempo minimo tra due tocchi
@@ -234,7 +235,7 @@ export const FIS = {
  *  ritmo:   col passo (p.ritmo, vedi corpo.js) il tocco parte quando un piede sta per scendere, anche un po' prima (fino a
  *           vicino + ritmo); tra un passo e l'altro aspetta, a meno che la palla non sia già sotto i piedi (forza)
  */
-export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.35, vicino: 0.75, passo: 1.12, passoScatto: 1.2, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6 };
+export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.15, vicino: 0.5, passo: 1.22, passoScatto: 1.3, guinzaglio: 1.5, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6 };
 
 /* ---------------------------------------------------------------- fisica dei giocatori */
 export const CORPO = {
