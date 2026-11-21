@@ -78,17 +78,20 @@ Un'altra sessione lavora sulla partita: questa non tocca i suoi file senza averl
 | 4 | Barra fissa (`barra.js`), carte di navigazione (`carte.js`), navigazione a livelli con Indietro (`nav.js`), icone nella pagina (`icone.js`), testi delle schermate nuove in un file (`testi.js`), stili nuovi (`stile.css`). Scala 55–82, ruoli precisi e prezzi nuovi accesi sulle schermate. «Ingaggia il tuo capitano» coi nove candidati nuovi e il pulsante fuori dalle carte | fatto |
 | 5 | Home a otto carte (`home.js`): righe al 38, 27 e 35%; nessun testo abbreviato o tagliato (nomi delle squadre in tre misure, `src/dati/squadre.js`); Carriera con le tre competizioni e la prossima partita; Percorso premi coi livelli da 1 e i prossimi quattro premi; Squadra con la fascia «C»; Mercato con la carta del giocatore, lo stemma e il prezzo; Scenario col premio; sfondo blu notte con vignettatura | fatta, coi dati veri; restano le illustrazioni (segnaposto) e il premio ridotto dell'amichevole |
 | 6 | Carriera (`vista-carriera.js`): prossima partita con «Gioca adesso», classifica a cinque righe con le medaglie, Trofeo dei Castelli, Coppa Titano, quattro scorciatoie. Stagione nuova con finestra di conferma (`finestra.js`). Classifica a pari punti: differenza reti, gol fatti, nome. Tolta la schermata di prima e 200 regole di stile rimaste senza uso | fatto |
-| 7–11 | Sfida, Squadra, Mercato, Il mio club, Sfide | da fare: per ora sono le schermate di prima, sotto la barra nuova |
+| 7 | Sfida (`vista-sfida.js`): due campi in prospettiva con le carte a scudo dei giocatori secondo il modulo (`giocatore.js`: valutazione, ritratto, ruolo, energia, nome, fascia «C», avviso di fuori ruolo), competizione, fase, ora e tempo al centro, sotto ogni campo stemma, nome, stelle, modulo e maglia della partita; in basso Squadra, Riscaldamento e Gioca. La partita parte dal ponte e alla fine la home registra il risultato, salva l'energia e mostra il premio in una finestra. Energia tra le partite, riscaldamento e orario in `src/carriera.js`, coi numeri in `ECONOMIA.energia` e `METEO` | fatto |
+| 8–11 | Squadra, Mercato, Il mio club, Sfide | da fare: per ora sono le schermate di prima, sotto la barra nuova |
 | 12 | Database dell'economia | da fare (condizioni in `docs/home-spec.md` §8.1) |
 
 Immagini: tutte le 26 illustrazioni sono **segnaposto** (nessuna consegnata); icone e cornici **definitive**; ritratti:
 quelli che il gioco disegna da sé, in attesa dei render da Blender.
 
 Controllo delle schermate: `node scripts/prove/schermate.cjs cartella` fotografa tutto alle tre misure di iPhone e, nelle
-parti rifatte (barra, Home, Carriera, finestre), controlla le regole di qualità: testo mai sotto 12 px, niente tagli, niente fuori schermo,
-pulsanti della barra da 44 px, anche con nomi lunghi e saldi grandi.
-Provvisorio fino al passo 7: nella schermata prima della partita «Gioca» sta fisso in basso a destra e, sull'iPhone più
-piccolo, giorno e notte si raggiungono scorrendo.
+parti rifatte (barra, Home, Carriera, Sfida, finestre), controlla le regole di qualità: testo mai sotto 12 px, niente tagli, niente fuori schermo,
+pulsanti da 44 px, anche con nomi lunghi e saldi grandi; sui campi della Sfida nessun giocatore ne copre un altro.
+Sfida: le carte sono grandi quanto il campo consente. Un modulo a cinque linee (3-5-2, 4-2-3-1) le vuole più piccole di
+uno a quattro: sull'iPhone più piccolo lo scudo è largo 26 px invece di 31. Giorno o notte in campo vengono dall'orario
+della partita, non si scelgono più. Una partita di carriera abbandonata non viene registrata (da decidere con Alex).
+La schermata vecchia `#pre` resta solo come «La mia rosa», fino al passo 8.
 
 Decisioni di Alex del 21/11: `docs/navigazione.md` §5. Da girare alla sessione «partita»: `docs/ponte-partita.md`.
 I nomi dei giocatori stanno ancora in `public/data.js` (lo usa la partita); `src/dati/giocatori.js` li ripete con ruolo,

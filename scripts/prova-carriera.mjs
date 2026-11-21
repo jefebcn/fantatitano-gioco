@@ -258,6 +258,37 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
   const V = K.completa({ ...JSON.parse(JSON.stringify(K.nuova(cl, 'v', 'academy', rnd, { nome: 'X', sigla: 'X', c1: '#111111', c2: '#ffffff', stile: 'onde' }))), avatar: 7, oggetti: undefined, scelte: undefined, consigli: undefined }, cl, rnd);
   assert.ok(K.possiede(V, 'avatar', 7) && K.possiede(V, 'disegno', 'onde') && !K.possiede(V, 'disegno', 'mimetica') && V.consigli === 0);
 }
+// ---------- energia tra una partita e l'altra, riscaldamento, orario e tempo della partita
+{
+  const { ECONOMIA: E, METEO } = await import('../src/config.js');
+  const cl = JSON.parse(JSON.stringify(clubs)), N = K.nuova(cl, 'e', 'academy', rnd, { nome: 'Energia', sigla: 'ENE', c1: '#111111', c2: '#ffffff' });
+  K.applica(N, cl); const mio = cl.find((c) => c.id === N.club), tit = mio.xi.map((x) => x[0]), ris = (mio.pan || []).map((x) => x[0]);
+  // all'inizio tutti al massimo: il riscaldamento non serve e non si paga
+  assert.ok(tit.every((n) => K.energiaDi(N, n) === 100));
+  let st = K.statoRiscaldamento(N, cl, 'camp'); assert.ok(!st.serve && !st.fatto); assert.equal(K.riscaldamento(N, cl, 'camp').motivo, 'pieni');
+  // dopo una partita: chi ha giocato riparte da come è uscito più il recupero, chi è rimasto fuori resta al massimo
+  K.energiaDopoPartita(N, cl, tit.map((nome, i) => ({ nome, energia: 20 + i * 5 })));
+  tit.forEach((n, i) => assert.equal(K.energiaDi(N, n), Math.min(100, 20 + i * 5 + E.energia.recupero)));
+  assert.ok(ris.every((n) => K.energiaDi(N, n) === 100)); assert.ok(Object.values(N.energia).every((x) => x < 100), 'chi è al massimo non si scrive');
+  // riscaldamento: costa monete, dà il bonus ai titolari senza passare 100, una volta sola per partita, e va nello storico
+  const m0 = N.monete, prima = tit.map((n) => K.energiaDi(N, n)); st = K.statoRiscaldamento(N, cl, 'camp'); assert.ok(st.serve && st.puo && !st.fatto);
+  const r = K.riscaldamento(N, cl, 'camp'); assert.ok(r.ok); assert.equal(N.monete, m0 - E.energia.riscaldamento.monete); assert.equal(N.storico[0].c, 'riscaldamento');
+  tit.forEach((n, i) => assert.equal(K.energiaDi(N, n), Math.min(100, prima[i] + E.energia.riscaldamento.bonus)));
+  assert.equal(K.riscaldamento(N, cl, 'camp').motivo, 'fatto'); assert.equal(N.monete, m0 - E.energia.riscaldamento.monete);
+  // per un'altra competizione, o per la partita dopo, si può rifare; senza monete no
+  assert.ok(!K.statoRiscaldamento(N, cl, 'coppa').fatto); K.giocaCampionato(N, cl, 1, 0, [], rnd); assert.ok(!K.statoRiscaldamento(N, cl, 'camp').fatto);
+  N.monete = 0; assert.equal(K.riscaldamento(N, cl, 'camp').motivo, 'monete');
+  // chi lascia la rosa non resta nell'elenco dell'energia
+  N.energia.Fantasma = 10; K.energiaDopoPartita(N, cl, []); assert.equal(N.energia.Fantasma, undefined);
+  // una carriera salvata prima dell'energia funziona lo stesso
+  const V = K.completa({ ...JSON.parse(JSON.stringify(N)), energia: undefined, riscaldato: undefined }, cl, rnd); assert.equal(K.energiaDi(V, tit[0]), 100); assert.ok(!K.statoRiscaldamento(V, cl, 'camp').fatto);
+  // orario e tempo: sempre gli stessi per la stessa partita, dentro i valori previsti, e cambiano da una partita all'altra
+  const a = K.meteoPartita(N, 'camp'), b = K.meteoPartita(N, 'camp'); assert.deepEqual(a, b);
+  const visti = new Set();
+  for (let g = 0; g < 14; g++) { const m = K.meteoPartita(N, 'camp'); assert.ok(METEO.orari.some(([o, q]) => o === m.orario && q === m.ora) && METEO.cieli.includes(m.cielo) && m.gradi >= METEO.gradi[0] && m.gradi <= METEO.gradi[1], JSON.stringify(m)); visti.add(`${m.orario}/${m.cielo}/${m.gradi}`); K.giocaCampionato(N, cl, 1, 1, [], rnd); }
+  assert.ok(visti.size > 5, 'il tempo non cambia da una partita all\'altra'); assert.ok(K.meteoPartita(null, 'amichevole').orario);
+  K.applica(null, cl);
+}
 // ---------- il listino del server (supabase/002-lapartita-economia.sql) dice gli stessi numeri del gioco
 {
   const { ECONOMIA: E } = await import('../src/config.js');
@@ -272,6 +303,7 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
   for (const g of Object.keys(K.BONUS)) vale(`sfida_${g}_tutte`, 'diamanti', K.BONUS[g].gemme);
   E.percorso.premi.forEach((x, i) => vale(`percorso_${i + 1}`, x.m ? 'monete' : 'diamanti', x.m || x.g));
   for (const [k, c] of Object.entries(E.negozio)) vale(`negozio_${k.replace('stemmaRaro', 'stemma_raro')}`, c.m ? 'monete' : 'diamanti', -(c.m || c.g));
+  vale('riscaldamento', 'monete', -E.energia.riscaldamento.monete);
   vale('allenamento_base', 'numero', K.ALLENA.base); vale('allenamento_passo', 'numero', K.ALLENA.passo); vale('allenamento_sedute', 'numero', K.ALLENA.max); vale('allenatore_sconto', 'numero', Math.round(E.allenatore.sconto * 100));
 }
 assert.equal(K.carica({ getItem: () => '{rotto' }), null); assert.equal(K.carica({ getItem: () => null }), null);

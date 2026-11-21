@@ -16,10 +16,11 @@ radice.addEventListener('click', (e) => {
 
 /**
  * Apre una finestra di conferma. titolo e testo: cosa si chiede; si: la scritta del pulsante che conferma;
- * no: quella del pulsante che annulla (se manca: «Annulla»); fatto: cosa fare quando si conferma.
+ * no: quella del pulsante che annulla (se manca: «Annulla»); fatto: cosa fare quando si conferma;
+ * soloSi: è un avviso, c'è un pulsante solo.
  */
-export function finestra({ titolo, testo, si, no, fatto }) {
-  el('finT').textContent = titolo; el('finP').textContent = testo; el('finSi').textContent = si; el('finNo').textContent = no || t('finestra.annulla');
+export function finestra({ titolo, testo, si, no, fatto, soloSi = false }) {
+  el('finT').textContent = titolo; el('finP').textContent = testo; el('finSi').textContent = si; el('finNo').textContent = no || t('finestra.annulla'); el('finNo').classList.toggle('nas', soloSi);
   quando = fatto; radice.classList.remove('nas');
 }
 /** Chiude la finestra senza fare niente (quando si cambia schermata per altre vie). */

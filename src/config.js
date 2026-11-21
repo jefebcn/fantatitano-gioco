@@ -292,6 +292,8 @@ export const ATTACCO = { sullaLinea: 1.2, massimo: 44 };
 // primo dà `sedute` sedute di allenamento in più per giocatore e toglie `sconto` dal prezzo delle sedute.
 // finanze: fino a quante monete vale ogni giudizio. storico: quanti movimenti si tengono.
 // scenario: quanti diamanti dà uno scenario vinto (g).
+// energia: quanta energia, su 100, recupera ogni giocatore del club tra una partita e l'altra. Riscaldamento: quanta ne
+// aggiunge ai titolari prima di una partita e quante monete costa.
 // negozio: quanto costa un oggetto di ogni tipo (m monete, g diamanti). Solo aspetto e comodità, niente che aiuti in
 // partita. Quali oggetti esistono e quali si hanno dall'inizio sta in NEGOZIO, in src/carriera.js.
 export const ECONOMIA = {
@@ -305,6 +307,7 @@ export const ECONOMIA = {
   finanze: [[500, 'Scarse'], [2000, 'Discrete'], [6000, 'Buone'], [Infinity, 'Eccellenti']],
   storico: 120,
   scenario: { g: 15 },
+  energia: { recupero: 35, riscaldamento: { bonus: 10, monete: 150 } },
   negozio: {
     avatar: { g: 10 }, cornice: { g: 10 }, scarpini: { g: 10 }, pallone: { g: 10 }, disegno: { g: 20 }, terza: { g: 30 }, rinnovo: { g: 5 },
     stemma: { m: 300 }, stemmaRaro: { g: 5 },
@@ -355,4 +358,12 @@ export const CARTE = {
   simili: [['TS', 'TD'], ['AS', 'AD'], ['DC', 'CDC'], ['CDC', 'CC'], ['CC', 'COC'], ['TS', 'AS'], ['TD', 'AD'], ['COC', 'AS'], ['COC', 'AD'], ['COC', 'ATT'], ['AS', 'ATT'], ['AD', 'ATT']],
   posto: { largo: 15, largoC: 17, basso: -14, cdc: -16.5, coc: -5 },
   sinistri: .24,
+};
+
+// Orario e tempo delle partite, mostrati nella Sfida. orari: a che ora si gioca e se in campo è giorno o notte.
+// cieli: com'è il cielo, solo da mostrare, perché in partita non piove. gradi: la temperatura più bassa e la più alta.
+export const METEO = {
+  orari: [['15:00', 'giorno'], ['18:00', 'notte'], ['20:45', 'notte'], ['21:00', 'notte']],
+  cieli: ['sereno', 'sereno', 'pocoNuvoloso', 'nuvoloso'],
+  gradi: [8, 26],
 };
