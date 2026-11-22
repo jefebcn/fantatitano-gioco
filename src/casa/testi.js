@@ -119,6 +119,7 @@ const IT = {
   'squadra.allenatori': 'Allenatori', 'squadra.allenatoriSotto': 'Migliora giocatori!', 'squadra.allenatoriCorto': 'Migliora!',
   'squadra.sostituti': (n, tot) => `Sost (${n}/${tot})`,
   'squadra.libero': 'Libero',
+  'squadra.scheda': 'Scheda',
   'squadra.migliora': 'Squadra migliore',
   'squadra.giaMigliore': 'È già la formazione migliore',
   'squadra.schierata': 'Schierata la formazione migliore',

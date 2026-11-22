@@ -120,12 +120,12 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 
 | Schermata | Liv. | Si entra da | Indietro | Cosa si tocca |
 |---|---|---|---|---|
-| **Squadra** | 1 (2 dalla Sfida) | Home; scorciatoia in Carriera; Sfida | da dove sei venuto | una carta trascinata su un'altra = scambio (campo, sostituti, riserve); un tocco → scheda; le linguette C, rigori, punizioni e corner si trascinano su un altro titolare; tessera Squadra migliore |
+| **Squadra** | 1 (2 dalla Sfida) | Home; scorciatoia in Carriera; Sfida | da dove sei venuto | scambio (campo, sostituti, riserve) con due tocchi o trascinando una carta sull'altra; il primo tocco sceglie la carta e mostra il pulsante «Scheda», ritoccarla o toccare il vuoto annulla; pressione lunga → scheda; le linguette C, rigori, punizioni e corner si trascinano su un altro titolare; tessera Squadra migliore |
 | Modulo | finestra | Squadra | chiude | 8 moduli |
 | Riserve | 2 | Squadra | Squadra | i giocatori fuori dai 19 convocati; scambio con la panchina |
 | Fisioterapista | 2 | Squadra | Squadra | recupero dell'energia per monete (uno o tutti) |
 | Allenatore | 2 | Squadra; scheda del giocatore («Allena») | Squadra | sedute di allenamento per giocatore |
-| Scheda del giocatore | finestra | tocco su una carta (Squadra, Riserve, Mercato, Gestisci giocatori) | chiude | statistiche, altezza, piede, valore; Vendi, Allena, Capitano (o Compra, dal Mercato) |
+| Scheda del giocatore | finestra | pulsante «Scheda» della carta scelta o pressione lunga (Squadra, Riserve, Mercato, Gestisci giocatori) | chiude | statistiche, altezza, piede, valore; Vendi, Allena, Capitano (o Compra, dal Mercato) |
 
 ### 3.5 Mercato
 
