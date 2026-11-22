@@ -122,7 +122,7 @@ Un'altra sessione lavora sulla partita: questa non tocca i suoi file senza averl
 | 12 | Database dell'economia | fermo per decisione di Alex (21/11): saldo e storico restano sul telefono. Il file SQL è da riscrivere coi numeri nuovi; la proposta della «cassa» è in `docs/ponte-partita.md` §9 |
 
 Immagini: tutte le 26 illustrazioni sono **segnaposto** (nessuna consegnata); icone e cornici **definitive**; ritratti:
-quelli che il gioco disegna da sé, in attesa dei render da Blender.
+**definitivi**, resi con Blender (sezione «Ritratti»).
 
 Controllo delle schermate: `node scripts/prove/schermate.cjs cartella` fotografa tutto alle tre misure di iPhone e, nelle
 parti rifatte (barra, Home, Carriera, Sfida, Squadra, scheda del giocatore, finestre), controlla le regole di qualità: testo mai sotto 12 px, niente tagli, niente fuori schermo,
@@ -169,21 +169,23 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
 Come sono fatti, chi ha quale volto e come si rifanno: `docs/ritratti.md`. Strumenti: `scripts/aspetti.mjs`,
 `scripts/blender/render_ritratti.py`, `scripts/blender/tutti.sh`, `scripts/ritratti_webp.py`, `scripts/volti.mjs`.
 
-- **Stato**: Alex ha approvato il terzo foglio di prova e ha chiesto tutti i ritratti. **In generazione**: 415 volti (265
-  giocatori veri + 150 condivisi), a blocchi, prima i condivisi. I file arrivano in `public/img/ritratti/`; l'elenco
-  per il gioco è `src/dati/volti.json` (da rifare con `node scripts/volti.mjs` quando arrivano altri volti).
+- **Stato (22/11)**: Alex ha approvato il terzo foglio di prova e ha chiesto tutti i ritratti. **Tutti generati**: 415
+  volti (265 giocatori veri + 150 condivisi), in `public/img/ritratti/`; l'elenco per il gioco è `src/dati/volti.json`
+  (da rifare con `node scripts/volti.mjs` se cambiano i volti). I fogli completi sono stati mandati ad Alex.
 - **Nel gioco, fatto**: la home compone i ritratti nuovi (`src/casa/ritratti.js`, numeri in `RITRATTI` di
   `src/config.js`): testa, maglia coi colori e i disegni della squadra in cui il giocatore gioca adesso, capelli
-  davanti. Carte piccole col viso, carta grande col busto. Chi non ha ancora il ritratto nuovo tiene quello vecchio.
+  davanti. Carte piccole col viso, carta grande col busto. Se un ritratto manca o non si carica resta quello vecchio, disegnato
+  dal modello 3D.
 - **Regola dei volti, fatta**: un volto per ogni giocatore vero; 150 condivisi per inventati e mercato, mai due facce
   uguali nella stessa rosa né tra un'altra squadra e la mia (nella mia rosa i volti restano scritti nella carriera).
 - **Decisioni di Alex**: maglia neutra colorata dal gioco; di base girocollo o scollo a V, colletto piccolo solo come
   variante di alcune squadre; colore degli occhi legato alla pelle.
 - **Ancora da fare**: il colletto piccolo (per ora chi ha la polo in partita ha il girocollo nel ritratto); gli avatar
-  del manager sono ancora quelli vecchi del modello 3D; il giro completo delle foto alle tre misure di iPhone con tutti
-  i volti, prima di unire. `docs/riferimenti/modello-carte.png` non è nel repository.
+  del manager sono ancora quelli vecchi del modello 3D. `docs/riferimenti/modello-carte.png` non è nel repository: il
+  confronto affiancato con il modello non è stato fatto. Giro completo delle foto alle tre misure di iPhone con tutti i
+  volti: fatto il 22/11, nessun errore.
 - **Tempi** (computer cloud, 4 processori, senza scheda grafica, 800 punti di lato, 256 campioni con soglia di rumore):
-  in media 80-95 secondi a volto (chi ha i capelli lunghi arriva a 160, perché ha anche lo strato «sopra»); ogni maglia
-  26 secondi, una volta sola. 415 volti: circa 10-11 ore.
-- **Peso**: testa a 512 e 256 punti insieme circa 27 KB a volto (415 volti: circa 11 MB); le due maglie 345 KB in tutto.
+  in media 67 secondi di render a volto (chi ha i capelli lunghi arriva a 160, perché ha anche lo strato «sopra»), circa
+  80 contando preparazione e passaggio a WebP; ogni maglia 26 secondi, una volta sola. 415 volti: poco più di 9 ore.
+- **Peso**: testa a 512 e 256 punti insieme circa 27 KB a volto (415 volti, coi 35 strati «sopra» e le maglie: 12,5 MB in tutto); le due maglie 345 KB.
   I ritratti non si precaricano: ogni telefono prende solo quelli che guarda.

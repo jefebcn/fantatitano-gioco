@@ -1,9 +1,9 @@
 # Ritratti dei giocatori
 
-Stato (21/11): **Alex ha approvato il terzo foglio di prova**. Tutti i volti sono in generazione (265 giocatori veri +
-150 condivisi) e la home li usa man mano che ci sono: per chi non ha ancora il ritratto nuovo resta quello vecchio,
-disegnato al momento dal modello 3D della partita. I ritratti sono resi a 800 punti di lato, come il foglio approvato
-(nel gioco servono a 512 e a 256).
+Stato (22/11): **Alex ha approvato il terzo foglio di prova** e tutti i volti sono generati (265 giocatori veri + 150
+condivisi); la home li usa dappertutto. Se un ritratto manca o non si carica resta quello vecchio, disegnato al momento
+dal modello 3D della partita. I ritratti sono resi a 800 punti di lato, come il foglio approvato (nel gioco servono a
+512 e a 256).
 
 ## Decisioni di Alex (21/11)
 - **Maglia neutra, colorata dal gioco**: con il mercato i giocatori cambiano squadra, una maglia «stampata» nel ritratto
@@ -75,7 +75,7 @@ rispetto agli occhi). Va letta punto per punto, senza sfumare.
 - **Luci**: principale calda da sinistra a 45 gradi, riempimento morbido da destra, contorno neutro e forte da dietro
   (dà profondità al viso). Il contorno non tocca capelli e barba (attraversandoli li accendeva di giallo): per loro ce
   n'è uno suo, debole. Il cielo attorno è grigio: se è azzurro si specchia negli occhi e li fa sembrare tutti grigi.
-- **Render**: Cycles, 256 campioni con riduzione del rumore, 1024 × 1024 PNG con sfondo trasparente; poi WebP a 512 e 256.
+- **Render**: Cycles, 256 campioni con riduzione del rumore, 800 × 800 PNG con sfondo trasparente; poi WebP a 512 e 256.
 
 ## Chi ha quale volto
 - **Giocatori veri**: ognuno ha il suo ritratto, `squadra-nome` (per esempio `trefiori-nardi`). Lo tiene anche se cambia
