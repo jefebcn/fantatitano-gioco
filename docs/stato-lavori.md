@@ -122,7 +122,7 @@ Un'altra sessione lavora sulla partita: questa non tocca i suoi file senza averl
 | 12 | Database dell'economia | fermo per decisione di Alex (21/11): saldo e storico restano sul telefono. Il file SQL è da riscrivere coi numeri nuovi; la proposta della «cassa» è in `docs/ponte-partita.md` §9 |
 
 Immagini: tutte le 26 illustrazioni sono **segnaposto** (nessuna consegnata); icone e cornici **definitive**; ritratti:
-quelli che il gioco disegna da sé, in attesa dei render da Blender.
+**definitivi**, resi con Blender (sezione «Ritratti»).
 
 Controllo delle schermate: `node scripts/prove/schermate.cjs cartella` fotografa tutto alle tre misure di iPhone e, nelle
 parti rifatte (barra, Home, Carriera, Sfida, Squadra, scheda del giocatore, finestre), controlla le regole di qualità: testo mai sotto 12 px, niente tagli, niente fuori schermo,
@@ -166,25 +166,26 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   la home prepara all'avvio.
 
 ## Ritratti (21/11)
-Come sono fatti e come si rifanno: `docs/ritratti.md`. Strumenti: `scripts/blender/render_ritratti.py`, `scripts/ritratti_webp.py`.
+Come sono fatti, chi ha quale volto e come si rifanno: `docs/ritratti.md`. Strumenti: `scripts/aspetti.mjs`,
+`scripts/blender/render_ritratti.py`, `scripts/blender/tutti.sh`, `scripts/ritratti_webp.py`, `scripts/volti.mjs`.
 
-- **Stato**: terzo foglio di prova da 12 mandato ad Alex; **gli altri non si generano prima del suo OK**. Nel gioco i
-  ritratti sono ancora quelli vecchi.
-- **Decisioni di Alex**: maglia neutra colorata dal gioco; un ritratto per ogni giocatore vero e circa 150 volti
-  condivisi per inventati e mercato, mai due facce uguali nella stessa rosa o nella stessa partita; di base girocollo o
-  scollo a V, colletto piccolo solo come variante di alcune squadre; colore degli occhi legato alla pelle.
-- **Terzo giro, fatto**: ritratto a strati (testa del giocatore, maglia uguale per tutti e colorata dopo, capelli e
-  barba che le cadono davanti); girocollo e scollo a V al posto della polo; righe e scacchi che seguono la stoffa; pelle
-  meno liscia e meno lucida con la luce di contorno neutra; sopracciglia a peli veri; occhi scuri con le pelli scure;
-  attaccatura dei capelli sfumata; velo di barba.
-- **Ancora da fare sui ritratti**: il colletto piccolo (due prove non all'altezza: serve un modello suo).
-  `docs/riferimenti/modello-carte.png` non è nel repository: il confronto affiancato manca ancora.
+- **Stato (22/11)**: Alex ha approvato il terzo foglio di prova e ha chiesto tutti i ritratti. **Tutti generati**: 415
+  volti (265 giocatori veri + 150 condivisi), in `public/img/ritratti/`; l'elenco per il gioco è `src/dati/volti.json`
+  (da rifare con `node scripts/volti.mjs` se cambiano i volti). I fogli completi sono stati mandati ad Alex.
+- **Nel gioco, fatto**: la home compone i ritratti nuovi (`src/casa/ritratti.js`, numeri in `RITRATTI` di
+  `src/config.js`): testa, maglia coi colori e i disegni della squadra in cui il giocatore gioca adesso, capelli
+  davanti. Carte piccole col viso, carta grande col busto. Se un ritratto manca o non si carica resta quello vecchio, disegnato
+  dal modello 3D.
+- **Regola dei volti, fatta**: un volto per ogni giocatore vero; 150 condivisi per inventati e mercato, mai due facce
+  uguali nella stessa rosa né tra un'altra squadra e la mia (nella mia rosa i volti restano scritti nella carriera).
+- **Decisioni di Alex**: maglia neutra colorata dal gioco; di base girocollo o scollo a V, colletto piccolo solo come
+  variante di alcune squadre; colore degli occhi legato alla pelle.
+- **Ancora da fare**: il colletto piccolo (per ora chi ha la polo in partita ha il girocollo nel ritratto); gli avatar
+  del manager sono ancora quelli vecchi del modello 3D. `docs/riferimenti/modello-carte.png` non è nel repository: il
+  confronto affiancato con il modello non è stato fatto. Giro completo delle foto alle tre misure di iPhone con tutti i
+  volti: fatto il 22/11, nessun errore.
 - **Tempi** (computer cloud, 4 processori, senza scheda grafica, 800 punti di lato, 256 campioni con soglia di rumore):
-  in media 77 secondi a volto (da 50 a 160: il più lento è chi ha i capelli lunghi, che ha anche lo strato «sopra»), più
-  3 di preparazione; ogni maglia 26 secondi, una volta sola. 265 veri + 150 condivisi = 415 volti: circa 9 ore; a 1024
-  punti circa 15.
-- **Peso**: testa a 512 e 256 punti insieme circa 27 KB a volto (415 volti: circa 11 MB); le due maglie 345 KB in tutto.
-- **Dopo l'OK, da fare**: l'«aspetto» di ogni giocatore vero nei dati e l'insieme dei 150 condivisi; lo scollo di ogni
-  squadra nei dati; la regola che assegna i volti senza doppioni in rosa e in partita; nel gioco, il conto che colora la
-  maglia (lo stesso di `componi` in `scripts/ritratti_webp.py`) e i ritratti nuovi al posto di quelli disegnati dal
-  modello 3D.
+  in media 67 secondi di render a volto (chi ha i capelli lunghi arriva a 160, perché ha anche lo strato «sopra»), circa
+  80 contando preparazione e passaggio a WebP; ogni maglia 26 secondi, una volta sola. 415 volti: poco più di 9 ore.
+- **Peso**: testa a 512 e 256 punti insieme circa 27 KB a volto (415 volti, coi 35 strati «sopra» e le maglie: 12,5 MB in tutto); le due maglie 345 KB.
+  I ritratti non si precaricano: ogni telefono prende solo quelli che guarda.

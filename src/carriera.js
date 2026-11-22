@@ -118,7 +118,7 @@ export function nuova(clubs, nome, clubId, rnd = Math.random, mio = null) {
   const C = { v: 2, id: idCarriera(), rev: 0, agg: Date.now(), nome: String(nome || 'Mister').slice(0, 18), club: clubId, mio, stagione: 1, div, squadre: squadreDi(div, clubId, clubs),
     stat: { g: 0, v: 0, n: 0, p: 0, gf: 0, gs: 0, marc: {} }, trofei: [], storia: [], monete: I.monete, gemme: I.diamanti, stadio: 1, strutture: Object.fromEntries(STRUTTURE.map((s) => [s, 0])),
     allenatori: allenatoriVuoti(), contatti: 0, crescita: {}, mercato: mercatoVuoto(), serie: { giorno: '', n: 0 }, centro: '', caldo: 0, energia: {}, incarichi: {},
-    sfide: nuoveSfide(), rose: {}, panchine: {}, movimenti: [], avatar: 0, storico: [], percorso: { stagione: 1, punti: 0, presi: [] }, oggetti: {}, scelte: {} };
+    sfide: nuoveSfide(), rose: {}, panchine: {}, movimenti: [], avatar: 0, storico: [], percorso: { stagione: 1, punti: 0, presi: [] }, oggetti: {}, scelte: {}, volti: {} };
   if (FABBRICA) { C.rose[clubId] = FABBRICA.inizio.xi.map((x) => x.slice()); C.panchine[clubId] = FABBRICA.inizio.pan.map((x) => x.slice()); }
   apriStagione(C, rnd);
   return C;
@@ -178,6 +178,8 @@ export function completa(C) {
   if (!C.mercato) C.mercato = mercatoVuoto(); if (!C.crescita) C.crescita = {}; if (!C.allenatori) C.allenatori = allenatoriVuoti(); if (!C.strutture) C.strutture = {};
   if (!C.percorso || C.percorso.stagione !== C.stagione) C.percorso = { stagione: C.stagione, punti: 0, presi: [] };
   if (!C.oggetti || typeof C.oggetti !== 'object') C.oggetti = {}; if (!C.scelte || typeof C.scelte !== 'object') C.scelte = {};
+  // il volto di ogni giocatore inventato della mia rosa (src/casa/ritratti.js): nome → volto
+  if (!C.volti || typeof C.volti !== 'object') C.volti = {};
   return C;
 }
 export function carica(store = globalThis.localStorage) {
