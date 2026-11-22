@@ -157,13 +157,11 @@ body.conBarra .indietro{display:none}
 .c-squadra .conC .fasciaC{left:auto;right:-6px;top:0}
 .fasciaC{position:absolute;left:-4px;top:-3px;display:grid;place-items:center;width:20px;height:20px;border-radius:5px;background:linear-gradient(160deg,#FFE9A6,#E8B64C);color:#0B1530;font:800 13px Montserrat,sans-serif;font-style:normal;box-shadow:0 0 0 1.5px #0B1530}
 /* mercato: la carta del giocatore, il nome, il ruolo con lo stemma della sua squadra, il prezzo */
-.gCarta{position:relative;flex:none;display:block;height:96%;max-height:88px;aspect-ratio:.72}
+.gCarta{position:relative;flex:none;display:block;height:96%;max-height:88px;aspect-ratio:.737}
 .gCarta .scudo{position:absolute;inset:0;width:100%;height:100%}
-.gCarta .gFoto{position:absolute;left:6%;top:14%;width:88%;height:64%;object-fit:cover;object-position:top;color:rgba(11,21,48,.42)}
+.gCarta .gFoto{position:absolute;left:30%;top:4%;width:67.5%;height:79.5%;object-fit:cover;object-position:50% 0;color:rgba(11,21,48,.42)}
 .gCarta img.gFoto:not([src]),.gCarta img.gFoto[src]+.gFoto{display:none}
-.gCarta .gVal{position:absolute;left:7%;top:5%;display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:#1B1D26;font:400 14px "Bebas Neue",Anton,Impact,sans-serif;font-style:normal;line-height:1;color:#F6D768}
-.gCarta.f-argento .gVal{color:#fff}
-.gCarta.f-bronzo .gVal{color:#EBB592}
+.gCarta .gVal{position:absolute;left:22%;top:21%;transform:translate(-50%,-50%);display:grid;place-items:center;width:21px;height:21px;border-radius:50%;font:800 12px Montserrat,sans-serif;font-style:normal;line-height:1;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.45);box-shadow:0 0 0 1.5px var(--gscuro)}
 .carta .prezzo{display:flex;align-items:center;gap:4px;font:800 13px Montserrat,sans-serif;color:#E8B64C}
 .carta .prezzo .ico{width:16px;height:16px}
 /* il mio club: stemma, stelle e le tre voci con icona e nome */
@@ -200,7 +198,7 @@ body.conBarra .indietro{display:none}
 .cap .cn{grid-column:1/-1;display:flex;align-items:baseline;gap:6px;min-width:0;text-overflow:clip}
 .cap .cn b{flex:none;font-weight:400}
 .cap .cn small{flex:1 1 0;min-width:0;margin:0;white-space:nowrap;overflow:hidden}
-.cap .cartaCap{grid-row:2;grid-column:2;display:grid;place-items:center;--gw:58px;--ga:.84;pointer-events:none}
+.cap .cartaCap{grid-row:2;grid-column:2;display:grid;place-items:center;--gw:58px;--ga:.737;pointer-events:none}
 /* il logo senza la scritta è più largo: nella carta della classifica sta tutto dentro */
 .riq .logo{max-width:30%;height:auto;object-fit:contain}
 /* la schermata di prima della partita (da rifare al passo 7): con la barra il campo è più basso, così «Gioca» resta in vista */
@@ -289,21 +287,30 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .sClub.dx{grid-area:2/3}
 /* l'erba in prospettiva è un disegno (src/casa/campo.js) che riempie il suo campo */
 .erbaP{position:absolute;inset:0;width:100%;height:100%;display:block}
-/* La carta di un giocatore (modello di Alex): cornice a scudo per fascia, valutazione in un cerchio scuro in alto a
-   sinistra, ritratto, ruolo, energia, nome. Piccola: energia e nome stanno sotto la cornice, il ruolo in basso dentro.
-   Grande: tutto dentro, ruolo in alto a destra, nome su una fascia scura, stemma e energia in basso. */
+/* La carta di un giocatore. Struttura e proporzioni sono quelle della foto di riferimento di Alex (misure in
+   docs/carte-giocatori.md), cornici e colori sono nostri. Cornice a scudo per fascia; la valutazione in un cerchio
+   colorato (rosso, giallo, verde, come le statistiche) col centro al 22% della larghezza e al 21% dell'altezza, largo
+   il 32%; il ritratto a destra, dal 35% al 97,5%, con la testa in cima.
+   Grande: sotto il ritratto la fascia chiara del nome (alta il 13%) e la riga con stemma, energia e ruolo (alta il
+   10,4%, finisce all'84%), poi la punta con la stellina. Dove la carta è piccola le scritte restano di 12 px: fascia e
+   riga diventano più alte in proporzione e coprono un po' di maglia, il viso resta della stessa misura.
+   Piccola (campi stretti): energia e nome stanno sotto la cornice, il ruolo in basso dentro. */
+.f-bronzo{--gscuro:#7A4630;--gchiaro:#F6D9C6}
+.f-argento{--gscuro:#66788F;--gchiaro:#FFFFFF}
+.f-oro{--gscuro:#8A6814;--gchiaro:#FFF6C8}
+.gVal.v-verde{background:#1FA54C}
+.gVal.v-giallo{background:#E2A21B}
+.gVal.v-rosso{background:#DE4348}
 .gC{position:absolute;transform:translate(-50%,-50%);display:grid;justify-items:center}
 .gC.ferma{position:relative;transform:none}
 .gS{position:relative;display:block;width:var(--gw,34px);aspect-ratio:.84}
 .gS .scudo{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
 .gS .gFoto{position:absolute;left:8%;top:6%;width:84%;height:60%;object-fit:cover;object-position:top;color:rgba(11,21,48,.42)}
 .gS img.gFoto:not([src]),.gS img.gFoto[src]+.gFoto{display:none}
-.gS .gVal{position:absolute;left:-8px;top:-1px;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#1B1D26;font:800 12px Montserrat,sans-serif;font-style:normal;color:#F6D768;box-shadow:0 0 0 1.5px #EBC552}
-.gC.f-argento .gVal{color:#fff;box-shadow:0 0 0 1.5px #CBD6E3}
-.gC.f-bronzo .gVal{color:#EBB592;box-shadow:0 0 0 1.5px #B4775A}
+.gS .gVal{position:absolute;left:-8px;top:-1px;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;font:800 12px Montserrat,sans-serif;font-style:normal;line-height:1;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.45);box-shadow:0 0 0 1.5px var(--gscuro)}
 .gS .gRuolo{position:absolute;left:0;right:0;bottom:8%;text-align:center;text-decoration:none;font:400 13px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.03em;line-height:1;color:#3B2C08}
-.gC.f-argento .gRuolo{color:#27303C}
-.gC.f-bronzo .gRuolo{color:#fff}
+.gC.f-argento .gS .gRuolo{color:#27303C}
+.gC.f-bronzo .gS .gRuolo{color:#fff}
 .gS .gSegni{position:absolute;right:-8px;top:-1px;display:grid;gap:2px}
 .gS .gSegni .fasciaC{position:static;width:17px;height:17px;font-size:12px}
 .gS .gSegno{display:grid;place-items:center;width:17px;height:17px;border-radius:5px;background:#0B1530;color:#3FC6FF;box-shadow:0 0 0 1.5px rgba(63,198,255,.7)}
@@ -311,22 +318,34 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .gS .gAvviso{position:absolute;right:-8px;bottom:12%;display:grid;width:15px;height:15px;color:#FF5A5A}
 .gS .gStella{position:absolute;left:-6px;bottom:10%;display:grid;width:11px;height:11px;color:#E8B64C}
 .gS .gAvviso .ico,.gS .gStella .ico{width:100%;height:100%}
-.gEn{display:block;width:calc(var(--gw,34px)*.88);height:3px;border-radius:2px;background:rgba(0,0,0,.6);overflow:hidden}
+.gEn{position:relative;display:block;width:calc(var(--gw,34px)*.88);height:3px;border-radius:2px;background:rgba(0,0,0,.6);overflow:hidden}
 .gEn b{display:block;height:100%;background:#5BE37A}
 .gEn.e-m b{background:#F2A93B}
 .gEn.e-b b{background:#FF5A5A}
 .gNome{width:100%;text-align:center;font:400 var(--gf,13px) "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.03em;line-height:1;color:#fff;white-space:nowrap;overflow:hidden;text-shadow:0 1px 2px rgba(0,0,0,.85)}
-.gC.grande{display:block;width:var(--gw,64px)}
-.gC.grande .gS{aspect-ratio:var(--ga,.69)}
-.gC.grande .gFoto{left:5%;top:12%;width:90%;height:46.5%;object-fit:contain;object-position:50% 100%}
-.gC.grande .gVal{left:6%;top:4.5%;width:max(17px,calc(var(--gw,64px)*.27));height:max(17px,calc(var(--gw,64px)*.27));font:400 max(13px,calc(var(--gw,64px)*.19)) "Bebas Neue",Anton,Impact,sans-serif;line-height:1;box-shadow:none}
-.gC.grande .gRuolo{left:auto;right:8%;top:6%;bottom:auto;text-align:right;font-size:max(13px,calc(var(--gw,64px)*.18))}
-.gC.grande .gNome{position:absolute;left:4.5%;right:4.5%;top:58.5%;width:auto;height:max(14px,12.5%);display:flex;align-items:center;justify-content:center;background:rgba(22,18,16,.8);font-size:max(12px,calc(var(--gw,64px)*.16));text-shadow:none}
-.gC.grande .gStemma{position:absolute;left:23%;top:73.5%;height:10.5%;width:auto}
-.gC.grande .gEn{position:absolute;left:43%;top:76%;width:35%;height:max(4px,5.5%);border-radius:3px;background:rgba(0,0,0,.55)}
-.gC.grande .gSegni{right:-9px;top:20%}
-.gC.grande .gAvviso{right:-7px;bottom:22%;width:17px;height:17px}
-.gC.grande .gStella{left:auto;right:7%;bottom:auto;top:73.5%;width:11px;height:11px}
+/* la grande: --gh è l'altezza della carta, --gn quella della fascia del nome, --gs quella della riga in basso */
+.gC.grande{display:block;width:var(--gw,64px);--gh:calc(var(--gw,64px)/var(--ga,.737));--gn:max(12px,calc(var(--gh)*.13));--gs:max(12px,calc(var(--gh)*.104))}
+.gC.grande .gS{aspect-ratio:var(--ga,.737)}
+.gC.grande .gFoto{left:35%;top:3%;width:62.5%;height:calc(79.3% - var(--gn) - var(--gs));object-fit:contain;object-position:50% 100%}
+.gC.grande .gVal{left:22%;top:21%;transform:translate(-50%,-50%);width:max(20px,calc(var(--gw,64px)*.32));height:max(20px,calc(var(--gw,64px)*.32));font-size:max(12px,calc(var(--gw,64px)*.15));box-shadow:0 0 0 max(1.5px,calc(var(--gw,64px)*.027)) var(--gscuro)}
+.gC.grande .gNome{position:absolute;left:2.5%;right:2.5%;bottom:calc(17.7% + var(--gs));width:auto;height:var(--gn);display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,transparent,var(--gchiaro) 22%,var(--gchiaro) 78%,transparent);font-size:max(12px,calc(var(--gw,64px)*.125));color:#14161C;text-shadow:none}
+.gC.grande .gRiga{position:absolute;left:6.2%;right:5.7%;bottom:16%;height:var(--gs);display:flex;align-items:stretch;gap:max(2px,calc(var(--gw,64px)*.026))}
+.gC.grande .gBox{flex:0 0 24.7%;min-width:12px;display:grid;place-items:center;border-radius:1.5px;background:rgba(11,21,48,.5);box-shadow:0 0 0 1px var(--gscuro);overflow:hidden}
+.gC.grande .gStemma{display:block;max-width:100%;height:calc(var(--gs) - 1px);width:auto}
+.gC.grande .gEn{flex:1 1 0;min-width:8px;width:auto;height:auto;border-radius:1.5px;background:rgba(0,0,0,.55);box-shadow:0 0 0 1px var(--gscuro)}
+.gC.grande .gEn b{background:linear-gradient(90deg,#17B257,#1FEF74)}
+.gC.grande .gEn.e-m b{background:linear-gradient(90deg,#D98A1C,#F6B545)}
+.gC.grande .gEn.e-b b{background:linear-gradient(90deg,#D23B40,#FF6B6B)}
+/* il lampo al centro della barra dell'energia */
+.gLampo{position:absolute;left:50%;top:50%;width:calc(var(--gs)*.62);height:calc(var(--gs)*1.02);transform:translate(-50%,-50%);background:#10131A;clip-path:polygon(62% 0,12% 58%,46% 58%,36% 100%,90% 38%,56% 38%);text-decoration:none}
+.gC.grande .gRuolo{flex:0 0 auto;min-width:24.7%;box-sizing:border-box;padding:0 2px;display:grid;place-items:center;border-radius:1.5px;text-decoration:none;font:400 max(12px,calc(var(--gw,64px)*.1)) "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.02em;line-height:1;color:#fff;box-shadow:0 0 0 1px var(--gscuro)}
+.gC.grande .gRuolo.r-A{background:#E8456B}
+.gC.grande .gRuolo.r-C{background:#FFD21F;color:#14161C}
+.gC.grande .gRuolo.r-D{background:#1FA54C}
+.gC.grande .gRuolo.r-P{background:#2D8FEA}
+.gC.grande .gSegni{right:auto;left:calc(100% - 7px);top:9%}
+.gC.grande .gAvviso{right:auto;left:-7px;bottom:22%;width:17px;height:17px}
+.gC.grande .gStella{left:50%;right:auto;top:auto;bottom:4%;transform:translateX(-50%);width:max(9px,calc(var(--gw,64px)*.15));height:max(9px,calc(var(--gw,64px)*.15));color:var(--gscuro)}
 /* al centro: la competizione, la fase, casa o trasferta, l'ora e il tempo */
 .sCentro{grid-area:1/2/3/3;display:grid;justify-items:center;align-content:center;gap:3px;min-width:0;text-align:center}
 .sCentro .logo{width:42px;height:42px;object-fit:contain;color:#E8B64C}

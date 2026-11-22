@@ -109,16 +109,16 @@ const FATTI = new Map();
  * @param {string} nome
  * @param {string} origine  la squadra vera da cui viene, o 'inv'
  * @param {boolean} portiere
- * @param {boolean} [grande]  la misura grande, per la scheda del giocatore
+ * @param {string} [taglio]  quale ritaglio di RITRATTI.taglio: 'piccolo', 'carta' o 'scheda'
  */
-export function ritrattoNuovo(clubId, nome, origine, portiere, grande = false) {
+export function ritrattoNuovo(clubId, nome, origine, portiere, taglio = 'piccolo') {
   const volto = voltoDi(clubId, nome, origine); if (!volto) return Promise.resolve('');
-  const lato = grande ? RITRATTI.lato.grande : RITRATTI.lato.piccolo, d = divisa(club(clubId), portiere), chiave = [volto, d.c1, d.c2, d.stile, d.scollo, lato].join('|');
+  const T = RITRATTI.taglio[taglio] || RITRATTI.taglio.piccolo, lato = RITRATTI.lato[T.lato], d = divisa(club(clubId), portiere), chiave = [volto, d.c1, d.c2, d.stile, d.scollo, taglio].join('|');
   if (!FATTI.has(chiave)) FATTI.set(chiave, Promise.all([immagine(`${volto}-${lato}.webp`), maglia(d, lato), SOPRA.has(volto) ? immagine(`${volto}-sopra-${lato}.webp`) : null]).then(([testa, stoffa, sopra]) => {
     if (!testa || !stoffa) return '';
     const [c, x] = tela(lato); x.drawImage(testa, 0, 0, lato, lato); x.drawImage(stoffa, 0, 0); if (sopra) x.drawImage(sopra, 0, 0, lato, lato);
-    // nella carta entra solo una parte: il viso nelle piccole, il busto in quella grande
-    const T = RITRATTI.taglio[grande ? 'grande' : 'piccolo'], [c2, x2] = tela(lato); x2.drawImage(c, T.x * lato, T.y * lato, T.lato * lato, T.lato * lato, 0, 0, lato, lato);
+    // nella carta entra solo una parte: il ritaglio scelto, alla sua forma
+    const largo = Math.round(T.largo * lato), alto = Math.round(T.alto * lato), [c2, x2] = tela(largo, alto); x2.drawImage(c, T.x * lato, T.y * lato, largo, alto, 0, 0, largo, alto);
     return new Promise((fatto) => c2.toBlob((b) => fatto(b ? URL.createObjectURL(b) : ''), 'image/webp', .92));
   }));
   return FATTI.get(chiave);
