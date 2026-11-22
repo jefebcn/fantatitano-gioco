@@ -299,12 +299,31 @@ function prepara(p, tipo, bx, bz, calcio, forte = false) {
   const v = hyp(p.vx, p.vz) / (p.fig.alt || 1), sx = (bx - p.x) * Math.cos(p.dir) - (bz - p.z) * Math.sin(p.dir) < 0; // il bersaglio è alla sua destra
   const variante = tipo === 'passa' ? (v < 1.5 ? '_fermo' : v > 4.8 ? '_scatto' : '') : v < (tipo === 'calcia' ? 1.2 : 1.5) ? '_fermo' : '';
   const nome = tipo === 'calcia' && forte && hasFx('tiro') && v >= 1.2 ? 'tiro' : tipo + variante + (sx ? '_sx' : ''), carico = nome === 'tiro' ? GESTI.tiro.tocco : CARICO[tipo];
+  // In corsa il pallone è più avanti del piede: il calcio parte quando il giocatore gli è arrivato sopra (CARICO), e nel
+  // frattempo il pallone viene portato davanti al piede (moveBall). Il gesto comincia per ultimo, a `carico` secondi dal colpo.
+  const b = G.ball, vv = hyp(p.vx, p.vz);
+  if (vv > FIS.COND.fermo && b.y < .5 && hasFx(nome)) {
+    // dove sta il pallone quando il piede lo colpisce: davanti e di lato (positivo: alla sua sinistra), dalla clip del gesto
+    const i = GESTI[nome], alt = p.fig.alt || 1, dove = i && i.palla ? [i.palla[2] * alt, i.palla[0] * alt] : [CARICO.portata, (sx || nome === 'tiro' ? -1 : 1) * CARICO.lato];
+    const av = ((b.x - p.x) * p.vx + (b.z - p.z) * p.vz) / vv, fra = clamp((av - dove[0]) / CARICO.chiude, carico, CARICO.attesa);
+    // se c'è tempo il gesto parte dall'inizio della clip (si vede tutta la rincorsa), se no dagli ultimi `carico` secondi
+    const anticipo = Math.min(fra, Math.max(carico, i && i.tocco ? i.tocco / ritmoGesto(i, vv / alt) : carico));
+    p.carica = { t: fra, calcio, nome, anticipo, guida: true, av: dove[0], lato: dove[1] };
+    return;
+  }
   if (!gesto(p, nome, carico)) return calcio();
   p.carica = { t: carico, calcio };
 }
 /** A ogni passo di fisica: il calcio caricato parte quando il piede arriva sulla palla. */
 function calciCaricati(dt) {
-  for (const p of all()) if (p.carica && (p.carica.t -= dt) <= 0) { const c = p.carica.calcio; p.carica = null; if (G.ball.owner === p && G.state === 'play') c(); }
+  for (const p of all()) {
+    const c = p.carica; if (!c) continue;
+    c.t -= dt;
+    // il gesto del calcio che aspettava il pallone comincia adesso: il piede arriva quando arriva il pallone. Se sta ancora
+    // finendo un tocco di conduzione ci riprova al passo dopo
+    if (c.nome && c.t <= c.anticipo && G.ball.owner === p && G.state === 'play' && gesto(p, c.nome, Math.max(c.t, 0))) c.nome = null;
+    if (c.t <= 0) { p.carica = null; if (G.ball.owner === p && G.state === 'play') c.calcio(); }
+  }
 }
 /**
  * Parate: il portiere sa fra quanto (tt) e dove (dz di lato, y di altezza) il pallone passa sulla sua linea. Di lato un
@@ -1919,13 +1938,30 @@ function traLeMani(p) {
   L.getWorldPosition(_mL); R.getWorldPosition(_mR); const fx = Math.sin(f.vdir ?? p.dir) * .12, fz = Math.cos(f.vdir ?? p.dir) * .12;
   return { x: (_mL.x + _mR.x) / 2 + fx, y: Math.max(BR, (_mL.y + _mR.y) / 2), z: (_mL.z + _mR.z) / 2 + fz };
 }
+/** Durante il lancio con le mani il pallone sta nella mano che lancia (la destra, nella clip): sulle nocche, verso le dita. */
+function nellaMano(p) {
+  const f = p.fig, H = f.bones && f.bones.hand_r, K = f.bones && f.bones.middle_01_r; if (!H || !K || !(G.t - (f.posaT || -9) < .15)) return null;
+  H.getWorldPosition(_mL); K.getWorldPosition(_mR);
+  const q = { x: _mR.x + (_mR.x - _mL.x) * .3, y: Math.max(BR, _mR.y + (_mR.y - _mL.y) * .3), z: _mR.z + (_mR.z - _mL.z) * .3 }, prima = f.manoPrima;
+  // la posa è quella del fotogramma prima e la mano che lancia corre: si aggiunge la strada che ha fatto nell'ultimo passo
+  f.manoPrima = { x: q.x, y: q.y, z: q.z, t: G.t };
+  return prima && G.t - prima.t < .05 ? { x: q.x * 2 - prima.x, y: Math.max(BR, q.y * 2 - prima.y), z: q.z * 2 - prima.z } : q;
+}
 function moveBall(dt) {
   const b = G.ball;
-  if (G.state === 'play') { calciCaricati(dt); if (b.owner && b.owner.i && !G.rimessa) prevediTocco(b.owner, b); else if (!b.owner) prevediStop(b); } // i gesti con la palla, a tempo col tocco
+  if (G.state === 'play') { calciCaricati(dt); if (b.owner && b.owner.i && !G.rimessa && !b.owner.carica) prevediTocco(b.owner, b); else if (!b.owner) prevediStop(b); } // i gesti con la palla, a tempo col tocco
   else for (const p of all()) p.carica = null; // a gioco fermo nessun calcio resta in sospeso
   // chi ha la palla lo si legge dopo i calci caricati: se il calcio è appena partito non c'è più nessuno da far condurre
   // (prima il passatore dava un tocco di conduzione al pallone appena calciato e il passaggio finiva lento e di lato)
   const o = b.owner;
+  if (o && o.i !== 0 && G.state === 'play' && o.carica && o.carica.guida && b.y < .5) {
+    // sta per calciare: niente tocchi di conduzione, il pallone arriva davanti al piede che calcia proprio al momento del colpo
+    const v = hyp(o.vx, o.vz), ux = v > .5 ? o.vx / v : Math.sin(o.dir), uz = v > .5 ? o.vz / v : Math.cos(o.dir), t = Math.max(o.carica.t, dt);
+    const av = o.carica.av, lato = o.carica.lato;
+    const rx = (o.x + o.vx * t + ux * av + uz * lato - b.x) / t - o.vx, rz = (o.z + o.vz * t + uz * av - ux * lato - b.z) / t - o.vz;
+    const k = Math.min(1, CARICO.chiude * 2 / (hyp(rx, rz) || 1)); // rispetto al giocatore non va mai più svelto del doppio di `chiude`
+    b.vx = o.vx + rx * k; b.vz = o.vz + rz * k; b.vy = 0; FIS.passo(b, dt); return;
+  }
   if (o && o.i !== 0 && G.state === 'play' && !(G.rimessa && G.rimessa.chi === o)) { // dribbling: tocchi in avanti, la palla è libera tra un tocco e l'altro
     { let dm = 9; for (const q of o.team.opp.players) dm = Math.min(dm, hyp(q.x - o.x, q.z - o.z)); o.pressato = dm < 1.8; } // con un avversario addosso i tocchi si accorciano
     const r = FIS.conduci(b, o, dt, tecnica(o) * (o.sbil > 0 ? .4 : 1), Math.random, { x: o.tx - o.x, z: o.tz - o.z });
@@ -1939,8 +1975,11 @@ function moveBall(dt) {
   }
   if (o) {
     const mani = o.i === 0 && o.fig.skinned && G.state === 'play', k = mani ? .42 : .8; // il portiere la tiene in mano
-    const q = mani ? traLeMani(o) : null; // tra le mani vere (la posa del fotogramma prima), così segue presa, tuffo e lancio
-    if (q) { const a = Math.min(1, dt * (o.presaT && G.t - o.presaT < .12 ? 18 : 40)); b.x += (q.x - b.x) * a; b.y += (q.y - b.y) * a; b.z += (q.z - b.z) * a; b.vx = o.vx; b.vz = o.vz; b.vy = 0; return; }
+    // tra le mani vere (la posa del fotogramma prima), così segue presa e tuffo. Nel lancio con le mani un braccio va
+    // indietro e l'altro avanti: il punto di mezzo restava sospeso davanti al petto, quindi lì il pallone segue la mano che lancia
+    const lancio = mani && o.fx === 'rinvio' ? nellaMano(o) : null, w = lancio ? clamp(o.fig.fxW * 2 - .4, 0, 1) : 0, m2 = mani ? traLeMani(o) : null;
+    const q = lancio && m2 ? { x: m2.x + (lancio.x - m2.x) * w, y: m2.y + (lancio.y - m2.y) * w, z: m2.z + (lancio.z - m2.z) * w } : m2;
+    if (q) { const a = Math.min(1, dt * (o.presaT && G.t - o.presaT < .12 ? 18 : lancio ? 90 : 40)); b.x += (q.x - b.x) * a; b.y += (q.y - b.y) * a; b.z += (q.z - b.z) * a; b.vx = o.vx; b.vz = o.vz; b.vy = 0; return; }
     const tx = o.x + Math.sin(o.dir) * k, tz = o.z + Math.cos(o.dir) * k, a = Math.min(1, dt * 20);
     b.x += (tx - b.x) * a; b.z += (tz - b.z) * a; b.y = mani ? b.y + (1.55 - b.y) * Math.min(1, dt * 12) : BR; b.vx = o.vx; b.vz = o.vz; b.vy = 0; return;
   }
@@ -2417,7 +2456,7 @@ function folla(dt) {
 function disegna(dt) {
   const b = G.ball;
   if (b) {
-    if (!REGIA.figure()) for (const p of all()) { allinea(p, dt); pose(p, dt); inclina(p, dt); if (p.fig.skinned && !G.senzaPiedi) bloccaPiedi(p.fig, dt, !!p.fig.piediAttivi); } // durante il replay le figure le mette in posa la regia
+    if (!REGIA.figure()) for (const p of all()) { allinea(p, dt); pose(p, dt); inclina(p, dt); if (p.fig.skinned && !G.senzaPiedi) bloccaPiedi(p.fig, dt, !!p.fig.piediAttivi, /^(passa|calcia|lancia|tiro)/.test(p.fx || '')); } // durante il replay le figure le mette in posa la regia
     else for (const p of all()) p.fig.root.rotation.x = p.fig.root.rotation.z = 0;
     const sp = hyp(b.vx, b.vz);
     // il pallone si disegna dove sarà tra un attimo (il tempo non ancora simulato), come i giocatori: restano insieme
