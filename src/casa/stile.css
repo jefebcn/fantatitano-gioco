@@ -338,8 +338,10 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .gS .gSegno{display:grid;place-items:center;width:17px;height:17px;border-radius:5px;background:#0B1530;color:#3FC6FF;box-shadow:0 0 0 1.5px rgba(63,198,255,.7)}
 .gS .gSegno .ico{width:12px;height:12px}
 .gS .gAvviso{position:absolute;right:-8px;bottom:12%;display:grid;width:15px;height:15px;color:#FF5A5A}
-.gS .gStella{position:absolute;left:-6px;bottom:10%;display:grid;width:11px;height:11px;color:#E8B64C}
-.gS .gAvviso .ico,.gS .gStella .ico{width:100%;height:100%}
+/* chi è stato allenato: una piccola freccia verde che sale, col bordo scuro perché si veda su ogni colore di carta */
+.gS .gFreccia{position:absolute;left:-6px;bottom:10%;display:block;width:10px;height:12px;filter:drop-shadow(0 0 1px #04260F) drop-shadow(0 0 1px #04260F)}
+.gFreccia i{display:block;width:100%;height:100%;background:linear-gradient(180deg,#7CF59A,#1FB84A);clip-path:polygon(50% 0,100% 48%,70% 48%,70% 100%,30% 100%,30% 48%,0 48%)}
+.gS .gAvviso .ico{width:100%;height:100%}
 .gEn{position:relative;display:block;width:calc(var(--gw,34px)*.88);height:3px;border-radius:2px;background:rgba(0,0,0,.6);overflow:hidden}
 .gEn b{display:block;height:100%;background:#5BE37A}
 .gEn.e-m b{background:#F2A93B}
@@ -374,7 +376,7 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 /* sul campo ogni carta ha la sua ombra a terra */
 .gC.grande:not(.ferma)::after{content:"";position:absolute;left:18%;right:18%;top:100%;height:calc(var(--gw,64px)*.07);border-radius:50%;background:rgba(0,0,0,.34);filter:blur(calc(var(--gw,64px)*.03));pointer-events:none}
 .gC.grande .gAvviso{right:auto;left:-7px;bottom:22%;width:17px;height:17px}
-.gC.grande .gStella{left:50%;right:auto;top:auto;bottom:4%;transform:translateX(-50%);width:max(9px,calc(var(--gw,64px)*.15));height:max(9px,calc(var(--gw,64px)*.15));color:var(--gscuro)}
+.gC.grande .gFreccia{left:9%;bottom:auto;top:40%;width:calc(var(--gw,64px)*.15);height:calc(var(--gw,64px)*.18)}
 /* al centro: la competizione, la fase, casa o trasferta, l'ora e il tempo */
 .sCentro{grid-area:1/2/3/3;display:grid;justify-items:center;align-content:center;gap:3px;min-width:0;text-align:center}
 .sCentro .logo{width:42px;height:42px;object-fit:contain;color:#E8B64C}
@@ -428,10 +430,10 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
     conic-gradient(from 96deg at 0 0,rgba(150,205,255,0) 0deg,rgba(150,205,255,.16) 7deg,rgba(150,205,255,0) 14deg,rgba(150,205,255,.1) 25deg,rgba(150,205,255,0) 34deg,rgba(150,205,255,.13) 47deg,rgba(150,205,255,0) 58deg,rgba(150,205,255,0) 360deg),
     conic-gradient(from 206deg at 100% 0,rgba(150,205,255,0) 0deg,rgba(150,205,255,.13) 11deg,rgba(150,205,255,0) 22deg,rgba(150,205,255,.1) 33deg,rgba(150,205,255,0) 44deg,rgba(150,205,255,.16) 51deg,rgba(150,205,255,0) 58deg,rgba(150,205,255,0) 360deg),
     radial-gradient(ellipse 120% 90% at 50% 40%,rgba(0,0,0,0) 55%,rgba(1,5,20,.7) 100%),linear-gradient(180deg,#0C2F7C,#0A2466 48%,#051540)}
-/* i quattro pulsanti: quello che si vede è alto il 7,5% dell'altezza; il posto da toccare arriva a metà dello spazio tra
-   uno e l'altro (9,3%), per i bordi trasparenti sopra e sotto */
+/* i quattro pulsanti: quello che si vede è alto il 7,5% dell'altezza; il posto da toccare è alto almeno 44 px, allargato
+   nello spazio tra un pulsante e l'altro coi bordi trasparenti sopra e sotto */
 .qSx{position:absolute;left:max(8%,env(safe-area-inset-left));width:13%;top:calc(var(--barra) + var(--vh)*2);display:grid}
-.qB{position:relative;display:flex;align-items:center;gap:6px;height:calc(var(--vh)*9.3);padding:0 7px;border:0 solid transparent;border-width:calc(var(--vh)*.9) 0;background-clip:padding-box;border-radius:calc(var(--vh)*.9 + 5px);background-image:linear-gradient(180deg,#20418F,#11255E);box-shadow:inset 0 0 0 1px rgba(143,219,255,.32);color:#fff;text-align:left}
+.qB{--alto:max(44px,calc(var(--vh)*9.3));--bordo:calc((var(--alto) - var(--vh)*7.5)/2);position:relative;display:flex;align-items:center;gap:6px;height:var(--alto);padding:0 7px;border:0 solid transparent;border-width:var(--bordo) 0;background-clip:padding-box;border-radius:calc(var(--bordo) + 5px);background-image:linear-gradient(180deg,#20418F,#11255E);box-shadow:inset 0 0 0 1px rgba(143,219,255,.32);color:#fff;text-align:left}
 .qB:active{filter:brightness(1.2)}
 .qB .ico{flex:none;width:18px;height:18px}
 .qB b{flex:1 1 0;min-width:0;font:400 15px/1 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden}
@@ -460,6 +462,13 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 #squadra .gC{cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #squadra .gC img,#squadra .gC svg{pointer-events:none;-webkit-user-drag:none}
 #squadra .gC.presa,#squadra .gSegni .presa{opacity:.35}
+/* la carta scelta, in attesa della seconda: un bordo luminoso e, sopra, il piccolo pulsante «Scheda» (da toccare su 44 px) */
+#squadra .gC[data-scelto] .gS{filter:drop-shadow(0 0 4px #7FE0FF) drop-shadow(0 0 2px #fff)}
+.qScheda{position:absolute;z-index:6;transform:translateX(-50%);display:flex;align-items:center;gap:4px;height:44px;min-width:44px;padding:0 9px;border:0 solid transparent;border-width:10px 0;background-clip:padding-box;border-radius:22px;background-image:linear-gradient(180deg,#FFFFFF,#D6EEFF);color:#0B1530;box-shadow:inset 0 0 0 1px #7FE0FF}
+.qScheda .ico{width:14px;height:14px}
+.qScheda b{font:800 12px/1 Montserrat,sans-serif;white-space:nowrap}
+/* le Tre Torri del Titano dietro il campo, appena visibili */
+.qTorri{position:absolute;left:-1%;bottom:-3%;width:33%;aspect-ratio:1;fill:#A9D4FF;opacity:.13;pointer-events:none}
 .gC.ombra{filter:drop-shadow(0 6px 8px rgba(0,0,0,.6))}
 /* le linguette degli incarichi si prendono col dito: il posto da toccare è più largo di quello che si vede */
 #squadra .gSegni [data-inc]{position:relative;left:0;top:0;cursor:grab;touch-action:none}

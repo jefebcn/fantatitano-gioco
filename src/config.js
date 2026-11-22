@@ -421,7 +421,8 @@ export const CARTA_GRANDE = { forma: .737 };
 // carta: quanto è larga una carta, in parti della larghezza dello schermo (uguale in campo e tra i sostituti).
 // stretto: la mezza larghezza del campo in alto, in percento (in basso è 50): il lato alto è il 55% di quello basso.
 // trascina: di quanti punti deve muoversi il dito perché una carta o un incarico cominci a seguirlo.
-export const SQUADRA = { carta: .055, stretto: 27.5, trascina: 10 };
+// lungo: dopo quanti millesimi un dito fermo su una carta apre la scheda del giocatore.
+export const SQUADRA = { carta: .055, stretto: 27.5, trascina: 10, lungo: 520 };
 // ---------- Valutazioni mostrate (home, carte dei giocatori, mercato) ----------
 // La forza usata in partita non cambia: qui si decide solo che numero si vede. Funzioni in src/dati/scala.js.
 // interno: la scala di lavoro, dal giocatore più debole al più forte del suo reparto (portieri, difensori,
@@ -431,8 +432,9 @@ export const SQUADRA = { carta: .055, stretto: 27.5, trascina: 10 };
 //   55 e 75, i migliori tra 76 e 82, oltre 85 solo chi si allena molto.
 // stat: il minimo e il massimo di una statistica mostrata. rumore: di quanto una statistica si scosta, giocatore per
 //   giocatore, dal profilo del suo ruolo.
-// fasce: da che valutazione la carta è oro (i giocatori forti). Sotto è bronzo, oppure azzurra se il giocatore è stato
-//   migliorato con un allenatore. cerchio: da che valutazione il cerchio della carta è verde (sotto è rosso).
+// fasce: il colore della carta dice la rarità. Da che valutazione la carta è azzurra (i rari) e da quale è oro (i
+//   più forti: tutti i capitani che si possono ingaggiare); sotto è bronzo. Si parte con una rosa di bronzi e il capitano
+//   d'oro, e con le stagioni si sale. cerchio: da che valutazione il cerchio della carta è verde (sotto è rosso).
 // colori: da che valore una statistica è gialla e da quale è verde (sotto è rossa).
 // capitani: tra quali valutazioni stanno i candidati di «Ingaggia il tuo capitano» e quanti sono.
 // basso: il valore interno di chi ha quotazione 1. Serve ai giocatori inventati delle divisioni sotto il Campionato
@@ -442,7 +444,7 @@ export const SCALA = {
   punti: [[30, 42], [55, 55], [65, 60], [72, 64], [78, 68], [82, 71], [85, 75], [88, 82], [100, 90]],
   stat: [30, 99],
   rumore: 5,
-  fasce: { oro: 70 },
+  fasce: { azzurro: 60, oro: 70 },
   cerchio: 60,
   colori: [60, 72],
   capitani: { min: 70, max: 78, quanti: 9 },

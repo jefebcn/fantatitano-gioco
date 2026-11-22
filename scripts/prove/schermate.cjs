@@ -42,10 +42,7 @@ function qualita(radici) {
       const parte = e.closest('.carta .fascia, .carta .corpo, .carta .piede');
       if (testo && parte && parte !== e && st.position !== 'absolute') { const q = parte.getBoundingClientRect(); if (r.right > q.right + 1 || r.left < q.left - 1 || r.bottom > q.bottom + 1.5 || r.top < q.top - 1.5) guai.push(`testo fuori dalla sua parte della carta: ${dice(e)}`); }
       if (testo && /…|\.\.\.$/.test(e.textContent.trim())) guai.push(`puntini: ${dice(e)}`);
-      // i quattro pulsanti a sinistra della Squadra sono bassi per scelta di Alex (23/11): il posto da toccare è alto il 9,3%
-      // dello schermo, che sugli iPhone fa 35-40 px; tutti gli altri pulsanti restano da 44
-      const minimoAlto = e.classList.contains('qB') ? 33.5 : 43.5;
-      if (e.tagName === 'BUTTON' && (r.width < 43.5 || r.height < minimoAlto)) guai.push(`pulsante da ${Math.round(r.width)} × ${Math.round(r.height)}: ${dice(e)}`);
+      if (e.tagName === 'BUTTON' && (r.width < 43.5 || r.height < 43.5)) guai.push(`pulsante da ${Math.round(r.width)} × ${Math.round(r.height)}: ${dice(e)}`);
     }
     // nessuna carta sopra un'altra
     const carte = [...radice.querySelectorAll('.carta')].filter(vista).map((c) => c.getBoundingClientRect());
@@ -101,17 +98,21 @@ srv.listen(0, async () => {
     await vai('#casa .c-percorso', 'percorso');
     await vai('#casa .c-amichevole', 'amichevole', async () => { await tocca('.sq', 1); await tocca('.sq', 7); await tocca('#inizio'); await foto('sfida-amichevole'); await tocca('#sfida [data-az="cambia"]'); });
     await vai('#casa .c-sfide', 'sfide-d', async () => { for (const t of ['w', 'c', 's']) { await tocca(`[data-stab="${t}"]`); await foto(`sfide-${t}`); } });
-    // la Squadra: scambio trascinando, il portiere solo in porta, incarichi trascinando le linguette, modulo, squadra
-    // migliore, scheda con un tocco
+    // la Squadra: scambio a due tocchi e trascinando, il portiere solo in porta, incarichi trascinando le linguette,
+    // modulo, squadra migliore, scheda dal pulsante «Scheda» e con la pressione lunga
     await vai('#casa .c-squadra', 'squadra', async () => {
       const rosa = () => pg.evaluate(() => { const g = window.__g, K = g.carriera(), c = g.club(K.club); return { xi: c.xi.map((x) => x[0]), pan: c.pan.map((x) => x[0]), salvata: JSON.parse(localStorage.getItem('fantatitano-carriera')).rose[c.id].map((x) => x[0]), inc: K.incarichi || {}, cap: (K.mio || {}).capitano, form: g.sel.form, monete: K.monete, crescita: K.crescita || {}, allenatori: g.CAR.quantiAllenatori(K) }; });
       const carta = (g) => `#squadra .gC[data-g="${g}"]`, centroDi = async (sel) => { const r = await (await pg.$(sel)).boundingBox(); return [r.x + r.width / 2, r.y + r.height / 2]; }, centro = (g) => centroDi(carta(g));
       // prende una cosa col dito, la porta sopra un'altra e la lascia; con un nome fa la foto a metà strada
       const trascina = async (da, a, nome) => { const [ax, ay] = await centroDi(da), [bx, by] = await centroDi(a); await pg.mouse.move(ax, ay); await pg.mouse.down(); await pg.mouse.move(ax + 14, ay + 6, { steps: 3 }); await pg.mouse.move(bx, by, { steps: 6 }); if (nome) await foto(nome); await pg.mouse.up(); await pg.waitForTimeout(450); };
       const r0 = await rosa();
-      await trascina(carta('xi:5'), carta('pan:3')); await foto('squadra-scambio');
+      // due tocchi: il primo sceglie (bordo luminoso e pulsante «Scheda»), il secondo scambia; ritoccare la stessa carta annulla
+      await tocca(carta('xi:5')); await foto('squadra-scelto');
+      if (!(await pg.$('#squadra .qScheda'))) errori.push(`${w}: sulla carta scelta manca il pulsante «Scheda»`);
+      await tocca(carta('xi:5')); if (await pg.$('#squadra .gC[data-scelto]')) errori.push(`${w}: ritoccare la carta scelta non annulla`);
+      await tocca(carta('xi:5')); await tocca(carta('pan:3')); await foto('squadra-scambio');
       const r1 = await rosa(); if (r1.xi[5] !== r0.pan[3] || r1.pan[3] !== r0.xi[5] || r1.salvata[5] !== r0.pan[3]) errori.push(`${w}: lo scambio tra titolare e sostituto non è riuscito o non è salvato`);
-      await trascina(carta('xi:0'), carta('xi:3')); const r2 = await rosa(); if (r2.xi[0] !== r1.xi[0]) errori.push(`${w}: un giocatore di movimento è finito in porta`);
+      await tocca(carta('xi:0')); await tocca(carta('xi:3')); const r2 = await rosa(); if (r2.xi[0] !== r1.xi[0]) errori.push(`${w}: un giocatore di movimento è finito in porta`);
       await trascina('#squadra .gSegni [data-inc="rigori"]', carta('xi:9'), 'squadra-incarico'); const r3 = await rosa(); if (r3.inc.rigori !== r2.xi[9]) errori.push(`${w}: il rigorista non è stato assegnato`);
       await trascina('#squadra .gSegni [data-inc="capitano"]', carta('xi:4')); const r4 = await rosa(); if (r4.cap !== r2.xi[4]) errori.push(`${w}: il capitano non è stato assegnato`);
       await tocca('#squadra [data-az="modulo"]'); await foto('finestra-modulo'); await tocca('#finS [data-scelta="4-2-3-1"]'); await foto('squadra-4231');
@@ -122,10 +123,12 @@ srv.listen(0, async () => {
       // trascinamento: una carta della panchina portata sopra un titolare
       const r5 = await rosa(); await trascina(carta('pan:1'), carta('xi:7'), 'squadra-trascina');
       const r6 = await rosa(); if (r6.xi[7] !== r5.pan[1] || r6.pan[1] !== r5.xi[7]) errori.push(`${w}: il trascinamento non ha scambiato i due giocatori`);
-      // un tocco: si apre la scheda; da lì si usa un allenatore dell'inventario (qui regalati per la prova) e resta scritto
+      // pressione lunga: si apre la scheda, e si chiude; poi dal pulsante «Scheda», e da lì si usa un allenatore dell'inventario (qui regalati per la prova) e resta scritto
       await pg.evaluate(() => { const K = window.__g.carriera(); K.allenatori.raro.tecnico = 2; K.allenatori.comune.fisico = 1; });
-      const [cx2, cy2] = await centro('xi:8'); await pg.waitForTimeout(450); await pg.mouse.click(cx2, cy2); await foto('scheda-giocatore');
-      if (await pg.evaluate(() => document.querySelector('#schedaG').classList.contains('nas'))) errori.push(`${w}: il tocco non apre la scheda del giocatore`);
+      const [cx2, cy2] = await centro('xi:8'); await pg.waitForTimeout(450); await pg.mouse.move(cx2, cy2); await pg.mouse.down(); await pg.waitForTimeout(700); await pg.mouse.up();
+      if (await pg.evaluate(() => document.querySelector('#schedaG').classList.contains('nas'))) errori.push(`${w}: la pressione lunga non apre la scheda del giocatore`); else await tocca('#schedaG [data-az="chiudi"]');
+      await pg.waitForTimeout(450); await tocca(carta('xi:8')); await tocca('#squadra .qScheda'); await foto('scheda-giocatore');
+      if (await pg.evaluate(() => document.querySelector('#schedaG').classList.contains('nas'))) errori.push(`${w}: il pulsante «Scheda» non apre la scheda del giocatore`);
       else { await tocca('#schedaG [data-az="allena"]'); await foto('finestra-allenatore'); await tocca('#finS [data-scelta="0"]'); await foto('scheda-allenato'); const r7 = await rosa(); if (r7.allenatori !== 2 || !r7.crescita[r6.xi[8]]) errori.push(`${w}: l'allenamento dalla scheda non è riuscito`);
         await tocca('#schedaG [data-az="vendi"]'); await foto('finestra-vendi'); await tocca('#finestra [data-az="no"]'); await tocca('#schedaG [data-az="chiudi"]'); }
       await foto('squadra-alla-fine');

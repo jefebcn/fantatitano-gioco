@@ -15,16 +15,18 @@ La carta è larga 0,737 volte la sua altezza. Larghezze in percento della larghe
 | Ritratto | riquadro dal 35% al 97,5% di lato e dal 3% al 58,7% dall'alto; la testa (orecchie comprese) è larga il 63% del riquadro, i capelli partono in cima, il mento è all'82% dell'altezza, sotto si vedono collo e maglia |
 | Fascia del nome | dal 58,7% al 71,8% (alta il 13%), più chiara della carta, nome scuro in maiuscolo al centro |
 | Riga in basso | dal 73,5% all'84% (alta il 10,4%): bandiera 21,8% di larghezza, energia 39,3% con un lampo al centro, ruolo 21,8% |
-| Punta | stellina al centro per chi è migliorato |
+| Punta | nella foto, una stellina al centro per chi è migliorato (da noi è una freccia verde sotto il cerchio) |
 | Segni | capitano e incarichi in colonna fuori dalla carta, a destra, dall'alto |
 
 Colori che fanno parte della struttura: il cerchio della valutazione cambia colore col numero; il ruolo ha un colore per
 reparto.
 
 ## Come è nel gioco
-- **Cornice**: `scripts/icone.mjs` (`sagomaCarta`), con una trama di piccoli rombi. Dal 23/11 il colore dice chi è il
-  giocatore: **bronzo** i normali, **oro** i forti (da 70, `SCALA.fasce.oro`: tutti i capitani che si possono ingaggiare),
-  **azzurra** chi è stato migliorato con un allenatore e non è ancora da oro.
+- **Cornice**: `scripts/icone.mjs` (`sagomaCarta`), con una trama di piccoli rombi. Il colore è la **rarità** (deciso da
+  Alex il 23/11, `SCALA.fasce`): **bronzo** sotto 60, **azzurro** da 60 a 69, **oro** da 70 in su. Si parte con una rosa
+  di bronzi e il capitano d'oro, e con le stagioni si sale. Azzurro e non argento: `docs/riferimenti/modello-carte.png`
+  non è nel repository, quindi non c'è stato niente da allineare.
+- **Chi è stato allenato** ha una piccola freccia verde sotto il cerchio della valutazione, qualunque sia il colore.
 - **Forma**: `CARTA_GRANDE.forma` in `src/config.js` (0,737); le altre proporzioni sono nello stile, `src/casa/stile.css`
   (`.gC.grande`), e la struttura in `src/casa/giocatore.js` (`cartaCampo`).
 - **Cerchio**: rosso sotto 60, verde da 60 in su (`SCALA.cerchio`).
