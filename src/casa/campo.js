@@ -1,5 +1,6 @@
 // Il campo in prospettiva con le carte dei giocatori, per la Sfida e per la Squadra: il disegno dell'erba e il calcolo
 // di dove va ogni carta secondo il modulo, e di quanto può essere grande senza coprirne un'altra.
+import { CARTA_GRANDE } from '../config.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 // Le linee di un modulo si staccano dove tra un giocatore e il successivo, dalla difesa all'attacco, ci sono più di
@@ -9,10 +10,10 @@ const STACCO = 5, FASCIA = 25;
 // barretta dell'energia (BARRA) e il nome, alto NOME[1] se lo scudo resta largo almeno GRANDE, se no NOME[0]. Per il nome
 // ogni carta ha un posto largo POSTO volte lo scudo, e mai meno di NOME_LARGO (ci sta un cognome di undici lettere).
 const PICCOLA = { LARGO: 8.5, ALTO: 1.19, BARRA: 3, NOME: [12, 14], GRANDE: 34, POSTO: 1.7, NOME_LARGO: 58 };
-// Carta grande, col nome dentro: larga da `minimo`, perché sotto un cognome lungo non ci sta, a `massimo`. Il rapporto tra
-// larghezza e altezza va da forma[0], quello del modello, a forma[1], più schiacciato, e dove c'è posto si tiene
-// `ideale`. Tra una linea e l'altra resta `aria`, tra due carte vicine `tra`.
-const GRANDE = { minimo: 58, massimo: 84, forma: [.69, .84], ideale: .72, aria: 4, tra: 8 };
+// Carta grande, col nome dentro: larga da `minimo`, perché sotto la riga con stemma, energia e ruolo non ci sta, a
+// `massimo`. Il rapporto tra larghezza e altezza è uno solo, quello della foto di riferimento di Alex
+// (CARTA_GRANDE.forma). Tra una linea e l'altra resta `aria`, tra due carte vicine `tra`.
+const GRANDE = { minimo: 50, massimo: 84, forma: [CARTA_GRANDE.forma, CARTA_GRANDE.forma], ideale: CARTA_GRANDE.forma, aria: 4, tra: 8 };
 
 /** Le linee di un modulo, dal portiere alle punte: per ognuna i giocatori (i: posto nel modulo, x e z: dove sta). */
 export function linee(posti) {
