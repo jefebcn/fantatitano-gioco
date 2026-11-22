@@ -92,6 +92,8 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   passaggi, linea meno compatta, anticipi sul corto tra 9 e 12 su 100), portiere per ultimo (un gol ogni 4–5 tiri).
 - In sospeso da Alex: riprese rapide sì o no (tolgono 11 s di attesa, non danno tiri); tiro lontano o di spalle (segue
   la levetta o va sempre in porta?); cambio automatico del giocatore in difesa; calcio d'inizio che aspetta il passaggio.
+- Studio di GameplayFootball, Google Research Football e due giochi più piccoli: `docs/studio-ia.md`, con tre prove
+  proposte (smarcamento fuori dall'ombra, inserimento a condizione, tiro a tre bersagli). Aspettano il via di Alex.
 - Strumenti: `scripts/prove/diagnosi.cjs`, `registra.cjs`, `rivedi.cjs`, `analisi-partita.py` (righe in `docs/RICETTE.md`).
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
