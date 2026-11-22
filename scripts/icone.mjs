@@ -92,7 +92,7 @@ const COLORI = {
 // prende l'ultimo 16%. Il disegno è nostro: bordo scuro, corpo sfumato con due riflessi in diagonale, una riga chiara
 // dentro. Tre fasce di valutazione. Disegno 100 × 136 che si adatta alla forma del suo posto (la carta piccola dei campi
 // è più bassa). Per ogni fascia: chiaro, medio, scuro, bordo, riga interna. `sagomaCarta(d)` è il contorno rientrato di d.
-const FASCE = { bronzo: ['#DCA584', '#B4775A', '#8A5239', '#5B3322', '#F3CBB1'], argento: ['#F6F9FC', '#CBD6E3', '#A2B3C6', '#73859B', '#FFFFFF'], oro: ['#FCE99C', '#EBC552', '#CFA02C', '#94701A', '#FFF7CC'] };
+const FASCE = { bronzo: ['#D9995F', '#B06E38', '#7E4520', '#4E2A12', '#F0C9A0'], argento: ['#F6F9FC', '#CBD6E3', '#A2B3C6', '#73859B', '#FFFFFF'], oro: ['#FCE99C', '#EBC552', '#CFA02C', '#94701A', '#FFF7CC'] };
 const sagomaCarta = (d) => {
   const n = (v) => +v.toFixed(2), sx = n(2 + d), dx = n(98 - d), spalla = n(12.5 + d * .7), fianco = n(111 - d * .4), gomito = n(115.5 - d * .6), piega = n(117.2 - d * .7);
   return `M${sx} 21Q${sx} ${spalla} ${n(9.5 + d)} ${n(10.8 + d)}Q30 ${n(3.6 + d)} 50 ${n(2 + d)}Q70 ${n(3.6 + d)} ${n(90.5 - d)} ${n(10.8 + d)}Q${dx} ${spalla} ${dx} 21V${fianco}Q${dx} ${gomito} ${n(94 - d)} ${piega}L50 ${n(134 - d * 1.2)}L${n(6 + d)} ${piega}Q${sx} ${gomito} ${sx} ${fianco}Z`;

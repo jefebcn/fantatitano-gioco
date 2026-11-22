@@ -3,7 +3,7 @@
    campo 3D nascosto): due giri sullo stesso codice danno le stesse foto, quindi si può confrontare prima e dopo una
    modifica. Accanto alle foto salva il contenuto di ogni schermata (misura-testi.json).
    Nelle schermate rifatte (barra in alto, Home, Carriera, Sfida e finestre, per ora) controlla anche le regole di qualità: testo
-   mai sotto 12 px, niente testo tagliato, niente fuori dallo schermo, pulsanti alti e larghi almeno 44 px. Esce con errore
+   mai sotto 12 px (tranne dentro la carta grande del giocatore), niente testo tagliato, niente fuori dallo schermo, pulsanti alti e larghi almeno 44 px. Esce con errore
    se una regola non è rispettata o se la pagina dà errori.
    Uso: npm run build && node scripts/prove/schermate.cjs cartella-di-uscita   (serve Playwright, come partita.cjs)
      SCALA=2   foto a doppia definizione, da guardare (per il confronto pixel per pixel si lascia 1) */
@@ -28,7 +28,10 @@ function qualita(radici) {
       const r = e.getBoundingClientRect(), st = getComputedStyle(e);
       if (r.right > W + .5 || r.bottom > H + .5 || r.left < -.5 || r.top < -.5) guai.push(`fuori dallo schermo: ${dice(e)}`);
       const testo = [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
-      if (testo && parseFloat(st.fontSize) < 12) guai.push(`testo da ${st.fontSize}: ${dice(e)}`);
+      // dentro la carta grande del giocatore le scritte seguono le proporzioni della carta (docs/carte-giocatori.md): è la
+      // sola eccezione ai 12 px, e anche lì non si scende sotto i 5
+      const minimo = e.closest('.gC.grande') ? 5 : 12;
+      if (testo && parseFloat(st.fontSize) < minimo) guai.push(`testo da ${st.fontSize}: ${dice(e)}`);
       // un testo su una riga è tagliato se è più largo del suo posto; uno su più righe se è più alto. E non deve uscire dal genitore
       const unaRiga = st.whiteSpace === 'nowrap', gen = e.parentElement.getBoundingClientRect();
       if (testo && st.overflow !== 'visible' && (unaRiga ? e.scrollWidth > e.clientWidth + 1 : e.scrollHeight > e.clientHeight + 2)) guai.push(`testo tagliato: ${dice(e)}`);
