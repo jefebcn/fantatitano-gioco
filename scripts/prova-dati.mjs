@@ -33,7 +33,7 @@ for (const t of tutti) {
   assert.equal(t.s.val, Math.round(somma / pesi), `${t.s.nome}: valutazione ${t.s.val} diversa dalla media pesata`);
   assert.equal(t.s.val, D.valore(t.x[1], t.x[3]), `${t.s.nome}: la carta e la funzione breve danno numeri diversi`);
   assert.equal(t.s.stat.length, 8);
-  assert.equal(t.s.fascia, fascia(t.s.val));
+  assert.equal(t.s.fascia, fascia(t.s.val, t.s.migliorato));
 }
 // l'ordine di forza resta quello della partita: nello stesso reparto, chi ha la quotazione più alta non ha mai la valutazione più bassa
 for (const r of 'PDCA') {

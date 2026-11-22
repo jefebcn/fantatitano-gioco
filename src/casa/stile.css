@@ -1,7 +1,7 @@
 /* Stili delle schermate nuove della home (barra in alto, carte di navigazione, Home). Blu notte e oro, accenti azzurri.
    Regole di qualità: testo mai sotto 12 px, titoli da 18 px, aree da toccare alte almeno 44 px, niente testo tagliato.
    Gli stili delle schermate non ancora rifatte restano in casa.css. */
-body{--barra:48px}
+body{--barra:44px}
 #barraF,#casa{--notte:#0B1530;--oro:#E8B64C;--azz:#3FC6FF;--verde:#5BE37A;--rosso:#FF5A5A;font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff}
 
 /* pezzi comuni: icone, stelle, bollino «!», barretta di avanzamento */
@@ -12,40 +12,62 @@ body{--barra:48px}
 .barretta i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#3FC6FF,#9BE6FF)}
 
 /* ---------- barra in alto ---------- */
+/* Struttura chiesta da Alex il 23/11: tre pulsanti quadrati, «Premio del giorno» verde, due banner (Stagione e Percorso
+   premi) con tempo, barra e numero, diamanti e monete in due capsule colorate, il profilo. Ogni pezzo è un pulsante alto
+   44 px da toccare; quello che si vede è alto 36, per i 4 px trasparenti sopra e sotto. */
 #barraF{position:fixed;left:0;right:0;top:0;z-index:20;height:var(--barra);display:flex;align-items:center;gap:5px;
   padding:0 max(6px,env(safe-area-inset-right)) 0 max(6px,env(safe-area-inset-left));
   background:linear-gradient(180deg,rgba(4,9,24,.97),rgba(9,18,44,.94));border-bottom:1px solid rgba(63,198,255,.3);box-shadow:0 4px 14px rgba(0,0,0,.35)}
 #barraF .molla{flex:1 1 0;min-width:0}
-/* il titolo della schermata, dove c'è: prende il posto del percorso premi e, sugli schermi stretti, anche delle sfide */
-#barraF .titolo{flex:none;margin-left:6px;font:400 21px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.05em;line-height:1;color:var(--oro);white-space:nowrap}
-#barraF.conTitolo .pil[data-vai="percorso"]{display:none}
-@media (max-width:800px){#barraF.conTitolo .pil{display:none}}
-/* i pulsanti sono alti 44 px da toccare; il fondo che si vede è alto 36 (bordo trasparente sopra e sotto) */
-#barraF button{position:relative;flex:none;height:44px;display:flex;align-items:center;color:#fff;background:none;padding:0;border-top:4px solid transparent;border-bottom:4px solid transparent;background-clip:padding-box;border-radius:14px;transition:transform .08s,filter .08s}
+#barraF button{position:relative;flex:none;height:44px;display:flex;align-items:center;color:#fff;background:none;padding:0;border:0 solid transparent;border-width:4px 0;background-clip:padding-box;border-radius:12px;transition:transform .08s,filter .08s}
 #barraF button:active{transform:scale(.95);filter:brightness(1.3)}
-#barraF .bt{width:44px;justify-content:center}
-#barraF .bt .ico{width:24px;height:24px}
-#barraF .bt.acceso{color:var(--oro);background-color:rgba(232,182,76,.16)}
-#barraF .pil,#barraF .val{background-color:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);white-space:nowrap}
-#barraF .pil{gap:5px;padding:0 9px;font:800 12px Montserrat,sans-serif}
-#barraF .pil .ico{width:16px;height:16px;color:var(--azz)}
-#barraF .pil i{font-style:normal;color:var(--oro)}
-#barraF .pil .barretta{width:36px}
-#barraF .pil .bollino,#barraF .val .bollino{top:-6px;right:-5px}
-#barraF .val{gap:5px;padding:0 5px 0 8px;font:800 13px Montserrat,sans-serif}
-#barraF .val .ico{width:18px;height:18px}
-#barraF .val u{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--oro);color:var(--notte);text-decoration:none}
-#barraF .val u .ico{width:12px;height:12px}
-#barraF .prof{flex:0 1 auto;gap:6px;padding:0 4px 0 2px;max-width:210px;min-width:0;text-align:left}
+#barraF .bollino{top:-3px;right:-5px;min-width:16px;height:16px;border-radius:8px}
+/* i tre pulsanti quadrati: 36 × 36 da vedere, 44 × 44 da toccare */
+#barraF .bt{width:44px;justify-content:center;border-width:4px;background-image:linear-gradient(180deg,#2C5ABF,#173274);box-shadow:inset 0 0 0 1px rgba(143,219,255,.4)}
+#barraF .bt+.bt{margin-left:-5px}
+#barraF .bt .ico{width:21px;height:21px}
+#barraF .bt.acceso{color:var(--notte);background-image:linear-gradient(180deg,#FFE9A6,#E8B64C);box-shadow:inset 0 0 0 1px #FFF3C9}
+/* premio del giorno */
+#barraF .premioG{gap:5px;padding:0 9px 0 7px;color:#062611;background-image:linear-gradient(180deg,#7BF08E,#22B84C);box-shadow:inset 0 0 0 1px #C5FFD0;text-align:left}
+#barraF .premioG .ico{width:19px;height:19px}
+#barraF .premioG b{font:400 14px/.95 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+/* i due banner: icona a sinistra; a destra, sopra il nome e il tempo, sotto la barra col suo numero */
+#barraF .banner{gap:6px;padding:0 8px 0 6px;max-width:236px;text-align:left}
+#barraF .banner.bStag{background-image:linear-gradient(180deg,#A67C22,#5F4410);box-shadow:inset 0 0 0 1px rgba(255,233,166,.55)}
+#barraF .banner.bPerc{background-image:linear-gradient(180deg,#2E74DB,#163C92);box-shadow:inset 0 0 0 1px rgba(143,219,255,.5)}
+#barraF .banner>.ico{width:20px;height:20px}
+#barraF .banner .dentro{display:grid;gap:4px;min-width:0}
+#barraF .banner .su{display:flex;align-items:baseline;justify-content:space-between;gap:7px;font:800 12px/1 Montserrat,sans-serif;white-space:nowrap}
+#barraF .banner .su b{font:400 14px/1 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.04em;text-transform:uppercase}
+#barraF .banner .su i{margin-left:auto;font-style:normal;color:#FFE9A6}
+#barraF .banner .su s{text-decoration:none;color:#fff}
+#barraF .banner .giu{display:flex;align-items:center;gap:6px;font:800 12px/1 Montserrat,sans-serif;white-space:nowrap}
+#barraF .banner .barretta{flex:1 1 0;min-width:26px;height:7px;background:rgba(0,0,0,.42)}
+#barraF .banner.bStag .barretta i{background:linear-gradient(90deg,#F2CC6B,#FFF1B8)}
+#barraF .banner u{text-decoration:none}
+/* diamanti e monete: due capsule colorate, senza «+» */
+#barraF .val{gap:5px;padding:0 10px 0 7px;border-radius:14px;font:800 15px Montserrat,sans-serif;white-space:nowrap}
+#barraF .val.dia{background-image:linear-gradient(180deg,#54C1F8,#1D84D6);box-shadow:inset 0 0 0 1px #BFE9FF}
+#barraF .val.mon{color:#2A1C00;background-image:linear-gradient(180deg,#FBD95C,#DCA51B);box-shadow:inset 0 0 0 1px #FFF3BF}
+#barraF .val .ico{width:19px;height:19px}
+/* il profilo: stemma, poi il manager, il club e le stelle uno sotto l'altro */
+#barraF .prof{flex:0 1 auto;gap:6px;padding:0 2px;max-width:200px;min-width:0;text-align:left}
 #barraF .prof img{width:32px;height:32px;object-fit:contain;flex:none}
-#barraF .prof>span{flex:1 1 auto;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:4px;align-items:center;min-width:0;line-height:1.2}
-#barraF .prof b{grid-column:1/-1;font:800 12px Montserrat,sans-serif;white-space:nowrap;overflow:hidden}
-#barraF .prof b.dueRighe{font-size:12px}
-#barraF .prof i{font:600 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.78);white-space:nowrap;overflow:hidden}
-#barraF .prof .stelline{font-size:10px}
-/* quando la barra è stretta (iPhone piccoli) la barretta dei premi lascia il posto: resta il livello */
-#barraF{container-type:inline-size}
-@container (max-width:720px){#barraF .pil .barretta{display:none}#barraF{gap:4px}#barraF .pil{padding:0 7px}#barraF .prof .stelline{display:none}}
+#barraF .prof>span{flex:1 1 auto;display:grid;grid-template-columns:minmax(0,1fr);min-width:0;line-height:1}
+#barraF .prof b{font:800 12px/1 Montserrat,sans-serif;white-space:nowrap;overflow:hidden}
+#barraF .prof i{font:600 12px/1.05 Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden}
+#barraF .prof .stelline{font-size:9px}
+/* Quando non ci sta tutto la barra si stringe a gradini (li sceglie aggiornaBarra, misurando): 1) spariscono i nomi dentro
+   i banner; 2) anche le barre e le stelle, e gli spazi si stringono; 3) il profilo si accorcia. Restano tempi e numeri. */
+#barraF.misura .prof{flex:none}
+#barraF.s1 .banner .su b{display:none}
+#barraF.s2{gap:4px}
+#barraF.s2 .banner .barretta,#barraF.s2 .prof .stelline{display:none}
+#barraF.s2 .banner{padding:0 6px 0 5px;gap:4px}
+#barraF.s2 .premioG{padding:0 6px 0 5px}
+#barraF.s2 .val{padding:0 7px 0 5px}
+#barraF.s3 .prof{max-width:104px}
+#barraF.s4 .prof{max-width:76px}
 
 /* con la barra le schermate di prima lasciano lo spazio in alto e non mostrano i loro «Indietro» né la barra vecchia */
 body.conBarra #pan,body.conBarra #scelta,body.conBarra #pre,body.conBarra #nuovo{padding-top:calc(var(--barra) + 6px)}
@@ -83,7 +105,7 @@ body.conBarra .indietro{display:none}
 .carta .ico.grande{width:34px;height:34px;color:#3FC6FF}
 .carta .mini{height:70%;max-height:38px;width:auto;flex:none}
 .carta .val{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;font:800 14px Montserrat,sans-serif;font-style:normal;color:#0B1530;background:linear-gradient(160deg,#FFE9A6,#E8B64C);box-shadow:0 0 0 1px rgba(0,0,0,.35)}
-.carta .val.argento{background:linear-gradient(160deg,#E6F4FF,#8FB8D8)}
+.carta .val.azzurro{background:linear-gradient(160deg,#BFE6FF,#4FA6EA)}
 .carta .val.bronzo{background:linear-gradient(160deg,#E8B089,#A8683A)}
 
 /* ---------- Home: otto carte su tre righe (38%, 27%, 35%) ---------- */
@@ -296,7 +318,7 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
    comprese: qui, e solo qui, il testo scende sotto i 12 px, come nella foto (decisione del 22/11).
    Piccola (campi stretti): energia e nome stanno sotto la cornice, il ruolo in basso dentro. */
 .f-bronzo{--gscuro:#6E3B1C;--gchiaro:#F3CFA8;--gmedio:#C98A52}
-.f-argento{--gscuro:#66788F;--gchiaro:#FFFFFF;--gmedio:#CBD6E3}
+.f-azzurro{--gscuro:#0D3F80;--gchiaro:#D9F0FF;--gmedio:#62B6F2}
 .f-oro{--gscuro:#8A6814;--gchiaro:#FFF6C8;--gmedio:#EBC552}
 .gVal.v-verde{background:#1FA54C}
 .gVal.v-giallo{background:#E2A21B}
@@ -309,7 +331,7 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .gS img.gFoto:not([src]),.gS img.gFoto[src]+.gFoto{display:none}
 .gS .gVal{position:absolute;left:-8px;top:-1px;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;font:800 12px Montserrat,sans-serif;font-style:normal;line-height:1;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.45);box-shadow:0 0 0 1.5px var(--gscuro)}
 .gS .gRuolo{position:absolute;left:0;right:0;bottom:8%;text-align:center;text-decoration:none;font:400 13px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.03em;line-height:1;color:#3B2C08}
-.gC.f-argento .gS .gRuolo{color:#27303C}
+.gC.f-azzurro .gS .gRuolo{color:#fff}
 .gC.f-bronzo .gS .gRuolo{color:#fff}
 .gS .gSegni{position:absolute;right:-8px;top:-1px;display:grid;gap:2px}
 .gS .gSegni .fasciaC{position:static;width:17px;height:17px;font-size:12px}
@@ -340,10 +362,12 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 /* il lampo al centro della barra dell'energia */
 .gLampo{position:absolute;left:50%;top:50%;width:calc(var(--gs)*.62);height:calc(var(--gs)*1.02);transform:translate(-50%,-50%);background:#10131A;clip-path:polygon(62% 0,12% 58%,46% 58%,36% 100%,90% 38%,56% 38%);text-decoration:none}
 .gC.grande .gRuolo{flex:0 0 auto;min-width:24.7%;box-sizing:border-box;padding:0 calc(var(--gw,64px)*.012);display:grid;place-items:center;border-radius:1.5px;text-decoration:none;font:800 max(5px,calc(var(--gw,64px)*.092)) Montserrat,sans-serif;letter-spacing:-.01em;line-height:1;color:#fff;box-shadow:0 0 0 1px var(--gscuro)}
-.gC.grande .gRuolo.r-A{background:#E8456B}
+.gC.grande .gRuolo.r-A{background:#E0343B}
 .gC.grande .gRuolo.r-C{background:#FFD21F;color:#14161C}
-.gC.grande .gRuolo.r-D{background:#1FA54C}
-.gC.grande .gRuolo.r-P{background:#2D8FEA}
+.gC.grande .gRuolo.r-D{background:#2350C4}
+.gC.grande .gRuolo.r-P{background:#35B4F2;color:#062038}
+/* chi gioca fuori ruolo ha il ruolo bordato di rosso */
+.gC.grande .gRuolo.fuori{box-shadow:0 0 0 calc(var(--gw,64px)*.035) #FF2D2D}
 .gC.grande .gSegni{right:auto;left:calc(100% - var(--gw,64px)*.035);top:8%;gap:calc(var(--gw,64px)*.02)}
 .gC.grande .gSegni .fasciaC,.gC.grande .gSegno{width:calc(var(--gw,64px)*.25);height:calc(var(--gw,64px)*.2);border-radius:0 calc(var(--gw,64px)*.04) calc(var(--gw,64px)*.04) 0;background:linear-gradient(180deg,var(--gchiaro),var(--gmedio));color:#14161C;box-shadow:0 0 0 1px var(--gscuro);font:800 calc(var(--gw,64px)*.15) Montserrat,sans-serif}
 .gC.grande .gSegno .ico{width:calc(var(--gw,64px)*.16);height:calc(var(--gw,64px)*.16)}
@@ -395,46 +419,63 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 #finestra .scelte .bottone i{font:600 12px/1.2 Montserrat,system-ui,sans-serif;font-style:normal;letter-spacing:0;text-transform:none;display:flex;align-items:center;gap:4px}
 #finestra .scelte .bottone i svg{width:14px;height:14px;flex:none}
 
-/* ---------- Squadra: pulsanti e incarichi a sinistra, campo con gli undici al centro, panchina a destra ---------- */
-#squadra{--oro:#E8B64C;--azz:#3FC6FF;font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff;
-  display:grid;grid-template-columns:clamp(132px,19vw,184px) minmax(0,1fr) clamp(134px,17vw,176px);grid-template-rows:minmax(0,1fr);gap:6px;align-items:stretch;justify-items:stretch;overflow:hidden;
-  padding:calc(var(--barra) + 6px) max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));
-  background:radial-gradient(ellipse 85% 75% at 50% 46%,rgba(0,0,0,0) 52%,rgba(2,5,16,.62) 100%),radial-gradient(ellipse 70% 60% at 50% 38%,rgba(34,72,150,.55),rgba(11,21,48,0) 72%),linear-gradient(180deg,#0A1738,#0B1530 52%,#050A1C)}
-.qSx{grid-area:1/1;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(4,minmax(44px,1fr)) auto;gap:5px;min-height:0}
-.qB{position:relative;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 9px;border-radius:9px;border:1.5px solid rgba(232,182,76,.75);background:linear-gradient(170deg,#16295C,#0B1736);color:var(--oro);text-align:left;box-shadow:0 2px 0 rgba(0,0,0,.4)}
-.qB:active{transform:translateY(1px);filter:brightness(1.15)}
-.qB .ico{flex:none;width:22px;height:22px}
-.qB>span{flex:1 1 0;display:grid;grid-template-columns:minmax(0,1fr);min-width:0;line-height:1.05}
-.qB b{font:400 17px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.05em;line-height:1.05;white-space:nowrap;overflow:hidden}
-.qB i{display:flex;align-items:center;gap:3px;font:700 12px Montserrat,sans-serif;font-style:normal;color:#fff;white-space:nowrap}
-.qB i .ico{width:13px;height:13px}
-.qB.accesa{border-color:#8FDBFF;background:linear-gradient(170deg,#4DB4EE,#2A8DD2);color:#fff}
-.qB .num{position:absolute;right:-3px;top:-5px;display:grid;place-items:center;min-width:19px;height:19px;padding:0 4px;border-radius:6px;background:#fff;color:#0B1530;font:800 12px Montserrat,sans-serif;font-style:normal;box-shadow:0 1px 3px rgba(0,0,0,.5)}
-/* i quattro incarichi: si tocca l'incarico e poi il titolare che lo prende */
-.qInc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
-.qInc button{display:grid;justify-items:center;align-content:center;gap:1px;min-height:44px;padding:0 2px;border-radius:8px;border:1px solid rgba(63,198,255,.45);background:rgba(11,23,54,.85);color:#fff}
-.qInc button .ico{width:16px;height:16px;color:var(--azz)}
-.qInc button b{font:700 12px Montserrat,sans-serif;line-height:1.1;white-space:nowrap}
-.qInc button.armato{border-color:var(--oro);background:linear-gradient(170deg,#F2CC6B,#D9A63E);color:#0B1530}
-.qInc button.armato .ico{color:#0B1530}
-.qCampo{grid-area:1/2;position:relative;min-width:0;min-height:0}
-/* «Squadra migliore» sta nell'angolo in alto a destra, dove il campo in prospettiva lascia posto */
-.qMigliore{grid-area:1/2;align-self:start;justify-self:end;z-index:2;display:grid;justify-items:center;gap:1px;width:clamp(56px,8.5vw,80px);min-height:48px;padding:3px 2px;border-radius:9px;border:1.5px solid rgba(232,182,76,.75);background:linear-gradient(170deg,#16295C,#0B1736);color:#fff}
-.qMigliore .ico{width:15px;height:15px;color:var(--oro)}
-.qMigliore b{font:400 13px/1 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.04em;text-align:center}
-.qMigliore.ottima .ico{color:#5BE37A}
-.qPan{grid-area:1/3;display:grid;grid-template-rows:auto minmax(0,1fr);gap:2px;min-height:0;padding:3px 5px 3px;border-radius:10px;border:1px solid rgba(232,182,76,.45);background:rgba(8,16,40,.72)}
-.qPan h3{margin:0;text-align:center;font:400 17px/1.1 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.05em;color:var(--oro);white-space:nowrap}
-.qGriglia{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));gap:3px 6px;justify-items:center;align-items:center;min-height:0}
-.qVuoto{display:grid;place-items:center;width:var(--gw,58px);aspect-ratio:var(--ga,.72);border-radius:8px;border:1.5px dashed rgba(255,255,255,.28)}
-.qGriglia.piccole .qVuoto{aspect-ratio:.72}
-.qVuoto i{font:600 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.55)}
-/* le carte della Squadra si toccano e si trascinano: quella scelta ha l'alone, quella presa in mano resta sbiadita */
+/* ---------- Squadra ---------- */
+/* Misure in parti dello schermo, come le ha date Alex il 23/11: pulsanti a sinistra dall'8% al 21% della larghezza, alti
+   il 7,5% dell'altezza; campo dal 21,5% al 74,5%, da sotto la barra fino al bordo in basso; sostituti dal 75% al 93%;
+   carte larghe il 5,5% della larghezza. Sfondo blu profondo con le luci dello stadio che scendono dagli angoli. */
+#squadra{--oro:#E8B64C;--azz:#3FC6FF;font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff;overflow:hidden;
+  background:radial-gradient(ellipse 46% 60% at 48% 62%,rgba(70,150,255,.34),rgba(0,0,0,0) 72%),
+    conic-gradient(from 96deg at 0 0,rgba(150,205,255,0) 0deg,rgba(150,205,255,.16) 7deg,rgba(150,205,255,0) 14deg,rgba(150,205,255,.1) 25deg,rgba(150,205,255,0) 34deg,rgba(150,205,255,.13) 47deg,rgba(150,205,255,0) 58deg,rgba(150,205,255,0) 360deg),
+    conic-gradient(from 206deg at 100% 0,rgba(150,205,255,0) 0deg,rgba(150,205,255,.13) 11deg,rgba(150,205,255,0) 22deg,rgba(150,205,255,.1) 33deg,rgba(150,205,255,0) 44deg,rgba(150,205,255,.16) 51deg,rgba(150,205,255,0) 58deg,rgba(150,205,255,0) 360deg),
+    radial-gradient(ellipse 120% 90% at 50% 40%,rgba(0,0,0,0) 55%,rgba(1,5,20,.7) 100%),linear-gradient(180deg,#0C2F7C,#0A2466 48%,#051540)}
+/* i quattro pulsanti: quello che si vede è alto il 7,5% dell'altezza; il posto da toccare arriva a metà dello spazio tra
+   uno e l'altro (9,3%), per i bordi trasparenti sopra e sotto */
+.qSx{position:absolute;left:max(8%,env(safe-area-inset-left));width:13%;top:calc(var(--barra) + var(--vh)*2);display:grid}
+.qB{position:relative;display:flex;align-items:center;gap:6px;height:calc(var(--vh)*9.3);padding:0 7px;border:0 solid transparent;border-width:calc(var(--vh)*.9) 0;background-clip:padding-box;border-radius:calc(var(--vh)*.9 + 5px);background-image:linear-gradient(180deg,#20418F,#11255E);box-shadow:inset 0 0 0 1px rgba(143,219,255,.32);color:#fff;text-align:left}
+.qB:active{filter:brightness(1.2)}
+.qB .ico{flex:none;width:18px;height:18px}
+.qB b{flex:1 1 0;min-width:0;font:400 15px/1 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden}
+.qB>span{flex:1 1 0;display:grid;grid-template-columns:minmax(0,1fr);min-width:0}
+.qB>span b{font-size:14px;line-height:.95}
+.qB i{font:700 12px/1 Montserrat,sans-serif;font-style:normal;white-space:nowrap;overflow:hidden}
+.qB.accesa{background-image:linear-gradient(180deg,#5CC6FB,#268BDA);box-shadow:inset 0 0 0 1px #C4EBFF}
+.qB.scelta{box-shadow:inset 0 0 0 2px #fff}
+.qB .bollino{top:-6px;right:-7px;min-width:16px;height:16px;border-radius:8px;box-shadow:0 0 0 2px #0A2466}
+/* il campo: da sotto la barra al bordo in basso */
+.qCampo{position:absolute;left:21.5%;right:25.5%;top:calc(var(--barra) + var(--vh)*1.2);bottom:max(calc(var(--vh)*1.2),env(safe-area-inset-bottom))}
+/* «Squadra migliore»: una tessera quadrata in alto a destra del campo, col pallino verde quando la formazione è già la migliore */
+.qMigliore{position:absolute;right:25.6%;top:calc(var(--barra) + var(--vh)*3);z-index:2;display:grid;justify-items:center;align-content:center;gap:1px;width:max(44px,5.2%);aspect-ratio:1;padding:0 1px;border-radius:7px;background-image:linear-gradient(180deg,#55BFF9,#1F7FD6);box-shadow:inset 0 0 0 1px #C4EBFF;color:#fff}
+.qMigliore:active{filter:brightness(1.2)}
+.qMigliore .ico{width:17px;height:17px}
+.qMigliore b{font:400 12px/.95 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.03em;text-transform:uppercase;text-align:center}
+.qMigliore .fatto{position:absolute;top:-5px;right:-5px;display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#2FD05B;color:#fff;box-shadow:0 0 0 2px #0A2466}
+.qMigliore .fatto .ico{width:10px;height:10px}
+/* i sostituti: barra del titolo azzurra, corpo azzurro trasparente col bordo chiaro, due colonne per quattro righe */
+.qPan{position:absolute;left:75.3%;right:max(7%,env(safe-area-inset-right));top:calc(var(--barra) + var(--vh)*2.6);bottom:max(calc(var(--vh)*3.5),env(safe-area-inset-bottom));display:grid;grid-template-rows:auto minmax(0,1fr);border-radius:5px;border:1px solid rgba(205,238,255,.8);background:rgba(110,180,236,.4);overflow:hidden}
+.qPan h3{margin:0;padding:3px 0 2px;text-align:center;font:400 17px/1.1 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#fff;white-space:nowrap;background:linear-gradient(180deg,#3DBBF7,#1D8CE0)}
+.qGriglia{display:grid;grid-template-rows:repeat(4,minmax(0,1fr));justify-content:space-evenly;justify-items:center;align-items:center;min-height:0;padding:2px 0}
+.qVuoto{display:grid;place-items:center;width:var(--gw,58px);aspect-ratio:var(--ga,.737);border-radius:6px;border:1.5px dashed rgba(255,255,255,.5)}
+.qVuoto i{font:600 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.8)}
+/* le carte si prendono e si trascinano: niente selezione del testo né menu del tocco lungo */
 #squadra .gC{cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #squadra .gC img,#squadra .gC svg{pointer-events:none;-webkit-user-drag:none}
-#squadra .gC[data-scelto] .gS{filter:drop-shadow(0 0 5px #3FC6FF) drop-shadow(0 0 2px #fff)}
-#squadra .gC.presa{opacity:.35}
+#squadra .gC.presa,#squadra .gSegni .presa{opacity:.35}
 .gC.ombra{filter:drop-shadow(0 6px 8px rgba(0,0,0,.6))}
+/* le linguette degli incarichi si prendono col dito: il posto da toccare è più largo di quello che si vede */
+#squadra .gSegni [data-inc]{position:relative;left:0;top:0;cursor:grab;touch-action:none}
+#squadra .gSegni [data-inc]::before{content:"";position:absolute;inset:-1px -10px -1px -3px}
+.qSegnoMobile{display:grid;place-items:center;border-radius:0 4px 4px 0;color:#14161C;font-weight:800;font-family:Montserrat,sans-serif;font-style:normal;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 5px 8px rgba(0,0,0,.5)}
+.qSegnoMobile .ico{width:70%;height:70%}
+
+/* la serie di sette giorni nella finestra del premio del giorno */
+#finestra .serie{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:2px 0 10px}
+#finestra .giorno{display:grid;justify-items:center;gap:2px;padding:6px 0;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06)}
+#finestra .giorno i{text-align:center;font:700 12px/1.1 Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.8);white-space:nowrap}
+#finestra .giorno .ico{width:18px;height:18px}
+#finestra .giorno b{font:800 14px/1 Montserrat,sans-serif}
+#finestra .giorno.fatto{border-color:#5BE37A;background:rgba(91,227,122,.18)}
+#finestra .giorno.oggi{border-color:#E8B64C;background:rgba(232,182,76,.2)}
+#finestra .nota{display:block;margin-bottom:6px}
 
 /* ---------- scheda del giocatore: carta grande, statistiche col nome intero, altezza, piede, valore, azioni ---------- */
 #schedaG{position:fixed;inset:0;z-index:38;display:grid;place-items:center;padding:10px;background:rgba(3,7,20,.78);font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff}
