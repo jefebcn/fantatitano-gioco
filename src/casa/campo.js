@@ -28,11 +28,12 @@ export function linee(posti) {
  * e le punte in alto; in alto il campo si stringe, da 50 a `stretto` per cento di mezza larghezza. Sulla stessa linea i
  * giocatori tengono la distanza che hanno nel modulo; se così si toccherebbero si allargano tutti insieme, e se non
  * basta si mettono a distanze uguali.
- * Con `grande` prova la carta grande e, se non ci sta, ripiega sulla piccola.
+ * Con `grande` prova la carta grande e, se non ci sta, ripiega sulla piccola. Con `fissa` la carta grande è larga
+ * proprio quei punti, qualunque sia il posto (la Squadra).
  * Torna: gw (larghezza della carta), scritta (altezza del nome, per la piccola), grande (se è la carta grande),
  * forma (larghezza diviso altezza della grande), dove (per ogni posto: x e y del centro, posto: larghezza a disposizione).
  */
-export function disponi(posti, W, H, { stretto = 43, grande = false } = {}) {
+export function disponi(posti, W, H, { stretto = 43, grande = false, fissa = 0 } = {}) {
   const ll = linee(posti), fascia = H / ll.length, mezzoA = (y) => (stretto + (50 - stretto) * y / H) / 100 * W, centro = (k) => H - (k + .5) * fascia;
   const P = PICCOLA, G = GRANDE, larga = (nome) => Math.floor(Math.min(W / P.LARGO, (fascia - P.BARRA - nome) / P.ALTO));
   let gw = 0, forma = 0, scritta = 0, tutta = false;
@@ -41,6 +42,7 @@ export function disponi(posti, W, H, { stretto = 43, grande = false } = {}) {
     gw = Math.floor(Math.min(Math.max(G.minimo, alta * G.ideale), alta * G.forma[1], piuLarga, G.massimo));
     tutta = gw >= G.minimo; if (tutta) forma = clamp(gw / alta, G.forma[0], G.forma[1]);
   }
+  if (fissa) { gw = fissa; tutta = true; forma = CARTA_GRANDE.forma; }
   if (!tutta) { scritta = P.NOME[larga(P.NOME[1]) >= P.GRANDE ? 1 : 0]; gw = Math.max(20, larga(scritta)); }
   const dove = [];
   ll.forEach((linea, k) => {
@@ -67,13 +69,17 @@ export function misuraGriglia(W, H, colonne, righe, tra = 6) {
 
 /**
  * Il disegno del campo in prospettiva: erba a strisce, linee di bordo e di metà campo, cerchio, le due aree. `stretto`
- * è la mezza larghezza in alto, in percento (in basso è 50): lo stesso numero che si dà a `disponi`.
+ * è la mezza larghezza in alto, in percento (in basso è 50): lo stesso numero che si dà a `disponi`. Con `frecce` ci sono
+ * tre file di frecce leggere che salgono verso l'attacco.
  */
-export function erba(stretto = 43) {
+export function erba(stretto = 43, frecce = false) {
   const x = (u, v) => (50 + u * (stretto + (50 - stretto) * (1 - v))).toFixed(2), y = (v) => (100 * (1 - v)).toFixed(2), p = (u, v) => `${x(u, v)} ${y(v)}`;
   const quadro = (u, v0, v1) => `M${p(-u, v0)}L${p(-u, v1)}L${p(u, v1)}L${p(u, v0)}`, STRISCE = 8, B = .94;
-  const strisce = Array.from({ length: STRISCE }, (_, i) => `<path d="M${p(-1, i / STRISCE)}L${p(1, i / STRISCE)}L${p(1, (i + 1) / STRISCE)}L${p(-1, (i + 1) / STRISCE)}z" fill="${i % 2 ? '#267F3C' : '#1F6F33'}"/>`).join('');
+  const strisce = Array.from({ length: STRISCE }, (_, i) => `<path d="M${p(-1, i / STRISCE)}L${p(1, i / STRISCE)}L${p(1, (i + 1) / STRISCE)}L${p(-1, (i + 1) / STRISCE)}z" fill="${i % 2 ? '#2FA047' : '#268A3B'}"/>`).join('');
   const righe = `M${p(-B, .025)}L${p(-B, .975)}L${p(B, .975)}L${p(B, .025)}zM${p(-B, .5)}L${p(B, .5)}${quadro(.46, .025, .19)}${quadro(.2, .025, .085)}${quadro(.46, .975, .81)}${quadro(.2, .975, .915)}`;
-  return `<svg class="erbaP" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${strisce}<path d="${righe}" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`
-    + `<ellipse cx="50" cy="50" rx="${(.19 * (stretto + (50 - stretto) * .5)).toFixed(2)}" ry="8.5" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+  // una freccia: gambo e punta, disegnati sul piano del campo così seguono la prospettiva
+  const freccia = (u, v) => `<path d="M${p(u - .035, v)}L${p(u - .035, v + .13)}L${p(u - .08, v + .13)}L${p(u, v + .2)}L${p(u + .08, v + .13)}L${p(u + .035, v + .13)}L${p(u + .035, v)}z" fill="#fff" fill-opacity=".07"/>`;
+  const su = frecce ? [-.62, 0, .62].map((u) => [.1, .4, .68].map((v) => freccia(u, v)).join('')).join('') : '';
+  return `<svg class="erbaP" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${strisce}${su}<path d="${righe}" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`
+    + `<ellipse cx="50" cy="50" rx="${(.19 * (stretto + (50 - stretto) * .5)).toFixed(2)}" ry="8.5" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
 }

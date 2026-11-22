@@ -22,13 +22,17 @@ Colori che fanno parte della struttura: il cerchio della valutazione cambia colo
 reparto.
 
 ## Come è nel gioco
-- **Cornice**: `scripts/icone.mjs` (`sagomaCarta`), tre fasce (bronzo sotto 65, argento-azzurro da 65 a 74, oro da 75).
+- **Cornice**: `scripts/icone.mjs` (`sagomaCarta`), con una trama di piccoli rombi. Dal 23/11 il colore dice chi è il
+  giocatore: **bronzo** i normali, **oro** i forti (da 70, `SCALA.fasce.oro`: tutti i capitani che si possono ingaggiare),
+  **azzurra** chi è stato migliorato con un allenatore e non è ancora da oro.
 - **Forma**: `CARTA_GRANDE.forma` in `src/config.js` (0,737); le altre proporzioni sono nello stile, `src/casa/stile.css`
   (`.gC.grande`), e la struttura in `src/casa/giocatore.js` (`cartaCampo`).
-- **Cerchio**: rosso, giallo o verde con le stesse soglie delle statistiche (`SCALA.colori`: sotto 60, da 60, da 72).
+- **Cerchio**: rosso sotto 60, verde da 60 in su (`SCALA.cerchio`).
 - **Ritratto**: ritaglio `carta` di `RITRATTI.taglio` (per la scheda `scheda`, dal file grande).
 - **Al posto della bandiera** c'è lo stemma del club: i giocatori non hanno una nazionalità nei dati.
-- **Ruolo**: rosa gli attaccanti, giallo i centrocampisti, verde i difensori, azzurro i portieri.
+- **Ruolo**: rosso gli attaccanti, giallo i centrocampisti, blu i difensori, azzurro i portieri. Nella Squadra chi gioca
+  fuori ruolo ha il ruolo bordato di rosso (niente triangoli sul campo).
+- **Capitano e incarichi**: linguette sul bordo destro; nella Squadra si trascinano su un altro titolare.
 - **Carta mini** (Home): stessa cornice, cerchio e ritratto negli stessi punti, senza nome e senza riga.
 - **Carta piccola** dei campi stretti (Sfida): resta com'era, con energia e nome sotto lo scudo; cambia solo il cerchio.
 
@@ -54,4 +58,3 @@ Confronto alla stessa scala con la foto, e cosa ne è uscito:
 - I ritratti sono di tre quarti e resi al computer, quelli della foto sono fotografie di fronte.
 - Al posto della bandiera c'è lo stemma: nella mia squadra è uguale per tutti, quindi dice poco. Proposta aperta: metterci
   il numero di maglia.
-- Il cerchio ha tre colori (le soglie delle statistiche), nella foto sono quattro.

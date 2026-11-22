@@ -23,9 +23,10 @@ radice.addEventListener('click', (e) => {
  * soloSi: è un avviso, c'è un pulsante solo.
  * scelte: invece di confermare si sceglie tra più pulsanti, ognuno con testo, nota (facoltativa), valore e attiva (quella
  * in uso); `fatto` riceve il valore scelto.
+ * corpo: al posto del testo, pezzi già composti dalla schermata che apre la finestra (mai testo scritto dall'utente).
  */
-export function finestra({ titolo, testo = '', si = '', no, fatto, soloSi = false, scelte = null }) {
-  el('finT').textContent = titolo; el('finP').textContent = testo; el('finP').classList.toggle('nas', !testo); el('finSi').textContent = si; el('finNo').textContent = no || t('finestra.annulla');
+export function finestra({ titolo, testo = '', corpo = '', si = '', no, fatto, soloSi = false, scelte = null }) {
+  el('finT').textContent = titolo; if (corpo) el('finP').innerHTML = corpo; else el('finP').textContent = testo; el('finP').classList.toggle('nas', !testo && !corpo); el('finSi').textContent = si; el('finNo').textContent = no || t('finestra.annulla');
   el('finS').innerHTML = scelte ? scelte.map((s) => `<button class="bottone${s.attiva ? '' : ' secondo'}" data-scelta="${String(s.valore).replace(/[<>&"]/g, '')}"><b>${s.testo}</b>${s.nota ? `<i>${s.nota}</i>` : ''}</button>`).join('') : '';
   el('finS').classList.toggle('note', !!scelte && scelte.some((x) => x.nota)); el('finS').classList.toggle('nas', !scelte); el('finSi').classList.toggle('nas', !!scelte); el('finNo').classList.toggle('nas', soloSi || !!scelte);
   quando = fatto; radice.classList.remove('nas');
