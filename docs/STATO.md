@@ -1,5 +1,5 @@
 # Stato — Fantatitano, La Partita (gioco)
-20/11/2026 · tema: verso un gioco fluido "tipo Dream League" (meccaniche sì, grafica/file/codice DLS no)
+22/11/2026 · tema: verso un gioco fluido "tipo Dream League" (meccaniche sì, grafica/file/codice DLS no)
 
 ## Dove siamo
 - Produzione: https://fantatitano-gioco.vercel.app (non pubblico, noindex).
@@ -78,31 +78,21 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   avversaria. Ora aspettano sulla linea dell'ultimo difensore (`ATTACCO` in `src/config.js`, `homeOf` in `src/game.js`):
   stesse 16 partite, fuorigioco 0,44, gol 1,00, tiri 7,00, 0 anomalie, tutte le 11 misure dentro gli obiettivi.
 
-## Più gol e più tiri (21/11, obiettivo di Alex: 2–3 gol e 10–12 tiri per squadra)
-- Passo 1 FATTO: `TIRO_IA` più pronto, portieri meno forti (`save`), pressing dalla metà campo (`PRESSING.da` da 18 a 0).
-  16 partite, semi 7–22: gol da 1,00 a 2,69, tiri da 7,00 a 10,38, 0 anomalie. Tabella in `docs/dls-gameplay.md`.
-- Le prove con 6 partite ingannano (lo stesso valore dà da 10 a 15 tiri): si decide solo su 16.
-- Passo 2 FATTO: il lancio con le mani del portiere sbagliava 8 volte su 10 (palla ad altezza petto a 20 m/s): ora arriva
-  di rimbalzo (`RINVIO.mano`, `vicino`, `rimbalzo`). 32 partite, semi 7–38: gol da 2,31 a 2,56, tiri da 9,53 a 9,84,
-  rimesse laterali da 3,3 a 2,3, 0 anomalie.
-- Passo 3 FATTO: il rasoterra al compagno che corre arrivava più svelto di lui (6,5–10,5 m/s contro 7 di scatto) e il
-  compagno gli correva accanto per più di un secondo. Ora arriva al massimo a 5,5 m/s, solo sui passaggi medi e lunghi
-  (`PASSAGGIO.inCorsa`). 32 partite, semi 7–38: rasoterra lungo in avanti riuscito da 53 a 73 su 100, medio da 64 a 76,
-  corto fermo a 80, tiri da 6,16 a 7,59, gol da 2,22 a 2,09 (dentro il rumore), rimesse laterali da 2,75 a 1,25, 0
-  anomalie. Provati e scartati: 4,5 e 5,0 m/s e il tetto anche sui corti (più intercetti su chi riceve, meno gol).
-- Scartati perché non spostano i numeri: reazione ritardata dei difensori al passaggio, passaggi più sicuri, più attesa.
-- Venti prove da 32 partite (21/11) su tiro, tenuta, traversoni, marcature, pressing, rinvio, riprese rapide e movimenti
-  senza palla: nessuna alza i tiri (tabella e misure in `docs/dls-gameplay.md`, «Dove si ferma l'azione»). Solo 13
-  possessi su 28 superano la trequarti; i passaggi in avanti di almeno 8 metri riescono 69 volte su 100.
-- Partita intera registrata e analizzata (21/11): elenco dei difetti in `docs/dls-gameplay.md`. Corretti i calci a vuoto
-  (il calcio aspetta che il piede arrivi sul pallone, `CARICO`) e il rinvio con le mani del portiere (pallone nella mano
-  che lancia). Restano: parate a distanza, giravolta di scatto, pallone che sfila a chi riceve, piedi che strisciano.
-- FERMI con le varianti finché Alex non manda le statistiche di una partita di Dream League (tiri per squadra). Poi: conduzione in avanti
-  a campo libero, difesa meno perfetta (ritardo 0,2–0,3 s sui passaggi, linea meno compatta), portiere per ultimo (un gol
-  ogni 4–5 tiri).
-- Simulazione ripetibile (21/11): modalità di prova `?seme=N` o `__g.prova(N)` (audio spento, semi fissi); lo stato di una
-  partita si azzera a ogni partita nuova (`DI_PARTITA`). `RIPETI=1` nello script delle partite lo controlla, anche in CI.
-  I numeri di riferimento sono cambiati rispetto a prima (generatori separati): si confronta sempre prima e dopo.
+## Gol, tiri e difetti della partita (stato al 22/11)
+- Obiettivo di Alex: 2–3 gol e 10–12 tiri per squadra, da rivedere quando manda le statistiche di una partita di Dream
+  League (tiri per squadra). Fino ad allora NIENTE varianti di gioco. Oggi, 32 partite (semi 7–38): 1,3–1,8 gol e 7,2 tiri
+  in tutto, 28 possessi di cui 13 oltre la trequarti, un gol ogni 5 tiri.
+- Storia, misure e le venti varianti scartate: `docs/dls-gameplay.md` («Gol e tiri», «Dove si ferma l'azione»).
+- FATTO il 21/11: passaggio morbido a chi corre (#96), calci a vuoto e rinvio con le mani del portiere (#102).
+- Difetti ancora aperti, nell'ordine deciso: 1) giravolta di scatto (corpo che gira di oltre 120° in un fotogramma,
+  `poseSkinned`: «oltre i 150° si gira subito»); 2) parate a distanza (pallone fermato a più di un metro dai guanti);
+  3) chi riceve si lascia sfilare il pallone a 1,2–1,4 m (gesto di stop laterale, ma la presa arriva a 1,05 m);
+  4) piedi che strisciano nel passo laterale e nei cambi di direzione, portieri che arretrano di corsa.
+- Alla ripartenza delle varianti: conduzione in avanti a campo libero, poi difesa meno perfetta (ritardo 0,2–0,3 s sui
+  passaggi, linea meno compatta, anticipi sul corto tra 9 e 12 su 100), portiere per ultimo (un gol ogni 4–5 tiri).
+- In sospeso da Alex: riprese rapide sì o no (tolgono 11 s di attesa, non danno tiri); tiro lontano o di spalle (segue
+  la levetta o va sempre in porta?); cambio automatico del giocatore in difesa; calcio d'inizio che aspetta il passaggio.
+- Strumenti: `scripts/prove/diagnosi.cjs`, `registra.cjs`, `rivedi.cjs`, `analisi-partita.py` (righe in `docs/RICETTE.md`).
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato
