@@ -72,7 +72,7 @@ export function misuraGriglia(W, H, colonne, righe, tra = 6) {
 export function erba(stretto = 43) {
   const x = (u, v) => (50 + u * (stretto + (50 - stretto) * (1 - v))).toFixed(2), y = (v) => (100 * (1 - v)).toFixed(2), p = (u, v) => `${x(u, v)} ${y(v)}`;
   const quadro = (u, v0, v1) => `M${p(-u, v0)}L${p(-u, v1)}L${p(u, v1)}L${p(u, v0)}`, STRISCE = 8, B = .94;
-  const strisce = Array.from({ length: STRISCE }, (_, i) => `<path d="M${p(-1, i / STRISCE)}L${p(1, i / STRISCE)}L${p(1, (i + 1) / STRISCE)}L${p(-1, (i + 1) / STRISCE)}z" fill="${i % 2 ? '#2f9647' : '#288239'}"/>`).join('');
+  const strisce = Array.from({ length: STRISCE }, (_, i) => `<path d="M${p(-1, i / STRISCE)}L${p(1, i / STRISCE)}L${p(1, (i + 1) / STRISCE)}L${p(-1, (i + 1) / STRISCE)}z" fill="${i % 2 ? '#267F3C' : '#1F6F33'}"/>`).join('');
   const righe = `M${p(-B, .025)}L${p(-B, .975)}L${p(B, .975)}L${p(B, .025)}zM${p(-B, .5)}L${p(B, .5)}${quadro(.46, .025, .19)}${quadro(.2, .025, .085)}${quadro(.46, .975, .81)}${quadro(.2, .975, .915)}`;
   return `<svg class="erbaP" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${strisce}<path d="${righe}" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`
     + `<ellipse cx="50" cy="50" rx="${(.19 * (stretto + (50 - stretto) * .5)).toFixed(2)}" ry="8.5" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;

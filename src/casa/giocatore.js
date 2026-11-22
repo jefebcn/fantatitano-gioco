@@ -3,6 +3,7 @@
 // la valutazione: bronzo sotto 65, argento-azzurro da 65 a 74, oro da 75. In alto a sinistra c'è la valutazione, in un
 // cerchio rosso, giallo o verde come le statistiche. A destra il ritratto, con la testa che riempie la metà alta. Sotto,
 // la fascia chiara col nome e una riga con stemma del club, energia e ruolo. Nella punta la stellina di chi si è allenato.
+// Nella carta grande tutto è in proporzione alla larghezza, scritte comprese: è la sola eccezione al testo di 12 px.
 // Ci sono tre misure. La carta grande ha tutto dentro la cornice: sta dove c'è posto (la Squadra, la panchina, la scheda).
 // La carta piccola dei campi stretti tiene dentro valutazione, ritratto e ruolo, con energia e nome sotto. La carta mini
 // ha solo cornice, ritratto e valutazione (nella Home).
@@ -38,7 +39,7 @@ const SEGNI = { rigori: 'rigore', punizioni: 'punizione', angoli: 'corner' };
 export function cartaCampo(sc, { club, energia = 100, capitano = false, incarichi = [], fuori = 0, migliorato = false, stile = '', grande = false, stemma = '', ferma = false, dati = '', taglio = grande ? 'carta' : 'piccolo' } = {}) {
   const corto = nomeCorto(sc.nome), segni = (capitano ? '<em class="fasciaC">C</em>' : '') + incarichi.map((k) => `<em class="gSegno">${icona(SEGNI[k])}</em>`).join('');
   const ruolo = `<u class="gRuolo r-${sc.reparto}">${sc.ruolo}</u>`, barra = `<i class="gEn e-${livelloEnergia(energia)}"><b style="width:${Math.round(energia)}%"></b>${grande ? '<s class="gLampo"></s>' : ''}</i>`;
-  const nome = `<b class="gNome" data-adatta${corto ? ` data-corto="${pulito(corto)}"` : ''}>${pulito(sc.nome)}</b>`;
+  const nome = `<b class="gNome" data-adatta${grande ? ' data-min="5"' : ''}${corto ? ` data-corto="${pulito(corto)}"` : ''}>${pulito(sc.nome)}</b>`;
   // nella grande il ruolo sta nella riga in basso, tra stemma ed energia; nella piccola dentro lo scudo, con energia e nome sotto
   return `<span class="gC f-${sc.fascia}${grande ? ' grande' : ''}${ferma ? ' ferma' : ''}"${stile ? ` style="${stile}"` : ''}${dati ? ' ' + dati : ''}><span class="gS">${icona('carta-' + sc.fascia, 'scudo')}`
     + `<img class="gFoto" alt="" data-ritr="${chiRitratto(club, sc, taglio)}">${icona('sagoma', 'gFoto')}`

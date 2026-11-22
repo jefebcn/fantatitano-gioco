@@ -32,10 +32,26 @@ reparto.
 - **Carta mini** (Home): stessa cornice, cerchio e ritratto negli stessi punti, senza nome e senza riga.
 - **Carta piccola** dei campi stretti (Sfida): resta com'era, con energia e nome sotto lo scudo; cambia solo il cerchio.
 
-## Dove non è identica, e perché
-Nella foto le scritte delle carte in campo sono molto piccole (il nome è alto circa 5 punti, il ruolo 4). La regola di
-qualità del progetto dice **testo mai sotto 12 px**: dove la carta è larga meno di circa 100 px (il campo e la panchina
-della Squadra, la scelta del capitano) nome, ruolo e numero restano di 12 px. Quindi la fascia del nome e la riga in
-basso sono più alte in proporzione, il cerchio è un po' più grande e il ritratto, che deve farci stare anche collo e
-maglia, è un po' più piccolo. Nella scheda del giocatore, dove la carta è larga 96 px, le proporzioni sono quelle della
-foto. La scelta tra «12 px» e «proporzioni esatte anche in campo» è di Alex (chiesta il 22/11).
+## Scritte sotto i 12 px: l'unica eccezione
+Nella foto le scritte delle carte in campo sono molto piccole. Una prima versione teneva nome, ruolo e numero a 12 px
+(la regola di qualità del progetto): fascia e riga diventavano più alte, il cerchio più grande e il viso più piccolo, e la
+carta non somigliava più alla foto. Alex ha lasciato la scelta a Claude (22/11) e la conclusione è stata: **dentro la
+carta grande tutto è in proporzione alla larghezza della carta, scritte comprese**. È la sola eccezione ai 12 px; anche lì
+il nome non scende sotto i 6 px e il ruolo sotto i 5. `scripts/prove/schermate.cjs` conosce l'eccezione.
+
+## Cosa è stato migliorato rispetto alla prima versione (22/11)
+Confronto alla stessa scala con la foto, e cosa ne è uscito:
+- **Nome e ruolo** in Montserrat nero invece del Bebas Neue: a queste misure un carattere largo e pieno si legge, uno
+  stretto e sottile no. Un nome lungo si rimpicciolisce da solo (`data-adatta`, fino a 5 px) prima di passare a quello corto.
+- **Bronzo** più scuro e più ramato: prima aveva il colore della pelle e i visi chiari ci sparivano dentro. In più il
+  ritratto ha un filo d'ombra attorno e un po' più di contrasto.
+- **Stemma** su una targhetta chiara, come una bandiera: sul fondo scuro non si leggeva.
+- **Capitano e incarichi**: linguette piccole attaccate al bordo destro, del colore della carta, al posto dei quadrati
+  blu che coprivano la carta accanto.
+- **Ombra a terra** sotto ogni carta del campo, ed **erba più scura**: le carte si staccano dal campo.
+
+## Ancora diverso dalla foto
+- I ritratti sono di tre quarti e resi al computer, quelli della foto sono fotografie di fronte.
+- Al posto della bandiera c'è lo stemma: nella mia squadra è uguale per tutti, quindi dice poco. Proposta aperta: metterci
+  il numero di maglia.
+- Il cerchio ha tre colori (le soglie delle statistiche), nella foto sono quattro.
