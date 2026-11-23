@@ -275,6 +275,19 @@ Prompt di base (cambiare forma, colori e simbolo):
 | Monte Pulito | Lega Esordienti | `stemma-monte-pulito.png` | viola e bianco | stendardo, una stella |
 | Pianacci | Lega Esordienti | `stemma-pianacci.png` | marrone e crema | esagono, un pallone |
 
+## 2c. Icone del negozio e degli allenatori (20, fatte il 23/11)
+
+Consegnate con la PR #127 (`assets/arrivo/icone/`, 512 × 512, PNG trasparenti) e importate.
+
+- `icona-allenatore-comune`, `-raro`, `-leggendario`: rifatte con lo stesso nome (medaglione bronzo, argento-azzurro, oro
+  con cartellina e fischietto). Si vedono nel Percorso premi, nelle Sfide, nei premi aperti e nella scheda Allenatori.
+- `icona-categoria-tecnico`, `-fisico`, `-difesa`, `-portieri`: scheda Allenatori (una carta per categoria) e finestra
+  «Scegli l'allenatore».
+- `scarpini-misti`, `-neri`, `-bianchi`, `-oro`, `-azzurri`, `-lime`, `-arancio`, `-rosa` e `pallone-classico`, `-oro`,
+  `-azzurro`, `-notte`, `-arancio`: Personalizza › Squadra, al posto dei tondi colorati.
+
+Se un file manca il gioco torna al disegno di prima (il tondo colorato, la carta senza icona): `figura(nome) || riserva`.
+
 ## 3. Icone e cornici (fatte)
 
 `node scripts/icone.mjs` scrive un file per icona in `public/img/icone/` e il foglio unico `public/img/icone.svg`.

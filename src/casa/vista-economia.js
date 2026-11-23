@@ -52,8 +52,10 @@ export function panClubMio(tab, msg) {
     corpo = `${struttura('stadio')}<div class="strutture">${CAR.STRUTTURE.filter((q) => q !== 'stadio').map(struttura).join('')}</div>`;
   } else if (cTab === 'allenatori') {
     const A = ECONOMIA.allenatori.rarita, quanti = (r, c) => ((K.allenatori || {})[r] || {})[c] || 0;
-    corpo = '<p class="nota2">Un allenatore si usa su un giocatore: alza le statistiche della sua categoria (comune +1, raro +2, leggendario +3) e con loro la valutazione, fino a 10 punti in più per giocatore. Per usarlo: Squadra, tieni premuto su un giocatore, Allena.</p><div class="lista">'
-      + CAR.CATEGORIE.map((c) => `<div class="gioc sel"><b>${NOMI_CATEGORIE[c][0]}</b><span>${NOMI_CATEGORIE[c][1]}</span><em>${CAR.RARITA.map((r) => `${quanti(r, c)} ${NOMI_RARITA[r]}`).join(' · ')}</em></div>`).join('') + '</div>'
+    // quanti allenatori di una categoria si hanno, rarità per rarità: il medaglione, il numero e la parola
+    const conta = (c) => (r) => { const n = quanti(r, c); return `<span class="pf${n ? '' : ' zero'}">${figura('icona-allenatore-' + r, 'pIco', 26)}<b>${n}</b><u>${n === 1 ? UNA_RARITA[r] : NOMI_RARITA[r]}</u></span>`; };
+    corpo = '<p class="nota2">Un allenatore si usa su un giocatore: alza le statistiche della sua categoria (comune +1, raro +2, leggendario +3) e con loro la valutazione, fino a 10 punti in più per giocatore. Per usarlo: Squadra, tieni premuto su un giocatore, Allena.</p><div class="catAllen">'
+      + CAR.CATEGORIE.map((c) => `<div class="catAll">${figura('icona-categoria-' + c, 'catIco', 52)}<span class="catTesto"><b>${NOMI_CATEGORIE[c][0]}</b><i>${NOMI_CATEGORIE[c][1]}</i></span><span class="catConta">${CAR.RARITA.map(conta(c)).join('')}</span></div>`).join('') + '</div>'
       + '<div class="sez">Comprali coi diamanti</div><div class="seg">' + ['raro', 'leggendario'].map((r) => CAR.CATEGORIE.map((c) => `<button data-allenatore="${r}:${c}" class="${K.gemme < A[r].diamanti ? 'no' : ''}">${NOMI_CATEGORIE[c][0]} ${UNA_RARITA[r]} · ${DI} ${A[r].diamanti}</button>`).join('')).join('') + '</div>'
       + '<p class="nota2">I comuni arrivano dalle sfide di ogni giorno e dal Centro allenamento, i rari dalle sfide della settimana e dal percorso premi, i leggendari a fine stagione, con la promozione e arrivando in finale di coppa. Anche svincolando un giocatore se ne ottiene uno.</p>';
   } else {
