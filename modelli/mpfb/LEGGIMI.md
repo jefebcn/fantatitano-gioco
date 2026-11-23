@@ -15,7 +15,10 @@ Maschio adulto atletico, viso misto e generico (nessuna persona reale).
    all'alleggerimento) e `CORPI` (le due corporature in più).
    La divisa ha volume nella geometria (`divisa_volume`, numeri in `VOLUME`): maglia staccata dal busto, maniche con l'orlo,
    pantaloncini ampi, risvolto dei calzettoni, scarpini chiusi con la suola (le dita vengono tolte e la punta chiusa). Gli
-   anelli degli orli non si alleggeriscono sul primo livello. Le capigliature nascono da un guscio infittito, con ciocche e
+   anelli degli orli non si alleggeriscono sul primo livello.
+   Il risvolto dei calzettoni (8 cm, dal 23/11) sta in due posti che vanno cambiati insieme: `risvolto` in `divisa_volume` e
+   `MISURE.risvolto` in `src/divisa.js`. Le pieghe di maglia e pantaloncini non sono geometria: sono nella normal map che il
+   gioco calcola da `pieghe()` in `src/divisa.js` (profondità in `PIEGHE`). Le capigliature nascono da un guscio infittito, con ciocche e
    ciuffo irregolare, e si alleggeriscono a `CAPELLI_TRI` triangoli.
    Proporzioni, divisa e viso dal riferimento di Alex del 23/11/2026 (solo struttura: niente volti veri né grafica di altri giochi).
    Serve MPFB attivo nelle preferenze salvate di Blender (in background non si accende da solo).
