@@ -18,4 +18,5 @@
 - Vettori temporanei riusati come bersaglio (IK in `src/grafica/piedi.js`): un vettore per ruolo.
 - Spostare giocatori di colpo alle riprese si vede: aspettare che arrivino, sistemare solo chi è a pochi centimetri.
 - Il pallone in conduzione sta fino a 1,5 m davanti: un gesto che lo colpisce (calcio, stop) deve aspettarlo o portarlo dove dice la clip (`GESTI[nome].palla`), e il blocco dei piedi non deve tenere fermo il piede che calcia.
+- Su iPhone, girando il telefono, al «resize» `innerWidth` è ancora quello vecchio e non arriva un secondo evento (campo schiacciato, tabellone stretto): le misure si prendono dalla tela e il ciclo le ricontrolla a ogni fotogramma (`misure`, `misureCambiate` in `src/game.js`).
 - Una clip che parte in mezzo alla corsa col piede sbagliato dà scatti; il suo ultimo fotogramma fermo sotto un corpo che corre fa strisciare i piedi: entrare col piede giusto, uscire svelti.
