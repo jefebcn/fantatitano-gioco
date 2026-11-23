@@ -3,11 +3,13 @@
 // «Come guadagnare». Tutta la logica sta in src/carriera.js: qui ci sono solo l'elenco e i pulsanti.
 import * as CAR from '../carriera.js';
 import { ECONOMIA, DIVISIONI, FORMS } from '../config.js';
-import { K, DATI, club, pan, mini, mon, esc, fmtTempo, salvaK, applicaMio, borsaHtml, premioTesto } from './casa.js';
+import { K, DATI, club, pan, mini, mon, esc, fmtTempo, salvaK, applicaMio, premioTesto } from './casa.js';
 import { figura, stileFondo } from './immagini.js';
-import { icona } from './icone.js';
+import { icona, MO, DI } from './icone.js';
 import { t } from './testi.js';
 
+// un numero col suo segno davanti: «+50», «−50», e lo zero senza segno (mai «−0»)
+const conSegno = (n) => (n > 0 ? `+${mon(n)}` : n < 0 ? `−${mon(-n)}` : '0');
 const stelline = (n) => `<div class="liv">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`;
 const costoTesto = (c) => premioTesto(c.monete, c.gemme);
 const NOMI_STRUTTURE = { centro: 'Centro allenamento', infermeria: 'Infermeria', foresteria: 'Foresteria', commerciale: 'Ufficio commerciale', osservatori: 'Osservatori', curva: 'Curva dei tifosi', stadio: 'Stadio' };
@@ -23,7 +25,7 @@ function effetto(q, n) {
   if (q === 'infermeria') return `+${pc(n * S.infermeria)}% di energia recuperata tra le partite`;
   if (q === 'foresteria') return `rosa fino a ${S.foresteria[n]} giocatori`;
   if (q === 'commerciale') return `+${pc(n * S.commerciale)}% di monete a ogni partita`;
-  if (q === 'osservatori') return `−${pc(n * S.osservatori)}% sul costo delle ricerche dell'osservatore`;
+  if (q === 'osservatori') return `${conSegno(-pc(n * S.osservatori))}% sul costo delle ricerche dell'osservatore`;
   if (q === 'curva') return `+${pc(n * S.curva)}% alle statistiche nelle partite in casa`;
   return `${mon(S.stadio.posti[n])} posti · +${mon(CAR.inMonete(K, S.stadio.incasso[n]))} monete a ogni partita in casa`;
 }
@@ -49,13 +51,13 @@ export function panClubMio(tab, msg) {
     const A = ECONOMIA.allenatori.rarita, quanti = (r, c) => ((K.allenatori || {})[r] || {})[c] || 0;
     corpo = '<p class="nota2">Un allenatore si usa su un giocatore: alza le statistiche della sua categoria (comune +1, raro +2, leggendario +3) e con loro la valutazione, fino a 10 punti in più per giocatore. Per usarlo: Squadra, tieni premuto su un giocatore, Allena.</p><div class="lista">'
       + CAR.CATEGORIE.map((c) => `<div class="gioc sel"><b>${NOMI_CATEGORIE[c][0]}</b><span>${NOMI_CATEGORIE[c][1]}</span><em>${CAR.RARITA.map((r) => `${quanti(r, c)} ${NOMI_RARITA[r]}`).join(' · ')}</em></div>`).join('') + '</div>'
-      + '<div class="sez">Comprali coi diamanti</div><div class="seg">' + ['raro', 'leggendario'].map((r) => CAR.CATEGORIE.map((c) => `<button data-allenatore="${r}:${c}" class="${K.gemme < A[r].diamanti ? 'no' : ''}">${NOMI_CATEGORIE[c][0]} ${UNA_RARITA[r]} · ◆ ${A[r].diamanti}</button>`).join('')).join('') + '</div>'
+      + '<div class="sez">Comprali coi diamanti</div><div class="seg">' + ['raro', 'leggendario'].map((r) => CAR.CATEGORIE.map((c) => `<button data-allenatore="${r}:${c}" class="${K.gemme < A[r].diamanti ? 'no' : ''}">${NOMI_CATEGORIE[c][0]} ${UNA_RARITA[r]} · ${DI} ${A[r].diamanti}</button>`).join('')).join('') + '</div>'
       + '<p class="nota2">I comuni arrivano dalle sfide di ogni giorno e dal Centro allenamento, i rari dalle sfide della settimana e dal percorso premi, i leggendari a fine stagione, con la promozione e arrivando in finale di coppa. Anche svincolando un giocatore se ne ottiene uno.</p>';
   } else {
     const st = K.storico || [], entrate = st.reduce((t, x) => t + Math.max(0, x.m), 0), uscite = st.reduce((t, x) => t - Math.min(0, x.m), 0), d = (v, e) => `<div><b>${v}</b><span>${e}</span></div>`;
-    corpo = `<div class="dati">${d(CAR.finanze(K), 'Finanze')}${d(mon(K.monete), 'Monete')}${d(K.gemme, 'Diamanti')}${d(`+${mon(entrate)}`, 'Entrate recenti')}${d(`−${mon(uscite)}`, 'Uscite recenti')}</div><p class="nota2">Il giudizio dipende da quante vittorie vale il saldo in monete. Entrate e uscite contano gli ultimi ${ECONOMIA.storico} movimenti.</p><div class="seg"><button data-az="guadagna">Vedi i movimenti e come guadagnare</button></div>`;
+    corpo = `<div class="dati">${d(CAR.finanze(K), 'Finanze')}${d(mon(K.monete), 'Monete')}${d(K.gemme, 'Diamanti')}${d(conSegno(entrate), 'Entrate recenti')}${d(conSegno(-uscite), 'Uscite recenti')}</div><p class="nota2">Il giudizio dipende da quante vittorie vale il saldo in monete. Entrate e uscite contano gli ultimi ${ECONOMIA.storico} movimenti.</p><div class="seg"><button data-az="guadagna">Vedi i movimenti e come guadagnare</button></div>`;
   }
-  pan(me.name, `${borsaHtml()}${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}`);
+  pan(me.name, `${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}`);
 }
 
 // una riga del mercato: il giocatore (con lo stemma, se arriva da una squadra vera), il ruolo preciso, la valutazione,
@@ -68,20 +70,20 @@ let mReparto = '';
 /** Il mercato: offerte a tempo, lista trasferimenti, osservatore, agente. */
 export function panMercato(msg) {
   const D = CAR.divisione(K), M = K.mercato, piena = CAR.quantiInRosa(K, CLUBS) >= CAR.rosaMax(K), sopra = DIVISIONI[Math.max(0, K.div - 2)], ora = new Date();
-  const testa = `${borsaHtml()}${msg ? `<p class="avviso">${msg}</p>` : ''}<p class="nota2">Rosa: ${CAR.quantiInRosa(K, CLUBS)} giocatori su ${CAR.rosaMax(K)}${piena ? ' (piena: per comprare vendi qualcuno o fai crescere la Foresteria)' : ''}. Per vendere o svincolare un giocatore: Squadra, tieni premuto sulla sua carta.</p>`;
+  const testa = `${msg ? `<p class="avviso">${msg}</p>` : ''}<p class="nota2">Rosa: ${CAR.quantiInRosa(K, CLUBS)} giocatori su ${CAR.rosaMax(K)}${piena ? ' (piena: per comprare vendi qualcuno o fai crescere la Foresteria)' : ''}. Per vendere o svincolare un giocatore: Squadra, tieni premuto sulla sua carta.</p>`;
   const elenco = CAR.offerte(K, CLUBS, ora), scade = elenco.length ? elenco[0].scade : ora.getTime();
-  const offerte = elenco.map((g) => riga(g, g.presa ? 'presa' : `● ${mon(g.prezzo)} ◆ ${g.gemme}`, `data-offerta="${g.k}"`, g.presa || piena || K.monete < g.prezzo || K.gemme < g.gemme)).join('');
-  const lista = CAR.listaMercato(K, CLUBS).map((g, k) => riga(g, g.preso ? 'preso' : `● ${mon(g.prezzo)}`, `data-lista="${k}"`, g.preso || piena || K.monete < g.prezzo)).join('');
+  const offerte = elenco.map((g) => riga(g, g.presa ? 'presa' : `${MO} ${mon(g.prezzo)} ${DI} ${g.gemme}`, `data-offerta="${g.k}"`, g.presa || piena || K.monete < g.prezzo || K.gemme < g.gemme)).join('');
+  const lista = CAR.listaMercato(K, CLUBS).map((g, k) => riga(g, g.preso ? 'preso' : `${MO} ${mon(g.prezzo)}`, `data-lista="${k}"`, g.preso || piena || K.monete < g.prezzo)).join('');
   const reparti = `<div class="seg">${[['', 'Qualsiasi ruolo'], ...Object.entries(NOMI_REPARTI)].map(([r, n]) => `<button data-reparto="${r}" class="${r === mReparto ? 'on' : ''}">${n}</button>`).join('')}</div>`;
-  const trovato = (g, chi) => `${riga(g, `● ${mon(g.prezzo)}${g.pieno ? ` invece di ${mon(g.pieno)}` : ''}`)}<div class="seg"><button data-trovato="${chi}" class="${piena || K.monete < g.prezzo ? 'no' : 'oro'}">Compra</button><button data-lascia="${chi}">Lascialo andare</button></div>`;
+  const trovato = (g, chi) => `${riga(g, `${MO} ${mon(g.prezzo)}${g.pieno ? ` invece di ${mon(g.pieno)}` : ''}`)}<div class="seg"><button data-trovato="${chi}" class="${piena || K.monete < g.prezzo ? 'no' : 'oro'}">Compra</button><button data-lascia="${chi}">Lascialo andare</button></div>`;
   const osservatore = M.osservato ? trovato(M.osservato, 'osservato')
-    : `<p class="nota2">Per monete trova un giocatore della ${D.nome} nella fascia che scegli, con lo sconto del ${Math.round(ECONOMIA.mercato.osservatore.sconto * 100)}%.</p>${reparti}<div class="seg">${CAR.FASCE.map((f) => `<button data-osserva="${f}" class="${K.monete < CAR.costoOsservatore(K, f) ? 'no' : ''}">${NOMI_FASCE[f]} · ● ${mon(CAR.costoOsservatore(K, f))}</button>`).join('')}</div>`;
+    : `<p class="nota2">Per monete trova un giocatore della ${D.nome} nella fascia che scegli, con lo sconto del ${Math.round(ECONOMIA.mercato.osservatore.sconto * 100)}%.</p>${reparti}<div class="seg">${CAR.FASCE.map((f) => `<button data-osserva="${f}" class="${K.monete < CAR.costoOsservatore(K, f) ? 'no' : ''}">${NOMI_FASCE[f]} · ${MO} ${mon(CAR.costoOsservatore(K, f))}</button>`).join('')}</div>`;
   const agente = M.agente ? trovato(M.agente, 'agente')
-    : `<p class="nota2">Per un contatto e monete trova un giocatore ${K.div === 1 ? 'tra i migliori del Campionato Sammarinese' : `della divisione sopra (${sopra.nome})`}, a prezzo pieno. Contatti: ${K.contatti || 0}.</p>${reparti}<div class="seg"><button data-agente="1" class="${!(K.contatti > 0) || K.monete < CAR.costoAgente(K) ? 'no' : ''}">Chiama l'agente · 1 contatto e ● ${mon(CAR.costoAgente(K))}</button><button data-contatto="1" class="${K.gemme < ECONOMIA.mercato.agente.diamanti ? 'no' : ''}">Compra un contatto · ◆ ${ECONOMIA.mercato.agente.diamanti}</button></div>`;
+    : `<p class="nota2">Per un contatto e monete trova un giocatore ${K.div === 1 ? 'tra i migliori del Campionato Sammarinese' : `della divisione sopra (${sopra.nome})`}, a prezzo pieno. Contatti: ${K.contatti || 0}.</p>${reparti}<div class="seg"><button data-agente="1" class="${!(K.contatti > 0) || K.monete < CAR.costoAgente(K) ? 'no' : ''}">Chiama l'agente · 1 contatto e ${MO} ${mon(CAR.costoAgente(K))}</button><button data-contatto="1" class="${K.gemme < ECONOMIA.mercato.agente.diamanti ? 'no' : ''}">Compra un contatto · ${DI} ${ECONOMIA.mercato.agente.diamanti}</button></div>`;
   // i due striscioni: il titolo e una riga sotto, a sinistra, sopra l'illustrazione
   const striscione = (figuraS, titolo, sotto) => `<div class="striscione">${figura(figuraS, 'stFig', 300)}<b>${titolo}</b><i>${sotto}</i></div>`;
   pan('Mercato', `${testa}${striscione('evento-occasioni', 'Offerte a tempo', `${icona('orologio')} ancora ${fmtTempo(scade - ora)}`)}<div class="lista">${offerte}</div>`
-    + `${striscione('evento-scelte', 'Lista trasferimenti', D.nome)}<div class="lista">${lista}</div><div class="seg"><button data-rinnova="1" class="${K.gemme < ECONOMIA.mercato.lista.rinnovo ? 'no' : ''}">Cambia subito la lista · ◆ ${ECONOMIA.mercato.lista.rinnovo}</button></div><p class="nota2">La lista cambia da sola dopo ogni partita.</p>`
+    + `${striscione('evento-scelte', 'Lista trasferimenti', D.nome)}<div class="lista">${lista}</div><div class="seg"><button data-rinnova="1" class="${K.gemme < ECONOMIA.mercato.lista.rinnovo ? 'no' : ''}">Cambia subito la lista · ${DI} ${ECONOMIA.mercato.lista.rinnovo}</button></div><p class="nota2">La lista cambia da sola dopo ogni partita.</p>`
     + `<div class="sez">Osservatore</div>${osservatore}<div class="sez">Agente</div>${agente}`);
 }
 // i cinque modi di allenamento, nell'ordine della schermata: nome dell'illustrazione e chiave dei testi
@@ -103,17 +105,17 @@ export function consigliato() {
 
 /** «Come guadagnare»: da dove arrivano monete e diamanti (importi veri, nella divisione in cui si gioca) e gli ultimi movimenti. */
 export function panGuadagna() {
-  const P = ECONOMIA.premi, D = CAR.divisione(K), G = ECONOMIA.diamanti, v = (n) => `● ${mon(CAR.inMonete(K, n))}`, vinta = Math.round(CAR.premioVittoria(K)), rigaF = (t, x) => `<div><span>${t}</span><b>${x}</b></div>`;
+  const P = ECONOMIA.premi, D = CAR.divisione(K), G = ECONOMIA.diamanti, v = (n) => `${MO} ${mon(CAR.inMonete(K, n))}`, vinta = Math.round(CAR.premioVittoria(K)), rigaF = (t, x) => `<div><span>${t}</span><b>${x}</b></div>`;
   const somma = (g, k) => CAR.statoSfide(K)[g].reduce((t, x) => t + (x[k] || 0), 0), perc = CAR.statoPercorso(K).premi;
-  const fonti = [['Vittoria', `● ${mon(vinta)}`], ['Pareggio', `● ${mon(Math.round(vinta * P.pareggio))}`], ['Sconfitta', `● ${mon(Math.round(vinta * P.sconfitta))}`], ['Partita in casa (dallo Stadio)', v(ECONOMIA.strutture.stadio.incasso[CAR.stelle(K, 'stadio')]) || '● 0'],
-    ['Turno di coppa superato', v(P.turno)], [`${D.nome} vinto`, v(P.campionato)], [`${D.nome}: dal 2° ${[8, 11].includes(P.piazzamento.length + 1) ? 'all\'' : 'al '}${P.piazzamento.length + 1}° posto`, `da ${v(P.piazzamento[0])} a ${v(P.piazzamento[P.piazzamento.length - 1])}`], ['Coppa Titano vinta', `${v(P.coppa)} ◆ ${G.coppa}`], ['Trofeo dei Castelli vinto', `${v(P.castelli)} ◆ ${G.coppa}`],
-    ['Sette giorni di fila con una partita', `◆ ${G.serie.reduce((a, b) => a + b, 0)} e un contatto dell'agente`], ['Sfide di oggi (tutte)', `${premioTesto(somma('d', 'monete'), 0)} e un allenatore comune`],
+  const fonti = [['Vittoria', `${MO} ${mon(vinta)}`], ['Pareggio', `${MO} ${mon(Math.round(vinta * P.pareggio))}`], ['Sconfitta', `${MO} ${mon(Math.round(vinta * P.sconfitta))}`], ['Partita in casa (dallo Stadio)', v(ECONOMIA.strutture.stadio.incasso[CAR.stelle(K, 'stadio')]) || `${MO} 0`],
+    ['Turno di coppa superato', v(P.turno)], [`${D.nome} vinto`, v(P.campionato)], [`${D.nome}: dal 2° ${[8, 11].includes(P.piazzamento.length + 1) ? 'all\'' : 'al '}${P.piazzamento.length + 1}° posto`, `da ${v(P.piazzamento[0])} a ${v(P.piazzamento[P.piazzamento.length - 1])}`], ['Coppa Titano vinta', `${v(P.coppa)} ${DI} ${G.coppa}`], ['Trofeo dei Castelli vinto', `${v(P.castelli)} ${DI} ${G.coppa}`],
+    ['Sette giorni di fila con una partita', `${DI} ${G.serie.reduce((a, b) => a + b, 0)} e un contatto dell'agente`], ['Sfide di oggi (tutte)', `${premioTesto(somma('d', 'monete'), 0)} e un allenatore comune`],
     ['Sfide della settimana (tutte)', `${premioTesto(somma('w', 'monete'), G.settimana)} e un allenatore raro`], ['Sfide di stagione (tutte)', premioTesto(somma('s', 'monete'), somma('s', 'gemme'))], ['Sfide di carriera (tutte)', premioTesto(0, somma('c', 'gemme'))],
     ['Percorso premi (tutti i livelli)', `${premioTesto(perc.reduce((t, x) => t + x.monete, 0), perc.reduce((t, x) => t + x.gemme, 0))} e ${perc.filter((x) => x.allenatore).length} allenatori rari`],
-    ['Fine stagione', `◆ ${D.fine} e un allenatore leggendario`], ['Promozione', `◆ ${G.promozione}, un allenatore leggendario e un contatto dell'agente`], ['Finale di coppa raggiunta', 'un allenatore leggendario e un contatto dell\'agente']];
-  const giorno = (t) => new Date(t).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }), segno = (n) => (n > 0 ? `+${mon(n)}` : `−${mon(-n)}`);
-  const mov = (K.storico || []).slice(0, 40).map((x) => `<div class="${x.m + x.g * 100 < 0 ? 'meno' : 'piu'}"><span>${giorno(x.t)} · ${esc(x.d || x.c)}</span><b>${[x.m ? `${segno(x.m)} ●` : '', x.g ? `${segno(x.g)} ◆` : ''].filter(Boolean).join(' ')}</b></div>`).join('');
-  pan('Monete e diamanti', `${borsaHtml()}<div class="info"><div><div class="sez">Come si guadagnano · ${D.nome}</div><div class="ris2">${fonti.map(([t, x]) => rigaF(t, x)).join('')}</div><p class="nota2">Monete e diamanti non si comprano: si guadagnano solo giocando. Salendo di divisione i premi in monete crescono.</p><div class="seg"><button data-ntab="stemma">Negozio</button><button data-ctab="strutture">Strutture del club</button></div></div>`
+    ['Fine stagione', `${DI} ${D.fine} e un allenatore leggendario`], ['Promozione', `${DI} ${G.promozione}, un allenatore leggendario e un contatto dell'agente`], ['Finale di coppa raggiunta', 'un allenatore leggendario e un contatto dell\'agente']];
+  const giorno = (t) => new Date(t).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }), segno = conSegno;
+  const mov = (K.storico || []).slice(0, 40).map((x) => `<div class="${x.m + x.g * 100 < 0 ? 'meno' : 'piu'}"><span>${giorno(x.t)} · ${esc(x.d || x.c)}</span><b>${[x.m ? `${segno(x.m)} ${MO}` : '', x.g ? `${segno(x.g)} ${DI}` : ''].filter(Boolean).join(' ')}</b></div>`).join('');
+  pan('Monete e diamanti', `<div class="info guadagna"><div><div class="sez">Come si guadagnano · ${D.nome}</div><div class="ris2">${fonti.map(([t, x]) => rigaF(t, x)).join('')}</div><p class="nota2">Monete e diamanti non si comprano: si guadagnano solo giocando. Salendo di divisione i premi in monete crescono.</p><div class="seg"><button data-ntab="stemma">Negozio</button><button data-ctab="strutture">Strutture del club</button></div></div>`
     + `<div><div class="sez">Ultimi movimenti</div>${mov ? `<div class="ris2 mov">${mov}</div>` : '<p class="vuoto">Ancora nessun movimento: gioca una partita.</p>'}</div></div>`);
 }
 

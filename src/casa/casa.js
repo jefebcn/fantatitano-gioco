@@ -28,6 +28,7 @@ import { nomiDi } from '../dati/squadre.js';
 import { t } from './testi.js';
 import { panClubMio, panMercato, panAllenamento, panGuadagna, consigliato, toccaEconomia } from './vista-economia.js';
 import { pronta, figura } from './immagini.js';
+import { icona, MO, DI } from './icone.js';
 
 // le schermate della home e i loro stili entrano nella pagina prima di tutto il resto, nel punto dov'erano
 document.head.insertAdjacentHTML('beforeend', `<style id="casaStili">${CSS_CASA}</style><style id="casaStiliNuovi">${CSS_NUOVO}</style>`);
@@ -213,7 +214,7 @@ function drawNuovo() {
   const el = $('#nuovo');
   if (NV.passo === 1) {
     const m = NV.modifica && K && K.mio ? K.mio : null;
-    el.innerHTML = `<button class="indietro" id="nvInd">‹ Indietro</button><h2 class="h">${NV.modifica ? 'Personalizza il club' : 'Il tuo club'}</h2>
+    el.innerHTML = `<button class="indietro" id="nvInd" aria-label="Indietro">${icona('indietro')}</button><h2 class="h">${NV.modifica ? 'Personalizza il club' : 'Il tuo club'}</h2>
       <div class="nv"><div class="campi">${NV.modifica ? '' : '<label>Il tuo nome<input id="nvNome" maxlength="18" placeholder="Mister" autocomplete="off"></label>'}
         <label>Nome del club<span class="riga"><input id="nvClub" maxlength="22" autocomplete="off" placeholder="${NOMI[0]}"><button id="nvDado" aria-label="Nome a caso">🎲</button></span></label>
         <label>Sigla<input id="nvSigla" maxlength="3" autocomplete="off" placeholder="TIT"></label>
@@ -226,7 +227,7 @@ function drawNuovo() {
     anteprimaClub();
   } else {
     const cand = candidatiCapitano();
-    el.innerHTML = `<div class="testaCap"><button class="indietro" id="nvInd">‹ Il club</button><div class="titoloCap"><h2 class="h">${t('capitano.titolo')}</h2><p>${t('capitano.tocca')}</p></div>${NV.cap ? `<button class="btn ingaggia" id="nvAvanti">${t('capitano.ingaggia', esc(club(NV.cap.split(':')[0]).xi[+NV.cap.split(':')[1]][0]))}</button>` : '<span class="postoIngaggia"></span>'}</div>
+    el.innerHTML = `<div class="testaCap"><button class="indietro" id="nvInd" aria-label="${t('barra.indietro')}">${icona('indietro')}</button><div class="titoloCap"><h2 class="h">${t('capitano.titolo')}</h2><p>${t('capitano.tocca')}</p></div>${NV.cap ? `<button class="btn ingaggia" id="nvAvanti">${t('capitano.ingaggia', esc(club(NV.cap.split(':')[0]).xi[+NV.cap.split(':')[1]][0]))}</button>` : '<span class="postoIngaggia"></span>'}</div>
       <div class="caps">${cand.map((c) => cartaGiocatore(c, NV.cap === `${c.c.id}:${c.i}`)).join('')}</div>`;
     adatta(el); riempiRitratti(el);
     // i caratteri dei titoli possono arrivare un attimo dopo e allargare i nomi: allora si rifà la misura
@@ -352,17 +353,16 @@ function panProfilo() {
     + `<div class="sez">Mercato</div><p class="vuoto">${K.movimenti.length ? K.movimenti.slice(0, 6).map((m) => (m.preso ? `Preso ${esc(m.preso)}${m.da && club(m.da) ? ` (${esc(club(m.da).name)})` : ''} per ${mon(m.costo)} monete` : `Venduto ${esc(m.ceduto)} per ${mon(-m.costo)} monete`)).join(' · ') : 'Ancora nessun movimento'}</p>` : ''));
 }
 /* --- pannelli della home nuova (docs/home-spec.md) */
-const borsaHtml = () => `<div class="borsa"><i class="mo">●</i> <b>${mon(K.monete)}</b><i class="di">◆</i> <b>${K.gemme}</b></div>`;
 // L'avatar del manager: un busto generico disegnato dal modello 3D, scelto tra quelli del negozio (cambia il seme, quindi faccia e capelli)
 const avatarNome = (n) => `${K.nome}${n ? `#${n}` : ''}`;
 // Quanti pezzi dello stemma si hanno, in percentuale (NEGOZIO in src/carriera.js)
 const stemmaFatto = () => CAR.pezziStemma(K);
-const premioTesto = (m, g, a) => [m ? `● ${mon(m)}` : '', g ? `◆ ${g}` : '', a ? `allenatore ${a}` : ''].filter(Boolean).join(' ');
+const premioTesto = (m, g, a) => [m ? `${MO} ${mon(m)}` : '', g ? `${DI} ${g}` : '', a ? `allenatore ${a}` : ''].filter(Boolean).join(' ');
 /** Percorso premi della stagione: venti livelli, si sale coi punti di partite e sfide, ogni livello ha un premio da ritirare. */
 function panPercorso(msg) {
   const pe = CAR.statoPercorso(K), E = ECONOMIA.percorso.punti, fine = pe.livello >= pe.livelli;
   const tessere = pe.premi.map((x) => `<button class="liv${x.preso ? ' preso' : x.raggiunto ? ' pronto' : ''}" ${x.raggiunto && !x.preso ? `data-ritira="${x.livello}"` : 'disabled'}><i>${x.livello}</i><b>${premioTesto(x.monete, x.gemme, x.allenatore)}</b><u>${x.preso ? 'Ritirato' : x.raggiunto ? 'Ritira' : ''}</u></button>`).join('');
-  pan(`Percorso premi · stagione ${K.stagione}`, `${borsaHtml()}${msg ? `<p class="avviso">${msg}</p>` : ''}<div class="perc"><b>Livello ${pe.inCorso} di ${pe.livelli}</b><span class="barra"><i style="width:${fine ? 100 : Math.round(pe.nelLivello / pe.perLivello * 100)}%"></i></span><em>${fine ? 'Percorso completato' : `${pe.nelLivello}/${pe.perLivello} punti`}</em>${pe.daRitirare ? '<button data-az="ritiraTutto" class="oro">Ritira tutto</button>' : ''}</div><div class="livelli">${tessere}</div>`
+  pan(`Percorso premi · stagione ${K.stagione}`, `${msg ? `<p class="avviso">${msg}</p>` : ''}<div class="perc"><b>Livello ${pe.inCorso} di ${pe.livelli}</b><span class="barra"><i style="width:${fine ? 100 : Math.round(pe.nelLivello / pe.perLivello * 100)}%"></i></span><em>${fine ? 'Percorso completato' : `${pe.nelLivello}/${pe.perLivello} punti`}</em>${pe.daRitirare ? '<button data-az="ritiraTutto" class="oro">Ritira tutto</button>' : ''}</div><div class="livelli">${tessere}</div>`
     + `<p class="nota2">Punti: partita giocata ${E.partita}, vittoria +${E.vinta}, sfida di oggi riscossa ${E.sfidaD}, obiettivo della settimana ${E.sfidaW}, sfida di stagione ${E.sfidaS}, turno di coppa superato ${E.turno}. Il percorso riparte da zero a ogni stagione.</p>`);
 }
 /* --- il negozio: quello che si compra con diamanti e monete. Solo aspetto e comodità, niente che aiuti in partita
@@ -406,7 +406,7 @@ function panNegozio(tab, msg) {
     corpo = fila('Scarpini della squadra', 'scarpini', CAR.possiede(K, 'scarpini', sc.scarpini) ? sc.scarpini : 'misti', (x) => `<i class="tondo" style="background:${SCARPE_NEGOZIO[x] ? SCARPE_NEGOZIO[x][0] : 'conic-gradient(#16161a,#F3F3F3,#D9F51F,#FF5A1F,#1E6FB5,#16161a)'}"></i>`)
       + fila('Pallone delle partite in casa', 'pallone', CAR.possiede(K, 'pallone', sc.pallone) ? sc.pallone : 'classico', (x) => `<i class="tondo" style="background:radial-gradient(circle at 50% 50%,${PALLONI[x][1][1]} 0 28%,${PALLONI[x][0]} 30%)"></i>`);
   }
-  pan('Negozio', `${borsaHtml()}${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}<p class="nota2">Qui si comprano solo aspetto e comodità: niente di quello che c'è nel negozio rende più forte la squadra.</p>`);
+  pan('Negozio', `${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}<p class="nota2">Qui si comprano solo aspetto e comodità: niente di quello che c'è nel negozio rende più forte la squadra.</p>`);
 }
 /** Mette in uso un oggetto del negozio che si ha già. */
 function usaOggetto(tipo, cosa) {
@@ -568,4 +568,4 @@ function buildMenu() {
 function caricaCarriera() { K = CAR.carica(); if (K && !club(K.club)) K = null; CAR.applica(K, CLUBS); applicaMio(); }
 
 // quello che la partita (src/game.js) prende da qui
-export { club, moduloMio, pan, mini, borsaHtml, premioTesto, DATI, fmtTempo, ritratto, consigliato, avviso, ridisegna, maglia, show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera };
+export { club, moduloMio, pan, mini, premioTesto, DATI, fmtTempo, ritratto, consigliato, avviso, ridisegna, maglia, show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera };

@@ -181,6 +181,13 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   testo: sta a sinistra, sopra un velo scuro che sfuma verso destra; quello che sta a destra ha un suo riquadro scuro.
 - **Allenamento** (23/11, da Il mio club): schermata nuova con le cinque carte. Sono tutte «In arrivo»: la partita non
   ha ancora un modo per far partire un allenamento (`SA_FARE` in `docs/ponte-partita.md` §5), nemmeno i rigori.
+- **Revisione di Alex, sei punti, una PR per punto** (23/11). **A, difetti generali, fatto**: monete e diamanti con
+  la loro icona al posto di «●» e «◆» (`MO` e `DI` in `src/casa/icone.js`); tolto il saldo ripetuto sotto i titoli (è
+  già nella barra); «Indietro» è ovunque lo stesso pulsante quadrato con la freccia, in alto a sinistra (nella barra la
+  casetta resta solo in Home); in alto a destra, se il nome breve del club è uguale al nome dell'allenatore si scrive
+  la sigla; il banner del percorso ha solo livello, barra e punti; «−0» diventa «0» (`conSegno`); i pulsanti che non si
+  possono usare sono grigi pieni con la scritta chiara (in fondo a `src/casa/stile.css`); «Monete e diamanti» sta
+  tutta nello schermo. Restano B (Home), C (Gioca adesso), D (Il mio club), E (Percorso e Sfide), F (Mercato).
 - **Carriere di prima**: non si possono continuare, si riparte da zero (la versione del salvataggio è la 2).
 - **Come arriva alla partita**: la partita conosce un numero solo per giocatore, la `forza`. Crescita con gli allenatori,
   riscaldamento e Curva dei tifosi ci stanno dentro. Le squadre inventate arrivano per intero nella richiesta; lo stemma
