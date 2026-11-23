@@ -166,7 +166,6 @@ srv.listen(0, async () => {
     // la Carriera e le sue schermate
     await tocca('#casa .c-carriera'); await foto('carriera');
     await vai('#carriera .k-classifica', 'classifica'); await vai('#carriera .k-castelli', 'castelli'); await vai('#carriera .k-titano', 'coppa'); await vai('#carriera .k-prossima', 'sfida-campionato');
-    for (const r of ['sfide', 'squadra', 'mercato', 'club']) await vai(`#carriera .scorc[data-vai="${r}"]`, `scorciatoia-${r}`);
     // dal profilo a «Personalizza»: due livelli sotto la Carriera
     await tocca('#barraF [data-vai="profilo"]'); await vai('#panC [data-club="personalizza"]', 'personalizza'); await tocca('#bCasa');
     // partita: si entra dal campionato, si gioca a passi fissi, poi pausa, sostituzioni e fine; «Continua» torna alla Carriera
@@ -198,7 +197,7 @@ srv.listen(0, async () => {
     await tocca('#bCasa'); await tocca('#bCasa');
     // fine del campionato: le altre giornate giocate a tavolino, poi la carta diventa «Nuova stagione» con la finestra di conferma
     await pg.evaluate(() => { const g = window.__g, K = g.carriera(); window.__seme(600); while (g.CAR.prossima(K)) g.CAR.giocaCampionato(K, window.CLUBS, 1, 1, []); g.salvaK(); });
-    await tocca('#carriera .scorc[data-vai="sfide"]'); await tocca('#bCasa'); await foto('carriera-fine-campionato');
+    await tocca('#carriera .k-classifica'); await tocca('#bCasa'); await foto('carriera-fine-campionato');
     await tocca('#carriera .k-prossima'); await foto('finestra-nuova-stagione');
     if (!(await pg.evaluate(() => !document.querySelector('#finestra').classList.contains('nas')))) errori.push(`${w}: la finestra della stagione nuova non si apre`);
     await tocca('#finNo'); await tocca('#carriera .k-prossima'); await tocca('#finSi'); await foto('premi-stagione');

@@ -191,8 +191,11 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   dritto alla prossima partita di campionato (Indietro e fine partita riportano alla Home); lo Scenario, finché è
   chiuso, sta nella riga bassa al posto dell'Amichevole, che sale; la carta Mercato mostra il più forte che ci si può
   permettere adesso tra lista trasferimenti e offerte a tempo («Per te»), o il meno caro se non ci si può permettere
-  nessuno (`consigliato` in `src/casa/vista-economia.js`). Restano C (Gioca adesso), D (Il mio club), E (Percorso e
-  Sfide), F (Mercato).
+  nessuno (`consigliato` in `src/casa/vista-economia.js`). **C, Gioca adesso, fatto**: tolte dalla Carriera le quattro
+  scorciatoie in basso (le carte hanno più posto; Sfide, Squadra, Mercato e Il mio club si aprono dalla Home); pronti i
+  sessanta riquadri per gli stemmi delle squadre inventate (`docs/immagini-da-generare.md` §2b, `assets/immagini.json`,
+  `scripts/stemmi.mjs`): quando arriva il file, il gioco lo usa al posto dello stemma disegnato (`stemmaPronto` in
+  `src/casa/immagini.js`). Restano D (Il mio club), E (Percorso e Sfide), F (Mercato).
 - **Carriere di prima**: non si possono continuare, si riparte da zero (la versione del salvataggio è la 2).
 - **Come arriva alla partita**: la partita conosce un numero solo per giocatore, la `forza`. Crescita con gli allenatori,
   riscaldamento e Curva dei tifosi ci stanno dentro. Le squadre inventate arrivano per intero nella richiesta; lo stemma

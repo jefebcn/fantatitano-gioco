@@ -27,7 +27,7 @@ import { adatta, attrNome } from './carte.js';
 import { nomiDi } from '../dati/squadre.js';
 import { t } from './testi.js';
 import { panClubMio, panMercato, panAllenamento, panGuadagna, consigliato, toccaEconomia } from './vista-economia.js';
-import { pronta, figura } from './immagini.js';
+import { pronta, figura, stemmaPronto } from './immagini.js';
 import { icona, MO, DI } from './icone.js';
 
 // le schermate della home e i loro stili entrano nella pagina prima di tutto il resto, nel punto dov'erano
@@ -159,11 +159,11 @@ function applicaMio() {
   stemmi3d.delete(POSTO); loadImg(img(POSTO + '-mini')).then((i) => { CREST[POSTO] = i; stemmi3d.delete(POSTO); });
   stemmiDivisione();
 }
-// Gli stemmi delle squadre inventate si disegnano coi pezzi dello stemma, la prima volta che servono: quelli della
-// divisione in cui si gioca. Le stelle del club dell'utente dicono quanto è forte rispetto alla sua divisione.
+// Gli stemmi delle squadre inventate, la prima volta che servono (quelli della divisione in cui si gioca): l'immagine
+// consegnata, se c'è (docs/immagini-da-generare.md), se no si disegnano coi pezzi dello stemma. Le stelle del club dell'utente dicono quanto è forte rispetto alla sua divisione.
 function stemmiDivisione() {
   if (!K) return;
-  for (const id of K.squadre) { const c = club(id); if (c && c.inventata && !IMGX[id]) { IMGX[id] = disegnaStemma(c.stemma, 240); IMGX[id + '-mini'] = disegnaStemma(c.stemma, 96); loadImg(img(id + '-mini')).then((i) => { CREST[id] = i; }); } }
+  for (const id of K.squadre) { const c = club(id); if (c && c.inventata && !IMGX[id]) { const pronto = stemmaPronto(c.name); IMGX[id] = pronto ? pronto.grande : disegnaStemma(c.stemma, 240); IMGX[id + '-mini'] = pronto ? pronto.piccolo : disegnaStemma(c.stemma, 96); loadImg(img(id + '-mini')).then((i) => { CREST[id] = i; }); } }
   const me = club(K.club), [lo, hi] = CAR.divisione(K).val; if (me) me.str = clamp(Math.round(1 + (CAR.mediaTitolari(K, CLUBS) - lo) / (hi - lo) * 4), 1, 5);
 }
 // Le otto statistiche mostrate di un giocatore, come coppie sigla e valore. `clubId` è la squadra in cui sta adesso

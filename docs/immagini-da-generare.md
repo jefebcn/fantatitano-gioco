@@ -184,6 +184,94 @@ semitrasparenti: deve essere scuro e tranquillo, coi punti luminosi al centro.
 >
 > 26 `allenamento-angoli`: Pallone fermo accanto alla bandierina del calcio d'angolo, porta e area sullo sfondo.
 
+## 2b. Stemmi delle squadre inventate (60 riquadri, da generare)
+
+Le sessanta squadre delle quattro divisioni sotto il Campionato Sammarinese oggi hanno uno stemma disegnato dal gioco coi
+pezzi dello stemma (forma, simbolo, colori, sigla). Ognuna ha un riquadro pronto per uno stemma vero: quando il file
+arriva, il gioco lo usa dappertutto (Home, Carriera, classifica, prepartita, partita) al posto di quello disegnato; finché
+manca non cambia niente.
+
+- **Misura**: 512 × 512, PNG con lo **sfondo trasparente**, lo stemma intero e centrato (il margine vuoto lo tolgo io).
+- **Nome del file**: il nome della squadra. Vanno bene tutte e tre le scritture: `Real Acquaviva.png`,
+  `real-acquaviva.png`, `stemma-real-acquaviva.png`.
+- **Dove**: `assets/arrivo/` (anche in una sottocartella, per esempio `assets/arrivo/stemmi/`), poi
+  `python3 scripts/importa_immagini.py`. `python3 scripts/importa_immagini.py stato` dice quanti ne mancano.
+- **Colori**: quelli della tabella sono i colori della maglia della squadra: lo stemma deve usarli, se no in campo non
+  si riconosce. La forma e il simbolo sono quelli dello stemma disegnato adesso: tenerli aiuta, non è obbligatorio.
+- **Niente scritte né sigle** nello stemma (il nome lo scrive il gioco accanto), niente marchi veri, niente stemmi che
+  somiglino a quelli di squadre vere.
+- Se i nomi delle squadre cambiano (`src/dati/divisioni.js`): `node scripts/stemmi.mjs` riscrive i riquadri in
+  `assets/immagini.json` e stampa questa tabella.
+
+Prompt di base (cambiare forma, colori e simbolo):
+
+> Stemma di una squadra di calcio di fantasia, vettoriale pulito, forma a [scudo], colori [rosso] e [bianco], al centro
+> [una torre], bordo scuro sottile, leggera luce dall'alto, visto di fronte, centrato, sfondo trasparente. Nessun
+> testo, nessuna lettera, nessun numero, nessun marchio vero.
+
+| Squadra | Divisione | Nome del file | Colori | Forma e simbolo di adesso |
+|---|---|---|---|---|
+| Audace Fiorina | Serie Cadetta del Titano | `stemma-audace-fiorina.png` | giallo e blu scuro | stendardo, un pallone |
+| Aurora Ventoso | Serie Cadetta del Titano | `stemma-aurora-ventoso.png` | nero e giallo oro | esagono, nessun simbolo |
+| Borgo Antico | Serie Cadetta del Titano | `stemma-borgo-antico.png` | rosa e nero | rombo, una stella |
+| Castellaro | Serie Cadetta del Titano | `stemma-castellaro.png` | celeste e blu scuro | esagono, nessun simbolo |
+| Città Alta | Serie Cadetta del Titano | `stemma-citta-alta.png` | bianco e rosso | rombo, una torre |
+| Gualdicciolo | Serie Cadetta del Titano | `stemma-gualdicciolo.png` | viola e bianco | tondo, nessun simbolo |
+| La Serra | Serie Cadetta del Titano | `stemma-la-serra.png` | marrone e crema | esagono, una corona |
+| Monte Cerreto | Serie Cadetta del Titano | `stemma-monte-cerreto.png` | verde oliva e giallo oro | stendardo, nessun simbolo |
+| Montegiardino | Serie Cadetta del Titano | `stemma-montegiardino.png` | verde acqua e crema | scudo, un pallone |
+| Real Acquaviva | Serie Cadetta del Titano | `stemma-real-acquaviva.png` | rosso e bianco | tondo, un pallone |
+| Robur Rovereta | Serie Cadetta del Titano | `stemma-robur-rovereta.png` | verde e bianco | scudo, una torre |
+| Stella Titano | Serie Cadetta del Titano | `stemma-stella-titano.png` | blu scuro e giallo | tondo, una stella |
+| Torraccia | Serie Cadetta del Titano | `stemma-torraccia.png` | granata e oro chiaro | stendardo, una torre |
+| Valdragone | Serie Cadetta del Titano | `stemma-valdragone.png` | arancione e nero | esagono, una stella |
+| Vigor Falciano | Serie Cadetta del Titano | `stemma-vigor-falciano.png` | blu e bianco | esagono, una torre |
+| Borgoloto | Lega delle Contrade | `stemma-borgoloto.png` | viola e bianco | scudo, un pallone |
+| Cantone | Lega delle Contrade | `stemma-cantone.png` | celeste e blu scuro | stendardo, nessun simbolo |
+| Collegio | Lega delle Contrade | `stemma-collegio.png` | verde e bianco | rombo, una corona |
+| La Fratta | Lega delle Contrade | `stemma-la-fratta.png` | bianco e rosso | stendardo, un pallone |
+| La Pieve | Lega delle Contrade | `stemma-la-pieve.png` | arancione e nero | stendardo, una stella |
+| La Ripa | Lega delle Contrade | `stemma-la-ripa.png` | marrone e crema | stendardo, nessun simbolo |
+| Le Mura | Lega delle Contrade | `stemma-le-mura.png` | giallo e blu scuro | scudo, un pallone |
+| Le Piagge | Lega delle Contrade | `stemma-le-piagge.png` | blu scuro e giallo | scudo, una corona |
+| Lo Stradone | Lega delle Contrade | `stemma-lo-stradone.png` | rosa e nero | stendardo, una corona |
+| Magazzeni | Lega delle Contrade | `stemma-magazzeni.png` | granata e oro chiaro | scudo, una corona |
+| Omerelli | Lega delle Contrade | `stemma-omerelli.png` | blu e bianco | scudo, una stella |
+| Pianello | Lega delle Contrade | `stemma-pianello.png` | rosso e bianco | tondo, una corona |
+| Portanova | Lega delle Contrade | `stemma-portanova.png` | verde acqua e crema | rombo, una torre |
+| San Francesco | Lega delle Contrade | `stemma-san-francesco.png` | verde oliva e giallo oro | rombo, nessun simbolo |
+| Santa Croce | Lega delle Contrade | `stemma-santa-croce.png` | nero e giallo oro | stendardo, una corona |
+| Caladino | Lega dei Borghi | `stemma-caladino.png` | verde e bianco | scudo, una corona |
+| Canepa | Lega dei Borghi | `stemma-canepa.png` | marrone e crema | scudo, un pallone |
+| Casole | Lega dei Borghi | `stemma-casole.png` | rosso e bianco | stendardo, nessun simbolo |
+| Cerbaiola | Lega dei Borghi | `stemma-cerbaiola.png` | bianco e rosso | esagono, un pallone |
+| Cinque Vie | Lega dei Borghi | `stemma-cinque-vie.png` | celeste e blu scuro | tondo, nessun simbolo |
+| Confine | Lega dei Borghi | `stemma-confine.png` | giallo e blu scuro | rombo, un pallone |
+| Corianino | Lega dei Borghi | `stemma-corianino.png` | arancione e nero | scudo, una stella |
+| Galavotto | Lega dei Borghi | `stemma-galavotto.png` | nero e giallo oro | esagono, nessun simbolo |
+| Lesignano | Lega dei Borghi | `stemma-lesignano.png` | verde acqua e crema | tondo, una torre |
+| Molarini | Lega dei Borghi | `stemma-molarini.png` | granata e oro chiaro | rombo, una corona |
+| Piandivello | Lega dei Borghi | `stemma-piandivello.png` | viola e bianco | tondo, un pallone |
+| Ponte Mellini | Lega dei Borghi | `stemma-ponte-mellini.png` | blu scuro e giallo | rombo, una stella |
+| Seggiano | Lega dei Borghi | `stemma-seggiano.png` | rosa e nero | tondo, una stella |
+| Spinaroti | Lega dei Borghi | `stemma-spinaroti.png` | verde oliva e giallo oro | scudo, nessun simbolo |
+| Teglio | Lega dei Borghi | `stemma-teglio.png` | blu e bianco | stendardo, un pallone |
+| Ca' Berlone | Lega Esordienti | `stemma-ca-berlone.png` | blu e bianco | scudo, nessun simbolo |
+| Ca' Chiavello | Lega Esordienti | `stemma-ca-chiavello.png` | nero e giallo oro | esagono, una stella |
+| Ca' Giannino | Lega Esordienti | `stemma-ca-giannino.png` | granata e oro chiaro | esagono, nessun simbolo |
+| Ca' Martino | Lega Esordienti | `stemma-ca-martino.png` | arancione e nero | tondo, una corona |
+| Ca' Melone | Lega Esordienti | `stemma-ca-melone.png` | verde e bianco | rombo, un pallone |
+| Ca' Ragni | Lega Esordienti | `stemma-ca-ragni.png` | giallo e blu scuro | rombo, nessun simbolo |
+| Ca' Rigo | Lega Esordienti | `stemma-ca-rigo.png` | rosso e bianco | esagono, nessun simbolo |
+| Calligaria | Lega Esordienti | `stemma-calligaria.png` | bianco e rosso | rombo, una torre |
+| Capanne | Lega Esordienti | `stemma-capanne.png` | celeste e blu scuro | tondo, un pallone |
+| Casalino | Lega Esordienti | `stemma-casalino.png` | verde acqua e crema | esagono, una corona |
+| Crociale | Lega Esordienti | `stemma-crociale.png` | blu scuro e giallo | rombo, una torre |
+| Le Tane | Lega Esordienti | `stemma-le-tane.png` | verde oliva e giallo oro | tondo, un pallone |
+| Montalbo | Lega Esordienti | `stemma-montalbo.png` | rosa e nero | rombo, una torre |
+| Monte Pulito | Lega Esordienti | `stemma-monte-pulito.png` | viola e bianco | stendardo, una stella |
+| Pianacci | Lega Esordienti | `stemma-pianacci.png` | marrone e crema | esagono, un pallone |
+
 ## 3. Icone e cornici (fatte)
 
 `node scripts/icone.mjs` scrive un file per icona in `public/img/icone/` e il foglio unico `public/img/icone.svg`.
