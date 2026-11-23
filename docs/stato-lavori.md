@@ -232,6 +232,13 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   colore. Nel testo, davanti ai numeri piccoli, restano la moneta e il diamante a tratto (`MO`, `DI`).
 - **Deciso da Alex (23/11)**: in alto a destra il nome del club resta intero quando ci sta; se la barra è stretta va
   bene il nome breve o la sigla. È un'eccezione voluta alla regola «niente sigle»: non va «corretta».
+- **Carta del giocatore, proposta «A» (23/11 sera)**: oro da 70, argento da 55 a 69, bronzo sotto; valutazione e ruolo
+  in alto a sinistra, giocatore davanti con la testa che esce dal bordo, fascia col cognome, tre statistiche del
+  reparto. Una carta sola per Squadra, scheda, Mercato, Home, scelta del capitano; sotto i 64 punti di larghezza non
+  ha le statistiche. Tutte le misure in `CARTA` (`src/config.js`). Dettagli e scelte in `docs/carte-giocatori.md`,
+  riferimento in `docs/riferimenti/carta-proposta-A.jpg`. Tolte le cornici disegnate (`carta-*` nel foglio delle icone)
+  e i ritagli dei ritratti. Nella prova delle schermate i tre giocatori tenuti stanchi sono della squadra 0, che in
+  partita è sempre la mia anche fuori casa.
 - **Resta da fare**: aspetto nuovo di Mercato (passo 9), Il mio club (10) e Sfide (11); «sotto il 60% di energia cala
   prima la velocità» (sessione della partita); il limite dei moduli nella pausa della partita; l'esultanza del capitano
   (servono animazioni); il listino del database.
