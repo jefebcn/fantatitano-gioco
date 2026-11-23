@@ -25,9 +25,17 @@ DETTAGLI = {'torso-vshape-incr': 0.65, 'measure-shoulder-dist-incr': 0.75, 'meas
             'hip-scale-horiz-decr': 0.5, 'buttocks-volume-incr': 0.25, 'measure-thigh-circ-incr': 0.35, 'l-upperleg-muscle-incr': 0.6, 'r-upperleg-muscle-incr': 0.6,
             'measure-calf-circ-incr': 0.4, 'l-lowerleg-muscle-incr': 0.6, 'r-lowerleg-muscle-incr': 0.6,
             'measure-neck-circ-incr': 1.0, 'neck-scale-horiz-incr': 0.3, 'measure-neck-height-decr': 0.5,
-            'head-scale-horiz-decr': 0.12, 'head-scale-vert-decr': 0.1, 'head-scale-depth-decr': 0.05, 'chin-width-incr': 0.4, 'chin-bones-incr': 0.35, 'head-square': 0.3,
+            'head-scale-horiz-decr': 0.12, 'head-scale-vert-decr': 0.1, 'head-scale-depth-decr': 0.05,
             'l-upperarm-shoulder-muscle-incr': 0.6, 'r-upperarm-shoulder-muscle-incr': 0.6, 'l-upperarm-muscle-incr': 0.45, 'r-upperarm-muscle-incr': 0.45,
             'l-lowerarm-muscle-incr': 0.3, 'r-lowerarm-muscle-incr': 0.3}
+# Il viso (regolatori di MakeHuman, da 0 a 1): generico, ma leggibile da lontano. Mascella e mento netti, zigomi alti,
+# guance un po' scavate, naso dritto e in fuori, arcata delle sopracciglia in avanti (struttura dal riferimento di Alex)
+VISO = {'chin-width-incr': 0.5, 'chin-bones-incr': 0.7, 'chin-prominent-incr': 0.4, 'chin-height-incr': 0.15, 'head-square': 0.4,
+        'l-cheek-bones-incr': 0.6, 'r-cheek-bones-incr': 0.6, 'l-cheek-volume-decr': 0.4, 'r-cheek-volume-decr': 0.4,
+        'nose-scale-depth-incr': 0.5, 'nose-trans-forward': 0.4, 'nose-hump-decr': 0.3, 'nose-point-width-decr': 0.3, 'nose-scale-vert-incr': 0.2,
+        'eyebrows-trans-forward': 0.6, 'eyebrows-angle-down': 0.2, 'forehead-temple-decr': 0.3}
+# quanto il viso resiste all'alleggerimento (peso nel DECIMATE: 1 come il resto del corpo, 0 non si tocca)
+VISO_ALLEGGERISCI = 0.35
 CORPI = {'normale': {}, 'snello': {'muscle': 0.4, 'weight': 0.22}, 'robusto': {'muscle': 1.0, 'weight': 0.72}}
 
 # ---------------------------------------------------------------- le direzioni degli arti nello scheletro del gioco
@@ -51,7 +59,7 @@ def crea(macro):
     """Un corpo con questa corporatura, nella posa a T del gioco, solo corpo e occhi. Risponde (oggetto, scheletro, calotta dei capelli)."""
     m = dict(BASE); m.update(macro)
     corpo = HumanService.create_human(mask_helpers=False, detailed_helpers=True, extra_vertex_groups=True, feet_on_ground=True, macro_detail_dict=m)
-    for nome, peso in DETTAGLI.items():
+    for nome, peso in {**DETTAGLI, **VISO}.items():
         TargetService.load_target(corpo, TargetService.target_full_path(nome), weight=peso, name=nome)
     rig = HumanService.add_builtin_rig(corpo, 'mixamo', import_weights=True)
     # la posa: ogni arto girato finché punta dove punta quello del gioco (dalla spalla e dall'anca in giù, un osso alla volta)
@@ -248,6 +256,9 @@ def esporta(o, file):
     bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); rig.select_set(True); bpy.context.view_layer.objects.active = o
     bpy.ops.export_scene.gltf(filepath=file, use_selection=True, export_animations=False, export_skins=True, export_morph=True, export_morph_normal=False, export_attributes=True, export_materials='EXPORT', export_yup=True)
 
+# la testa (dal collo in su, occhi esclusi): da vicino e a metà distanza si alleggerisce meno del resto
+_collo = (rig.matrix_world @ rig.data.bones['mixamorig:Neck'].tail_local).z; _occhi = set(occhi['l'] + occhi['r'])
+TESTA = [v.index for v in corpo.data.vertices if v.co.z > _collo and v.index not in _occhi]
 for k, tri in enumerate(LOD):
     bpy.ops.object.select_all(action='DESELECT'); corpo.select_set(True); bpy.context.view_layer.objects.active = corpo
     bpy.ops.object.duplicate(); o = bpy.context.view_layer.objects.active; o.name = 'Lod%d' % k; m2 = o.data
@@ -258,6 +269,7 @@ for k, tri in enumerate(LOD):
     tri0 = sum(len(p.vertices) - 2 for p in m2.polygons) - tri_occhi
     # gli anelli degli orli si tengono solo da vicino: più lontano si alleggeriscono come il resto
     if k > 0: o.vertex_groups['v_resto'].add(ORLI, 1.0, 'REPLACE')
+    if k < 2: o.vertex_groups['v_resto'].add(TESTA, VISO_ALLEGGERISCI, 'REPLACE')
     d = o.modifiers.new('Alleggerisci', 'DECIMATE'); d.ratio = (tri - tri_occhi) / tri0; d.use_collapse_triangulate = True; d.vertex_group = 'v_resto'
     bpy.ops.object.modifier_move_to_index(modifier=d.name, index=0); bpy.ops.object.modifier_apply(modifier=d.name)
     co = coordinate(o); e_occhio = [1.0 if negli_occhi(v) else 0.0 for v in m2.vertices]
@@ -274,7 +286,16 @@ for k, tri in enumerate(LOD):
 # ---------------------------------------------------------------- capigliature dal cuoio capelluto
 # Il guscio del cuoio capelluto viene spinto in fuori lungo le normali: poco al bordo (attaccatura), di più al centro,
 # e ogni capigliatura aggiunge la sua forma. Coordinate di Blender: Z in alto, -Y davanti.
-vc = np.array([c[:] for _, c, _ in calotta[0]]); vn = np.array([n[:] for _, _, n in calotta[0]]); facce_c = calotta[1]
+# Il guscio viene prima infittito (ogni faccia in quattro), perché ciocche e ciuffi hanno bisogno di punti; alla fine
+# ogni capigliatura si alleggerisce a CAPELLI_TRI triangoli.
+CAPELLI_TRI = 900
+bmc = bmesh.new()
+for _, c, _ in calotta[0]: bmc.verts.new(c)
+bmc.verts.ensure_lookup_table()
+for f in calotta[1]: bmc.faces.new([bmc.verts[i] for i in f])
+bmesh.ops.subdivide_edges(bmc, edges=bmc.edges[:], cuts=1, use_grid_fill=True, smooth=0.5)
+bmc.normal_update(); bmc.verts.index_update()
+vc = np.array([v.co[:] for v in bmc.verts]); vn = np.array([v.normal[:] for v in bmc.verts]); facce_c = [[v.index for v in f.verts] for f in bmc.faces]; bmc.free()
 centro = vc.mean(0); cima = vc[:, 2].max(); fronte = vc[:, 1].min(); nuca = vc[:, 1].max(); bassa = vc[:, 2].min()
 # distanza di ogni punto dal bordo del guscio (i lati che appartengono a una faccia sola)
 conta = {}
@@ -288,21 +309,42 @@ def capelli(nome, f):
     me2 = bpy.data.meshes.new(nome); v2 = np.array([p + f(p, n, sfuma(0.0, 0.03, d)) for p, n, d in zip(vc, vn, dist)])
     me2.from_pydata([tuple(p) for p in v2], [], facce_c); me2.update()
     for p in me2.polygons: p.use_smooth = True
-    o = bpy.data.objects.new(nome, me2); bpy.context.scene.collection.objects.link(o); return o
+    o = bpy.data.objects.new(nome, me2); bpy.context.scene.collection.objects.link(o)
+    n0 = sum(len(p.vertices) - 2 for p in me2.polygons)
+    if n0 > CAPELLI_TRI:
+        bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.view_layer.objects.active = o
+        d = o.modifiers.new('Alleggerisci', 'DECIMATE'); d.ratio = CAPELLI_TRI / n0; d.use_collapse_triangulate = True
+        bpy.ops.object.modifier_apply(modifier=d.name)
+    return o
 alto = lambda p: max(0.0, (p[2] - bassa) / (cima - bassa))  # 0 alla nuca bassa, 1 in cima
 dietro = lambda p: max(0.0, (p[1] - centro[1]) / (nuca - centro[1]))  # 0 a metà testa, 1 alla nuca
+lato = lambda p: min(1.0, abs(p[0] - centro[0]) / 0.075)  # 0 sulla riga di mezzo, 1 sopra le orecchie
+davanti = lambda p: sfuma(fronte + 0.075, fronte, p[1])  # 1 all'attaccatura sulla fronte, 0 dalla metà della testa
 SU = np.array([0, 0, 1.0]); AVANTI = np.array([0, -1.0, 0])
-# ogni capigliatura: spostamento del punto p (normale n, k = 0 all'attaccatura e 1 dentro)
+def ciocche(p, giri=9.0):
+    """Ciocche mosse (da -1 a 1): onde che girano attorno alla testa e cambiano verso salendo, come capelli pettinati con le dita."""
+    a = np.arctan2(p[0] - centro[0], centro[1] - p[1]); h = alto(p)
+    return np.sin(a * giri + 2.6 * np.sin(h * 7.0)) * (0.6 + 0.4 * np.sin(h * 11.0 + a * 3.0))
+def punte(x, passo=0.016):
+    """Le punte del ciuffo sulla fronte lungo x (da 0 a 1): due denti di sega di passo diverso, smussati, perché non
+    sembrino tagliate a macchina."""
+    dente = lambda q: (lambda t: 1.0 - abs(2.0 * t - 1.0))(((x - centro[0]) / q) % 1.0)
+    v = 0.6 * dente(passo) + 0.4 * dente(passo * 1.73); return v * v * (3 - 2 * v)
+# ogni capigliatura: spostamento del punto p (normale n, k = 0 all'attaccatura e 1 dentro). Struttura dal riferimento di
+# Alex: volume in cima, lati più corti, ciocche mosse invece del casco liscio, ciuffo che scende irregolare sulla fronte
 STILI = {
-    'Hair_Corti': lambda p, n, k: n * (0.002 + 0.006 * k),
-    'Hair_Folti': lambda p, n, k: n * (0.003 + 0.018 * k) + SU * 0.012 * k * alto(p),
-    'Hair_Ciuffo': lambda p, n, k: n * (0.003 + 0.009 * k) + (AVANTI * 0.012 + SU * 0.032) * sfuma(0.09, 0.0, abs(p[1] - fronte)) * sfuma(0.07, 0.02, abs(p[0] - centro[0])) * (0.4 + 0.6 * k),
-    'Hair_Cresta': lambda p, n, k: n * (0.002 + 0.003 * k) + SU * 0.045 * sfuma(0.04, 0.008, abs(p[0] - centro[0])) * sfuma(0.2, 0.75, alto(p)),
-    'Hair_Ricci': lambda p, n, k: n * (0.004 + 0.03 * k + 0.008 * k * np.sin(p[0] * 190) * np.sin(p[1] * 170 + p[2] * 150)),
-    'Hair_Lunghi': lambda p, n, k: n * (0.004 + 0.014 * k) + (np.array([0, 0.018, -0.075]) * dietro(p) * (1 - alto(p)) * (1 - 0.6 * k)),
-    'Hair_Riga': lambda p, n, k: n * (0.003 + 0.011 * k) + SU * 0.018 * k * alto(p) * (1.0 if p[0] > centro[0] + 0.015 else 0.2),
+    'Hair_Corti': lambda p, n, k: n * (0.002 + 0.006 * k + 0.0015 * k * ciocche(p, 14)),
+    'Hair_Folti': lambda p, n, k: n * (0.004 + k * (0.008 + 0.022 * alto(p)) * (1 - 0.4 * lato(p) * (1 - alto(p))) + 0.007 * k * alto(p) * ciocche(p))
+                                  + (AVANTI * 0.014 - SU * 0.016 * (0.3 + 0.7 * punte(p[0]))) * davanti(p) * (1 - 0.6 * lato(p)),
+    'Hair_Ciuffo': lambda p, n, k: n * (0.003 + 0.009 * k + 0.004 * k * ciocche(p, 11)) + (AVANTI * 0.014 + SU * 0.034) * sfuma(0.09, 0.0, abs(p[1] - fronte)) * sfuma(0.07, 0.02, abs(p[0] - centro[0])) * (0.4 + 0.6 * k) * (0.75 + 0.25 * punte(p[0], 0.012)),
+    'Hair_Cresta': lambda p, n, k: n * (0.002 + 0.003 * k) + SU * 0.045 * sfuma(0.04, 0.008, abs(p[0] - centro[0])) * sfuma(0.2, 0.75, alto(p)) * (0.6 + 0.4 * punte(p[1], 0.022)),
+    'Hair_Ricci': lambda p, n, k: n * (0.005 + 0.032 * k * (0.6 + 0.4 * alto(p)) + 0.011 * k * np.sin(p[0] * 190) * np.sin(p[1] * 170 + p[2] * 150))
+                                  - SU * 0.012 * davanti(p) * (0.4 + 0.6 * punte(p[0], 0.02)),
+    'Hair_Lunghi': lambda p, n, k: n * (0.004 + 0.014 * k + 0.005 * k * ciocche(p, 7)) + (np.array([0, 0.018, -0.075]) * dietro(p) * (1 - alto(p)) * (1 - 0.6 * k)),
+    'Hair_Riga': lambda p, n, k: n * (0.003 + 0.011 * k + 0.004 * k * alto(p) * ciocche(p, 8)) + SU * 0.018 * k * alto(p) * (1.0 if p[0] > centro[0] + 0.015 else 0.2),
 }
 ogg = [capelli(n, f) for n, f in STILI.items()]
+print('CAPELLI', {o.name: sum(len(p.vertices) - 2 for p in o.data.polygons) for o in ogg})
 bpy.ops.object.select_all(action='DESELECT')
 for o in ogg: o.select_set(True)
 bpy.ops.export_scene.gltf(filepath=os.path.join(USCITA, 'capelli.glb'), use_selection=True, export_animations=False, export_materials='NONE', export_yup=True)
