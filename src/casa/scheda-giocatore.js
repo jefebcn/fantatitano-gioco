@@ -7,6 +7,7 @@ import { coloreStat } from '../dati/scala.js';
 import { CARTA_GRANDE } from '../config.js';
 import { K, DATI, esc, mon, salvaK, applicaMio, avviso, club } from './casa.js';
 import { icona } from './icone.js';
+import { figura } from './immagini.js';
 import { cartaCampo, riempiRitratti } from './giocatore.js';
 import { adatta } from './carte.js';
 import { t } from './testi.js';
@@ -44,7 +45,7 @@ const adatti = (x) => CAR.RARITA.flatMap((rarita) => CAR.CATEGORIE.filter((cat) 
 // «Allena»: si sceglie quale allenatore usare; le statistiche della sua categoria salgono e la carta si ridisegna
 function allena(x) {
   const lista = adatti(x); if (!lista.length) return avviso(t('scheda.nessunAllenatore'));
-  finestra({ titolo: t('scheda.scegliAllenatore'), testo: t('scheda.comeAllena'), scelte: lista.map((a, i) => ({ testo: `${t('all.' + a.categoria)} ${t('rar.' + a.rarita)}`, nota: t('scheda.allenatoreNota', ECONOMIA.allenatori.rarita[a.rarita].punti, a.quanti), valore: i, attiva: i === 0 })),
+  finestra({ titolo: t('scheda.scegliAllenatore'), testo: t('scheda.comeAllena'), scelte: lista.map((a, i) => ({ testo: `${t('all.' + a.categoria)} ${t('rar.' + a.rarita)}`, nota: t('scheda.allenatoreNota', ECONOMIA.allenatori.rarita[a.rarita].punti, a.quanti), figura: figura('icona-categoria-' + a.categoria, 'scFig', 40), valore: i, attiva: i === 0 })),
     fatto: (i) => {
       const a = lista[+i], r = a && G ? CAR.usaAllenatore(K, CLUBS, G.dove, G.i, a.rarita, a.categoria) : { ok: false };
       if (!r.ok) return avviso(t(r.motivo === 'potenziale' ? 'scheda.alPotenziale' : 'scheda.nessunAllenatore'));

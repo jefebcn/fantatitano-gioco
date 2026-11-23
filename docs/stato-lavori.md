@@ -213,6 +213,11 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   solo il colore del prezzo e sotto c'è scritto quanto manca («Ti mancano …») o «Rosa piena»; chi è già stato comprato
   ha «Preso» con la spunta. Osservatore e Agente hanno un riquadro a testa con l'icona in un tondo (lente blu, tessera
   oro), il nome e che cosa fanno; l'Agente mostra quanti contatti si hanno. La revisione dal video è finita.
+- **Icone nuove (23/11, PR #127)**: importate le venti icone. Gli allenatori rifatti (stesso nome) si vedono nel Percorso
+  premi e nei premi di fine stagione; la scheda Allenatori ha una carta per categoria con l'icona, che cosa allena e
+  quanti se ne hanno per rarità (col medaglione); la finestra «Scegli l'allenatore» ha l'icona della categoria accanto
+  a ogni scelta (`figura` nelle scelte di `src/casa/finestra.js`); in Personalizza › Squadra scarpini e palloni sono
+  disegnati. Se un file manca resta il disegno di prima.
 - **Carriere di prima**: non si possono continuare, si riparte da zero (la versione del salvataggio è la 2).
 - **Come arriva alla partita**: la partita conosce un numero solo per giocatore, la `forza`. Crescita con gli allenatori,
   riscaldamento e Curva dei tifosi ci stanno dentro. Le squadre inventate arrivano per intero nella richiesta; lo stemma
