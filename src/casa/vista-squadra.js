@@ -22,6 +22,7 @@ import { apriScheda } from './scheda-giocatore.js';
 import { finestra } from './finestra.js';
 import { t } from './testi.js';
 import { apri } from './nav.js';
+import { pronta } from './immagini.js';
 
 document.getElementById('vs').insertAdjacentHTML('beforebegin', '<div id="squadra" class="scr nas"></div>');
 const radice = document.getElementById('squadra');
@@ -33,7 +34,8 @@ let scelto = null, riserve = false;
 const modulo = () => moduloMio();
 const posto = (g) => { const [dove, i] = g.split(':'); return { dove, i: +i }; };
 const dopoCambio = () => { applicaMio(); salvaK(); };
-// le Tre Torri del Titano, stilizzate e molto trasparenti, in basso a sinistra dietro il campo: il monte e le tre torri coi merli
+// le Tre Torri del Titano, stilizzate e molto trasparenti, in basso a sinistra dietro il campo: il monte e le tre torri coi
+// merli. Servono solo se manca lo sfondo dipinto dello stadio, che le torri le ha già sulla collina
 const TORRI = '<svg class="qTorri" viewBox="0 0 64 64" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path d="M2 60 14 40l8 6 10-20 10 20 8-6 12 20z" opacity=".55"/><path d="M10 40V26h2v-3h2v3h2v-3h2v3h2v14zM27 30V10h2V7h2v3h2V7h2v3h2v20zM44 40V26h2v-3h2v3h2v-3h2v3h2v14z"/></svg>';
 // quanto è larga una carta: una parte fissa della larghezza dello schermo, uguale in campo e tra i sostituti
 const larga = () => Math.round(innerWidth * SQUADRA.carta);
@@ -48,7 +50,9 @@ export function disegnaSquadra() {
   const ottima = !squadraMigliore(rosa(c), postiModulo(m)).cambiata;
   if (!extra) riserve = false;
   radice.style.setProperty('--gw', `${larga()}px`);
-  radice.innerHTML = TORRI + '<div class="qSx">'
+  const dipinto = pronta('sfondo-squadra');
+  radice.classList.toggle('illustrata', dipinto);
+  radice.innerHTML = (dipinto ? '' : TORRI) + '<div class="qSx">'
     + `<button class="qB" data-az="modulo">${icona('modulo')}<b>${m}</b></button>`
     + `<button class="qB${riserve ? ' scelta' : ''}" data-az="riserve">${icona('riserve')}<b data-adatta>${t('squadra.riserve', extra)}</b></button>`
     + `<button class="qB" data-az="incarichi">${icona('capitano')}<b data-adatta>${t('squadra.incarichi')}</b></button>`
