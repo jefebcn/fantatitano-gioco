@@ -6,6 +6,9 @@
    - Gli script hanno la versione nell'indirizzo (app.js?v=…): una volta salvati non cambiano più, quindi si danno dalla
      memoria senza chiedere niente alla rete. Texture, font e immagini idem; quelli non precaricati si salvano al primo uso.
    - Ogni pubblicazione ha la sua memoria; all'attivazione quelle vecchie si cancellano.
+   - La musica (cartella audio/) non passa di qui: il lettore la chiede a pezzi mentre suona, e una risposta a pezzi non
+     si può salvare né ridare intera (su iPhone il brano non partirebbe). La gestisce il browser da solo; senza rete il
+     gioco va lo stesso, senza musica.
    - Le richieste ad altri siti (l'account, Supabase) non passano di qui. */
 const VERSIONE = '__VERSIONE__', NOME = 'ft-' + VERSIONE, PRECARICA = __PRECARICA__, ATTESA_RETE = 3000;
 
@@ -36,6 +39,7 @@ self.addEventListener('fetch', (e) => {
   if (u.origin !== self.location.origin) return;
   if (req.mode === 'navigate') { e.respondWith(pagina(req)); return; }
   if (u.pathname.endsWith('/sw.js')) return;
+  if (u.pathname.includes('/audio/') || req.headers.has('range')) return;
   e.respondWith(caches.open(NOME).then((c) => c.match(req).then((hit) => hit || fetch(req).then((r) => {
     if (r.ok && r.type === 'basic') c.put(req, r.clone());
     return r;

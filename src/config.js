@@ -458,6 +458,16 @@ export const PREMIO = {
   sale: 420, tra: 150, riflesso: 620, guardia: 500, attesa: 1200,
   misure: { busta: 56, premio: 25, uno: 44 },
 };
+// L'audio (src/audio.js). musica: la musica della home.
+//   cartella e brani: i file, senza estensione: di ognuno c'è l'OGG e l'MP3 di riserva. Con più brani si alternano
+//     nell'ordine scritto, con uno solo si ripete quello.
+//   livello: quanto suona la musica col cursore al massimo (1 = com'è il file).
+//   incrocio: quanti secondi prima della fine parte il brano dopo, e quanto dura la dissolvenza tra i due.
+//   anticipo: quanti secondi prima della fine si comincia a caricare il brano dopo.
+//   entra: in quanti secondi la musica torna quando si rientra nella home; esce: in quanti sfuma quando parte la partita.
+export const AUDIO = {
+  musica: { cartella: 'audio/', brani: ['musica-home-rise-up'], livello: 1, incrocio: 2, anticipo: 15, entra: 1.5, esce: 1.2 },
+};
 // La schermata Squadra (docs/navigazione.md §3.3), con le misure date da Alex il 23/11.
 // carta: quanto è larga una carta, in parti della larghezza dello schermo (uguale in campo e tra i sostituti).
 // stretto: la mezza larghezza del campo in alto, in percento (in basso è 50): il lato alto è il 55% di quello basso.

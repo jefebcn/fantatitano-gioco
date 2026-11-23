@@ -19,6 +19,22 @@ Le fonti dei modelli e delle animazioni della partita sono nel README; quelle de
   above copyright notice and this permission notice shall be included in all copies or substantial portions of the
   Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND […]». Testo intero nel repository citato.
 
+## Musica
+
+### «Rise Up (Fantatitano)», la musica della home
+- Cosa: `public/audio/musica-home-rise-up.ogg` e `.mp3` (gli originali in `assets/arrivo/audio/`): pop-rock da stadio
+  cantato in inglese, 3 minuti e 31. Gira in tutte le schermate della home (`src/audio.js`, elenco dei brani in
+  `AUDIO.musica` di `src/config.js`).
+- Da dove: generata con **Suno** (https://suno.com) dall'account di Alex, **piano Pro**: i brani generati con questo
+  piano si possono usare a scopo commerciale (termini di Suno al momento della generazione). Scelta da Alex il 23
+  novembre 2026.
+- Testo: **originale, scritto per Fantatitano**. Nessun testo, melodia o registrazione di altri.
+- Preparazione nostra: dissolvenza in entrata di 0,4 secondi e in uscita di 3, volume portato a −16 LUFS, salvata in OGG
+  e in MP3 a 128 kbps.
+
+Tutti gli altri suoni del gioco (calci, pali, rete, fischietto, pubblico) non vengono da file: li genera `src/audio.js`
+al momento.
+
 ## Solo studiato: idee, nessun codice e nessun file
 
 - **openfootmanager** (GPL v3), https://github.com/openfootmanager/openfootmanager — come un gestionale modella

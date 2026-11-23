@@ -153,6 +153,13 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   due vittorie a stagione in più, senza cambiare questi tempi.
 - **Moduli** (23/11): da 8 a 15, i sette nuovi in coda a `FORMS` partendo dalla tabella MIT citata in `docs/crediti.md`.
   Il Centro allenamento ne apre 4, 6, 8, 10, 12, 15 secondo le stelle. La finestra di scelta li mostra su cinque colonne.
+- **Musica della home** (23/11, `src/audio.js`, valori in `AUDIO` di `src/config.js`): «Rise Up (Fantatitano)» al posto
+  della musica sintetizzata di prima. Parte al primo tocco, gira in tutte le schermate fuori dalla partita, a fine brano
+  ricomincia incrociandosi in dissolvenza per 2 secondi, sfuma in 1,2 secondi quando parte la partita e riprende da
+  dov'era, in 1,5 secondi, tornando alla home. OGG dove il browser lo legge, MP3 altrimenti. Nelle Impostazioni: tasto
+  Muto e due cursori (Musica, Effetti), salvati sul telefono. Muta, a volume zero o col gioco in secondo piano la musica
+  si ferma e non scarica niente. Non è nel precarico e non passa dal service worker: senza rete il gioco va, senza
+  musica. Prova: `node scripts/prove/musica.cjs` (anche nel controllo automatico). Fonte in `docs/crediti.md`.
 - **Apertura dei premi** (23/11, `src/casa/premio.js`, tempi e misure in `PREMIO` di `src/config.js`): con le
   illustrazioni di Alex (`assets/arrivo/premi/`). Busta blu per premio del giorno e sfide, argento per il percorso premi,
   oro per la fine della stagione. La busta entra dal basso con un rimbalzo, vibra mentre dietro cresce la luce dorata, il
