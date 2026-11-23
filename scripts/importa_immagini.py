@@ -4,10 +4,12 @@ prepara a 1x, 2x e 3x in WebP dentro public/img/illustrazioni/ e scrive src/casa
 quali immagini ci sono (le altre restano segnaposto).
 Nell'elenco (assets/immagini.json) un'immagine può essere segnata «rifila»: le si toglie il margine vuoto attorno e il
 soggetto riempie la misura, intero e centrato; oppure «usa»: non ha un file suo, vale quello di un'altra immagine.
+Gli stemmi delle squadre inventate (le voci con «squadra») si possono consegnare anche col solo nome della squadra, scritto
+come si vuole: «Real Acquaviva.png», «real-acquaviva.png» e «stemma-real-acquaviva.png» sono lo stesso stemma.
 Uso: python3 scripts/importa_immagini.py            importa tutto quello che c'è in assets/arrivo/
      python3 scripts/importa_immagini.py stato      dice solo quali sono definitive e quali segnaposto
 Serve Pillow (c'è già nelle sessioni di lavoro; sul computer: pip install pillow)."""
-import json, os, sys
+import json, os, sys, unicodedata
 from PIL import Image
 
 RADICE = os.path.join(os.path.dirname(__file__), '..')
@@ -32,10 +34,19 @@ def rifila(im, v):
     return tela
 
 
+def semplice(nome):
+    """Il nome in minuscolo, senza accenti, coi trattini al posto di spazi e apostrofi (come src/casa/nomi-stemmi.js)."""
+    senza = ''.join(c for c in unicodedata.normalize('NFD', nome) if unicodedata.category(c) != 'Mn').lower()
+    return '-'.join(''.join(c if c.isascii() and c.isalnum() else ' ' for c in senza).split())
+
+
 def importa(cartella, file):
     nome, est = os.path.splitext(file)
     if est.lower() not in ('.png', '.jpg', '.jpeg', '.webp'):
         return None
+    # uno stemma può arrivare col solo nome della squadra
+    if nome not in ELENCO:
+        nome = next((n for n in (semplice(nome), 'stemma-' + semplice(nome)) if n in ELENCO), nome)
     v = ELENCO.get(nome)
     if not v:
         return f'✗ {file}: nome non in elenco (vedi docs/immagini-da-generare.md)'
@@ -98,6 +109,12 @@ if __name__ == '__main__':
     print(f'Definitive ({len(ok)}): ' + (', '.join(ok) or 'nessuna'))
     if posto:
         print(f'Usano un\'altra immagine ({len(posto)}): ' + ', '.join(f'{n} (usa {ELENCO[n]["usa"]})' for n in posto))
-    print(f'Segnaposto ({len(ELENCO) - len(ok) - len(posto)}): ' + ', '.join(n for n in ELENCO if n not in ok and n not in posto))
-    if len(ok) + len(posto) == len(ELENCO):
-        print(f'Tutte e {len(ELENCO)} le immagini dell\'elenco sono definitive: {len(ok)} con un file loro, {len(posto)} che usano quello di un\'altra.')
+    # gli stemmi delle squadre inventate si contano a parte: finché mancano il gioco li disegna coi pezzi dello stemma
+    stemmi = [n for n, v in ELENCO.items() if v.get('squadra')]
+    altre = [n for n in ELENCO if n not in stemmi]
+    mancano = [n for n in altre if n not in ok and n not in posto]
+    print(f'Segnaposto ({len(mancano)}): ' + (', '.join(mancano) or 'nessuno'))
+    if not mancano:
+        print(f'Tutte e {len(altre)} le illustrazioni dell\'elenco sono definitive: {len([n for n in altre if n in ok])} con un file loro, {len(posto)} che usano quello di un\'altra.')
+    fatti = [n for n in stemmi if n in ok]
+    print(f'Stemmi delle squadre inventate: {len(fatti)} su {len(stemmi)}' + ('' if len(fatti) == len(stemmi) else ' (gli altri li disegna il gioco). Mancano: ' + ', '.join(ELENCO[n]['squadra'] for n in stemmi if n not in ok)))

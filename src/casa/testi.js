@@ -38,8 +38,6 @@ const IT = {
   'carriera.vinta': 'Vinta!',
   'carriera.vinto': 'Vinto!',
   'carriera.gironi': 'Fase a gironi',
-  'carriera.prossima': 'Prossima',
-  'carriera.trasferta': 'Trasferta',
   'carriera.motto': (divisione, stagione) => `${divisione} · stagione ${stagione}`,
   'carriera.nuovaStagione': 'Stagione finita: entra per cominciare la prossima',
   // carriera: prossima partita, classifica, coppe

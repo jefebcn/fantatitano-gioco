@@ -50,8 +50,7 @@ HOME (livello 0)
 │   │                  └── Squadra (e ritorno alla Sfida)
 │   ├── Classifica completa (schede: Classifica, Calendario, Risultati)
 │   ├── Trofeo dei Castelli (gironi, poi tabellone) → Sfida
-│   ├── Coppa Titano (tabellone) → Sfida
-│   └── scorciatoie: Sfide, Squadra, Mercato, Il mio club
+│   └── Coppa Titano (tabellone) → Sfida
 ├── SCENARIO → Sfida già impostata → Partita → Fine partita → Scenario
 ├── PERCORSO PREMI
 ├── AMICHEVOLE → scelta dell'avversario → Sfida → Partita → Fine partita → Amichevole
@@ -102,7 +101,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Schermata | Liv. | Si entra da | Indietro | Cosa si tocca |
 |---|---|---|---|---|
 | **Home** | 0 | avvio; Indietro dal livello 1 | — | le 8 carte (§2) |
-| **Carriera** | 1 | Home, carta CARRIERA | Home | Prossima partita → Sfida; Classifica → Classifica completa; Trofeo dei Castelli → gironi; Coppa Titano → tabellone; 4 scorciatoie |
+| **Carriera** | 1 | Home, carta CARRIERA | Home | Prossima partita → Sfida; Classifica → Classifica completa; Trofeo dei Castelli → gironi; Coppa Titano → tabellone (le quattro scorciatoie in basso sono state tolte il 23/11: Sfide, Squadra, Mercato e Il mio club si aprono dalla Home) |
 | Classifica completa | 2 | Carriera, carta Classifica | Carriera | schede Classifica, Calendario, Risultati |
 | Trofeo dei Castelli | 2 | Carriera | Carriera | gironi (poi tabellone); «Gioca» → Sfida |
 | Coppa Titano | 2 | Carriera | Carriera | tabellone; «Gioca» → Sfida |
@@ -192,7 +191,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Benvenuto, Crea il club, Ingaggia il capitano | fatti: logo senza scritta, scala nuova, nove candidati con ruoli diversi, pulsante fuori dalle carte. Le carte a scudo ci sono nella Sfida; qui arrivano con la Squadra |
 | Barra in alto e navigazione a livelli | fatte: uguali in tutte le schermate, Indietro torna da dove si era arrivati |
 | Home (8 carte) | fatta, coi dati veri e con le illustrazioni definitive (sfondo e quattro carte) |
-| Carriera | fatta: prossima partita, classifica a cinque righe, le due coppe, scorciatoie; stagione nuova con finestra di conferma |
+| Carriera | fatta: prossima partita, classifica a cinque righe, le due coppe; stagione nuova con finestra di conferma |
 | Classifica completa, Trofeo dei Castelli, Coppa Titano | esistono |
 | Sfida | fatta: due campi con le carte, competizione e tempo al centro, Squadra, Riscaldamento, Gioca; dopo la partita una finestra dice risultato e premio |
 | Scenario | da fare (serve l'aggancio nella partita) |

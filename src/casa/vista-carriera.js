@@ -1,6 +1,6 @@
 // La Carriera (livello 1, docs/navigazione.md §3.2): in alto la prossima partita con «Gioca adesso» e la classifica
-// attorno alla nostra squadra; sotto il Trofeo dei Castelli e la Coppa Titano; in fondo le scorciatoie per Sfide,
-// Squadra, Mercato e Il mio club.
+// attorno alla nostra squadra; sotto il Trofeo dei Castelli e la Coppa Titano. Sfide, Squadra, Mercato e Il mio club
+// si aprono dalla Home, un tocco indietro: qui non ci sono più le quattro scorciatoie in basso (revisione del 23/11).
 import * as CAR from '../carriera.js';
 import { img } from '../game.js';
 import { K, salvaK, esc, club, applicaMio } from './casa.js';
@@ -20,11 +20,10 @@ const radice = document.getElementById('carriera');
 radice.addEventListener('load', () => adatta(radice), true);
 addEventListener('resize', () => { if (!radice.classList.contains('nas')) adatta(radice); });
 
-// cosa fa ogni carta e ogni scorciatoia
+// cosa fa ogni carta
 const AZIONI = {
   prossima: () => { const p = CAR.prossima(K); if (p) apri('sfida', 'camp', p.avv, t('sfida.campionato', p.giornata, p.totale, p.inCasa), !p.inCasa); else nuovaStagione(); },
   classifica: () => apri('classifica'), castelli: () => apri('castelli'), coppa: () => apri('coppa'),
-  sfide: () => apri('sfide'), squadra: () => apri('squadra'), mercato: () => apri('mercato'), club: () => apri('club'),
 };
 radice.addEventListener('click', (e) => { const b = e.target.closest('[data-vai]'); if (b && AZIONI[b.dataset.vai]) AZIONI[b.dataset.vai](); });
 
@@ -51,8 +50,7 @@ const trofeo = (nome, ico) => figura(nome, 'trofeo', 56) || icona(ico, 'trofeo')
 
 /** Disegna la Carriera coi dati del momento. */
 export function disegnaCarriera() {
-  const p = CAR.prossima(K), tab = CAR.classifica(K, CLUBS), io = tab.findIndex((r) => r.id === K.club), oggi = new Date();
-  const st = CAR.statoSfide(K, oggi), note = CAR.notifiche(K, oggi);
+  const p = CAR.prossima(K), tab = CAR.classifica(K, CLUBS), io = tab.findIndex((r) => r.id === K.club);
   // in fondo alla carta: la divisione in cui si gioca e quanti obiettivi della stagione sono fatti
   const ob = CAR.obiettivi(K, CLUBS), obiettiviT = K.div === 1 ? t('carriera.cima', CAR.divisione(K).nome) : t('carriera.obiettivi', CAR.divisione(K).nome, ob.filter((o) => o.fatto).length, ob.length);
   // prossima partita di campionato, o la stagione nuova quando il campionato è finito
@@ -80,10 +78,7 @@ export function disegnaCarriera() {
     () => ({ id: camC || K.club, titolo: t(kc.vinta ? 'carriera.vinto' : 'carriera.finito'), testo: kc.vinta ? t('carriera.tuo') : t('carriera.fuoriA', kc.fuori === 'gironi' ? t('carriera.aiGironi') : CAR.TURNI_KO[kc.fuori].toLowerCase()) }));
   const coppa = coppaCarta('coppa', t('carriera.coppa'), 'k-titano', 'coppa-titano', 'coppa', CAR.coppaProssima(K),
     () => ({ id: k.campione || K.club, titolo: t(k.vinta ? 'carriera.vinta' : 'carriera.finita'), testo: k.vinta ? t('carriera.tua') : t('carriera.fuoriA', CAR.TURNI[k.fuori].toLowerCase()) }));
-  // scorciatoie, col bollino dove c'è qualcosa da ritirare o da migliorare
-  const scorciatoia = (rotta, ico, bollino) => `<button class="scorc" data-vai="${rotta}">${icona(ico)}<b>${t('home.' + rotta)}</b>${bollino ? '<em class="bollino">!</em>' : ''}</button>`;
   radice.classList.toggle('illustrata', pronta('sfondo-home'));
-  radice.innerHTML = prossima + classifica + castelli + coppa
-    + `<span class="scorciatoie">${scorciatoia('sfide', 'sfide', st.daRiscuotere > 0)}${scorciatoia('squadra', 'squadra', note.some((n) => n.vai === 'squadra'))}${scorciatoia('mercato', 'mercato', false)}${scorciatoia('club', 'club', note.some((n) => n.vai === 'club'))}</span>`;
+  radice.innerHTML = prossima + classifica + castelli + coppa;
   adatta(radice);
 }
