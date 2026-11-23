@@ -177,7 +177,7 @@ body.conBarra .indietro{display:none}
 .c-piccola .testo b{white-space:nowrap;overflow:hidden}
 .carta .su,.carta .testo .su{font:800 12px Montserrat,sans-serif;font-style:normal;letter-spacing:.06em;text-transform:uppercase;color:#3FC6FF;white-space:nowrap}
 .carta .gDati{display:flex;align-items:center;gap:6px;min-width:0}
-.carta .gDati u{text-decoration:none;font:800 12px Montserrat,sans-serif;padding:1px 6px;border-radius:5px;background:rgba(255,255,255,.14)}
+.carta .gDati u{text-decoration:none;font:800 13px Montserrat,sans-serif;color:#C9CFDC}
 .carta .gDati img{width:20px;height:20px;object-fit:contain}
 .carta .gDati .val{width:24px;height:24px;font-size:12px}
 /* sfide: anelli di avanzamento in due righe da due, col nome sotto */
@@ -203,6 +203,8 @@ body.conBarra .indietro{display:none}
 .c-mercato .prezzo{flex-wrap:wrap;gap:0 8px;line-height:1.15}
 .c-mercato .prezzo span{display:inline-flex;align-items:center;gap:4px;flex:none}
 .c-mercato .prezzo b{overflow:visible}
+.c-mercato .prezzo .rp{display:none;font:800 13px Montserrat,sans-serif;color:#C9CFDC}
+.cartaAlta.c-mercato .prezzo .rp{display:inline}
 /* il mio club: stemma, stelle e le tre voci con icona e nome */
 .c-club .corpo{gap:6px}
 #casa .c-club .stemma{height:auto;max-height:72%;width:22%;max-width:58px;object-fit:contain}
@@ -356,8 +358,8 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .gEn.e-m b{background:var(--c-em)}
 .gEn.e-b b{background:var(--c-eb)}
 /* la «C» del capitano e gli incarichi: tondi in alto a destra, appena fuori dal bordo */
-.gSegni{position:absolute;right:calc(var(--gw)*var(--c-gf)*-1);top:calc(var(--gw)*var(--c-gf)*-1);display:grid;gap:calc(var(--gw)*var(--c-gf)/2)}
-.gSegni .fasciaC,.gSegno{display:grid;place-items:center;width:calc(var(--gw)*var(--c-gl));height:calc(var(--gw)*var(--c-gl));border-radius:50%;font:800 calc(var(--gw)*var(--c-gl)*.64)/1 Montserrat,sans-serif;font-style:normal;box-shadow:0 0 0 max(1px,calc(var(--gw)*var(--c-bs))) #0B1530}
+.gSegni{position:absolute;right:calc(var(--gw)*var(--c-gf)*-1);top:calc(var(--gw)*var(--c-gf)*-1);display:grid;gap:calc(var(--gw)*var(--c-gg))}
+.gSegni .fasciaC,.gSegno{display:grid;place-items:center;width:calc(var(--gw)*var(--c-gl));height:calc(var(--gw)*var(--c-gl));border-radius:50%;font:800 max(var(--c-np),calc(var(--gw)*var(--c-gl)*.64))/1 Montserrat,sans-serif;font-style:normal;box-shadow:0 0 0 max(1px,calc(var(--gw)*var(--c-bs))) #0B1530}
 .gSegni .fasciaC{background:linear-gradient(160deg,#FFE27A,#F5B90F);color:#0B1530}
 .gSegno{background:linear-gradient(160deg,#1B2C5E,#0B1530);color:#3FC6FF}
 .gSegno .ico{width:64%;height:64%}

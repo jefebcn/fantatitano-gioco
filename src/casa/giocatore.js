@@ -26,7 +26,7 @@ const MISURE = {
   sd: C.statistiche.da, sn: C.statistiche.numero, ss: C.statistiche.sigla, so: C.statistiche.opaco,
   kf: C.stretta.fascia, kn: C.stretta.nome, kl: C.stretta.ritratto.lato, ks: C.stretta.ritratto.sinistra, ka: C.stretta.ritratto.alto,
   pa: C.piccola.alta, pt: `${C.piccola.scritta}px`, pl: C.piccola.ritratto.lato, ps: C.piccola.ritratto.sinistra, pr: C.piccola.ritratto.alto, np: `${C.nome.punti}px`,
-  gl: C.segno.largo, gf: C.segno.fuori, zy: C.freccia.y, zl: C.freccia.larga,
+  gl: C.segno.largo, gf: C.segno.fuori, gg: C.segno.aria, zy: C.freccia.y, zl: C.freccia.larga,
 };
 document.head.insertAdjacentHTML('beforeend', `<style id="misureCarta">:root{${Object.entries(MISURE).map(([k, v]) => `--c-${k}:${v}`).join(';')}}`
   + Object.entries(C.rarita).map(([nome, r]) => `.f-${nome}{--c-su:${r.alto};--c-giu:${r.basso};--c-testo:${r.testo}}`).join('') + '</style>');
@@ -95,16 +95,17 @@ function entra(el) {
   el.style.setProperty('--gw', `${larga}px`); if (riquadro) riquadro.style.setProperty('--cw', `${larga}px`);
   el.classList.toggle('stretta', larga < C.stretta.sotto); el.classList.toggle('senzaRuolo', larga < C.stretta.ruoloDa);
 }
-// Il cognome nella fascia: se è più largo del posto il carattere si rimpicciolisce fino al minimo, poi le lettere si
-// stringono, e solo se non basta ancora il cognome viene accorciato coi puntini. Niente esce dalla carta.
+// Il cognome nella fascia non esce mai dalla carta e non viene mai tagliato: se è più largo del posto il carattere si
+// rimpicciolisce fino al minimo, poi le lettere si stringono, e se non basta ancora il carattere scende sotto il minimo
+// finché il cognome entra tutto.
 function sistemaNome(el) {
   const s = el.firstElementChild, W = parseFloat(getComputedStyle(el).getPropertyValue('--gw')); if (!s || !W || !el.clientWidth) return;
-  let testo = el.dataset.nome; s.textContent = testo; s.style.transform = ''; el.style.fontSize = '';
+  s.textContent = el.dataset.nome; s.style.transform = ''; el.style.fontSize = '';
   const posto = el.clientWidth - 2 * C.fascia.margine * W, min = Math.max(C.nome.punti, C.nome.minimo * W);
   let px = parseFloat(getComputedStyle(el).fontSize);
   while (s.offsetWidth > posto && px > min) { px = Math.max(min, px - .5); el.style.fontSize = `${px}px`; }
   if (s.offsetWidth <= posto) return;
-  while (s.offsetWidth * C.nome.stretto > posto && testo.length > 2) { testo = testo.slice(0, -1).trimEnd(); s.textContent = testo + '…'; }
+  while (s.offsetWidth * C.nome.stretto > posto && px > C.nome.fondo) { px = Math.max(C.nome.fondo, px - .25); el.style.fontSize = `${px}px`; }
   s.style.transform = `scaleX(${Math.min(1, posto / s.offsetWidth).toFixed(3)})`;
 }
 

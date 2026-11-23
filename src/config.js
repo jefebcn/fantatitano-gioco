@@ -444,30 +444,30 @@ export const RITRATTI = { cartella: 'img/ritratti-carte/', lato: { piccolo: 256,
 //   in basso. `testo`: il colore di valutazione e ruolo.
 // ritratto: il quadrato del ritratto. lato. sinistra: distanza dal bordo sinistro. alto: distanza dal bordo alto, che
 //   è negativa perché la testa esce sopra la carta, di 0,05 H. sporge: quanto spazio lasciare sopra la carta alla testa.
-//   La proposta diceva lato 1,05, sinistra 0,065 e alto −0,1425, ma così la maglia finiva prima della fascia del nome
-//   e si vedeva il taglio: con queste misure la cima e il centro della testa sono gli stessi e la maglia arriva alla
-//   fascia, con la testa larga 0,445 W invece di 0,42. ripiego: dove sta il ritratto vecchio, ripreso dal modello 3D,
-//   quando quello nuovo manca. È la distanza dal bordo sinistro e dal bordo alto, di H. Non esce dalla carta.
+//   Sono le misure esatte della guida: la testa è larga 0,42 W e la maglia finisce un po' sopra la fascia del nome,
+//   come nel disegno. ripiego: dove sta il ritratto vecchio, ripreso dal modello 3D, quando quello nuovo manca. È la
+//   distanza dal bordo sinistro e dal bordo alto, di H. Non esce dalla carta.
 // valutazione, ruolo: grandezza del carattere e centro: x in parti di W, y di H. Il ruolo fuori posto ha fondo `fuori`.
 // fascia: la fascia del nome. da: dove comincia, di H. alta: di H. Poi il colore. nome: grandezza del cognome.
 //   margine: lo spazio libero ai lati del cognome.
 // nome: un cognome lungo si rimpicciolisce fino a `minimo`, mai sotto `punti` punti sullo schermo, poi si stringe in
-//   larghezza fino a `stretto` volte, e solo dopo prende i puntini.
+//   larghezza fino a `stretto` volte. Se non basta ancora scende sotto il minimo, fino a `fondo` punti, finché entra
+//   tutto: niente puntini, il cognome non si taglia mai.
 // energia: la barretta sul bordo basso della fascia. lato: rientro ai lati. spessa. Poi i colori del pieno: alta, media
 //   sotto il 70%, bassa sotto il 40%. vuota: il colore del vuoto.
 // statistiche: la zona in fondo. da: dove comincia, di H. numero e sigla: grandezza dei caratteri. opaco: quanto è
 //   opaca la sigla. per: le tre statistiche di ogni reparto: P portieri, D difensori, C centrocampisti, A attaccanti.
 // stretta: la carta del campo e dei sostituti, quando è larga meno di `sotto` punti. Niente statistiche: la fascia
-//   comincia a `fascia`, di H, e arriva in fondo, e il cognome è grande `nome`. Il ritratto è più grande, per arrivare
-//   alla fascia, con la stessa cima e lo stesso centro della testa. ruoloDa: sotto questa larghezza il ruolo non si
-//   mostra.
+//   comincia a `fascia`, di H, e arriva in fondo, e il cognome è grande `nome`. Il ritratto ha le stesse misure della
+//   carta intera. ruoloDa: sotto questa larghezza il ruolo non si mostra.
 // piccola: la carta dei campi stretti della Sfida, col nome sotto e senza ruolo, che non ci sta. alta: H diviso W.
 //   scritta: i punti della valutazione, perché lì vale la regola dei 12 punti. ritratto: più grande, per arrivare in
 //   fondo alla carta, e un po' più a destra, per lasciare posto alla valutazione.
-// segno: la «C» del capitano e gli incarichi, tondi in alto a destra. largo: diametro. fuori: di quanto escono dal bordo.
+// segno: la «C» del capitano e gli incarichi, tondi nell'angolo in alto a destra, dentro la carta. largo: diametro, a cui si aggiunge il filo scuro intorno.
+//   fuori: di quanto escono dal bordo. aria: lo spazio tra uno e l'altro.
 // freccia: la freccia verde di chi è stato allenato, sotto il ruolo. y: il centro, di H. larga.
-// larga: quanto è larga la carta dove non lo decide il campo. scheda: in parti dell'altezza dello schermo, e il
-//   massimo in punti. mercato e
+// larga: quanto è larga la carta dove non lo decide il campo. scheda: in parti dell'altezza dello schermo, in parti
+//   della sua larghezza, e il massimo in punti: vale la più piccola delle tre. mercato e
 //   capitano: in punti. home: la più stretta e la più larga, tra cui prende quella che entra nel riquadro. accanto:
 //   quanti punti devono restare, di fianco, per titolo e testo perché la carta possa essere alta quanto tutto il
 //   riquadro. Se non restano, sta solo nella parte sotto il titolo.
@@ -479,18 +479,18 @@ export const CARTA = {
     argento: { da: 55, alto: '#DEE4EC', basso: '#828C9B', testo: '#282D37' },
     bronzo: { da: 0, alto: '#D69660', basso: '#824B28', testo: '#321C0C' },
   },
-  ritratto: { lato: 1.113, sinistra: .0335, alto: -.147, sporge: .2, ripiego: { sinistra: .24, alto: .05 } },
+  ritratto: { lato: 1.05, sinistra: .065, alto: -.1425, sporge: .2, ripiego: { sinistra: .24, alto: .05 } },
   valutazione: { misura: .24, x: .17, y: .12 },
   ruolo: { misura: .15, x: .17, y: .25, fuori: '#E0262D' },
   fascia: { da: .70, alta: .13, colore: 'rgba(15,25,55,.92)', nome: .11, margine: .05 },
-  nome: { minimo: .085, punti: 5, stretto: .8 },
+  nome: { minimo: .085, punti: 5, stretto: .72, fondo: 3 },
   energia: { lato: .1, spessa: .035, alta: '#50DC78', media: '#F2A93B', bassa: '#FF5A5A', vuota: '#060A17' },
   statistiche: { da: .83, numero: .12, sigla: .085, opaco: .8, per: { P: ['RIF', 'POS', 'PAS'], D: ['DIF', 'VEL', 'PAS'], C: ['PAS', 'CON', 'RES'], A: ['TIR', 'VEL', 'CON'] } },
-  stretta: { sotto: 64, fascia: .78, nome: .135, ritratto: { lato: 1.232, sinistra: -.026, alto: -.155 }, ruoloDa: 36 },
+  stretta: { sotto: 64, fascia: .78, nome: .135, ritratto: { lato: 1.05, sinistra: .065, alto: -.1425 }, ruoloDa: 36 },
   piccola: { alta: 1.19, scritta: 12, ritratto: { lato: 1.354, sinistra: -.047, alto: -.164 } },
-  segno: { largo: .27, fuori: .07 },
+  segno: { largo: .19, fuori: 0, aria: .04 },
   freccia: { y: .36, larga: .13 },
-  larga: { scheda: [.4, 200], mercato: 90, capitano: 54, home: [40, 96], accanto: 110 },
+  larga: { scheda: [.5, .24, 200], mercato: 100, capitano: 54, home: [40, 96], accanto: 110 },
 };
 // L'apertura di un premio (src/casa/premio.js). Tempi in millesimi, rotazioni in gradi.
 // breve (busta blu del giorno e delle sfide, busta argento del percorso premi) e lunga (busta oro di fine stagione)

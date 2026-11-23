@@ -25,7 +25,7 @@ function disegna() {
   const c = mioClub(), sc = DATI.scheda(x, c.id), energia = CAR.energiaDi(K, x[0]), titolare = G.dove === 'xi', capitano = (K.mio || {}).capitano === x[0];
   const cr = CAR.crescitaDi(K, x[0]), quanti = adatti(x).reduce((n, a) => n + a.quanti, 0);
   foglio.innerHTML = `<button class="chiudi" data-az="chiudi" aria-label="${t('finestra.chiudi')}">${icona('chiudi')}</button>`
-    + `<div class="sgCarta">${cartaGiocatore(sc, { club: c.id, larga: Math.round(Math.min(innerHeight * CARTA.larga.scheda[0], CARTA.larga.scheda[1])), energia, capitano, migliorato: sc.val > sc.base, ferma: true })}</div>`
+    + `<div class="sgCarta">${cartaGiocatore(sc, { club: c.id, larga: Math.round(Math.min(innerHeight * CARTA.larga.scheda[0], innerWidth * CARTA.larga.scheda[1], CARTA.larga.scheda[2])), energia, capitano, migliorato: sc.val > sc.base, ferma: true })}</div>`
     + `<div class="sgDati"><h3 data-adatta>${esc(x[0])}</h3>`
     + `<div class="sgStat">${sc.stat.map(([k, v]) => `<span><i>${t('stat.' + k)}</i><b class="s-${coloreStat(v)}">${v}</b></span>`).join('')}</div>`
     + `<div class="sgInfo"><span><i>${t('scheda.altezza')}</i><b>${sc.altezza} cm</b></span><span><i>${t('scheda.piede')}</i><b>${t(sc.piede === 'S' ? 'scheda.sinistro' : 'scheda.destro')}</b></span>`
