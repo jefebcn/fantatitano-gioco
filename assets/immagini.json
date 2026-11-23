@@ -9,6 +9,7 @@
     { "nome": "carta-percorso", "w": 1800, "h": 510, "alfa": false, "priorita": "A" },
     { "nome": "carta-amichevole", "w": 900, "h": 510, "alfa": false, "priorita": "A" },
     { "nome": "sfondo-sfida", "w": 2796, "h": 1290, "alfa": false, "priorita": "B" },
+    { "nome": "sfondo-squadra", "w": 2796, "h": 1290, "alfa": false, "priorita": "B" },
     { "nome": "tre-torri", "w": 1800, "h": 900, "alfa": true, "priorita": "B" },
     { "nome": "stadio-alto", "w": 1800, "h": 1200, "alfa": false, "priorita": "B" },
     { "nome": "struttura-allenamento", "w": 600, "h": 600, "alfa": false, "priorita": "B" },
