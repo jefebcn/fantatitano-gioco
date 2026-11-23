@@ -125,7 +125,10 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   League non li sappiamo: chiesto ad Alex se li vuole più forti o più lenti. Non si tocca finché non risponde.
 - 9 FATTO: il prato ha solo strisce dritte, uguali su tutto il campo; tolti gli anelli attorno al centrocampo e gli
   scacchi nel cerchio (`src/grafica/campo.js`, `PRATO` in `src/config.js`).
-- Restano: 7 luci, 8 ombre, 10 cartelloni, 11 telecamera vicino alla linea, 12 nomi sovrapposti, 13 tasto A in difesa (chiedere),
+- 7 FATTO: l'alone biancastro e i cunei chiari erano i fasci di luce dei fari, disegnati fino a terra: la telecamera ci
+  guardava attraverso. Ora si spengono in aria vicino al tetto e sono più leggeri; un po' più di luce diffusa sui
+  giocatori (`NOTTURNA` in `src/config.js`, `src/grafica/luce.js`).
+- Restano: 8 ombre, 10 cartelloni, 11 telecamera vicino alla linea, 12 nomi sovrapposti, 13 tasto A in difesa (chiedere),
   14 maglie simili, 15 animazioni (video rallentato dei 5 gesti).
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
