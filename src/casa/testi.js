@@ -185,6 +185,12 @@ const IT = {
   'club.personalizza': 'Personalizza',
   'club.allenamento': 'Allenatori',
   'mercato.vuoto': 'Rinforza la squadra',
+  'allenamento.titolo': 'Allenamento', 'allenamento.nota': 'Cinque modi per provare i comandi senza giocare una partita vera. Non danno monete e non stancano i giocatori.',
+  'allenamento.tutorial': 'Tutorial', 'allenamento.tutorial.testo': 'I comandi, un passo alla volta',
+  'allenamento.libero': 'Allenamento libero', 'allenamento.libero.testo': 'In campo senza avversari',
+  'allenamento.rigori': 'Rigori', 'allenamento.rigori.testo': 'Tira e para dal dischetto',
+  'allenamento.punizioni': 'Calci di punizione', 'allenamento.punizioni.testo': 'Barriera e tiro da fermo',
+  'allenamento.angoli': 'Calci d\'angolo', 'allenamento.angoli.testo': 'Cross dalla bandierina',
   // ingresso
   'capitano.titolo': 'Ingaggia il tuo capitano',
   'capitano.tocca': 'Tocca un giocatore per sceglierlo',

@@ -191,7 +191,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 |---|---|
 | Benvenuto, Crea il club, Ingaggia il capitano | fatti: logo senza scritta, scala nuova, nove candidati con ruoli diversi, pulsante fuori dalle carte. Le carte a scudo ci sono nella Sfida; qui arrivano con la Squadra |
 | Barra in alto e navigazione a livelli | fatte: uguali in tutte le schermate, Indietro torna da dove si era arrivati |
-| Home (8 carte) | fatta, coi dati veri; illustrazioni ancora segnaposto |
+| Home (8 carte) | fatta, coi dati veri e con le illustrazioni definitive (sfondo e quattro carte) |
 | Carriera | fatta: prossima partita, classifica a cinque righe, le due coppe, scorciatoie; stagione nuova con finestra di conferma |
 | Classifica completa, Trofeo dei Castelli, Coppa Titano | esistono |
 | Sfida | fatta: due campi con le carte, competizione e tempo al centro, Squadra, Riscaldamento, Gioca; dopo la partita una finestra dice risultato e premio |
@@ -202,5 +202,5 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Mercato | esiste a scambio, da rifare |
 | Il mio club, Stadio e strutture | esiste con stadio e allenatore, da rifare con le 6 strutture |
 | Personalizza, Negozio | esistono, da risistemare (anteprima grande, testi chiari) |
-| Allenamento (5 modi) | da fare (serve la partita) |
+| Allenamento (5 modi) | la schermata c'è (da Il mio club), con le cinque carte illustrate; tutti i modi «In arrivo» finché la partita non sa farli partire (`SA_FARE` in docs/ponte-partita.md §5) |
 | Impostazioni, Info, Come guadagnare, Profilo | esistono |

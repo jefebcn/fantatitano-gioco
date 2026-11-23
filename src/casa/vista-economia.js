@@ -4,10 +4,15 @@
 import * as CAR from '../carriera.js';
 import { ECONOMIA, DIVISIONI, FORMS } from '../config.js';
 import { K, DATI, club, pan, mini, mon, esc, fmtTempo, salvaK, applicaMio, borsaHtml, premioTesto } from './casa.js';
+import { figura, stileFondo } from './immagini.js';
+import { icona } from './icone.js';
+import { t } from './testi.js';
 
 const stelline = (n) => `<div class="liv">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`;
 const costoTesto = (c) => premioTesto(c.monete, c.gemme);
 const NOMI_STRUTTURE = { centro: 'Centro allenamento', infermeria: 'Infermeria', foresteria: 'Foresteria', commerciale: 'Ufficio commerciale', osservatori: 'Osservatori', curva: 'Curva dei tifosi', stadio: 'Stadio' };
+// l'illustrazione di ogni struttura; lo Stadio ha la sua, grande, in cima
+const FIGURE_STRUTTURE = { centro: 'struttura-allenamento', infermeria: 'struttura-infermeria', foresteria: 'struttura-foresteria', commerciale: 'struttura-ufficio', osservatori: 'struttura-osservatori', curva: 'struttura-curva' };
 const NOMI_RARITA = { comune: 'comuni', raro: 'rari', leggendario: 'leggendari' }, UNA_RARITA = { comune: 'comune', raro: 'raro', leggendario: 'leggendario' };
 const NOMI_CATEGORIE = { tecnico: ['Tecnico', 'controllo, passaggio, tiro'], fisico: ['Fisico', 'velocità, accelerazione, resistenza, potenza'], difesa: ['Difesa', 'contrasto e posizione'], portieri: ['Portieri', 'tutte le doti del portiere'] };
 const NOMI_REPARTI = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' }, NOMI_FASCE = { bassa: 'Fascia bassa', media: 'Fascia media', alta: 'Fascia alta' };
@@ -28,14 +33,18 @@ let cTab = 'strutture';
 export function panClubMio(tab, msg) {
   if (['strutture', 'allenatori', 'finanze'].includes(tab)) cTab = tab;
   const me = club(K.club), voci = [['strutture', 'Strutture'], ['allenatori', `Allenatori (${CAR.quantiAllenatori(K)})`], ['finanze', 'Finanze']];
-  const tabs = `<div class="seg">${voci.map(([k, n]) => `<button data-ctab="${k}" class="${k === cTab ? 'on' : ''}">${n}</button>`).join('')}<button data-ntab="stemma">Negozio</button><button data-club="personalizza">Personalizza</button><button data-club="amichevole">Amichevole</button></div>`;
+  const tabs = `<div class="seg">${voci.map(([k, n]) => `<button data-ctab="${k}" class="${k === cTab ? 'on' : ''}">${n}</button>`).join('')}<button data-ntab="stemma">Negozio</button><button data-club="personalizza">Personalizza</button><button data-club="allenamento">${t('allenamento.titolo')}</button><button data-club="amichevole">Amichevole</button></div>`;
   let corpo;
   if (cTab === 'strutture') {
-    corpo = CAR.STRUTTURE.map((q) => {
+    // una struttura: le stelle, il nome, cosa dà adesso e il pulsante per farla crescere
+    const testo = (q) => {
       const n = CAR.stelle(K, q), c = CAR.costoStruttura(K, q);
-      return `<div class="stadio">${stelline(n)}<b>${NOMI_STRUTTURE[q]} · ${n} ${n === 1 ? 'stella' : 'stelle'} su 5</b><span>Adesso: ${effetto(q, n)}</span>`
-        + (c ? `<button data-struttura="${q}" class="${K.monete < c.monete || K.gemme < c.gemme ? 'no' : ''}">Una stella in più (${effetto(q, n + 1)}) · ${costoTesto(c)}</button>` : '<em>Al massimo</em>') + '</div>';
-    }).join('');
+      return `<span class="sTesto">${stelline(n)}<b>${NOMI_STRUTTURE[q]} · ${n} ${n === 1 ? 'stella' : 'stelle'} su 5</b><span>Adesso: ${effetto(q, n)}</span>`
+        + (c ? `<button data-struttura="${q}" class="${K.monete < c.monete || K.gemme < c.gemme ? 'no' : ''}">Una stella in più (${effetto(q, n + 1)}) · ${costoTesto(c)}</button>` : '<em>Al massimo</em>') + '</span>';
+    };
+    // in cima lo Stadio, con la sua veduta dall'alto di fondo; sotto le altre sei, ognuna col suo disegno
+    corpo = `<div class="strutt stadioAlto"${stileFondo('stadio-alto')}>${testo('stadio')}</div><div class="strutture">`
+      + CAR.STRUTTURE.filter((q) => q !== 'stadio').map((q) => `<div class="strutt">${figura(FIGURE_STRUTTURE[q], 'sFig', 96)}${testo(q)}</div>`).join('') + '</div>';
   } else if (cTab === 'allenatori') {
     const A = ECONOMIA.allenatori.rarita, quanti = (r, c) => ((K.allenatori || {})[r] || {})[c] || 0;
     corpo = '<p class="nota2">Un allenatore si usa su un giocatore: alza le statistiche della sua categoria (comune +1, raro +2, leggendario +3) e con loro la valutazione, fino a 10 punti in più per giocatore. Per usarlo: Squadra, tieni premuto su un giocatore, Allena.</p><div class="lista">'
@@ -69,9 +78,21 @@ export function panMercato(msg) {
     : `<p class="nota2">Per monete trova un giocatore della ${D.nome} nella fascia che scegli, con lo sconto del ${Math.round(ECONOMIA.mercato.osservatore.sconto * 100)}%.</p>${reparti}<div class="seg">${CAR.FASCE.map((f) => `<button data-osserva="${f}" class="${K.monete < CAR.costoOsservatore(K, f) ? 'no' : ''}">${NOMI_FASCE[f]} · ● ${mon(CAR.costoOsservatore(K, f))}</button>`).join('')}</div>`;
   const agente = M.agente ? trovato(M.agente, 'agente')
     : `<p class="nota2">Per un contatto e monete trova un giocatore ${K.div === 1 ? 'tra i migliori del Campionato Sammarinese' : `della divisione sopra (${sopra.nome})`}, a prezzo pieno. Contatti: ${K.contatti || 0}.</p>${reparti}<div class="seg"><button data-agente="1" class="${!(K.contatti > 0) || K.monete < CAR.costoAgente(K) ? 'no' : ''}">Chiama l'agente · 1 contatto e ● ${mon(CAR.costoAgente(K))}</button><button data-contatto="1" class="${K.gemme < ECONOMIA.mercato.agente.diamanti ? 'no' : ''}">Compra un contatto · ◆ ${ECONOMIA.mercato.agente.diamanti}</button></div>`;
-  pan('Mercato', `${testa}<div class="sez">Offerte a tempo · ancora ${fmtTempo(scade - ora)}</div><div class="lista">${offerte}</div>`
-    + `<div class="sez">Lista trasferimenti · ${D.nome}</div><div class="lista">${lista}</div><div class="seg"><button data-rinnova="1" class="${K.gemme < ECONOMIA.mercato.lista.rinnovo ? 'no' : ''}">Cambia subito la lista · ◆ ${ECONOMIA.mercato.lista.rinnovo}</button></div><p class="nota2">La lista cambia da sola dopo ogni partita.</p>`
+  // i due striscioni: il titolo e una riga sotto, a sinistra, sopra l'illustrazione
+  const striscione = (figuraS, titolo, sotto) => `<div class="striscione">${figura(figuraS, 'stFig', 300)}<b>${titolo}</b><i>${sotto}</i></div>`;
+  pan('Mercato', `${testa}${striscione('evento-occasioni', 'Offerte a tempo', `${icona('orologio')} ancora ${fmtTempo(scade - ora)}`)}<div class="lista">${offerte}</div>`
+    + `${striscione('evento-scelte', 'Lista trasferimenti', D.nome)}<div class="lista">${lista}</div><div class="seg"><button data-rinnova="1" class="${K.gemme < ECONOMIA.mercato.lista.rinnovo ? 'no' : ''}">Cambia subito la lista · ◆ ${ECONOMIA.mercato.lista.rinnovo}</button></div><p class="nota2">La lista cambia da sola dopo ogni partita.</p>`
     + `<div class="sez">Osservatore</div>${osservatore}<div class="sez">Agente</div>${agente}`);
+}
+// i cinque modi di allenamento, nell'ordine della schermata: nome dell'illustrazione e chiave dei testi
+const MODI_ALLENAMENTO = ['tutorial', 'libero', 'rigori', 'punizioni', 'angoli'];
+/**
+ * Allenamento (da Il mio club): cinque carte, una per modo. Per ora sono tutte «In arrivo»: si accendono quando la
+ * partita sa farle partire (docs/ponte-partita.md, §5).
+ */
+export function panAllenamento() {
+  pan(t('allenamento.titolo'), `<p class="nota2">${t('allenamento.nota')}</p><div class="allenamenti">`
+    + MODI_ALLENAMENTO.map((m) => `<button class="modoA" data-az="inArrivo">${figura('allenamento-' + m, 'mFig', 150)}<b>${t('allenamento.' + m)}</b><i>${t('allenamento.' + m + '.testo')}</i><em>${icona('lucchetto')}${t('inArrivo')}</em></button>`).join('') + '</div>');
 }
 /** Il giocatore della lista trasferimenti da mostrare nella Home: il più forte che ci si può permettere, o il meno caro. */
 export function consigliato() {

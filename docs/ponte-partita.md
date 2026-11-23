@@ -345,3 +345,12 @@ fanno riprendere da dov'era. Effetti, pubblico, fischietto, `AU.toggle()`, `AU.v
 sono com'erano. La musica non usa numeri casuali. `src/game.js` non è stato toccato. Toccati due file comuni:
 `src/sw.js` (le richieste alla cartella `audio/` non passano dal service worker) e il controllo automatico (un passo in
 più: `node scripts/prove/musica.cjs`).
+
+## Dalla home, 23/11: la schermata Allenamento aspetta la partita
+
+Da Il mio club ora si apre **Allenamento**: cinque carte (Tutorial, Allenamento libero, Rigori, Calci di punizione,
+Calci d'angolo), ognuna con la sua illustrazione. Sono tutte «In arrivo», anche i Rigori: in `src/game.js` non c'è
+ancora `SA_FARE` (§5) né un modo per far partire una richiesta con `tipo: 'allenamento'`. Quando la partita espone
+`SA_FARE.allenamenti`, la home accende le carte dei modi che trova lì e le fa partire con `ponte.avviaPartita` e
+`allenamento: { modo }`; a fine allenamento si torna alla schermata Allenamento, senza premi e senza toccare l'energia
+(§6, punto 5). Nessun file della partita è stato toccato.

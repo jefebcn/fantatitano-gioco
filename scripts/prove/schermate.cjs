@@ -78,12 +78,18 @@ srv.listen(0, async () => {
     await pg.goto(`http://localhost:${srv.address().port}/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
     await pg.waitForFunction(() => window.__g && !document.querySelector('#carica'), null, { timeout: 90000 });
     await pg.addStyleTag({ content: 'canvas#c{visibility:hidden}*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}#avviso{display:none!important}' });
+    // le illustrazioni si caricano tutte prima di cominciare: così nelle foto gli sfondi ci sono sempre, a ogni giro
+    const illustrazioni = fs.readdirSync(path.join(root, 'img', 'illustrazioni')).filter((f) => f.endsWith('.webp'));
+    await pg.evaluate((elenco) => Promise.all(elenco.map((f) => new Promise((fatto) => { const i = new Image(); i.onload = i.onerror = fatto; i.src = 'img/illustrazioni/' + f; }))), illustrazioni);
     let n = 0; const testi = {};
     const dove = () => pg.evaluate(() => { const s = [...document.querySelectorAll('.scr')].find((e) => !e.classList.contains('nas')); return s ? s.id : 'nessuna'; });
     const foto = async (nome) => {
       await pg.waitForFunction(() => !document.querySelector('.scr:not(.nas) img[data-ritr]:not([src])'), null, { timeout: 60000, polling: 100 });
       // le illustrazioni del premio aperto devono essere arrivate: una che manca è un errore
       if (await pg.$('#premio:not(.nas)')) { await pg.waitForFunction(() => [...document.querySelectorAll('#premio img')].every((i) => i.complete), null, { timeout: 20000, polling: 100 }); const rotte = await pg.evaluate(() => [...document.querySelectorAll('#premio img')].filter((i) => !i.naturalWidth).map((i) => i.getAttribute('src'))); if (rotte.length) errori.push(`${w}: nel premio mancano le immagini ${rotte.join(', ')}`); }
+      // lo stesso per le illustrazioni della schermata: devono essere arrivate, e una che manca è un errore
+      await pg.waitForFunction(() => [...document.querySelectorAll('.scr:not(.nas) img[src*="img/illustrazioni/"]')].every((i) => i.complete), null, { timeout: 20000, polling: 100 });
+      const mancano = await pg.evaluate(() => [...document.querySelectorAll('.scr:not(.nas) img[src*="img/illustrazioni/"]')].filter((i) => !i.naturalWidth).map((i) => i.getAttribute('src'))); if (mancano.length) errori.push(`${w}: in ${nome} mancano le immagini ${mancano.join(', ')}`);
       await pg.waitForTimeout(350); const f = `${String(++n).padStart(2, '0')}-${nome}`; await pg.screenshot({ path: path.join(OUT, `${w}-${f}.png`) });
       testi[f] = await pg.evaluate(() => { const pulisci = (t) => t.replace(/src="(data|blob):[^"]+"/g, 'src="$1"').replace(/url\(&quot;data:[^)]*\)/g, 'url(data)'), s = [...document.querySelectorAll('.scr')].find((e) => !e.classList.contains('nas')), b = document.querySelector('#barraF'); return (s ? s.id + '|' + pulisci(s.innerHTML) : 'nessuna') + (b && !b.classList.contains('nas') ? '|barra|' + pulisci(b.innerHTML) : ''); });
       for (const g of await pg.evaluate(qualita, RIFATTE)) regole.push(`${w} ${f}: ${g}`);
@@ -219,6 +225,10 @@ srv.listen(0, async () => {
     for (const g of ['d', 'w', 's', 'c']) { await tocca(`[data-stab="${g}"]`); if (await pg.$('[data-riscuoti]')) { daRiscuotere = true; break; } }
     if (!daRiscuotere) errori.push(`${w}: nessuna sfida da riscuotere per provare il premio`);
     else if (await tocca('[data-riscuoti]')) { await foto('premio-sfida'); const sfida = await pg.evaluate(() => { const p = document.querySelector('#premio'); return { aperta: p.classList.contains('aperto'), blu: !!p.querySelector('.pBusta img[src*="busta-giorno"]'), punti: !!p.querySelector('#prL img[src*="icona-punti-percorso"]') }; }); if (!sfida.aperta || !sfida.blu || !sfida.punti) errori.push(`${w}: il premio di una sfida ${JSON.stringify(sfida)}`); await tocca('#prOk'); }
+    await tocca('#bCasa');
+    // Allenamento, da Il mio club: cinque carte con la loro illustrazione, per ora tutte «In arrivo»
+    await tocca('#casa .c-club');
+    if (await tocca('#panC [data-club="allenamento"]')) { await foto('allenamento'); const modi = await pg.$$eval('#panC .modoA img', (l) => l.filter((i) => i.naturalWidth > 0).length); if (modi !== 5) errori.push(`${w}: in Allenamento ${modi} illustrazioni su 5`); await tocca('#bCasa'); }
     await tocca('#bCasa');
     fs.writeFileSync(path.join(OUT, `${w}-testi.json`), JSON.stringify(testi, null, 1));
     console.log(`${w}×${h}: ${n} foto; partita ${JSON.stringify(stato)} → ${JSON.stringify(fine)}`);

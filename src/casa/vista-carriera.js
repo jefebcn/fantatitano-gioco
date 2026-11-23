@@ -5,7 +5,7 @@ import * as CAR from '../carriera.js';
 import { img } from '../game.js';
 import { K, salvaK, esc, club, applicaMio } from './casa.js';
 import { DIVISIONI } from '../config.js';
-import { ILLUSTRAZIONI } from './illustrazioni.js';
+import { pronta, figura } from './immagini.js';
 import { icona, stelline } from './icone.js';
 import { carta, adatta, attrNome } from './carte.js';
 import { nomiDi } from '../dati/squadre.js';
@@ -35,7 +35,7 @@ radice.addEventListener('click', (e) => { const b = e.target.closest('[data-vai]
 function nuovaStagione() {
   const aperte = CAR.coppaProssima(K) || CAR.castelliProssima(K), e = CAR.esitoStagione(K, CLUBS), nome = (div) => DIVISIONI[div - 1].nome;
   const come = e.sale ? t('stagione.sale', nome(e.div)) : e.scende ? t('stagione.scende', nome(e.div)) : K.div === 1 ? t('stagione.restaCima') : t('stagione.resta', e.fatti, e.servono);
-  finestra({ titolo: t('stagione.titolo', K.stagione + 1), testo: come + (aperte ? t('stagione.coppeAperte') : ''), si: t('stagione.si'), fatto: () => {
+  finestra({ titolo: t('stagione.titolo', K.stagione + 1), decoro: 'tre-torri', testo: come + (aperte ? t('stagione.coppeAperte') : ''), si: t('stagione.si'), fatto: () => {
     const r = CAR.nuovaStagione(K, CLUBS); applicaMio(); salvaK(); ridisegna();
     apriPremio({ titolo: t('stagione.premiTitolo'), premi: premiDa({ gemme: r.premi.gemme, allenatori: r.premi.leggendari, rarita: 'leggendario', contatti: r.premi.contatti }), busta: 'stagione' });
   } });
@@ -46,7 +46,8 @@ const avversario = (id) => { const c = club(id); return `<img class="stemma" src
 // la posizione in classifica: una medaglia (oro, argento, bronzo) per i primi tre, il numero per gli altri
 const posto = (n) => `<i class="pos${n <= 3 ? ' med m' + n : ''}">${n}</i>`;
 const dr = (n) => (n > 0 ? `+${n}` : String(n).replace('-', '−'));
-const trofeo = (nome, ico) => (ILLUSTRAZIONI[nome] ? `<img class="trofeo" src="img/illustrazioni/${nome}@2x.webp" alt="">` : icona(ico, 'trofeo'));
+// il trofeo di una competizione: l'illustrazione, o la sua icona finché manca
+const trofeo = (nome, ico) => figura(nome, 'trofeo', 56) || icona(ico, 'trofeo');
 
 /** Disegna la Carriera coi dati del momento. */
 export function disegnaCarriera() {
@@ -57,14 +58,14 @@ export function disegnaCarriera() {
   // prossima partita di campionato, o la stagione nuova quando il campionato è finito
   const prossima = p
     ? carta({ rotta: 'prossima', titolo: t('carriera.gioca'), nota: t('carriera.campionatoNome'), colore: 'oro', sfondo: 'carta-carriera', classe: 'k-prossima',
-      corpo: `${avversario(p.avv)}<span class="quando"><b>${t('carriera.partita', p.giornata, p.totale)}</b><i>${icona(p.inCasa ? 'home' : 'avanti')} ${t(p.inCasa ? 'carriera.inCasa' : 'carriera.inTrasferta')}</i></span>`,
+      corpo: `${avversario(p.avv)}<span class="quando"><b>${t('carriera.partita', p.giornata, p.totale)}</b><i>${icona(p.inCasa ? 'home' : 'avanti')} ${t(p.inCasa ? 'carriera.inCasa' : 'carriera.inTrasferta')}</i></span>${trofeo('trofeo-campionato', 'campionato')}`,
       piede: `<i data-adatta>${obiettiviT}</i>` })
-    : carta({ rotta: 'prossima', titolo: t('carriera.nuova'), nota: t('carriera.campionatoNome'), colore: 'oro', classe: 'k-prossima',
+    : carta({ rotta: 'prossima', titolo: t('carriera.nuova'), nota: t('carriera.campionatoNome'), colore: 'oro', sfondo: 'tre-torri', classe: 'k-prossima k-fine',
       corpo: `${avversario(K.campione || tab[0].id)}<span class="quando"><b>${t('carriera.campione')}</b><i>${t('carriera.tuoPosto', io + 1)}</i></span>`,
       piede: `<i data-adatta>${t('carriera.nuovaStagione')}</i>` });
   // classifica: cinque righe attorno alla nostra, che è evidenziata
   const righe = 5, da = Math.max(0, Math.min(io - 2, tab.length - righe));
-  const classifica = carta({ rotta: 'classifica', titolo: t('carriera.classifica'), nota: t('carriera.stagione', K.stagione), colore: 'azzurra', classe: 'k-classifica',
+  const classifica = carta({ rotta: 'classifica', titolo: t('carriera.classifica'), nota: figura('trofeo-campionato', 'trofeino', 20) + t('carriera.stagione', K.stagione), colore: 'azzurra', classe: 'k-classifica',
     corpo: `<span class="tabella"><span class="rigaC capo"><i>${t('classifica.pos')}</i><i></i><i>${t('classifica.squadra')}</i><i>${t('classifica.dr')}</i><i>${t('classifica.pt')}</i></span>`
       + tab.slice(da, da + righe).map((r, i) => { const c = club(r.id); return `<span class="rigaC${r.id === K.club ? ' io' : ''}">${posto(da + i + 1)}<img src="${img(r.id + '-mini')}" alt=""><b ${attrNome(nomiDi(c))}>${esc(c.name)}</b><i>${dr(r.gf - r.gs)}</i><em>${r.pt}</em></span>`; }).join('') + '</span>' });
   // le due coppe: la prossima partita, oppure come è finita
@@ -81,7 +82,7 @@ export function disegnaCarriera() {
     () => ({ id: k.campione || K.club, titolo: t(k.vinta ? 'carriera.vinta' : 'carriera.finita'), testo: k.vinta ? t('carriera.tua') : t('carriera.fuoriA', CAR.TURNI[k.fuori].toLowerCase()) }));
   // scorciatoie, col bollino dove c'è qualcosa da ritirare o da migliorare
   const scorciatoia = (rotta, ico, bollino) => `<button class="scorc" data-vai="${rotta}">${icona(ico)}<b>${t('home.' + rotta)}</b>${bollino ? '<em class="bollino">!</em>' : ''}</button>`;
-  radice.classList.toggle('illustrata', !!ILLUSTRAZIONI['sfondo-home']);
+  radice.classList.toggle('illustrata', pronta('sfondo-home'));
   radice.innerHTML = prossima + classifica + castelli + coppa
     + `<span class="scorciatoie">${scorciatoia('sfide', 'sfide', st.daRiscuotere > 0)}${scorciatoia('squadra', 'squadra', note.some((n) => n.vai === 'squadra'))}${scorciatoia('mercato', 'mercato', false)}${scorciatoia('club', 'club', note.some((n) => n.vai === 'club'))}</span>`;
   adatta(radice);

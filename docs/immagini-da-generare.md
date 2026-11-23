@@ -32,8 +32,10 @@ Frase da aggiungere **in fondo a ogni prompt** (stile comune):
 ## 2. Elenco
 
 Priorità: **A** serve alla home, **B** alle sezioni, **C** facoltativa (senza, resta un fondo pulito). Misure in pixel.
-Stato, oggi: **definitive** le dodici dell'apertura premi (27–38, arrivate il 23/11 in `assets/arrivo/premi/`), e con
-loro la 19 e la 20, che usano `icona-monete` e `icona-diamanti`; tutte le altre **segnaposto**.
+Stato, oggi: **tutte e 38 definitive**. Le dodici dell'apertura premi (27–38) sono arrivate il 23/11 in
+`assets/arrivo/premi/`; le altre ventiquattro (1–18 e 21–26) lo stesso giorno in `assets/arrivo/menu/`; la 19 e la 20
+usano `icona-monete` e `icona-diamanti`. Dove si vede ognuna nel gioco è scritto in `docs/stato-lavori.md`
+(«Illustrazioni nelle schermate»).
 
 | # | File | Dove si usa | Misure | Formato | Pr. |
 |---|---|---|---|---|---|
