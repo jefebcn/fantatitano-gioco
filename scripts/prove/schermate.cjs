@@ -26,7 +26,9 @@ function qualita(radici) {
     for (const e of [radice, ...radice.querySelectorAll('*')]) {
       if (!vista(e) || e.closest('svg')) continue;
       const r = e.getBoundingClientRect(), st = getComputedStyle(e);
-      if (r.right > W + .5 || r.bottom > H + .5 || r.left < -.5 || r.top < -.5) guai.push(`fuori dallo schermo: ${dice(e)}`);
+      // un decoro (luci e raggi dietro la scena: vuoto, non si tocca, nascosto a chi legge lo schermo) può uscire dai bordi
+      const decoro = e.getAttribute('aria-hidden') === 'true' && st.pointerEvents === 'none' && !e.textContent.trim();
+      if (!decoro && (r.right > W + .5 || r.bottom > H + .5 || r.left < -.5 || r.top < -.5)) guai.push(`fuori dallo schermo: ${dice(e)}`);
       const testo = [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
       // dentro la carta grande del giocatore le scritte seguono le proporzioni della carta (docs/carte-giocatori.md): è la
       // sola eccezione ai 12 px, e anche lì non si scende sotto i 5
@@ -80,6 +82,8 @@ srv.listen(0, async () => {
     const dove = () => pg.evaluate(() => { const s = [...document.querySelectorAll('.scr')].find((e) => !e.classList.contains('nas')); return s ? s.id : 'nessuna'; });
     const foto = async (nome) => {
       await pg.waitForFunction(() => !document.querySelector('.scr:not(.nas) img[data-ritr]:not([src])'), null, { timeout: 60000, polling: 100 });
+      // le illustrazioni del premio aperto devono essere arrivate: una che manca è un errore
+      if (await pg.$('#premio:not(.nas)')) { await pg.waitForFunction(() => [...document.querySelectorAll('#premio img')].every((i) => i.complete), null, { timeout: 20000, polling: 100 }); const rotte = await pg.evaluate(() => [...document.querySelectorAll('#premio img')].filter((i) => !i.naturalWidth).map((i) => i.getAttribute('src'))); if (rotte.length) errori.push(`${w}: nel premio mancano le immagini ${rotte.join(', ')}`); }
       await pg.waitForTimeout(350); const f = `${String(++n).padStart(2, '0')}-${nome}`; await pg.screenshot({ path: path.join(OUT, `${w}-${f}.png`) });
       testi[f] = await pg.evaluate(() => { const pulisci = (t) => t.replace(/src="(data|blob):[^"]+"/g, 'src="$1"').replace(/url\(&quot;data:[^)]*\)/g, 'url(data)'), s = [...document.querySelectorAll('.scr')].find((e) => !e.classList.contains('nas')), b = document.querySelector('#barraF'); return (s ? s.id + '|' + pulisci(s.innerHTML) : 'nessuna') + (b && !b.classList.contains('nas') ? '|barra|' + pulisci(b.innerHTML) : ''); });
       for (const g of await pg.evaluate(qualita, RIFATTE)) regole.push(`${w} ${f}: ${g}`);
@@ -203,12 +207,19 @@ srv.listen(0, async () => {
     // l'apertura di un premio col movimento vero: un livello del percorso da ritirare. Appena partita la busta è ancora
     // chiusa; un tocco la salta e si vede il premio; «Continua» chiude
     await pg.evaluate(() => { window.__fermo = false; const g = window.__g, K = g.carriera(); g.CAR.puntiPercorso(K, 'vinta', 4); g.salvaK(); });
-    await tocca('#barraF [data-vai="percorso"]'); await tocca('#panC [data-ritira]'); await pg.waitForTimeout(120);
-    const busta = await pg.evaluate(() => { const p = document.querySelector('#premio'); return { aperta: !p.classList.contains('nas'), premio: p.classList.contains('aperto'), animazioni: p.querySelector('.pBusta').getAnimations().length }; });
-    if (!busta.aperta || busta.premio || !busta.animazioni) errori.push(`${w}: l'apertura del premio non parte col movimento ${JSON.stringify(busta)}`);
+    await tocca('#barraF [data-vai="percorso"]'); await tocca('#panC [data-ritira]');
+    await pg.waitForFunction(() => document.querySelector('#premio .pBusta').getAnimations().length, null, { timeout: 5000, polling: 20 }).catch(() => {});
+    const busta = await pg.evaluate(() => { const p = document.querySelector('#premio'); return { aperta: !p.classList.contains('nas'), premio: p.classList.contains('aperto'), animazioni: p.querySelector('.pBusta').getAnimations().length, argento: !!p.querySelector('.pBusta img[src*="busta-percorso"]') }; });
+    if (!busta.aperta || busta.premio || !busta.animazioni || !busta.argento) errori.push(`${w}: l'apertura del premio non parte col movimento ${JSON.stringify(busta)}`);
     await tocca('#premio'); if (!(await pg.evaluate(() => document.querySelector('#premio').classList.contains('aperto')))) errori.push(`${w}: un tocco non salta l'apertura del premio`);
     await tocca('#prOk'); if (!(await pg.evaluate(() => document.querySelector('#premio').classList.contains('nas')))) errori.push(`${w}: «Continua» non chiude il premio`);
     await pg.evaluate(() => { window.__fermo = true; }); await tocca('#bCasa');
+    // una sfida riscossa: busta blu, e tra i premi ci sono i punti del percorso premi
+    await tocca('#casa .c-sfide'); let daRiscuotere = false;
+    for (const g of ['d', 'w', 's', 'c']) { await tocca(`[data-stab="${g}"]`); if (await pg.$('[data-riscuoti]')) { daRiscuotere = true; break; } }
+    if (!daRiscuotere) errori.push(`${w}: nessuna sfida da riscuotere per provare il premio`);
+    else if (await tocca('[data-riscuoti]')) { await foto('premio-sfida'); const sfida = await pg.evaluate(() => { const p = document.querySelector('#premio'); return { aperta: p.classList.contains('aperto'), blu: !!p.querySelector('.pBusta img[src*="busta-giorno"]'), punti: !!p.querySelector('#prL img[src*="icona-punti-percorso"]') }; }); if (!sfida.aperta || !sfida.blu || !sfida.punti) errori.push(`${w}: il premio di una sfida ${JSON.stringify(sfida)}`); await tocca('#prOk'); }
+    await tocca('#bCasa');
     fs.writeFileSync(path.join(OUT, `${w}-testi.json`), JSON.stringify(testi, null, 1));
     console.log(`${w}×${h}: ${n} foto; partita ${JSON.stringify(stato)} → ${JSON.stringify(fine)}`);
     await cx.close();

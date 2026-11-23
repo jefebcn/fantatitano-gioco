@@ -153,9 +153,14 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   due vittorie a stagione in più, senza cambiare questi tempi.
 - **Moduli** (23/11): da 8 a 15, i sette nuovi in coda a `FORMS` partendo dalla tabella MIT citata in `docs/crediti.md`.
   Il Centro allenamento ne apre 4, 6, 8, 10, 12, 15 secondo le stelle. La finestra di scelta li mostra su cinque colonne.
-- **Apertura dei premi** (23/11, `src/casa/premio.js`, tempi in `PREMIO` di `src/config.js`): busta che si apre, breve per
-  premio del giorno, sfide e percorso premi, lunga per i premi di fine stagione. Scritta da noi con le animazioni del
-  browser, senza librerie; anima solo posizione, rotazione, grandezza e trasparenza. Da fare: un suono all'apertura.
+- **Apertura dei premi** (23/11, `src/casa/premio.js`, tempi e misure in `PREMIO` di `src/config.js`): con le
+  illustrazioni di Alex (`assets/arrivo/premi/`). Busta blu per premio del giorno e sfide, argento per il percorso premi,
+  oro per la fine della stagione. La busta entra dal basso con un rimbalzo, vibra mentre dietro cresce la luce dorata, il
+  bordo in alto si strappa con un lampo e le scintille, il premio sale con un riflesso che lo attraversa. Con la busta
+  d'oro l'apertura è lunga: dietro girano i raggi e i premi si vedono uno alla volta, grandi, prima dell'elenco (un tocco
+  passa al prossimo). Riscuotendo una sfida si vedono anche i punti del percorso premi che dà. Scritta da noi con le
+  animazioni del browser, senza librerie; anima solo posizione, rotazione, grandezza e trasparenza. Da fare: un suono
+  all'apertura. L'icona del fisioterapista è pronta ma oggi nessun premio lo dà.
 - **Carriere di prima**: non si possono continuare, si riparte da zero (la versione del salvataggio è la 2).
 - **Come arriva alla partita**: la partita conosce un numero solo per giocatore, la `forza`. Crescita con gli allenatori,
   riscaldamento e Curva dei tifosi ci stanno dentro. Le squadre inventate arrivano per intero nella richiesta; lo stemma

@@ -480,24 +480,41 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .qSegnoMobile .ico{width:70%;height:70%}
 
 /* ---------- apertura di un premio (src/casa/premio.js): la busta al centro, poi i premi ---------- */
-#premio{position:fixed;inset:0;z-index:45;display:grid;place-items:center;padding:12px;background:radial-gradient(ellipse at 50% 46%,rgba(20,46,118,.95),rgba(3,7,20,.96) 72%);font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff;-webkit-tap-highlight-color:transparent;overflow:hidden}
-.pScena{position:relative;display:grid;place-items:center;width:min(calc(var(--vh)*50),230px);aspect-ratio:.74}
-/* l'alone e il lampo sono preparati prima: si animano solo trasparenza e grandezza */
-.pAlone{position:absolute;inset:-40%;border-radius:50%;background:radial-gradient(circle,rgba(255,226,140,.9),rgba(255,200,80,.35) 45%,rgba(255,200,80,0) 70%);opacity:0}
-.pLampo{position:absolute;inset:-25%;border-radius:50%;background:radial-gradient(circle,#fff,rgba(255,244,200,.8) 35%,rgba(255,244,200,0) 70%);opacity:0;pointer-events:none}
-.pBusta{position:relative;display:grid;grid-template-rows:17% minmax(0,1fr);width:64%;aspect-ratio:.72;filter:drop-shadow(0 10px 14px rgba(0,0,0,.55))}
-.pLinguetta{display:block;border-radius:10px 10px 0 0;background:linear-gradient(180deg,#FFE9A6,#E8B64C);border-bottom:2px dashed rgba(11,21,48,.6);transform-origin:0 50%}
-.pCorpo{display:grid;place-items:center;border-radius:0 0 12px 12px;background:linear-gradient(170deg,#2247A8,#0B1B4E);box-shadow:inset 0 0 0 2px #E8B64C}
-.pCorpo svg{width:64%;fill:#E8B64C}
-.pDentro{display:grid;justify-items:center;gap:6px;width:min(540px,100%);text-align:center}
-.pDentro h3{margin:0;font:400 30px/1.05 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.05em;color:#E8B64C}
-.pDentro p{margin:0;font:700 14px/1.2 Montserrat,sans-serif;color:rgba(255,255,255,.88)}
-.pLista{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:8px 0 12px}
-.pPremio{display:grid;justify-items:center;align-content:center;gap:4px;min-width:124px;padding:12px 14px;border-radius:12px;border:1px solid rgba(232,182,76,.65);background:linear-gradient(170deg,#18306E,#0B1736);box-shadow:0 6px 14px rgba(0,0,0,.4)}
-.pPremio .ico{width:42px;height:42px}
-.pPremio b{font:800 26px/1 Montserrat,sans-serif}
-.pPremio i{font:600 12px/1.2 Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.88);white-space:nowrap}
-.p-allenatore .ico,.p-contatto .ico{color:#3FC6FF}
+/* tutti i pezzi stanno uno sopra l'altro al centro dello schermo; le misure --busta, --fig, --uno e --forma le mette premio.js */
+#premio{position:fixed;inset:0;z-index:45;display:grid;place-items:center;padding:12px;background:#050A1C;background:radial-gradient(ellipse at 50% 50%,rgba(4,8,24,.5),rgba(4,8,24,.86) 78%),image-set(url(img/illustrazioni/sfondo-premi@1x.webp) 1x,url(img/illustrazioni/sfondo-premi@2x.webp) 2x,url(img/illustrazioni/sfondo-premi@3x.webp) 3x) center/cover;font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff;-webkit-tap-highlight-color:transparent;overflow:hidden}
+#premio>*{grid-area:1/1}
+/* raggi, luce dorata e lampo sono disegnati una volta: si animano solo rotazione, grandezza e trasparenza. Stanno al
+   centro dello schermo senza occupare posto, se no spingerebbero in basso la busta e i premi */
+.pRaggi,.pAlone,.pLampo{position:absolute;left:50%;top:50%;margin:calc(var(--lato)/-2) 0 0 calc(var(--lato)/-2);width:var(--lato);height:var(--lato)}
+.pRaggi{--lato:calc(var(--vh)*150);border-radius:50%;background:repeating-conic-gradient(rgba(255,222,135,0) 0 8deg,rgba(255,222,135,.55) 12deg,rgba(255,222,135,0) 16deg,rgba(255,222,135,0) 20deg);-webkit-mask:radial-gradient(circle,transparent 3%,#000 14%,rgba(0,0,0,.55) 36%,transparent 68%);mask:radial-gradient(circle,transparent 3%,#000 14%,rgba(0,0,0,.55) 36%,transparent 68%);opacity:0;transition:opacity .5s;pointer-events:none}
+#premio.raggi .pRaggi{opacity:.6}
+.pAlone{--lato:calc(var(--vh)*105);border-radius:50%;background:radial-gradient(circle,rgba(255,228,145,.95),rgba(255,196,70,.42) 40%,rgba(255,196,70,0) 68%);opacity:0;pointer-events:none}
+.pLampo{--lato:calc(var(--vh)*125);border-radius:50%;background:radial-gradient(circle,#fff,rgba(255,246,208,.88) 30%,rgba(255,246,208,0) 68%);opacity:0;pointer-events:none}
+/* la busta: la stessa immagine due volte, il corpo e il bordo in alto che si strappa. Parte invisibile: la fa entrare premio.js */
+.pBusta{position:relative;height:calc(var(--vh)*var(--busta));aspect-ratio:var(--forma);opacity:0}
+.pBusta img{position:absolute;inset:0;width:100%;height:100%}
+.pCorpo{clip-path:inset(8.6% 0 0 0)}
+.pStrappo{clip-path:inset(0 0 91.4% 0)}
+.pScintille{position:relative;width:0;height:0;pointer-events:none}
+.pScintille i{position:absolute;left:0;top:0;margin:-3px;border-radius:50%;background:#FFE9A6;box-shadow:0 0 6px 1px rgba(255,214,102,.85);opacity:0}
+.pScintille .rombo{border-radius:1px;background:#fff;rotate:45deg}
+.pDentro{position:relative;display:grid;justify-items:center;gap:3px;width:min(640px,100%);text-align:center}
+.pDentro h3{margin:0;font:400 30px/1.05 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.05em;color:#F2CC6B;text-shadow:0 2px 8px rgba(0,0,0,.7)}
+.pDentro p{margin:0;font:700 14px/1.2 Montserrat,sans-serif;color:rgba(255,255,255,.92);text-shadow:0 1px 4px rgba(0,0,0,.7)}
+.pLista{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 18px;margin:2px 0 10px}
+.pPremio{display:grid;justify-items:center;gap:1px;min-width:112px}
+/* la figura del premio e, sopra, il riflesso ritagliato sulla sua sagoma: una fascia chiara che la attraversa */
+.pFig{position:relative;display:block;width:calc(var(--vh)*var(--fig));aspect-ratio:1}
+.pFig img{display:block;width:100%;height:100%}
+.pRifl{position:absolute;inset:0;overflow:hidden;-webkit-mask:var(--img) center/contain no-repeat;mask:var(--img) center/contain no-repeat;pointer-events:none}
+.pRifl b{position:absolute;top:-10%;bottom:-10%;left:0;width:42%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.9) 50%,rgba(255,255,255,0));transform:translateX(-130%) skewX(-18deg)}
+.pPremio>b{font:800 26px/1 Montserrat,sans-serif;text-shadow:0 2px 6px rgba(0,0,0,.7)}
+.pPremio>i{font:700 13px/1.2 Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.94);text-shadow:0 1px 4px rgba(0,0,0,.7);white-space:nowrap}
+/* un premio alla volta, grande: parte invisibile, lo fa salire premio.js */
+.pUno .pPremio{opacity:0}
+.pUno .pFig{width:calc(var(--vh)*var(--uno))}
+.pUno .pPremio>b{font-size:38px}
+.pUno .pPremio>i{font-size:16px}
 #prOk{min-width:160px}
 
 /* la serie di sette giorni nella finestra del premio del giorno */

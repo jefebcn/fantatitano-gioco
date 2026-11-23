@@ -37,7 +37,7 @@ function nuovaStagione() {
   const come = e.sale ? t('stagione.sale', nome(e.div)) : e.scende ? t('stagione.scende', nome(e.div)) : K.div === 1 ? t('stagione.restaCima') : t('stagione.resta', e.fatti, e.servono);
   finestra({ titolo: t('stagione.titolo', K.stagione + 1), testo: come + (aperte ? t('stagione.coppeAperte') : ''), si: t('stagione.si'), fatto: () => {
     const r = CAR.nuovaStagione(K, CLUBS); applicaMio(); salvaK(); ridisegna();
-    apriPremio({ titolo: t('stagione.premiTitolo'), premi: premiDa({ gemme: r.premi.gemme, allenatori: r.premi.leggendari, rarita: 'leggendario', contatti: r.premi.contatti }), lungo: true });
+    apriPremio({ titolo: t('stagione.premiTitolo'), premi: premiDa({ gemme: r.premi.gemme, allenatori: r.premi.leggendari, rarita: 'leggendario', contatti: r.premi.contatti }), busta: 'stagione' });
   } });
 }
 

@@ -1,7 +1,9 @@
 # Immagini dell'apertura premi
 
 Generate con Gemini sull'account di Alex il 23 novembre 2026, sfondo verde tolto (PNG trasparenti, tranne lo sfondo).
-Non sono ancora nell'elenco `assets/immagini.json`: la sessione della home le registra (nomi e misure) e poi le importa.
+Sono nell'elenco `assets/immagini.json` coi nomi di questa tabella e importate in `public/img/illustrazioni/` (23/11):
+`python3 scripts/importa_immagini.py` toglie il margine vuoto attorno al soggetto e prepara le tre grandezze.
+`icona-monete` e `icona-diamanti` valgono anche per `premio-monete` e `premio-diamanti`.
 
 | File | Misura | Uso |
 |---|---|---|

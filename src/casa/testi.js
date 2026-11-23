@@ -151,6 +151,7 @@ const IT = {
   'premio.monete': (n) => (n === 1 ? 'moneta' : 'monete'), 'premio.diamanti': (n) => (n === 1 ? 'diamante' : 'diamanti'),
   'premio.allenatore': (rar, n) => (n === 1 ? `allenatore ${rar}` : `allenatori ${{ comune: 'comuni', raro: 'rari', leggendario: 'leggendari' }[rar]}`),
   'premio.contatto': (n) => (n === 1 ? 'contatto dell\'agente' : 'contatti dell\'agente'),
+  'premio.punti': (n) => (n === 1 ? 'punto del percorso premi' : 'punti del percorso premi'),
   'premio.giorno': (n, tot) => `Giorno ${n} di ${tot}`,
   'premio.riscosso': 'Premio riscosso', 'premio.percorso': 'Percorso premi', 'premio.livello': (n) => `Livello ${n}`,
   'carriera.obiettivi': (divisione, f, n) => `${divisione} · obiettivi ${f} di ${n}`,

@@ -432,15 +432,31 @@ export const RITRATTI = {
 // (docs/carte-giocatori.md). Le altre proporzioni della carta sono nello stile (src/casa/stile.css).
 export const CARTA_GRANDE = { forma: .737 };
 // L'apertura di un premio (src/casa/premio.js). Tempi in millesimi, rotazioni in gradi.
-// breve: la busta ondeggia (`onde`: quanto dura e fin dove ruota ogni ondata), la linguetta si strappa (`strappo`), un
-//   lampo, la busta va via. In tutto meno di un secondo.
-// lunga: ogni ondata è più ampia e più corta della precedente; l'alone dietro cresce fino a `alone` di opacità; poi una
-//   pausa e lo scoppio (la busta sparisce, il lampo si allarga). In tutto circa tre secondi.
-// esce: in quanto esce ogni premio; tra: quanto dopo il precedente.
+// breve (busta blu del giorno e delle sfide, busta argento del percorso premi) e lunga (busta oro di fine stagione)
+// hanno gli stessi passi, con tempi diversi:
+//   entra: la busta sale dal basso e rimbalza;
+//   onde: le vibrazioni, una per coppia [quanto dura, fin dove ruota]; intanto la luce dorata dietro cresce fino ad
+//     `alone` di opacità e la busta si ingrandisce di `cresce`; nella lunga ogni ondata è più ampia e più corta;
+//   pausa: la busta si raddrizza e resta un attimo ferma prima di aprirsi;
+//   strappo: il bordo in alto si stacca e vola via; lampo: quanto dura il lampo; via: in quanto sparisce la busta;
+//   scintille: quante particelle partono col lampo.
+// lunga.uno: i premi uno alla volta, grandi al centro: in quanto sale, quanto resta (un tocco passa al prossimo), in
+//   quanto va via.
+// scintilla: una particella: fin dove arriva (in parti dell'altezza dello schermo), quanto vive, quanto è grande in
+//   punti, di quanto ricade alla fine (in parti dell'altezza).
+// raggi: in quanto i raggi dietro la busta d'oro fanno un giro. riposo: la luce dorata che resta dietro ai premi.
+// sale: in quanto sale ogni premio nell'elenco finale; tra: quanto dopo il precedente; riflesso: in quanto il riflesso
+//   attraversa il premio. guardia: nella breve un tocco qualsiasi chiude, ma solo dopo questo tempo (chi tocca due volte
+//   per saltare non deve perdersi il premio). attesa: quanto si aspettano al massimo le immagini prima di partire.
+// misure: altezza della busta, lato di un premio nell'elenco e lato del premio grande, in centesimi dell'altezza dello
+//   schermo.
 export const PREMIO = {
-  breve: { onde: [[110, 5], [110, -5], [90, 2]], strappo: 250, lampo: 240, via: 300 },
-  lunga: { onde: [[380, 3], [380, -3], [220, 0], [270, 6], [230, -6], [200, 8], [170, -9], [170, 10], [130, -11], [120, 12], [100, -13], [100, 14], [90, -14], [160, 15]], alone: .85, pausa: 300, scoppio: [80, 260] },
-  esce: 280, tra: 170,
+  breve: { entra: 420, onde: [[70, 4], [70, -4], [70, 5], [70, -5], [60, 3], [60, 0]], alone: .75, cresce: .05, pausa: 0, strappo: 220, lampo: 320, via: 200, scintille: 16 },
+  lunga: { entra: 620, onde: [[300, 3], [300, -3], [220, 0], [240, 6], [220, -6], [190, 8], [170, -9], [160, 10], [130, -11], [120, 12], [100, -13], [100, 14], [90, -14], [140, 15]], alone: 1, cresce: .12, pausa: 280, strappo: 260, lampo: 480, via: 220, scintille: 34, uno: { sale: 460, resta: 950, via: 200 } },
+  scintilla: { lancio: [.16, .5], dura: [520, 950], grande: [3, 8], cade: .07 },
+  raggi: 16000, riposo: .34,
+  sale: 420, tra: 150, riflesso: 620, guardia: 500, attesa: 1200,
+  misure: { busta: 56, premio: 25, uno: 44 },
 };
 // La schermata Squadra (docs/navigazione.md §3.3), con le misure date da Alex il 23/11.
 // carta: quanto è larga una carta, in parti della larghezza dello schermo (uguale in campo e tra i sostituti).
