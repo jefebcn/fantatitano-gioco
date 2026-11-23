@@ -113,7 +113,10 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   `attesaPasso`, `postoFermo` in `src/game.js`; valori in `FERMI`; prova `scripts/prove/riprese.cjs` (anche in CI).
   32 partite, semi 7–38: 0 anomalie, tiri e gol dentro il rumore. Dettagli in `docs/dls-gameplay.md` §7.
 - Da chiedere ad Alex: cosa fanno le tre icone in alto a destra; se sulla rimessa dal fondo il pallone va a terra.
-- Restano: 4 palla più visibile, 5 palla vagante e cambio giocatore, 6 peso dei passaggi, 7 luci, 8 ombre, 9 strisce
+- 4 FATTO: pallone disegnato fino a 1,7 volte più grande quando la telecamera è lontana (vero nei primi piani), più
+  chiaro, ombra a disco scuro dal bordo netto (`PALLA_VISTA`, `mettiPalla` in `src/game.js`, usata anche dal replay).
+  Solo grafica: partite identiche.
+- Restano: 5 palla vagante e cambio giocatore, 6 peso dei passaggi, 7 luci, 8 ombre, 9 strisce
   dell'erba, 10 cartelloni, 11 telecamera vicino alla linea, 12 nomi sovrapposti, 13 tasto A in difesa (chiedere),
   14 maglie simili, 15 animazioni (video rallentato dei 5 gesti).
 

@@ -23,7 +23,7 @@ import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { PRATO, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { PRATO, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -748,6 +748,8 @@ const PALLONI = {
 };
 const ballMesh = (() => {
   const [c, x] = cv(256, 128), m = new T.Mesh(new T.SphereGeometry(BR, 18, 14), new T.MeshLambertMaterial({ map: ctex(c) })); m.visible = false; m.castShadow = true; scene.add(m);
+  // chiaro anche lontano dai fari: la stessa immagine fa anche da luce propria (i pentagoni restano scuri)
+  m.material.emissive = new T.Color(0xffffff); m.material.emissiveMap = m.material.map; m.material.emissiveIntensity = PALLA_VISTA.luce;
   m.userData.colora = (nome) => {
     if (m.userData.nome === nome) return; m.userData.nome = nome; const [fondo, cols] = PALLONI[nome] || PALLONI.classico; x.fillStyle = fondo; x.fillRect(0, 0, 256, 128);
     for (let i = 0; i < 12; i++) { x.fillStyle = cols[i % cols.length]; x.beginPath(); const px = (i % 6) * 43 + 20 + (i > 5 ? 21 : 0), py = i > 5 ? 88 : 38; for (let k = 0; k < 5; k++) { const a = k * 1.2566 - 1.57; x.lineTo(px + Math.cos(a) * 13, py + Math.sin(a) * 15); } x.fill(); }
@@ -756,8 +758,9 @@ const ballMesh = (() => {
   m.userData.colora('classico');
   return m;
 })();
-// ombra del pallone, con un materiale suo: cambia con l'altezza
-const ballShadow = new T.Mesh(new T.CircleGeometry(.3, 16), new T.MeshBasicMaterial({ map: shadowMat.map, transparent: true, opacity: .5, depthWrite: false })); ballShadow.rotation.x = -Math.PI / 2; ballShadow.position.y = .04; ballShadow.visible = false; scene.add(ballShadow);
+// ombra del pallone, con un materiale suo: un disco scuro dal bordo netto, che cambia con l'altezza (vedi PALLA_VISTA)
+const ombraPalla = (() => { const [c, x] = cv(64, 64), s = x.createRadialGradient(32, 32, 0, 32, 32, 32); s.addColorStop(0, 'rgba(0,0,0,1)'); s.addColorStop(.72, 'rgba(0,0,0,1)'); s.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = s; x.fillRect(0, 0, 64, 64); return ctex(c); })();
+const ballShadow = new T.Mesh(new T.CircleGeometry(BR, 20), new T.MeshBasicMaterial({ map: ombraPalla, transparent: true, opacity: .5, depthWrite: false })); ballShadow.rotation.x = -Math.PI / 2; ballShadow.position.y = .04; ballShadow.visible = false; scene.add(ballShadow);
 
 // La X gialla a terra dove scende un pallone alto (lanci, cross, rimesse), per tutte e due le squadre: due strisce incrociate
 const xAlta = (() => {
@@ -2445,6 +2448,14 @@ function inclina(p, dt) {
 }
 
 /* ------------------------------------------------------------------ camera e disegno */
+/** Disegna il pallone col centro in (x, y, z) e la sua ombra. Più grande quando la telecamera è lontana (PALLA_VISTA), ma
+    appoggiato sempre alla stessa altezza; l'ombra a terra è scura e stretta, in aria larga e chiara: si capisce dove
+    scende un cross. `userData.alto` tiene l'altezza vera, per il replay. */
+function mettiPalla(x, y, z) {
+  const O = PALLA_VISTA.ombra, k = clamp(hyp(cam.position.x - x, cam.position.y - y, cam.position.z - z) / PALLA_VISTA.vicino, 1, PALLA_VISTA.scala), su = Math.max(0, y - BR);
+  ballMesh.userData.alto = y; ballMesh.scale.setScalar(k); ballMesh.position.set(x, y + BR * (k - 1), z);
+  ballShadow.position.set(x, .04, z); ballShadow.scale.setScalar(k * O[0] * (1 + su * O[2])); ballShadow.material.opacity = Math.max(O[4], O[1] / (1 + su * O[3]));
+}
 // Inquadrature dei piazzati, finché non si calcia: angolo dall'alto alle spalle della bandierina verso l'area, punizione da
 // dietro il pallone verso la porta, rigore alle spalle di chi tira. null quando si gioca.
 function inquadratura() {
@@ -2518,8 +2529,7 @@ function disegna(dt) {
     const sp = hyp(b.vx, b.vz);
     // il pallone si disegna dove sarà tra un attimo (il tempo non ancora simulato), come i giocatori: restano insieme
     const ar = b.resto || 0, bxd = b.x + b.vx * ar, bzd = b.z + b.vz * ar, byd = Math.max(BR, b.y + b.vy * ar);
-    ballMesh.position.set(bxd, byd, bzd); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; ballMesh.rotation.y += (b.c || 0) * dt * 25; }
-    ballShadow.position.set(bxd, .04, bzd); ballShadow.scale.setScalar(1.25 + b.y * .16); ballShadow.material.opacity = .62 / (1 + Math.max(0, b.y - BR) * .32); // a terra scura e stretta, in aria larga e chiara: si capisce dove scende un cross
+    mettiPalla(bxd, byd, bzd); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; ballMesh.rotation.y += (b.c || 0) * dt * 25; }
     // segni sopra le teste come Dream League (li disegna la regia): niente anello ai piedi né freccia della levetta
     const c = G.ctrl; G.segno = !!c && !G.auto && G.state !== 'full'; ring.visible = arrow.visible = freccia.visible = false;
     // in difesa: il compagno che si prenderebbe con «Cambia giocatore» (segnalino grigio), ricalcolato ogni tanto
@@ -2537,7 +2547,7 @@ function disegna(dt) {
   updateCamera(dt); REGIA.dopo(dt); seguiOmbre(); dettagliFigure(); if (RESA) RESA.disegna(); else renderer.render(scene, cam);
   DBG_IA.disegna();
 }
-const REGIA = creaRegia({ scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, ring, arrow, camPos, camLook, boards, img, cdist, lum,
+const REGIA = creaRegia({ scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, mettiPalla, ring, arrow, camPos, camLook, boards, img, cdist, lum,
   makeSkinned, pickKits, paintBoards, updateCamera, offsideLine, hasFx, potenza: () => potenzaBarra(), model: () => MODEL, crest: () => CREST });
 window.__regia = REGIA;
 

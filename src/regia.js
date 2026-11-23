@@ -10,7 +10,7 @@ import { t as tr } from './testi.js';
 import { Vector3, Quaternion, CanvasTexture, Sprite, SpriteMaterial, SRGBColorSpace, Group, Mesh, CylinderGeometry, PlaneGeometry, MeshBasicMaterial, MeshLambertMaterial, DoubleSide } from 'three';
 
 export function creaRegia(X) {
-  const { scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, ring, arrow, camPos, camLook, boards } = X;
+  const { scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, mettiPalla, ring, arrow, camPos, camLook, boards } = X;
   const extra = () => [S.arb, ...S.ass].filter(Boolean); // arbitro e guardalinee
 
   // Numeri da ritoccare
@@ -69,7 +69,7 @@ export function creaRegia(X) {
     REC.data = new Float32Array(REC.n * REC.stride); REC.vivo = new Float32Array(REC.stride);
   }
   function recScrivi(d, o) {
-    d[o] = ballMesh.position.x; d[o + 1] = ballMesh.position.y; d[o + 2] = ballMesh.position.z; d[o + 3] = ballMesh.rotation.x; d[o + 4] = ballMesh.rotation.z; o += 5;
+    d[o] = ballMesh.position.x; d[o + 1] = ballMesh.userData.alto ?? ballMesh.position.y; d[o + 2] = ballMesh.position.z; d[o + 3] = ballMesh.rotation.x; d[o + 4] = ballMesh.rotation.z; o += 5;
     for (const f of REC.figs) {
       d[o] = f.root.position.x; d[o + 1] = f.root.position.z; d[o + 2] = f.root.rotation.y; d[o + 3] = f.body.position.y;
       const pp = f.pel.position; d[o + 4] = pp.x; d[o + 5] = pp.y; d[o + 6] = pp.z;
@@ -79,8 +79,7 @@ export function creaRegia(X) {
   }
   const PB = [0, 0, 0, 0, 0]; // il pallone dell'ultimo fotogramma letto: draw() lo sposta dov'è dal vivo, dopo() lo rimette qui
   function palla() {
-    ballMesh.position.set(PB[0], PB[1], PB[2]); ballMesh.rotation.x = PB[3]; ballMesh.rotation.z = PB[4];
-    ballShadow.position.set(PB[0], .04, PB[2]); ballShadow.scale.setScalar(1 + PB[1] * .18);
+    mettiPalla(PB[0], PB[1], PB[2]); ballMesh.rotation.x = PB[3]; ballMesh.rotation.z = PB[4];
   }
   // Rimette in scena il fotogramma fra a e b (t da 0 a 1) dei due blocchi d[a…] ed e[b…]
   function recLeggi(d, a, e, b, t) {
