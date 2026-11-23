@@ -10,6 +10,7 @@ import { icona, stelline } from './icone.js';
 import { carta, adatta, attrNome } from './carte.js';
 import { nomiDi } from '../dati/squadre.js';
 import { finestra } from './finestra.js';
+import { apriPremio, premiDa } from './premio.js';
 import { t } from './testi.js';
 import { apri, ridisegna } from './nav.js';
 
@@ -29,14 +30,14 @@ radice.addEventListener('click', (e) => { const b = e.target.closest('[data-vai]
 
 /**
  * Stagione finita: la finestra dice come è andata (promozione, retrocessione o niente) e, alla conferma, comincia la
- * stagione nuova nella divisione giusta; poi mostra i premi di fine stagione.
+ * stagione nuova nella divisione giusta; poi si aprono i premi di fine stagione, con l'apertura lunga.
  */
 function nuovaStagione() {
   const aperte = CAR.coppaProssima(K) || CAR.castelliProssima(K), e = CAR.esitoStagione(K, CLUBS), nome = (div) => DIVISIONI[div - 1].nome;
   const come = e.sale ? t('stagione.sale', nome(e.div)) : e.scende ? t('stagione.scende', nome(e.div)) : K.div === 1 ? t('stagione.restaCima') : t('stagione.resta', e.fatti, e.servono);
   finestra({ titolo: t('stagione.titolo', K.stagione + 1), testo: come + (aperte ? t('stagione.coppeAperte') : ''), si: t('stagione.si'), fatto: () => {
     const r = CAR.nuovaStagione(K, CLUBS); applicaMio(); salvaK(); ridisegna();
-    finestra({ titolo: t('stagione.premiTitolo'), testo: t('stagione.premi', r.premi.gemme, r.premi.leggendari, r.premi.contatti), si: t('dopo.continua'), soloSi: true });
+    apriPremio({ titolo: t('stagione.premiTitolo'), premi: premiDa({ gemme: r.premi.gemme, allenatori: r.premi.leggendari, rarita: 'leggendario', contatti: r.premi.contatti }), lungo: true });
   } });
 }
 

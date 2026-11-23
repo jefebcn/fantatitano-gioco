@@ -479,6 +479,27 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .qSegnoMobile{display:grid;place-items:center;border-radius:0 4px 4px 0;color:#14161C;font-weight:800;font-family:Montserrat,sans-serif;font-style:normal;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 5px 8px rgba(0,0,0,.5)}
 .qSegnoMobile .ico{width:70%;height:70%}
 
+/* ---------- apertura di un premio (src/casa/premio.js): la busta al centro, poi i premi ---------- */
+#premio{position:fixed;inset:0;z-index:45;display:grid;place-items:center;padding:12px;background:radial-gradient(ellipse at 50% 46%,rgba(20,46,118,.95),rgba(3,7,20,.96) 72%);font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff;-webkit-tap-highlight-color:transparent;overflow:hidden}
+.pScena{position:relative;display:grid;place-items:center;width:min(calc(var(--vh)*50),230px);aspect-ratio:.74}
+/* l'alone e il lampo sono preparati prima: si animano solo trasparenza e grandezza */
+.pAlone{position:absolute;inset:-40%;border-radius:50%;background:radial-gradient(circle,rgba(255,226,140,.9),rgba(255,200,80,.35) 45%,rgba(255,200,80,0) 70%);opacity:0}
+.pLampo{position:absolute;inset:-25%;border-radius:50%;background:radial-gradient(circle,#fff,rgba(255,244,200,.8) 35%,rgba(255,244,200,0) 70%);opacity:0;pointer-events:none}
+.pBusta{position:relative;display:grid;grid-template-rows:17% minmax(0,1fr);width:64%;aspect-ratio:.72;filter:drop-shadow(0 10px 14px rgba(0,0,0,.55))}
+.pLinguetta{display:block;border-radius:10px 10px 0 0;background:linear-gradient(180deg,#FFE9A6,#E8B64C);border-bottom:2px dashed rgba(11,21,48,.6);transform-origin:0 50%}
+.pCorpo{display:grid;place-items:center;border-radius:0 0 12px 12px;background:linear-gradient(170deg,#2247A8,#0B1B4E);box-shadow:inset 0 0 0 2px #E8B64C}
+.pCorpo svg{width:64%;fill:#E8B64C}
+.pDentro{display:grid;justify-items:center;gap:6px;width:min(540px,100%);text-align:center}
+.pDentro h3{margin:0;font:400 30px/1.05 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.05em;color:#E8B64C}
+.pDentro p{margin:0;font:700 14px/1.2 Montserrat,sans-serif;color:rgba(255,255,255,.88)}
+.pLista{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:8px 0 12px}
+.pPremio{display:grid;justify-items:center;align-content:center;gap:4px;min-width:124px;padding:12px 14px;border-radius:12px;border:1px solid rgba(232,182,76,.65);background:linear-gradient(170deg,#18306E,#0B1736);box-shadow:0 6px 14px rgba(0,0,0,.4)}
+.pPremio .ico{width:42px;height:42px}
+.pPremio b{font:800 26px/1 Montserrat,sans-serif}
+.pPremio i{font:600 12px/1.2 Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.88);white-space:nowrap}
+.p-allenatore .ico,.p-contatto .ico{color:#3FC6FF}
+#prOk{min-width:160px}
+
 /* la serie di sette giorni nella finestra del premio del giorno */
 #finestra .serie{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:2px 0 10px}
 #finestra .giorno{display:grid;justify-items:center;gap:2px;padding:6px 0;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06)}

@@ -28,6 +28,10 @@ Stato di ogni schermata: in fondo, §6.
   stringe a gradini: spariscono i nomi dentro i banner, poi le barre e le stelle, poi il profilo si accorcia. Nella barra
   non c'è più il titolo della schermata, né il collegamento diretto alle sfide della settimana (ci si arriva dalla Home).
   In partita la barra non c'è. Nella Sfida (pre-partita) c'è.
+- **Apertura dei premi** (`src/casa/premio.js`, dal 23/11): una busta che si apre e mostra il premio. Breve, meno di un
+  secondo, per il premio del giorno (dopo la prima partita della giornata), le sfide riscosse e i livelli del percorso
+  premi; lunga, circa tre secondi, per i premi di fine stagione. Un tocco la salta; chi ha chiesto al telefono meno
+  movimento vede subito il premio. Non è un livello della navigazione.
 - **Bollino «!»** su ogni carta o pulsante dove c'è qualcosa da ritirare o da fare. La campanella delle notifiche non è
   più nella barra: gli avvisi sono i bollini (vedi §5, domanda 1).
 - **Carte di navigazione**: fascia in alto col TITOLO e «>>», riassunto al centro, fascia sottile in basso con una frase

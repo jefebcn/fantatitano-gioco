@@ -17,6 +17,7 @@ import { creaDivisioni } from '../dati/divisioni.js';
 import { GIOCATORI } from '../dati/giocatori.js';
 import { rotta, apri, indietro, ridisegna, tornaSotto, azzera } from './nav.js';
 import { mostraBarra, aggiornaBarra } from './barra.js';
+import { apriPremio, premiDa } from './premio.js';
 import { disegnaHome } from './home.js';
 import { disegnaCarriera } from './vista-carriera.js';
 import { disegnaSfida } from './vista-sfida.js';
@@ -324,7 +325,7 @@ function panSfide(tab) {
   const quando = sTab === 'd' ? 'Ripartono a mezzanotte' : sTab === 'w' ? `Ripartono tra ${fmtTempo(CAR.fineSettimana(new Date()) - new Date())}` : sTab === 's' ? `Valgono per la stagione ${K.stagione}` : 'Si fanno una volta sola';
   pan('Sfide', `<div class="seg">${Object.entries(CAR.GRUPPI).map(([g, n]) => `<button data-stab="${g}" class="${g === sTab ? 'on' : ''}">${n} ${st.conti[g][0]}/${st.conti[g][1]}</button>`).join('')}${st.daRiscuotere ? '<button data-az="tutto" class="oro">Riscuoti tutto</button>' : ''}</div><p class="nota2">${quando}</p>${righe}${bonus}`);
 }
-function riscuotiTutto() { const r = CAR.riscuotiTutto(K); if (!r.n) return avviso('Niente da riscuotere: completa le sfide'); salvaK(); avviso(`Premi riscossi: ${[r.monete ? `+${mon(r.monete)} monete` : '', r.gemme ? `+${r.gemme} diamanti` : ''].filter(Boolean).join(', ')}`); }
+function riscuotiTutto() { const r = CAR.riscuotiTutto(K); if (!r.n) return avviso('Niente da riscuotere: completa le sfide'); salvaK(); apriPremio({ titolo: t('premio.riscosso'), premi: premiDa({ monete: r.monete, gemme: r.gemme }) }); }
 function panInfo() {
   pan('Come si gioca', `<div class="info"><div><div class="sez">In campo</div><p>Levetta a sinistra per muovere il giocatore. <b>Passa</b>, <b>Cross</b> e <b>Tira</b>: tieni premuto e la barra sotto il giocatore mostra la potenza (la tacca bianca è quella giusta per il compagno che punti, il rosso nel tiro manda la palla alta); un tocco veloce su Passa o Cross fa il passaggio dosato da solo. <b>Scatto</b> per correre. Senza palla: <b>Cambia</b> giocatore e <b>Scivolata</b> (da dietro è fallo). La scritta sopra la mappa cambia la mentalità; dalla pausa si fanno le sostituzioni.</p>
     <div class="sez">La carriera</div><p>Campionato a 16 squadre, Coppa Titano a eliminazione diretta e Trofeo dei Castelli a gironi. Le partite danno monete; le sfide e il percorso premi danno monete e diamanti. Con le monete si fanno scambi al mercato e sedute di allenamento; con monete e diamanti si migliorano l'allenatore e lo stadio, che rende di più a ogni partita in casa.</p></div>
@@ -517,12 +518,12 @@ function buildMenu() {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.az && await tapAccount(b.dataset.az)) return;
     if (b.dataset.stab) return apri('sfide', b.dataset.stab);
-    if (b.dataset.riscuoti) { const [g, id] = b.dataset.riscuoti.split(':'), r = CAR.riscuoti(K, g, id); if (r.ok) { salvaK(); avviso(`Premio riscosso: ${[r.monete ? `+${mon(r.monete)} monete` : '', r.gemme ? `+${r.gemme} diamanti` : '', r.allenatore ? `un allenatore ${r.allenatore}` : ''].filter(Boolean).join(', ')}`); } return panSfide(); }
+    if (b.dataset.riscuoti) { const [g, id] = b.dataset.riscuoti.split(':'), r = CAR.riscuoti(K, g, id); if (r.ok) { salvaK(); apriPremio({ titolo: t('premio.riscosso'), premi: premiDa({ monete: r.monete, gemme: r.gemme, allenatori: r.allenatore ? 1 : 0, rarita: r.allenatore || 'raro' }) }); } return panSfide(); }
     if (b.dataset.az === 'giocaCoppa') return giocaCoppa();
     if (b.dataset.az === 'giocaCastelli') return giocaCastelli();
     if (b.dataset.az === 'tutto') { riscuotiTutto(); return panSfide(); }
     if (b.dataset.ctab) return apri('club', b.dataset.ctab);
-    if (b.dataset.ritira || b.dataset.az === 'ritiraTutto') { const q = CAR.ritiraPercorso(K, +(b.dataset.ritira || 0)); if (q.ok) salvaK(); return panPercorso(q.ok ? `Ritirato: ${premioTesto(q.monete, q.gemme, q.allenatori ? 'raro' : '')}` : ''); }
+    if (b.dataset.ritira || b.dataset.az === 'ritiraTutto') { const livello = +(b.dataset.ritira || 0), q = CAR.ritiraPercorso(K, livello); if (q.ok) { salvaK(); apriPremio({ titolo: t('premio.percorso'), sotto: livello ? t('premio.livello', livello) : '', premi: premiDa({ monete: q.monete, gemme: q.gemme, allenatori: q.allenatori, rarita: 'raro' }) }); } return panPercorso(); }
     if (b.dataset.az === 'guadagna') return apri('guadagna');
     if (b.dataset.ntab) return apri('negozio', b.dataset.ntab);
     if (b.dataset.ogg) {
