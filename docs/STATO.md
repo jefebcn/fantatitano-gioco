@@ -123,8 +123,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - 6 MISURATO, da decidere con Alex: `scripts/prove/passaggi.cjs` dice che a campo libero nessun passaggio è corto o lungo
   (10 m: parte a 11,7 m/s, arriva a 8,9 in 0,67 s; 30 m: parte a 23,2, arriva a 13,5 in 1,30 s). I valori di Dream
   League non li sappiamo: chiesto ad Alex se li vuole più forti o più lenti. Non si tocca finché non risponde.
-- Restano: 7 luci, 8 ombre, 9 strisce
-  dell'erba, 10 cartelloni, 11 telecamera vicino alla linea, 12 nomi sovrapposti, 13 tasto A in difesa (chiedere),
+- 9 FATTO: il prato ha solo strisce dritte, uguali su tutto il campo; tolti gli anelli attorno al centrocampo e gli
+  scacchi nel cerchio (`src/grafica/campo.js`, `PRATO` in `src/config.js`).
+- Restano: 7 luci, 8 ombre, 10 cartelloni, 11 telecamera vicino alla linea, 12 nomi sovrapposti, 13 tasto A in difesa (chiedere),
   14 maglie simili, 15 animazioni (video rallentato dei 5 gesti).
 
 ## Prova di Alex su iPhone (21/11): punti in ordine

@@ -18,7 +18,7 @@ function pratoDiRiserva(T) {
  * Crea il campo e risponde una promessa con { campo, fuori }: il rettangolo di gioco col suo bordo e il prato attorno.
  * `anisotropia` è quella massima della scheda grafica.
  */
-export async function creaCampo(T, { HL, HW, linee: L, M = 6, anisotropia = 8, passo = 4, strisce = 5.6, prato = { tinta: [1, 1, 1], strisce: [0.82, 1.13], anelli: [0.82, 1.13], rilievo: 0.55 } }) {
+export async function creaCampo(T, { HL, HW, linee: L, M = 6, anisotropia = 8, passo = 4, strisce = 5.6, prato = { tinta: [1, 1, 1], strisce: [0.82, 1.13], rilievo: 0.55 } }) {
   const loader = new T.TextureLoader(), carica = (n) => new Promise((ok) => loader.load(RIS + n, ok, undefined, () => ok(null)));
   const [alb, nor, rug] = await Promise.all([carica('grass_albedo.webp'), carica('grass_normal.webp'), carica('grass_roughness.webp')]);
   const W = (HL + M) * 2, H = (HW + M) * 2, prepara = (t, srgb) => {
@@ -27,14 +27,13 @@ export async function creaCampo(T, { HL, HW, linee: L, M = 6, anisotropia = 8, p
   const map = prepara(alb, true) || prepara(pratoDiRiserva(T), true);
   const mat = new T.MeshStandardMaterial({ map, normalMap: prepara(nor), roughnessMap: prepara(rug), roughness: 1, metalness: 0, normalScale: new T.Vector2(prato.rilievo, prato.rilievo) });
   mat.onBeforeCompile = (sh) => {
-    // uTaglio: raggio del cerchio (dentro, scacchi di lato z), raggio fin dove arrivano gli anelli, larghezza degli anelli (w)
     // uLin: mezza larghezza delle linee, raggio del cerchio, distanza del dischetto, raggio dei dischetti; uAree: area e area piccola
-    Object.assign(sh.uniforms, { uCampo: { value: new T.Vector4(HL, HW, M, strisce) }, uTaglio: { value: new T.Vector4(L.cerchio, 27, 2.3, 2.9) }, uTinta: { value: new T.Vector3(...prato.tinta) }, uChiaro: { value: new T.Vector4(prato.strisce[0], prato.strisce[1], prato.anelli[0], prato.anelli[1]) },
+    Object.assign(sh.uniforms, { uCampo: { value: new T.Vector4(HL, HW, M, strisce) }, uTinta: { value: new T.Vector3(...prato.tinta) }, uChiaro: { value: new T.Vector2(prato.strisce[0], prato.strisce[1]) },
       uLin: { value: new T.Vector4(0.06, L.cerchio, L.dischetto, 0.2) }, uAree: { value: new T.Vector4(L.area[0], L.area[1], L.piccola[0], L.piccola[1]) } });
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vMondo;')
       .replace('#include <project_vertex>', '#include <project_vertex>\nvMondo = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
-varying vec3 vMondo; uniform vec4 uCampo; uniform vec4 uTaglio; uniform vec4 uLin; uniform vec4 uAree; uniform vec3 uTinta; uniform vec4 uChiaro; float gLinea;
+varying vec3 vMondo; uniform vec4 uCampo; uniform vec4 uLin; uniform vec4 uAree; uniform vec3 uTinta; uniform vec2 uChiaro; float gLinea;
 // Le linee calcolate nello shader (distanza in metri dalla linea più vicina) con il bordo sfumato su un pixel (fwidth):
 // niente seghettature né tratteggi, a qualsiasi distanza. Linee larghe 2·uLin.x metri.
 float dRett(vec2 p, vec2 c, vec2 h) { vec2 q = abs(p - c) - h; return abs(length(max(q, 0.0)) + min(max(q.x, q.y), 0.0)); }
@@ -63,13 +62,10 @@ float macchie(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 
       .replace('#include <map_fragment>', `#include <map_fragment>
 {
   vec2 p = vMondo.xz; float luma = dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11));
-  // taglio dell'erba come Dream League: strisce chiare e scure lungo il campo, sopra anelli concentrici attorno al
-  // centrocampo e dentro il cerchio a scacchi
-  // uTinta è il verde del prato. uChiaro dice quanto sono scure e chiare le strisce, e gli anelli col cerchio, più leggeri
-  float banda = mod(floor((p.x + uCampo.x) / uCampo.w), 2.0), r = length(p); vec2 chiaro = uChiaro.xy;
-  if (r < uTaglio.x) { banda = mod(floor(p.x / uTaglio.z) + floor(p.y / uTaglio.z), 2.0); chiaro = uChiaro.zw; }
-  else if (r < uTaglio.y) { banda = mod(floor((r - uTaglio.x) / uTaglio.w), 2.0); chiaro = uChiaro.zw; }
-  diffuseColor.rgb *= uTinta * mix(chiaro.x, chiaro.y, banda);
+  // taglio dell'erba: solo strisce dritte chiare e scure, parallele alla linea di metà campo, uguali su tutto il prato
+  // (niente anelli attorno al centrocampo né scacchi nel cerchio). uTinta è il verde, uChiaro quanto sono scure e chiare
+  float banda = mod(floor((p.x + uCampo.x) / uCampo.w), 2.0);
+  diffuseColor.rgb *= uTinta * mix(uChiaro.x, uChiaro.y, banda);
   // usura: davanti alle porte (area piccola), sul dischetto e nel cerchio di centrocampo, a chiazze
   float u = 0.0;
   for (int k = 0; k < 2; k++) { float gx = (k == 0 ? -1.0 : 1.0) * (uCampo.x - 2.8); u += exp(-((p.x - gx) * (p.x - gx) / 7.0 + p.y * p.y / 16.0)); float sx = (k == 0 ? -1.0 : 1.0) * (uCampo.x - 11.0); u += 0.5 * exp(-((p.x - sx) * (p.x - sx) + p.y * p.y) / 2.5); }
