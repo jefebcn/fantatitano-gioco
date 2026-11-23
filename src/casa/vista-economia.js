@@ -5,12 +5,11 @@ import * as CAR from '../carriera.js';
 import { ECONOMIA, DIVISIONI, FORMS } from '../config.js';
 import { K, DATI, club, pan, mini, mon, esc, fmtTempo, salvaK, applicaMio, premioTesto } from './casa.js';
 import { figura, stileFondo } from './immagini.js';
-import { icona, MO, DI } from './icone.js';
+import { icona, stelline, MO, DI } from './icone.js';
 import { t } from './testi.js';
 
 // un numero col suo segno davanti: «+50», «−50», e lo zero senza segno (mai «−0»)
 const conSegno = (n) => (n > 0 ? `+${mon(n)}` : n < 0 ? `−${mon(-n)}` : '0');
-const stelline = (n) => `<div class="liv">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`;
 const costoTesto = (c) => premioTesto(c.monete, c.gemme);
 const NOMI_STRUTTURE = { centro: 'Centro allenamento', infermeria: 'Infermeria', foresteria: 'Foresteria', commerciale: 'Ufficio commerciale', osservatori: 'Osservatori', curva: 'Curva dei tifosi', stadio: 'Stadio' };
 // l'illustrazione di ogni struttura; lo Stadio ha la sua, grande, in cima
@@ -35,18 +34,20 @@ let cTab = 'strutture';
 export function panClubMio(tab, msg) {
   if (['strutture', 'allenatori', 'finanze'].includes(tab)) cTab = tab;
   const me = club(K.club), voci = [['strutture', 'Strutture'], ['allenatori', `Allenatori (${CAR.quantiAllenatori(K)})`], ['finanze', 'Finanze']];
-  const tabs = `<div class="seg">${voci.map(([k, n]) => `<button data-ctab="${k}" class="${k === cTab ? 'on' : ''}">${n}</button>`).join('')}<button data-ntab="stemma">Negozio</button><button data-club="personalizza">Personalizza</button><button data-club="allenamento">${t('allenamento.titolo')}</button><button data-club="amichevole">Amichevole</button></div>`;
+  const tabs = `<div class="seg">${voci.map(([k, n]) => `<button data-ctab="${k}" class="${k === cTab ? 'on' : ''}">${n}</button>`).join('')}<button data-club="personalizza">Personalizza</button><button data-club="allenamento">${t('allenamento.titolo')}</button><button data-club="amichevole">Amichevole</button></div>`;
   let corpo;
   if (cTab === 'strutture') {
-    // una struttura: le stelle, il nome, cosa dà adesso e il pulsante per farla crescere
-    const testo = (q) => {
-      const n = CAR.stelle(K, q), c = CAR.costoStruttura(K, q);
-      return `<span class="sTesto">${stelline(n)}<b>${NOMI_STRUTTURE[q]} · ${n} ${n === 1 ? 'stella' : 'stelle'} su 5</b><span>Adesso: ${effetto(q, n)}</span>`
-        + (c ? `<button data-struttura="${q}" class="${K.monete < c.monete || K.gemme < c.gemme ? 'no' : ''}">Una stella in più (${effetto(q, n + 1)}) · ${costoTesto(c)}</button>` : '<em>Al massimo</em>') + '</span>';
+    // una struttura è una carta: il suo disegno, il nome, le stelle, cosa dà adesso, cosa darà con una stella in più e il
+    // pulsante «Migliora» col prezzo
+    const struttura = (q) => {
+      const n = CAR.stelle(K, q), c = CAR.costoStruttura(K, q), stadio = q === 'stadio';
+      return `<div class="strutt${stadio ? ' stadioAlto' : ''}"${stadio ? stileFondo('stadio-alto') : ''}>${stadio ? '' : figura(FIGURE_STRUTTURE[q], 'sFig', 220)}`
+        + `<span class="sTesto"><b>${NOMI_STRUTTURE[q]}</b>${stelline(n)}<span class="sOra"><i>Adesso</i>${effetto(q, n)}</span>`
+        + (c ? `<span class="sPoi"><i>Con una stella in più</i>${effetto(q, n + 1)}</span></span><button data-struttura="${q}" class="${K.monete < c.monete || K.gemme < c.gemme ? 'no' : ''}">Migliora · ${costoTesto(c)}</button>`
+          : '</span><em>Al massimo</em>') + '</div>';
     };
-    // in cima lo Stadio, con la sua veduta dall'alto di fondo; sotto le altre sei, ognuna col suo disegno
-    corpo = `<div class="strutt stadioAlto"${stileFondo('stadio-alto')}>${testo('stadio')}</div><div class="strutture">`
-      + CAR.STRUTTURE.filter((q) => q !== 'stadio').map((q) => `<div class="strutt">${figura(FIGURE_STRUTTURE[q], 'sFig', 96)}${testo(q)}</div>`).join('') + '</div>';
+    // in cima lo Stadio, con la sua veduta dall'alto di fondo; sotto le altre sei, tre per riga
+    corpo = `${struttura('stadio')}<div class="strutture">${CAR.STRUTTURE.filter((q) => q !== 'stadio').map(struttura).join('')}</div>`;
   } else if (cTab === 'allenatori') {
     const A = ECONOMIA.allenatori.rarita, quanti = (r, c) => ((K.allenatori || {})[r] || {})[c] || 0;
     corpo = '<p class="nota2">Un allenatore si usa su un giocatore: alza le statistiche della sua categoria (comune +1, raro +2, leggendario +3) e con loro la valutazione, fino a 10 punti in più per giocatore. Per usarlo: Squadra, tieni premuto su un giocatore, Allena.</p><div class="lista">'
@@ -54,8 +55,8 @@ export function panClubMio(tab, msg) {
       + '<div class="sez">Comprali coi diamanti</div><div class="seg">' + ['raro', 'leggendario'].map((r) => CAR.CATEGORIE.map((c) => `<button data-allenatore="${r}:${c}" class="${K.gemme < A[r].diamanti ? 'no' : ''}">${NOMI_CATEGORIE[c][0]} ${UNA_RARITA[r]} · ${DI} ${A[r].diamanti}</button>`).join('')).join('') + '</div>'
       + '<p class="nota2">I comuni arrivano dalle sfide di ogni giorno e dal Centro allenamento, i rari dalle sfide della settimana e dal percorso premi, i leggendari a fine stagione, con la promozione e arrivando in finale di coppa. Anche svincolando un giocatore se ne ottiene uno.</p>';
   } else {
-    const st = K.storico || [], entrate = st.reduce((t, x) => t + Math.max(0, x.m), 0), uscite = st.reduce((t, x) => t - Math.min(0, x.m), 0), d = (v, e) => `<div><b>${v}</b><span>${e}</span></div>`;
-    corpo = `<div class="dati">${d(CAR.finanze(K), 'Finanze')}${d(mon(K.monete), 'Monete')}${d(K.gemme, 'Diamanti')}${d(conSegno(entrate), 'Entrate recenti')}${d(conSegno(-uscite), 'Uscite recenti')}</div><p class="nota2">Il giudizio dipende da quante vittorie vale il saldo in monete. Entrate e uscite contano gli ultimi ${ECONOMIA.storico} movimenti.</p><div class="seg"><button data-az="guadagna">Vedi i movimenti e come guadagnare</button></div>`;
+    const st = K.storico || [], entrate = st.reduce((t, x) => t + Math.max(0, x.m), 0), uscite = st.reduce((t, x) => t - Math.min(0, x.m), 0), d = (ico, v, e) => `<div>${icona(ico)}<b>${v}</b><span>${e}</span></div>`;
+    corpo = `<div class="dati finanze">${d('finanze', CAR.finanze(K), 'Finanze')}${d('moneta', mon(K.monete), 'Monete')}${d('diamante', K.gemme, 'Diamanti')}${d('entrate', conSegno(entrate), 'Entrate recenti')}${d('uscite', conSegno(-uscite), 'Uscite recenti')}</div><p class="nota2">Il giudizio dipende da quante vittorie vale il saldo in monete. Entrate e uscite contano gli ultimi ${ECONOMIA.storico} movimenti.</p><div class="seg"><button data-az="guadagna">Vedi i movimenti e come guadagnare</button></div>`;
   }
   pan(me.name, `${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}`);
 }
@@ -118,7 +119,7 @@ export function panGuadagna() {
     ['Fine stagione', `${DI} ${D.fine} e un allenatore leggendario`], ['Promozione', `${DI} ${G.promozione}, un allenatore leggendario e un contatto dell'agente`], ['Finale di coppa raggiunta', 'un allenatore leggendario e un contatto dell\'agente']];
   const giorno = (t) => new Date(t).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }), segno = conSegno;
   const mov = (K.storico || []).slice(0, 40).map((x) => `<div class="${x.m + x.g * 100 < 0 ? 'meno' : 'piu'}"><span>${giorno(x.t)} · ${esc(x.d || x.c)}</span><b>${[x.m ? `${segno(x.m)} ${MO}` : '', x.g ? `${segno(x.g)} ${DI}` : ''].filter(Boolean).join(' ')}</b></div>`).join('');
-  pan('Monete e diamanti', `<div class="info guadagna"><div><div class="sez">Come si guadagnano · ${D.nome}</div><div class="ris2">${fonti.map(([t, x]) => rigaF(t, x)).join('')}</div><p class="nota2">Monete e diamanti non si comprano: si guadagnano solo giocando. Salendo di divisione i premi in monete crescono.</p><div class="seg"><button data-ntab="stemma">Negozio</button><button data-ctab="strutture">Strutture del club</button></div></div>`
+  pan('Monete e diamanti', `<div class="info guadagna"><div><div class="sez">Come si guadagnano · ${D.nome}</div><div class="ris2">${fonti.map(([t, x]) => rigaF(t, x)).join('')}</div><p class="nota2">Monete e diamanti non si comprano: si guadagnano solo giocando. Salendo di divisione i premi in monete crescono.</p><div class="seg"><button data-club="personalizza">Personalizza il club</button><button data-ctab="strutture">Strutture del club</button></div></div>`
     + `<div><div class="sez">Ultimi movimenti</div>${mov ? `<div class="ris2 mov">${mov}</div>` : '<p class="vuoto">Ancora nessun movimento: gioca una partita.</p>'}</div></div>`);
 }
 

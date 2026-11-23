@@ -581,21 +581,28 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 #pan.illustrata{background:linear-gradient(rgba(5,9,24,.84),rgba(5,9,24,.9)),image-set(url(img/illustrazioni/sfondo-home@1x.webp) 1x,url(img/illustrazioni/sfondo-home@2x.webp) 2x,url(img/illustrazioni/sfondo-home@3x.webp) 3x) center/cover}
 #panT .panTrofeo{height:36px;width:auto;margin-right:8px;vertical-align:-9px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
 /* Il mio club, Strutture: in cima lo Stadio con la veduta dall'alto, sotto le sei strutture su due colonne */
-.strutt{display:flex;align-items:stretch;gap:10px;min-width:0;margin-top:8px;padding:8px;border-radius:12px;border:1px solid rgba(63,198,255,.3);background:linear-gradient(165deg,rgba(14,28,64,.9),rgba(7,12,30,.9))}
-.strutt .sFig{flex:none;align-self:center;width:96px;height:96px;border-radius:9px;object-fit:cover}
-.strutt .sTesto{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
-.strutt .sTesto b{font:800 14px Montserrat,sans-serif}
-.strutt .sTesto>span{font:600 12px/1.3 Montserrat,sans-serif;color:rgba(255,255,255,.82)}
-.strutt .sTesto em{font:800 12px Montserrat,sans-serif;font-style:normal;color:#E8B64C;text-transform:uppercase;letter-spacing:.05em}
-.strutt .liv{display:flex;gap:4px}
-.strutt .liv i{width:30px;height:8px;border-radius:4px;background:rgba(255,255,255,.16)}
-.strutt .liv i.on{background:#E8B64C}
-.strutt button{margin-top:auto;min-height:44px;padding:6px 12px;border-radius:9px;text-align:left;font:800 12px/1.25 Montserrat,sans-serif;color:#0B1530;background:linear-gradient(180deg,#F2CC6B,#D9A63E)}
-.strutt button.no{color:rgba(11,21,48,.85);background:linear-gradient(180deg,#9A8347,#7A6431)}
-.strutture{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 8px}
-.strutt.stadioAlto{min-height:132px;padding:12px 14px;border-color:rgba(232,182,76,.6);background:linear-gradient(90deg,rgba(7,12,30,.94),rgba(7,12,30,.8) 42%,rgba(7,12,30,.12) 78%,rgba(7,12,30,0)),var(--sfondo,none) right center/cover,linear-gradient(165deg,rgba(14,28,64,.9),rgba(7,12,30,.9))}
-.strutt.stadioAlto .sTesto{max-width:60%;text-shadow:0 1px 2px rgba(0,0,0,.9)}
-.strutt.stadioAlto button{text-shadow:none}
+/* le strutture sono carte: il disegno in alto, il nome e le stelle, cosa dà adesso e cosa darà, il pulsante in fondo */
+.strutt{display:flex;flex-direction:column;min-width:0;border-radius:12px;overflow:hidden;border:1px solid rgba(63,198,255,.4);background:linear-gradient(165deg,rgba(14,28,64,.94),rgba(7,12,30,.94));box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.strutt .sFig{flex:none;width:100%;height:84px;object-fit:cover}
+.strutt .sTesto{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:8px 10px 6px;text-align:left}
+.strutt .sTesto b{font:400 19px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.04em;line-height:1}
+.strutt .stelline{font-size:15px;color:#E8B64C}
+.strutt .stelline .ico{vertical-align:0}
+.strutt .sOra,.strutt .sPoi{display:block;font:600 12px/1.3 Montserrat,sans-serif;color:rgba(255,255,255,.9)}
+.strutt .sOra i,.strutt .sPoi i{display:block;font:800 12px Montserrat,sans-serif;font-style:normal;letter-spacing:.05em;text-transform:uppercase;color:#3FC6FF}
+.strutt .sPoi{color:rgba(255,255,255,.78)}
+.strutt .sPoi i{color:#E8B64C}
+.strutt>em{margin:0 10px 10px;font:800 12px Montserrat,sans-serif;font-style:normal;color:#E8B64C;text-transform:uppercase;letter-spacing:.05em}
+.strutt>button{display:flex;align-items:center;justify-content:center;gap:5px;margin:2px 10px 10px;min-height:44px;padding:4px 12px;border-radius:10px;font:400 18px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.06em;color:#0B1530;
+  background:linear-gradient(180deg,#FFE596,#EDBE55 52%,#C8962F);box-shadow:0 2px 0 #7B5A12,inset 0 1px 0 rgba(255,255,255,.6)}
+.strutt>button .ico{width:17px;height:17px;vertical-align:0}
+.strutture{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+/* lo Stadio in cima: largo, con la veduta dall'alto di fondo e il velo scuro dal lato del testo */
+.strutt.stadioAlto{margin-top:8px;border-color:rgba(232,182,76,.6);background:linear-gradient(90deg,rgba(7,12,30,.95),rgba(7,12,30,.82) 44%,rgba(7,12,30,.14) 80%,rgba(7,12,30,0)),var(--sfondo,none) right center/cover,linear-gradient(165deg,rgba(14,28,64,.9),rgba(7,12,30,.9))}
+.strutt.stadioAlto .sTesto{max-width:62%;padding:12px 14px 6px;text-shadow:0 1px 2px rgba(0,0,0,.9)}
+.strutt.stadioAlto>button{align-self:flex-start;margin:2px 14px 12px;min-width:200px}
+.strutt.stadioAlto>em{margin:0 14px 12px}
+@media (max-width:520px){.strutture{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){.strutture{grid-template-columns:minmax(0,1fr)}}
 /* Mercato: gli striscioni delle due liste. L'illustrazione riempie i due terzi di destra e sfuma verso sinistra, dove
    c'è il titolo; sotto il titolo un velo scuro */
@@ -631,7 +638,7 @@ body.conBarra #nuovo .nv{padding-left:0}
 #pan .ico,#finestra .ico{vertical-align:-.16em}
 /* pulsanti che adesso non si possono usare (non bastano monete o diamanti, la rosa è piena, già preso): grigi, con la
    scritta chiara, senza trasparenza: si deve leggere cosa sono e quanto costano */
-#pan button.no,#pan .ogg[disabled],.strutt button.no,.azione.spento,#nuovo .btn.ingaggia:disabled,#scelta .btn[disabled]{opacity:1;color:#D5DAE6;background:#3A4258;background-image:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);text-shadow:none}
+#pan button.no,#pan .ogg[disabled],.strutt>button.no,.azione.spento,#nuovo .btn.ingaggia:disabled,#scelta .btn[disabled]{opacity:1;color:#D5DAE6;background:#3A4258;background-image:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);text-shadow:none}
 #pan .gioc[disabled]{opacity:1;color:#D5DAE6;background:rgba(58,66,88,.6);border-color:rgba(255,255,255,.14)}
 #pan .gioc[disabled] span{color:rgba(213,218,230,.82)}
 #pan .gioc[disabled] em{color:#B9C0CF}
@@ -641,3 +648,28 @@ body.conBarra #nuovo .nv{padding-left:0}
 .info.guadagna{grid-template-columns:1fr}
 .info.guadagna .ris2 span{flex:1 1 0;min-width:0}
 .info.guadagna .ris2 b{flex:none;max-width:62%;white-space:normal;text-align:right}
+/* ---------- revisione del 23/11, Il mio club ---------- */
+/* Finanze: ogni riquadro ha la sua icona sopra il numero */
+.dati.finanze{grid-template-columns:repeat(5,minmax(0,1fr))}
+.dati.finanze div{display:grid;justify-items:center;gap:3px;padding:10px 6px}
+.dati.finanze .ico{width:26px;height:26px;color:#3FC6FF}
+.dati.finanze span{font:800 12px Montserrat,sans-serif;letter-spacing:.04em}
+@media (max-width:700px){.dati.finanze{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* Personalizza: le cinque schede sono le stesse nel modulo del club e nel pannello dei pezzi */
+#nuovo .schedeP{justify-content:center;margin:2px auto 6px}
+/* la maglia vera: il busto del modello 3D al posto della maglia disegnata piatta */
+.magliaVera{display:block;width:100%;height:auto;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
+.negozio .ante .magliaVera{width:min(190px,calc(var(--vw)*24))}
+/* la maglia vera nel modulo del club. Quando si crea il club sta sotto lo stemma, più piccola; in Personalizza, dove in
+   alto ci sono le schede, stemma e maglia stanno fianco a fianco e «Salva» sotto */
+.nv .ante #nvMaglia .magliaVera{height:min(calc(var(--vh)*31),124px);width:auto}
+.nv .ante.vera img#nvStemma{height:min(calc(var(--vh)*27),108px)}
+.nv .lato:has(>.btn) .ante.vera{flex-direction:row;align-items:center;gap:8px}
+.nv .lato:has(>.btn) .ante.vera img#nvStemma{height:min(calc(var(--vh)*28),112px)}
+.nv .lato:has(>.btn) .ante #nvMaglia .magliaVera{height:min(calc(var(--vh)*42),170px)}
+/* in Personalizza «Salva» sta sotto l'anteprima, a destra: con le schede in alto non c'è posto in fondo alla pagina */
+.nv .lato{flex:none;display:flex;flex-direction:column;align-items:center;gap:8px}
+#nuovo .nv .lato .btn{margin:0;min-width:150px;min-height:44px;padding:6px 26px;font-size:20px}
+/* la scheda Divisa tiene la maglia vera a sinistra anche sugli schermi stretti */
+.negozio:has(.magliaVera){grid-template-columns:auto minmax(0,1fr)}
+.negozio .ante:has(.magliaVera){width:auto;justify-self:start}

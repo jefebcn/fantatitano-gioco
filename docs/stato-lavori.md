@@ -195,7 +195,13 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   scorciatoie in basso (le carte hanno più posto; Sfide, Squadra, Mercato e Il mio club si aprono dalla Home); pronti i
   sessanta riquadri per gli stemmi delle squadre inventate (`docs/immagini-da-generare.md` §2b, `assets/immagini.json`,
   `scripts/stemmi.mjs`): quando arriva il file, il gioco lo usa al posto dello stemma disegnato (`stemmaPronto` in
-  `src/casa/immagini.js`). Restano D (Il mio club), E (Percorso e Sfide), F (Mercato).
+  `src/casa/immagini.js`). **D, Il mio club, fatto**: le strutture sono carte (disegno, nome, stelle vere, «Adesso» e
+  «Con una stella in più», pulsante «Migliora · prezzo»), tre per riga sotto lo Stadio; le tre strutture rifatte da Alex
+  (PR #119) sono importate; le Finanze hanno un'icona per riquadro (icone nuove `finanze`, `entrate`, `uscite`, `agente`
+  in `scripts/icone.mjs`); Negozio e Personalizza sono una sezione sola, «Personalizza», con cinque schede (Nome e
+  colori, Stemma, Divisa, Manager, Squadra: `schedePersonalizza` in `src/casa/casa.js`, `sostituisci` in
+  `src/casa/nav.js`); l'anteprima mostra la maglia vera, il busto del modello 3D con la divisa scelta (`magliaVera`,
+  numeri in `MAGLIA_VERA` di `src/config.js`). Restano E (Percorso e Sfide), F (Mercato).
 - **Carriere di prima**: non si possono continuare, si riparte da zero (la versione del salvataggio è la 2).
 - **Come arriva alla partita**: la partita conosce un numero solo per giocatore, la `forza`. Crescita con gli allenatori,
   riscaldamento e Curva dei tifosi ci stanno dentro. Le squadre inventate arrivano per intero nella richiesta; lo stemma

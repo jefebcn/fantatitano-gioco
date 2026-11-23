@@ -158,8 +158,11 @@ srv.listen(0, async () => {
     await vai('#barraF [data-vai="impostazioni"]', 'impostazioni'); await vai('#barraF [data-vai="info"]', 'info'); await vai('#barraF [data-vai="profilo"]', 'profilo');
     await vai('#barraF [data-vai="percorso"]', 'percorso-dalla-barra'); await tocca('#barraF [data-az="serie"]'); await foto('premio-del-giorno'); await tocca('#finestra [data-az="si"]');
     await vai('#barraF [data-vai="guadagna"]', 'guadagna', async () => {
-      // dal «come guadagnare» al negozio: un livello in più, e Indietro torna al «come guadagnare»
-      if (!(await tocca('#panC [data-ntab]'))) return; await foto('negozio');
+      // dal «come guadagnare» a Personalizza (prima il modulo del club, poi le schede dei pezzi che si comprano): un
+      // livello in più, e Indietro torna al «come guadagnare»
+      if (!(await tocca('#panC [data-club="personalizza"]'))) return; await foto('negozio');
+      const vera = await pg.evaluate(() => { const i = document.querySelector('#nvMaglia .magliaVera'); return !!i && i.naturalWidth > 0; }); if (!vera) errori.push(`${w}: in Personalizza manca l'anteprima della maglia vera`);
+      if (!(await tocca('#nuovo [data-ntab="stemma"]'))) return;
       const tab = await pg.$$eval('#panC [data-ntab]', (l) => l.map((b) => b.dataset.ntab)); for (const t of tab) { await tocca(`#panC [data-ntab="${t}"]`); await foto(`negozio-${t}`); }
       await tocca('#panC .ogg.chiuso', 0); await foto('negozio-armato'); await tocca('#bCasa');
     });
