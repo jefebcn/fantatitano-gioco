@@ -148,7 +148,9 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
 - **Simulazione** (`node scripts/simula-carriera.mjs 1000`): un giocatore che vince il 50%, pareggia il 30% e perde il 20%
   arriva dalla Lega Esordienti al Campionato Sammarinese in **6,9 stagioni** in media (la metà entro 6, nove su dieci
   entro 10; circa 150 partite). Coi primi numeri erano 5,0: corretto con obiettivi più difficili salendo di divisione e
-  con le monete delle sfide dimezzate. Giocatore forte (65/20/15): 4,7 stagioni; debole (40/30/30): 15.
+  con le monete delle sfide dimezzate. Giocatore forte (65/20/15): 4,7 stagioni; debole (40/30/30): 15. Dal 23/11 c'è
+  anche il premio di fine campionato per piazzamento (dal secondo all'ottavo posto, `ECONOMIA.premi.piazzamento`): circa
+  due vittorie a stagione in più, senza cambiare questi tempi.
 - **Carriere di prima**: non si possono continuare, si riparte da zero (la versione del salvataggio è la 2).
 - **Come arriva alla partita**: la partita conosce un numero solo per giocatore, la `forza`. Crescita con gli allenatori,
   riscaldamento e Curva dei tifosi ci stanno dentro. Le squadre inventate arrivano per intero nella richiesta; lo stemma

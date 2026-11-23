@@ -692,6 +692,8 @@ export function giocaCampionato(C, clubs, gf, gs, marcatori, rnd = Math.random, 
   if (finita) {
     C.campione = tab[0].id; if (pos <= 4) evento(C, 'top4', 1, oggi);
     if (tab[0].id === C.club) { const m = inMonete(C, ECONOMIA.premi.campionato); C.trofei.push({ stagione: C.stagione, tipo: 'Campionato', div: C.div }); muovi(C, m, 0, 'trofeo', `${divisione(C).nome}: vinto`); monete += m; }
+    // chi non vince ha il premio del suo piazzamento, dal secondo posto fin dove arriva l'elenco
+    else if (ECONOMIA.premi.piazzamento[pos - 2]) { const m = inMonete(C, ECONOMIA.premi.piazzamento[pos - 2]); muovi(C, m, 0, 'piazzamento', `${divisione(C).nome}: ${pos}° posto`); monete += m; }
   }
   return { posizione: pos, finita, campione: C.campione, monete };
 }
