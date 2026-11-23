@@ -238,7 +238,17 @@ dentro il bersaglio del portiere (uno ogni 4–5).
 - Durante il calcio piazzato: tre icone in alto a destra (guanti, maglia, pallone): **segnaposto senza funzione**
   (scelta provvisoria di Alex).
 - L'angolo si può battere corto con un passaggio rasoterra: un compagno si offre vicino alla bandierina (`FERMI.corto`).
-- Nel codice: `restart()` (scritta, dissolvenza, comandi), `corner()` (replay dopo la grande occasione), `hud()`.
+- **Nessuna ripresa parte da sola** (richiesta di Alex del 23/11, dal suo video): calcio d'inizio, punizione, fuorigioco,
+  angolo, rimessa laterale, rimessa dal fondo, rigore. Il gioco si ferma, il pallone resta sul punto, ognuno va al suo posto
+  senza scattare e si ferma lì (barriera se la porta è vicina). Quando chi batte è sul pallone: se è di chi gioca tornano i
+  comandi e non succede niente finché non passa o tira, senza limite di tempo (sul rigore vale solo il tiro; sulla rimessa
+  dal fondo il portiere aspetta Passa o Cross); se è del computer aspetta `FERMI.cpu` secondi (uno) e batte.
+  Scelte provvisorie, da far vedere ad Alex: andatura verso il posto (`FERMI.passo`: al passo gli ultimi metri, di corsetta
+  chi è aspettato, di corsa solo chi è lontano; chi batte scatta se è a più di 12 m); la rimessa dal fondo resta col
+  pallone in mano al portiere; le tre icone restano segnaposto (non sappiamo cosa fanno in Dream League).
+- Nel codice: `restart()` (scritta, dissolvenza, comandi), `corner()` (replay dopo la grande occasione), `hud()`,
+  `aspetta()` e `attesaPasso()` (l'attesa), `postoFermo()` (dove va ciascuno), `batti…()` (come batte il computer).
+  Prova: `scripts/prove/riprese.cjs`.
 
 ## 8. Sequenza del gol
 - Riquadro in basso col nome di chi ha segnato: in Dream League non c'è. `GOLSEQ.riquadro` dice per quanti secondi resta:

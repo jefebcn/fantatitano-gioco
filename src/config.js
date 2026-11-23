@@ -158,8 +158,15 @@ export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: 
 // dura `buio` secondi (a metà la telecamera stacca sul punto di battuta). Una palla ferma che arriva entro `occasione` secondi
 // da una grande occasione (parata, tiro deviato, palo, tiro fuori di poco: entro `fuori` metri dal palo) è preceduta dal
 // replay (RIVEDI). Sull'angolo un compagno si offre per batterlo corto, a `corto` = [metri dalla linea di fondo, metri dalla
-// linea laterale]
-export const FERMI = { comandi: 2, buio: .5, occasione: 4, fuori: 2.5, corto: [7, 7] };
+// linea laterale].
+// Nessuna ripresa parte da sola: quando chi batte è sul pallone il gioco aspetta. Se batte chi gioca, finché non passa o
+// tira, senza limite di tempo. Se batte il computer, `cpu` secondi: così si vede che è fermo. Intanto ognuno va al suo
+// posto senza scattare e poi si ferma: `passo` = [velocità al passo in m/s, velocità in più per ogni metro che manca al
+// posto, velocità di corsetta]: chi è lontano corre, avvicinandosi rallenta e gli ultimi metri li fa camminando (di corsetta
+// chi è aspettato: chi batte, la barriera, chi ha un posto in area, gli avversari troppo vicini al pallone; chi batte scatta se è a più di `scatto` metri dal pallone); arrivato a `fermo` metri dal posto
+// resta dov'è. Chi ha un posto (barriera, area) viene aspettato al massimo `arrivo` secondi,
+// `rigore` sul rigore, poi si batte lo stesso. Il calcio d'inizio aspetta `inizio` secondi dal fischio prima dei comandi.
+export const FERMI = { comandi: 2, buio: .5, occasione: 4, fuori: 2.5, corto: [7, 7], cpu: 1, passo: [1.9, .6, 3.6], scatto: 12, fermo: .35, arrivo: 8, rigore: 10, inizio: 1.2 };
 // Gol, in secondi veri dal pallone in rete: da `lento` per `durataLento` secondi un leggero rallentatore (a velocità `vel`),
 // con gli avversari fermi a disperarsi per `fermi` secondi e l'arbitro che indica il centro; a `stacco` la telecamera passa
 // al primo piano del marcatore: alta `camAlt` metri, a `camDist` metri da lui, con un difensore deluso in primo piano
@@ -233,7 +240,7 @@ export const MANO = { peso: 9 };
 // Rimessa laterale con le mani. linea: dove sta chi batte; max: fin dove può lanciare; lunga: da quanti metri il lancio è
 // lungo e alto; fermo: il secondo della clip in cui si tiene il pallone dietro la testa; pensa: quanto aspetta dopo il fischio
 // mani e manoMin: a che altezza sta il pallone sopra la testa, se la posa non si può leggere, e il minimo
-export const RIMESSA = { linea: HW - .25, max: 28, lunga: 14, fermo: .08, pensa: [.4, .9], mani: 1.95, manoMin: .9 };
+export const RIMESSA = { linea: HW - .25, max: 28, lunga: 14, fermo: .08, mani: 1.95, manoMin: .9 };
 // Panchina: quante sostituzioni a partita, quante ne fa l'IA, da che punto della partita comincia e ogni quanto ne fa un'altra
 export const SUB = { max: 5, ai: 3, from: .55, every: .12 };
 /** Quanto si resta a terra dopo una scivolata, un tuffo o un contrasto subito: si allunga se ci sono le clip registrate. */

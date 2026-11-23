@@ -32,6 +32,8 @@ jobs:
         run: RIPETI=1 node scripts/prove/partita.cjs 3 normale
       - name: Rigori
         run: node scripts/prove/rigori.cjs
+      - name: Riprese (nessuna parte da sola, né con chi gioca né col computer)
+        run: node scripts/prove/riprese.cjs
       - name: Ponte tra home e partita (una partita avviata da una richiesta, esito alla fine)
         run: node scripts/prove/ponte.cjs
       - name: Inquadratura al calcio d'inizio (misure di riferimento, margine 2 punti)
