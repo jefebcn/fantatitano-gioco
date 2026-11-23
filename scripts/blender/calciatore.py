@@ -33,7 +33,8 @@ DETTAGLI = {'torso-vshape-incr': 0.65, 'measure-shoulder-dist-incr': 0.75, 'meas
 VISO = {'chin-width-incr': 0.5, 'chin-bones-incr': 0.7, 'chin-prominent-incr': 0.4, 'chin-height-incr': 0.15, 'head-square': 0.4,
         'l-cheek-bones-incr': 0.6, 'r-cheek-bones-incr': 0.6, 'l-cheek-volume-decr': 0.4, 'r-cheek-volume-decr': 0.4,
         'nose-scale-depth-incr': 0.5, 'nose-trans-forward': 0.4, 'nose-hump-decr': 0.3, 'nose-point-width-decr': 0.3, 'nose-scale-vert-incr': 0.2,
-        'eyebrows-trans-forward': 0.6, 'eyebrows-angle-down': 0.2, 'forehead-temple-decr': 0.3}
+        'eyebrows-trans-forward': 0.6, 'eyebrows-angle-down': 0.2, 'forehead-temple-decr': 0.3,
+        'mouth-scale-depth-decr': 0.4, 'mouth-lowerlip-volume-decr': 0.3, 'mouth-upperlip-volume-decr': 0.2}
 # quanto il viso resiste all'alleggerimento (peso nel DECIMATE: 1 come il resto del corpo, 0 non si tocca)
 VISO_ALLEGGERISCI = 0.35
 CORPI = {'normale': {}, 'snello': {'muscle': 0.4, 'weight': 0.22}, 'robusto': {'muscle': 1.0, 'weight': 0.72}}
@@ -259,6 +260,9 @@ def esporta(o, file):
 # la testa (dal collo in su, occhi esclusi): da vicino e a metà distanza si alleggerisce meno del resto
 _collo = (rig.matrix_world @ rig.data.bones['mixamorig:Neck'].tail_local).z; _occhi = set(occhi['l'] + occhi['r'])
 TESTA = [v.index for v in corpo.data.vertices if v.co.z > _collo and v.index not in _occhi]
+# la bocca (labbra e un paio di centimetri attorno) non si alleggerisce: se no le labbra collassano in un muso
+_bocca = mathutils.Vector(punti['bocca'])
+BOCCA = [i for i in TESTA if (corpo.data.vertices[i].co - _bocca).length < 0.028]
 for k, tri in enumerate(LOD):
     bpy.ops.object.select_all(action='DESELECT'); corpo.select_set(True); bpy.context.view_layer.objects.active = corpo
     bpy.ops.object.duplicate(); o = bpy.context.view_layer.objects.active; o.name = 'Lod%d' % k; m2 = o.data
@@ -269,7 +273,7 @@ for k, tri in enumerate(LOD):
     tri0 = sum(len(p.vertices) - 2 for p in m2.polygons) - tri_occhi
     # gli anelli degli orli si tengono solo da vicino: più lontano si alleggeriscono come il resto
     if k > 0: o.vertex_groups['v_resto'].add(ORLI, 1.0, 'REPLACE')
-    if k < 2: o.vertex_groups['v_resto'].add(TESTA, VISO_ALLEGGERISCI, 'REPLACE')
+    if k < 2: o.vertex_groups['v_resto'].add(TESTA, VISO_ALLEGGERISCI, 'REPLACE'); o.vertex_groups['v_resto'].add(BOCCA, 0.0, 'REPLACE')
     d = o.modifiers.new('Alleggerisci', 'DECIMATE'); d.ratio = (tri - tri_occhi) / tri0; d.use_collapse_triangulate = True; d.vertex_group = 'v_resto'
     bpy.ops.object.modifier_move_to_index(modifier=d.name, index=0); bpy.ops.object.modifier_apply(modifier=d.name)
     co = coordinate(o); e_occhio = [1.0 if negli_occhi(v) else 0.0 for v in m2.vertices]
@@ -334,8 +338,10 @@ def punte(x, passo=0.016):
 # Alex: volume in cima, lati più corti, ciocche mosse invece del casco liscio, ciuffo che scende irregolare sulla fronte
 STILI = {
     'Hair_Corti': lambda p, n, k: n * (0.002 + 0.006 * k + 0.0015 * k * ciocche(p, 14)),
-    'Hair_Folti': lambda p, n, k: n * (0.004 + k * (0.008 + 0.022 * alto(p)) * (1 - 0.4 * lato(p) * (1 - alto(p))) + 0.007 * k * alto(p) * ciocche(p))
-                                  + (AVANTI * 0.014 - SU * 0.016 * (0.3 + 0.7 * punte(p[0]))) * davanti(p) * (1 - 0.6 * lato(p)),
+    # Folti è il giocatore del riferimento: ricci morbidi e alti in cima, lati corti, frangia mossa che scende sulla fronte
+    'Hair_Folti': lambda p, n, k: n * (0.004 + k * (0.006 + 0.046 * alto(p)) * (1 - 0.5 * lato(p) * (1 - alto(p)))
+                                       + k * alto(p) * (0.007 * ciocche(p) + 0.01 * np.sin(p[0] * 150) * np.sin(p[1] * 140 + p[2] * 120)))
+                                  + (AVANTI * 0.02 - SU * 0.02 * (0.3 + 0.7 * punte(p[0], 0.02))) * davanti(p) * (1 - 0.6 * lato(p)),
     'Hair_Ciuffo': lambda p, n, k: n * (0.003 + 0.009 * k + 0.004 * k * ciocche(p, 11)) + (AVANTI * 0.014 + SU * 0.034) * sfuma(0.09, 0.0, abs(p[1] - fronte)) * sfuma(0.07, 0.02, abs(p[0] - centro[0])) * (0.4 + 0.6 * k) * (0.75 + 0.25 * punte(p[0], 0.012)),
     'Hair_Cresta': lambda p, n, k: n * (0.002 + 0.003 * k) + SU * 0.045 * sfuma(0.04, 0.008, abs(p[0] - centro[0])) * sfuma(0.2, 0.75, alto(p)) * (0.6 + 0.4 * punte(p[1], 0.022)),
     'Hair_Ricci': lambda p, n, k: n * (0.005 + 0.032 * k * (0.6 + 0.4 * alto(p)) + 0.011 * k * np.sin(p[0] * 190) * np.sin(p[1] * 170 + p[2] * 150))
