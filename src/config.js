@@ -431,6 +431,17 @@ export const RITRATTI = {
 // Carta grande del giocatore: larghezza diviso altezza della cornice, misurata sulla foto di riferimento di Alex
 // (docs/carte-giocatori.md). Le altre proporzioni della carta sono nello stile (src/casa/stile.css).
 export const CARTA_GRANDE = { forma: .737 };
+// L'apertura di un premio (src/casa/premio.js). Tempi in millesimi, rotazioni in gradi.
+// breve: la busta ondeggia (`onde`: quanto dura e fin dove ruota ogni ondata), la linguetta si strappa (`strappo`), un
+//   lampo, la busta va via. In tutto meno di un secondo.
+// lunga: ogni ondata è più ampia e più corta della precedente; l'alone dietro cresce fino a `alone` di opacità; poi una
+//   pausa e lo scoppio (la busta sparisce, il lampo si allarga). In tutto circa tre secondi.
+// esce: in quanto esce ogni premio; tra: quanto dopo il precedente.
+export const PREMIO = {
+  breve: { onde: [[110, 5], [110, -5], [90, 2]], strappo: 250, lampo: 240, via: 300 },
+  lunga: { onde: [[380, 3], [380, -3], [220, 0], [270, 6], [230, -6], [200, 8], [170, -9], [170, 10], [130, -11], [120, 12], [100, -13], [100, 14], [90, -14], [160, 15]], alone: .85, pausa: 300, scoppio: [80, 260] },
+  esce: 280, tra: 170,
+};
 // La schermata Squadra (docs/navigazione.md §3.3), con le misure date da Alex il 23/11.
 // carta: quanto è larga una carta, in parti della larghezza dello schermo (uguale in campo e tra i sostituti).
 // stretto: la mezza larghezza del campo in alto, in percento (in basso è 50): il lato alto è il 55% di quello basso.
