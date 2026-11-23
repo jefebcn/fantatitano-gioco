@@ -30,6 +30,7 @@ const IT = {
   'home.squadra': 'Squadra',
   'home.mercato': 'Mercato',
   'home.club': 'Il mio club',
+  'home.gioca': 'Gioca',
   // home: carta Carriera
   'carriera.campionato': (pos, g, tot) => `${pos}° · Partita ${g} di ${tot}`,
   'carriera.campionatoFinito': (pos) => `Stagione finita · ${pos}° posto`,
@@ -185,6 +186,7 @@ const IT = {
   'club.personalizza': 'Personalizza',
   'club.allenamento': 'Allenatori',
   'mercato.vuoto': 'Rinforza la squadra',
+  'mercato.perTe': 'Per te', 'mercato.menoCaro': 'Il meno caro',
   'allenamento.titolo': 'Allenamento', 'allenamento.nota': 'Cinque modi per provare i comandi senza giocare una partita vera. Non danno monete e non stancano i giocatori.',
   'allenamento.tutorial': 'Tutorial', 'allenamento.tutorial.testo': 'I comandi, un passo alla volta',
   'allenamento.libero': 'Allenamento libero', 'allenamento.libero.testo': 'In campo senza avversari',

@@ -187,7 +187,12 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   casetta resta solo in Home); in alto a destra, se il nome breve del club è uguale al nome dell'allenatore si scrive
   la sigla; il banner del percorso ha solo livello, barra e punti; «−0» diventa «0» (`conSegno`); i pulsanti che non si
   possono usare sono grigi pieni con la scritta chiara (in fondo a `src/casa/stile.css`); «Monete e diamanti» sta
-  tutta nello schermo. Restano B (Home), C (Gioca adesso), D (Il mio club), E (Percorso e Sfide), F (Mercato).
+  tutta nello schermo. **B, Home, fatto**: nella carta Carriera il pulsante grande oro «GIOCA» con l'avversario porta
+  dritto alla prossima partita di campionato (Indietro e fine partita riportano alla Home); lo Scenario, finché è
+  chiuso, sta nella riga bassa al posto dell'Amichevole, che sale; la carta Mercato mostra il più forte che ci si può
+  permettere adesso tra lista trasferimenti e offerte a tempo («Per te»), o il meno caro se non ci si può permettere
+  nessuno (`consigliato` in `src/casa/vista-economia.js`). Restano C (Gioca adesso), D (Il mio club), E (Percorso e
+  Sfide), F (Mercato).
 - **Carriere di prima**: non si possono continuare, si riparte da zero (la versione del salvataggio è la 2).
 - **Come arriva alla partita**: la partita conosce un numero solo per giocatore, la `forza`. Crescita con gli allenatori,
   riscaldamento e Curva dei tifosi ci stanno dentro. Le squadre inventate arrivano per intero nella richiesta; lo stemma

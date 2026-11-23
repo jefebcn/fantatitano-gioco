@@ -96,11 +96,14 @@ export function panAllenamento() {
   pan(t('allenamento.titolo'), `<p class="nota2">${t('allenamento.nota')}</p><div class="allenamenti">`
     + MODI_ALLENAMENTO.map((m) => `<button class="modoA" data-az="inArrivo">${figura('allenamento-' + m, 'mFig', 150)}<b>${t('allenamento.' + m)}</b><i>${t('allenamento.' + m + '.testo')}</i><em>${icona('lucchetto')}${t('inArrivo')}</em></button>`).join('') + '</div>');
 }
-/** Il giocatore della lista trasferimenti da mostrare nella Home: il più forte che ci si può permettere, o il meno caro. */
+/** Il giocatore da mostrare nella Home: il più forte che ci si può permettere adesso, o il meno caro della lista (`posso` dice quale dei due). */
 export function consigliato() {
   if (!K) return null;
-  const liberi = CAR.listaMercato(K, CLUBS).filter((g) => !g.preso), posso = liberi.filter((g) => g.prezzo <= K.monete).sort((a, b) => b.val - a.val), g = posso[0] || liberi.sort((a, b) => a.prezzo - b.prezzo)[0];
-  return g ? { c: { id: g.da || K.club }, x: g.x, da: g.da, v: g.val, costo: g.prezzo } : null;
+  // la lista trasferimenti costa solo monete, le offerte a tempo anche diamanti: si guardano tutte e due
+  const lista = CAR.listaMercato(K, CLUBS).filter((g) => !g.preso), a_tempo = CAR.offerte(K, CLUBS, new Date()).filter((g) => !g.presa);
+  const posso = [...lista, ...a_tempo].filter((g) => g.prezzo <= K.monete && (g.gemme || 0) <= K.gemme).sort((x, y) => y.val - x.val || x.prezzo - y.prezzo);
+  const g = posso[0] || lista.sort((x, y) => x.prezzo - y.prezzo)[0];
+  return g ? { c: { id: g.da || K.club }, x: g.x, da: g.da, v: g.val, costo: g.prezzo, gemme: g.gemme || 0, posso: posso.length > 0 } : null;
 }
 
 /** «Come guadagnare»: da dove arrivano monete e diamanti (importi veri, nella divisione in cui si gioca) e gli ultimi movimenti. */
