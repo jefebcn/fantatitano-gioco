@@ -36,6 +36,8 @@ jobs:
         run: node scripts/prove/riprese.cjs
       - name: Palla che arriva a chi gioca (levetta tenuta, cambio automatico a palla libera)
         run: node scripts/prove/vagante.cjs
+      - name: Divise che si distinguono (gli ospiti non hanno addosso il colore della maglia di casa)
+        run: node scripts/prove/divise.cjs
       - name: Ponte tra home e partita (una partita avviata da una richiesta, esito alla fine)
         run: node scripts/prove/ponte.cjs
       - name: Inquadratura al calcio d'inizio (misure di riferimento, margine 2 punti)
