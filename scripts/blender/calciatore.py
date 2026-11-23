@@ -3,6 +3,8 @@
 # (modelli/quaternius-scheletro.glb: braccia, avambracci, cosce, stinchi e piedi nelle stesse direzioni), così le animazioni
 # del gioco gli stanno addosso senza scarti. Tre corporature (snello, normale, robusto) come forme sullo stesso scheletro,
 # tre livelli di dettaglio (circa 4.500, 1.500 e 600 triangoli) e le capigliature ricavate dalla calotta dei capelli di MakeHuman.
+# La divisa ha volume nella geometria (maglia, maniche, pantaloncini, risvolto dei calzettoni, scarpini con la suola): vedi
+# divisa_volume più sotto; i colori restano dipinti dal gioco (src/divisa.js).
 # Uso: blender -b --python scripts/blender/calciatore.py -- <scheletro del gioco .glb> <cartella di uscita>
 # Esce: lod0.glb, lod1.glb, lod2.glb (corpo con scheletro e forme), capelli.glb, punti.json (occhi, bocca, testa: per dipingere il viso)
 import bpy, bmesh, sys, os, json, struct, mathutils
@@ -17,11 +19,15 @@ VECCHIO, USCITA = arg[0], arg[1]; os.makedirs(USCITA, exist_ok=True)
 LOD = [4500, 1500, 600]
 # corporature: muscoli e peso di MakeHuman (0..1). Viso, età e proporzioni restano gli stessi
 BASE = {'gender': 1.0, 'age': 0.5, 'muscle': 0.7, 'weight': 0.47, 'proportions': 0.75, 'height': 0.55, 'cupsize': 0.5, 'firmness': 0.5, 'race': {'asian': 0.33, 'caucasian': 0.34, 'african': 0.33}}
-# Ritocchi di forma (regolatori di MakeHuman, da 0 a 1): calciatore atletico, spalle larghe, vita dritta, gambe asciutte
-DETTAGLI = {'torso-vshape-incr': 0.55, 'measure-shoulder-dist-incr': 0.6, 'measure-waist-circ-incr': 0.45, 'torso-muscle-pectoral-incr': 0.35, 'torso-muscle-dorsi-incr': 0.35,
-            'hip-scale-horiz-decr': 0.6, 'buttocks-volume-decr': 0.35, 'measure-thigh-circ-decr': 0.6, 'measure-neck-circ-incr': 0.7, 'measure-neck-height-decr': 0.6,
-            'head-scale-horiz-incr': 0.35, 'head-scale-vert-incr': 0.3, 'head-scale-depth-incr': 0.3, 'chin-width-incr': 0.4, 'chin-bones-incr': 0.35, 'head-square': 0.3,
-            'l-upperarm-shoulder-muscle-incr': 0.5, 'r-upperarm-shoulder-muscle-incr': 0.5, 'l-upperarm-muscle-incr': 0.3, 'r-upperarm-muscle-incr': 0.3}
+# Ritocchi di forma (regolatori di MakeHuman, da 0 a 1): calciatore atletico ma non da culturista. Spalle larghe e vita dritta,
+# cosce e polpacci muscolosi, glutei pieni, collo robusto, testa un po' più piccola del normale (approvato da Alex il 23/11/2026)
+DETTAGLI = {'torso-vshape-incr': 0.65, 'measure-shoulder-dist-incr': 0.75, 'measure-waist-circ-incr': 0.4, 'torso-muscle-pectoral-incr': 0.5, 'torso-muscle-dorsi-incr': 0.5,
+            'hip-scale-horiz-decr': 0.5, 'buttocks-volume-incr': 0.25, 'measure-thigh-circ-incr': 0.35, 'l-upperleg-muscle-incr': 0.6, 'r-upperleg-muscle-incr': 0.6,
+            'measure-calf-circ-incr': 0.4, 'l-lowerleg-muscle-incr': 0.6, 'r-lowerleg-muscle-incr': 0.6,
+            'measure-neck-circ-incr': 1.0, 'neck-scale-horiz-incr': 0.3, 'measure-neck-height-decr': 0.5,
+            'head-scale-horiz-decr': 0.12, 'head-scale-vert-decr': 0.1, 'head-scale-depth-decr': 0.05, 'chin-width-incr': 0.4, 'chin-bones-incr': 0.35, 'head-square': 0.3,
+            'l-upperarm-shoulder-muscle-incr': 0.6, 'r-upperarm-shoulder-muscle-incr': 0.6, 'l-upperarm-muscle-incr': 0.45, 'r-upperarm-muscle-incr': 0.45,
+            'l-lowerarm-muscle-incr': 0.3, 'r-lowerarm-muscle-incr': 0.3}
 CORPI = {'normale': {}, 'snello': {'muscle': 0.4, 'weight': 0.22}, 'robusto': {'muscle': 1.0, 'weight': 0.72}}
 
 # ---------------------------------------------------------------- le direzioni degli arti nello scheletro del gioco
@@ -114,6 +120,124 @@ for p in me.polygons: p.material_index = 0; p.use_smooth = True
 # il corpo pieno, triangolato, come riferimento per portare forme e segni sui corpi alleggeriti
 bm = bmesh.new(); bm.from_mesh(me); bmesh.ops.triangulate(bm, faces=bm.faces[:]); bm.verts.ensure_lookup_table(); bm.faces.ensure_lookup_table()
 tri_pieni = [[v.index for v in f.verts] for f in bm.faces]; albero = BVHTree.FromBMesh(bm); bm.free()
+
+# ---------------------------------------------------------------- la divisa con volume (dopo l'albero: forme e segni si leggono dal corpo nudo)
+# La divisa resta dipinta (src/divisa.js), ma qui le diamo spessore: ogni zona viene spinta in fuori lungo la normale
+# della pelle, di quanto dice VOLUME (metri), e agli orli il corpo viene tagliato con due anelli vicini (ORLO metri) perché
+# il bordo faccia un gradino netto. Le zone sono quelle di scripts/maschera-nuova.py, ricavate dalle giunture (Z in alto,
+# X di lato, -Y davanti). Struttura come il riferimento di Alex: maglia morbida, maniche larghe, pantaloncini ampi,
+# calzettoni col risvolto, scarpini con la suola.
+VOLUME = {'maglia': 0.010, 'pancia': 0.012, 'schiena': 0.5, 'manica': 0.010, 'orlo_manica': 0.022, 'corti': 0.012,
+          'orlo_corti': 0.026, 'interno': 0.5, 'calze': 0.003, 'risvolto': 0.008, 'scarpa': 0.006, 'suola': 0.004}
+ORLO = 0.004
+# quante passate di lisciatura fanno del piede uno scarpino
+SCARPA_GIRI = 25
+def divisa_volume(o, rig):
+    G = lambda n: rig.matrix_world @ rig.data.bones['mixamorig:' + n].head_local
+    anca, ginocchio, caviglia = G('LeftUpLeg').z, G('LeftLeg').z, G('LeftFoot').z
+    spalla, gomito, collo, coscia = abs(G('LeftArm').x), abs(G('LeftForeArm').x), G('Neck'), abs(G('LeftUpLeg').x)
+    petto = G('Spine2').z
+    orlo_maglia = anca - 0.05
+    manica = spalla + (gomito - spalla) * 0.62
+    orlo_corti = ginocchio + (anca - ginocchio) * 0.34
+    calza = ginocchio - (ginocchio - caviglia) * 0.16
+    # il risvolto dove lo colora il gioco (MISURE.risvolto in src/divisa.js, coordinate del gioco: h = 0,9942 z - 0,029)
+    risvolto = (0.40 + 0.029) / 0.9942
+    bm = bmesh.new(); bm.from_mesh(o.data); bm.verts.ensure_lookup_table()
+    pavimento = min(v.co.z for v in bm.verts)
+    suola = pavimento + 0.014
+    braccio = lambda c: abs(c.x) > spalla * 0.9 and c.z > anca
+    gamba = lambda c: c.z < anca and abs(c.x) < spalla * 0.9
+    def taglia(punto, normale, dove):
+        g = [f for f in bm.faces if all(dove(v.co) for v in f.verts)]
+        ge = list({e for f in g for e in f.edges}); gv = list({v for f in g for v in f.verts})
+        r = bmesh.ops.bisect_plane(bm, geom=g + ge + gv, plane_co=punto, plane_no=normale)
+        return [e for e in r['geom_cut'] if isinstance(e, bmesh.types.BMVert)]
+    # le dita via: il piede si taglia subito davanti all'attaccatura delle dita, le dita si tolgono e il buco si chiude
+    # con un cappuccio a punta (un anello a metà strada e un vertice in punta). I punti nuovi prendono pesi delle ossa e
+    # coordinate della texture dal bordo, così sono scarpa come il resto del piede
+    dl = bm.verts.layers.deform.active; uvl = bm.loops.layers.uv.active
+    def pesi(a, da):
+        for g, w in da[dl].items(): a[dl][g] = w
+    for s in (1, -1):
+        dito = next(rig.matrix_world @ b.head_local for b in rig.data.bones if b.name.endswith('ToeBase') and (rig.matrix_world @ b.head_local).x * s > 0)
+        yb = dito.y + 0.015
+        nel_piede = lambda c: gamba(c) and c.x * s > 0 and c.z < caviglia
+        via = [v for v in bm.verts if nel_piede(v.co) and v.co.y < yb]
+        punta_y = min(v.co.y for v in via); punta_z = sum(v.co.z for v in via) / len(via)
+        taglia((0, yb, 0), (0, 1, 0), nel_piede)
+        bmesh.ops.delete(bm, geom=[v for v in bm.verts if nel_piede(v.co) and v.co.y < yb - 1e-5], context='VERTS')
+        bordo = [e for e in bm.edges if e.is_boundary and all(nel_piede(v.co) and abs(v.co.y - yb) < 2e-3 for v in e.verts)]
+        bv = list({v for e in bordo for v in e.verts}); print('PUNTA lato', s, 'lati del bordo', len(bordo), 'punti', len(bv)); cb = sum((v.co for v in bv), mathutils.Vector()) / len(bv)
+        uv_di = {v: v.link_loops[0][uvl].uv.copy() for v in bv}
+        cima = bm.verts.new((cb.x, punta_y, punta_z)); pesi(cima, min(bv, key=lambda v: abs(v.co.x - cb.x) + abs(v.co.z - punta_z)))
+        meta = {}
+        for v in bv:
+            m = bm.verts.new(v.co.lerp(cima.co, 0.5)); m.co.y = (v.co.y + punta_y) / 2; pesi(m, v); meta[v] = m
+        uv_di.update({meta[v]: uv_di[v] for v in bv}); uv_di[cima] = uv_di[bv[0]]
+        for e in bordo:
+            l = e.link_loops[0]; a, b = l.vert, l.link_loop_next.vert
+            for giro in ((b, a, meta[a], meta[b]), (meta[b], meta[a], cima)):
+                f = bm.faces.new(giro); f.smooth = True
+                for lp in f.loops: lp[uvl].uv = uv_di[lp.vert]
+    bm.verts.ensure_lookup_table(); bm.faces.ensure_lookup_table()
+    anelli = []
+    for s in (1, -1):
+        for x in (manica - ORLO, manica):
+            anelli += taglia((s * x, 0, 0), (1, 0, 0), lambda c, s=s: braccio(c) and c.x * s > 0)
+    for z in (orlo_maglia, orlo_maglia + ORLO):
+        anelli += taglia((0, 0, z), (0, 0, 1), lambda c: abs(c.x) < spalla * 0.9 and abs(c.z - orlo_maglia) < 0.08)
+    for z in (orlo_corti, orlo_corti + ORLO, calza - ORLO, calza, risvolto - ORLO, risvolto, suola, suola + ORLO):
+        anelli += taglia((0, 0, z), (0, 0, 1), gamba)
+    sm = lambda a, b, x: (lambda t: t * t * (3 - 2 * t))(min(1.0, max(0.0, (x - a) / (b - a))))
+    # lo scarpino: senza dita e con la punta chiusa, il piede (sotto la caviglia) viene lisciato finché diventa una forma
+    # morbida da scarpa, poi prende lo spessore della scarpa lungo la normale. Sopra la caviglia si liscia sempre meno
+    in_suola = {v for v in bm.verts if gamba(v.co) and v.co.z < suola + 1e-5}
+    piede = [v for v in bm.verts if gamba(v.co) and v.co.z < caviglia + 0.05]
+    peso = {v: sm(caviglia + 0.05, caviglia, v.co.z) for v in piede}
+    for giro in range(SCARPA_GIRI):
+        liscia(bm, [v for v in piede if peso[v] > giro / SCARPA_GIRI], 1, 0.6)
+    for v in piede: v.co.z = max(v.co.z, pavimento)
+    bm.verts.ensure_lookup_table(); bm.normal_update()
+    verso = {v: v.normal.copy() for v in piede}
+    for v in piede: v.co += v.normal * VOLUME['scarpa'] * peso[v]
+    bm.normal_update()
+    e = 1e-5; sposta = []
+    for v in bm.verts:
+        c, n, d = v.co, v.normal, 0.0
+        if braccio(c):
+            # la manica si stacca dal braccio sempre di più fino all'orlo; oltre l'orlo la pelle
+            if abs(c.x) <= manica - ORLO + e: d = VOLUME['manica'] + (VOLUME['orlo_manica'] - VOLUME['manica']) * sm(spalla * 0.9, manica, abs(c.x))
+        elif c.z > orlo_maglia + e:
+            # la maglia: niente su collo e testa, piena dal petto in giù (cade dritta invece di seguire la pancia), meno dietro
+            if c.z < collo.z:
+                pancia = sm(petto, orlo_maglia + 0.12, c.z) * (1.0 if c.y < 0 else VOLUME['schiena'])
+                d = (VOLUME['maglia'] + VOLUME['pancia'] * pancia) * sm(0.075, 0.14, (c - collo).length)
+        elif c.z > orlo_corti + e:
+            # i pantaloncini: più larghi verso l'orlo, la metà all'interno della coscia (le due gambe non si toccano)
+            d = (VOLUME['corti'] + (VOLUME['orlo_corti'] - VOLUME['corti']) * sm(orlo_maglia, orlo_corti, c.z)) * (1.0 if abs(c.x) > coscia else VOLUME['interno'])
+        elif c.z > calza - ORLO + e: d = 0.0
+        elif c.z > risvolto - e: d = VOLUME['risvolto']
+        elif c.z > caviglia + 0.05: d = VOLUME['calze']
+        sposta.append((v, n * d))
+    for v, dv in sposta: v.co += dv
+    # la suola: sotto il suo anello lo scarpino si allarga in pianta, e il fondo resta piatto
+    for v in in_suola:
+        h = mathutils.Vector((verso[v].x, verso[v].y, 0)) if v in verso else mathutils.Vector()
+        if h.length > 1e-6: v.co += h.normalized() * VOLUME['suola']
+        v.co.z = max(v.co.z, pavimento)
+    bm.verts.index_update(); tieni = sorted({v.index for v in anelli if v.is_valid})
+    bm.to_mesh(o.data); bm.free(); o.data.update()
+    # gli anelli degli orli non si alleggeriscono (peso 0 nel gruppo che il DECIMATE usa)
+    o.vertex_groups['v_resto'].add(tieni, 0.0, 'REPLACE')
+    print('DIVISA anca %.3f ginocchio %.3f caviglia %.3f manica %.3f orli %.3f %.3f calza %.3f risvolto %.3f suola %.3f; anelli %d' %
+          (anca, ginocchio, caviglia, manica, orlo_maglia, orlo_corti, calza, risvolto, suola, len(tieni)))
+    return tieni
+ORLI = divisa_volume(corpo, rig)
+# le dita tolte hanno rinumerato i vertici: gli occhi si ritrovano dal loro gruppo
+_io = corpo.vertex_groups['v_occhi'].index
+_ids = [v.index for v in corpo.data.vertices if any(g.group == _io for g in v.groups)]
+occhi = {'l': [i for i in _ids if corpo.data.vertices[i].co.x > 0], 'r': [i for i in _ids if corpo.data.vertices[i].co.x <= 0]}
 def porta(co, valori):
     """Il valore (per vertice del corpo pieno) nel punto del corpo pieno più vicino a co."""
     loc, _, fi, _ = albero.find_nearest(mathutils.Vector(co)); a, b, c = tri_pieni[fi]
@@ -132,6 +256,8 @@ for k, tri in enumerate(LOD):
     io = o.vertex_groups['v_occhi'].index; negli_occhi = lambda v: any(g.group == io for g in v.groups)
     tri_occhi = sum(len(p.vertices) - 2 for p in m2.polygons if all(negli_occhi(m2.vertices[i]) for i in p.vertices))
     tri0 = sum(len(p.vertices) - 2 for p in m2.polygons) - tri_occhi
+    # gli anelli degli orli si tengono solo da vicino: più lontano si alleggeriscono come il resto
+    if k > 0: o.vertex_groups['v_resto'].add(ORLI, 1.0, 'REPLACE')
     d = o.modifiers.new('Alleggerisci', 'DECIMATE'); d.ratio = (tri - tri_occhi) / tri0; d.use_collapse_triangulate = True; d.vertex_group = 'v_resto'
     bpy.ops.object.modifier_move_to_index(modifier=d.name, index=0); bpy.ops.object.modifier_apply(modifier=d.name)
     co = coordinate(o); e_occhio = [1.0 if negli_occhi(v) else 0.0 for v in m2.vertices]
