@@ -112,8 +112,10 @@ function buildStadium() {
   // spalti in cemento con scale, ringhiere, tunnel, striscioni, bandiere e la folla (src/grafica/spalti.js)
   SPALTI = creaSpalti(T, scene, { HL, HW, renderer }); BORDO = creaBordoCampo(T, scene, { HL, HW }); // e steward e fotografi a bordo campo (src/grafica/bordocampo.js)
   // cartelloni
-  const [bc, bx] = cv(2048, 64);
-  const tex = ctex(bc); boards.tex = tex; boards.cv = bc; boards.ctx = bx;
+  // la striscia si disegna su una tela più fitta di quanto serve da vicino (LED.tela) e si filtra al massimo che la
+  // scheda grafica concede: da lontano, in alto sullo schermo, le scritte che scorrono restano ferme e leggibili
+  const [bc, bx] = cv(LED.tela[0], LED.tela[1]);
+  const tex = ctex(bc); tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); boards.tex = tex; boards.cv = bc; boards.ctx = bx;
   const bm = new T.MeshBasicMaterial({ map: tex });
   const board = (len, px, pz, ry) => {
     const m = new T.Mesh(new T.PlaneGeometry(len, 1.05), bm.clone()); m.material.map = tex.clone(); m.material.map.needsUpdate = true;
@@ -143,7 +145,9 @@ function buildStadium() {
 }
 function paintBoards(home, away, imgs) {
   const x = boards.ctx, c = boards.cv; if (!x) return;
-  x.fillStyle = '#0A0A0C'; x.fillRect(0, 0, c.width, c.height);
+  // le misure qui sotto sono quelle di una striscia di 2048 × 64: la tela vera può essere più fitta
+  const fitta = c.height / 64; x.setTransform(fitta, 0, 0, fitta, 0, 0);
+  x.fillStyle = '#0A0A0C'; x.fillRect(0, 0, 2048, 64);
   const seg = 512;
   for (let i = 0; i < 4; i++) {
     const o = i * seg;
@@ -155,6 +159,7 @@ function paintBoards(home, away, imgs) {
     const cr = imgs && imgs[i < 2 ? home.id : away.id]; if (cr) x.drawImage(cr, o + 24, 5, 54 * cr.width / cr.height, 54);
     const cr2 = imgs && imgs[i < 2 ? away.id : home.id]; if (cr2) x.drawImage(cr2, o + seg - 78, 5, 54 * cr2.width / cr2.height, 54);
   }
+  x.setTransform(1, 0, 0, 1, 0, 0);
   for (const b of boards) b.material.map.needsUpdate = true;
 }
 
@@ -2882,7 +2887,7 @@ async function boot() {
   try { await Promise.race([document.fonts.load('40px Anton'), new Promise((r) => setTimeout(r, 2500))]); } catch (e) { /* si disegna col font di sistema */ }
   buildStadium(); paintBoards(CLUBS[0], CLUBS[1], null);
   RESA = creaResa(T, { renderer, scene, cam, torri: FARI.luci.map((l) => l.pos) }); // riflessi, tonalità e alone (src/grafica/resa.js)
-  ATMO = creaAtmosfera(T, { scene, hemi, sun, sole: SOLE, fari: FARI, sfondo: SFONDO, campo: CAMPO, tribune: SPALTI.materiali, resa: RESA, notturna: NOTTURNA }); ATMO.applica(sel.ora); // giorno o notte, scelto prima della partita
+  ATMO = creaAtmosfera(T, { scene, hemi, sun, sole: SOLE, fari: FARI, sfondo: SFONDO, campo: CAMPO, tribune: SPALTI.materiali, cartelloni: boards, resa: RESA, notturna: NOTTURNA }); ATMO.applica(sel.ora); // giorno o notte, scelto prima della partita
   { const m = /[?&]seme=(\d+)/.exec(location.search); if (m) prova(+m[1]); } // modalità di prova: partita ripetibile, audio spento
   buildMenu(); comandiPartita(); bindInput();
   caricaCarriera(); // la carriera salvata, le rose cambiate col mercato e il club dell'utente, prima di caricare gli stemmi

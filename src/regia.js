@@ -264,12 +264,15 @@ export function creaRegia(X) {
   /* ---------------------------------------------------------------- tabelloni */
   function tabelloniGol(nome, c1, ink) {
     const x = boards.ctx, c = boards.cv; if (!x) return;
+    // misure di una striscia di 2048 × 64, come in paintBoards: la tela vera può essere più fitta
+    const fitta = c.height / 64; x.setTransform(fitta, 0, 0, fitta, 0, 0);
     for (let i = 0; i < 4; i++) {
       const o = i * 512, pari = i % 2 === 0;
       x.fillStyle = pari ? '#D9F51F' : c1; x.fillRect(o, 0, 512, 64);
       x.fillStyle = pari ? '#0A0A0C' : ink; x.font = '50px Anton'; x.textBaseline = 'middle'; x.textAlign = 'center';
       x.fillText(pari ? 'GOL!   GOL!   GOL!' : nome.toUpperCase().slice(0, 22), o + 256, 35);
     }
+    x.setTransform(1, 0, 0, 1, 0, 0);
     for (const b of boards) b.material.map.needsUpdate = true;
   }
   function tabelloniNormali() {
