@@ -56,8 +56,8 @@ export const chiRitratto = (club, sc, taglio = 'piccolo') => `${pulito(club)}|${
 
 /**
  * Riempie i ritratti dentro `radice` (le immagini con data-ritr), pochi alla volta, per non fermare la schermata. Ogni
- * ritratto è quello nuovo, composto da testa e maglia (src/casa/ritratti.js); se per quel giocatore non c'è ancora, o
- * i file non arrivano, resta quello vecchio ripreso dal modello 3D. Quelli già fatti arrivano subito dalla memoria.
+ * ritratto è quello nuovo, intero, con viso e maglia già dentro (src/casa/ritratti.js); se per quel giocatore non c'è,
+ * o il file non arriva, resta quello vecchio ripreso dal modello 3D. Quelli già fatti arrivano subito dalla memoria.
  */
 export function riempiRitratti(radice) {
   const coda = [...radice.querySelectorAll('img[data-ritr]:not([src])')];
@@ -65,7 +65,7 @@ export function riempiRitratti(radice) {
     const el = coda.shift(); if (!el) return;
     if (!el.isConnected) return prossimo();
     const [club, nome, num, por, origine, taglio] = el.dataset.ritr.split('|');
-    ritrattoNuovo(club, nome, origine, por === '1', taglio).catch(() => '').then((url) => {
+    ritrattoNuovo(club, nome, origine, taglio).catch(() => '').then((url) => {
       const foto = url || ritratto(club, nome, +num, por === '1');
       if (foto) el.src = foto; else el.removeAttribute('data-ritr');
       prossimo();
