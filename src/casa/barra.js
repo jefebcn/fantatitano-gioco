@@ -3,12 +3,13 @@
 // e Info. Poi il pulsante verde «Premio del giorno», che apre la serie di sette giorni. Poi due banner con un tempo in
 // alto a destra e sotto una barra col suo numero: la Stagione (divisione, partita, punti in classifica) e il Percorso
 // premi (solo il livello, la barra e i punti verso il prossimo premio). Poi diamanti e monete in due capsule
-// colorate, senza «+» perché qui non si compra niente. All'estremità lo stemma, il manager, il club e le stelle.
+// scure con la loro icona dipinta, senza «+» perché qui non si compra niente. All'estremità lo stemma, il manager, il club e le stelle.
 // I bollini «!» dicono dove c'è qualcosa da riscuotere.
 import * as CAR from '../carriera.js';
 import { img } from '../game.js';
 import { K, mon, club } from './casa.js';
 import { icona, stelline } from './icone.js';
+import { figura } from './immagini.js';
 import { adatta } from './carte.js';
 import { nomiDi } from '../dati/squadre.js';
 import { t } from './testi.js';
@@ -22,8 +23,8 @@ document.getElementById('vs').insertAdjacentHTML('beforebegin', `<div id="barraF
   <button class="banner bStag" data-vai="carriera" aria-label="${t('barra.stagione')}">${icona('campionato')}<span class="dentro"><span class="su"><b id="bStagN"></b><i id="bStagT"></i></span><span class="giu"><span class="barretta"><i id="bStagP"></i></span><u id="bStagPt"></u></span></span></button>
   <button class="banner bPerc" data-vai="percorso" aria-label="${t('barra.premi')}">${icona('premi')}<span class="dentro"><span class="su"><b id="bPremiL"></b></span><span class="giu"><span class="barretta"><i id="bPremiP"></i></span><u id="bPremiPt"></u></span></span><em class="bollino nas" id="bPremiB">!</em></button>
   <span class="molla"></span>
-  <button class="val dia" data-vai="guadagna" aria-label="${t('barra.diamanti')}">${icona('diamante')}<b id="bDia"></b><em class="bollino nas" id="bDiaB">!</em></button>
-  <button class="val mon" data-vai="guadagna" aria-label="${t('barra.monete')}">${icona('moneta')}<b id="bMon"></b><em class="bollino nas" id="bMonB">!</em></button>
+  <button class="val dia" data-vai="guadagna" aria-label="${t('barra.diamanti')}">${figura('icona-diamanti', 'valFig', 30) || icona('diamante')}<b id="bDia"></b><em class="bollino nas" id="bDiaB">!</em></button>
+  <button class="val mon" data-vai="guadagna" aria-label="${t('barra.monete')}">${figura('icona-monete', 'valFig', 30) || icona('moneta')}<b id="bMon"></b><em class="bollino nas" id="bMonB">!</em></button>
   <button class="prof" data-vai="profilo" aria-label="${t('barra.profilo')}"><img id="bStemma" alt=""><span><b id="bNome" data-adatta data-sparisce></b><i id="bClub" data-adatta></i><span id="bStelle"></span></span></button>
 </div>`);
 const el = (id) => document.getElementById(id);

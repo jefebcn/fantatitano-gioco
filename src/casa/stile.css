@@ -780,3 +780,19 @@ button.mG{cursor:pointer}
 #finestra .scelte.note .bottone.conFig{flex-direction:row;justify-content:flex-start;gap:8px;text-align:left}
 #finestra .scelte .bottone.conFig .scFig{flex:none;width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))}
 #finestra .scelte .bottone.conFig span{display:flex;flex-direction:column;gap:2px;min-width:0}
+/* ---------- ritocchi del 23/11 sera: carta Carriera della Home e saldo nella barra ---------- */
+/* carta Carriera: divisione e stagione sono salite nella fascia dorata, così nome, righe e pulsante «Gioca» hanno aria
+   sopra e sotto invece di toccare la fascia */
+.c-carriera .corpo{gap:12px;padding:7px 12px}
+#casa .c-carriera .stemma{height:100%;max-height:92px}
+.c-carriera .club{gap:3px}
+.c-carriera .nome{margin-bottom:2px}
+.c-carriera .gioca{padding:5px 16px;gap:2px}
+.carta.tono-oro .fascia .nota{letter-spacing:.02em;opacity:1;color:rgba(11,21,48,.9)}
+/* saldo nella barra: le icone dipinte di diamanti e monete su capsule scure col bordo del loro colore (sul fondo
+   colorato di prima non si staccavano); l'icona esce un filo dalla capsula */
+#barraF .val:has(.valFig){color:#fff;padding-left:4px;background-image:linear-gradient(180deg,#1B2C5E,#0B1530)}
+#barraF .val.dia:has(.valFig){box-shadow:inset 0 0 0 1.5px #54C1F8}
+#barraF .val.mon:has(.valFig){box-shadow:inset 0 0 0 1.5px #E8B64C}
+#barraF .val .valFig{flex:none;width:30px;height:30px;margin:-4px 0;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))}
+#barraF.s2 .val .valFig{width:26px;height:26px}

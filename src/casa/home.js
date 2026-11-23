@@ -42,18 +42,18 @@ export function disegnaHome() {
   const st = CAR.statoSfide(K, oggi), pe = CAR.statoPercorso(K), note = CAR.notifiche(K, oggi);
 
   // carriera: lo stemma grande, il nome e le stelle, una riga per competizione; a destra il pulsante grande «Gioca» con
-  // l'avversario della prossima partita di campionato (a stagione finita dice «Nuova stagione» e apre la Carriera)
+  // l'avversario della prossima partita di campionato (a stagione finita dice «Nuova stagione» e apre la Carriera).
+  // Divisione e stagione stanno nella fascia dorata, accanto al titolo: senza la riga in basso il centro respira
   const cp = CAR.coppaProssima(K), cc = CAR.castelliProssima(K);
   const campionato = p ? t('carriera.campionato', pos, p.giornata, p.totale) : t('carriera.campionatoFinito', pos);
   const coppa = cp ? cp.nome : t(K.coppa.vinta ? 'carriera.vinta' : 'carriera.fuori');
   const castelli = cc ? (cc.fase === 'gironi' ? t('carriera.gironi') : cc.nome) : t(K.castelli.vinta ? 'carriera.vinto' : 'carriera.fuori');
   const avv = p && club(p.avv), nAvv = avv && nomiDi(avv);
-  const carriera = carta({ rotta: 'carriera', titolo: t('home.carriera'), colore: 'oro', sfondo: 'carta-carriera', classe: 'c-carriera',
+  const carriera = carta({ rotta: 'carriera', titolo: t('home.carriera'), nota: t('carriera.motto', CAR.divisione(K).nome, K.stagione), colore: 'oro', sfondo: 'carta-carriera', classe: 'c-carriera',
     corpo: `<img class="stemma" src="${img(me.id)}" alt=""><span class="club"><span class="nome"><b ${attrNome(nomi, 16)}>${esc(nomi.nome)}</b>${stelline(me.str)}</span>`
       + `${riga('campionato', 'trofeo-campionato', t('carriera.campionatoNome'), campionato)}${riga('coppa', 'coppa-titano', t('carriera.coppa'), coppa)}${riga('castelli', 'trofeo-castelli', t('carriera.castelli'), castelli)}</span>`
       + (avv ? `<span class="gioca" data-gioca><b>${t('home.gioca')}</b><span><img src="${img(avv.id + '-mini')}" alt=""><i ${attrNome({ breve: nAvv.sigla, sigla: nAvv.sigla })}>${esc(nAvv.breve)}</i></span><u>${t(p.inCasa ? 'carriera.inCasa' : 'carriera.inTrasferta')}</u></span>`
-        : `<span class="gioca"><b data-adatta data-min="16">${t('carriera.nuova')}</b></span>`),
-    piede: `<i data-adatta>${t('carriera.motto', CAR.divisione(K).nome, K.stagione)}</i>` });
+        : `<span class="gioca"><b data-adatta data-min="16">${t('carriera.nuova')}</b></span>`) });
 
   // scenario: ancora chiuso, finché la partita non sa partire da un minuto e da un punteggio dati; si vede il premio
   const scenario = carta({ rotta: 'scenario', titolo: t('home.scenario'), colore: 'rossa', chiusa: true, sfondo: 'carta-scenario', classe: 'c-scenario',
