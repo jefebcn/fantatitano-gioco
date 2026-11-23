@@ -317,7 +317,7 @@ quarta e la quinta anche 20 e 40 diamanti.
 
 | Struttura | Cosa dà per stella |
 |---|---|
-| Centro allenamento | moduli aperti 4, 5, 6, 7, 8; riscaldamento che dura 1, 1, 1, 2, 2, 3 partite; 1 allenatore comune a settimana |
+| Centro allenamento | moduli aperti 4, 6, 8, 10, 12, 15 (dal 23/11, coi sette moduli nuovi; prima 4, 5, 6, 7, 8); riscaldamento che dura 1, 1, 1, 2, 2, 3 partite; 1 allenatore comune a settimana |
 | Infermeria | +10% di energia recuperata tra le partite |
 | Foresteria | rosa massima 22, 24, 26, 28, 30, 32 |
 | Ufficio commerciale | +10% di monete a partita |

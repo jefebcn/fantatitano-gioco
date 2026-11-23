@@ -417,6 +417,9 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 #finestra .scelte .bottone b{font-weight:400}
 /* scelte con una nota sotto il nome (fisioterapista, allenatori, vendita): due colonne, la nota su una riga sua in piccolo */
 #finestra .scelte.note{grid-template-columns:repeat(2,minmax(0,1fr))}
+/* tante scelte: finestra larga e cinque colonne */
+#finestra.larga .foglio{width:min(640px,100%)}
+#finestra.larga .scelte,#finestra.larga .scelte.note{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
 #finestra .scelte.note .bottone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:auto;min-height:52px;padding:6px 8px}
 #finestra .scelte .bottone i{font:600 12px/1.2 Montserrat,system-ui,sans-serif;font-style:normal;letter-spacing:0;text-transform:none;display:flex;align-items:center;gap:4px}
 #finestra .scelte .bottone i svg{width:14px;height:14px;flex:none}

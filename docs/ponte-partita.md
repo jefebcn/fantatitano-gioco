@@ -305,8 +305,11 @@ stato toccato; in `src/config.js` ho aggiunto `DIVISIONI` e `STAGIONE` e riscrit
 - **Energia sotto il 60%.** Alex chiede che sotto il 60% cali prima la velocità e poi le altre doti. È una regola di
   campo, quindi tua: la home manda solo l'`energia` iniziale, come oggi.
 - **Moduli.** Il club dell'utente può usare solo i moduli aperti dal Centro allenamento (i primi quattro di `FORMS`, poi
-  uno in più per stella): nella richiesta arriva sempre un modulo aperto. La pausa in partita mostra invece tutti gli otto
-  moduli: se vuoi rispettare il limite anche lì, l'elenco è `CAR.moduliAperti(K, Object.keys(FORMS))`.
+  due in più per stella, fino a tutti e quindici): nella richiesta arriva sempre un modulo aperto. Dal 23/11 i moduli sono
+  quindici: la home ne ha aggiunti sette in coda a `FORMS` (4-5-1, 4-4-1-1, 3-4-1-2, 5-4-1, 4-3-2-1, 4-2-2-2, 3-4-2-1),
+  senza toccare gli otto di prima; le squadre del computer restano sui primi quattro. `npm run partite` dà le stesse tre
+  partite di prima, e una serie con ognuno dei sette (`MODULO=4-5-1 npm run partite`) non dà anomalie. La pausa in partita
+  mostra tutti e quindici i moduli, su quattro righe sull'iPhone piccolo (ci sta): se vuoi rispettare il limite anche lì, l'elenco è `CAR.moduliAperti(K, Object.keys(FORMS))`.
 
 ## 9. Nota per la sessione della home: saldo sul telefono o sul server (21/11)
 Alex ha deciso che per ora **non si applica niente al database** dell'app: saldo e storico restano sul telefono. Ha

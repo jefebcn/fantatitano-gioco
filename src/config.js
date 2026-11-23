@@ -67,6 +67,17 @@ export const FORMS = {
   '5-3-2': { pos: [[-46, 0], [-27, -24], [-33, -11], [-35, 0], [-33, 11], [-27, 24], [-14, -12], [-17, 0], [-14, 12], [9, -6], [9, 6]], roles: 'PDDDDDCCCAA' },
   '4-1-4-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-22, 0], [-9, -22], [-12, -7], [-12, 7], [-9, 22], [11, 0]], roles: 'PDDDDCCCCCA' },
   '3-4-3': { pos: [[-46, 0], [-33, -12], [-35, 0], [-33, 12], [-14, -23], [-17, -7], [-17, 7], [-14, 23], [7, -19], [11, 0], [7, 19]], roles: 'PDDDCCCCAAA' },
+  // i sette moduli aggiunti il 23/11, sempre per la home e con le stesse regole. Quali moduli e la disposizione di
+  // partenza vengono dalla tabella di react-native-football-formation, con licenza MIT: i crediti sono in
+  // docs/crediti.md. Le posizioni sono state riscritte sulle nostre linee: difese, mediane e punte stanno agli stessi
+  // metri dei moduli qui sopra
+  '4-5-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-11, -23], [-15, -10], [-18, 0], [-15, 10], [-11, 23], [11, 0]], roles: 'PDDDDCCCCCA' },
+  '4-4-1-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-11, -21], [-15, -7], [-15, 7], [-11, 21], [1, 0], [11, 0]], roles: 'PDDDDCCCCAA' },
+  '3-4-1-2': { pos: [[-46, 0], [-33, -12], [-35, 0], [-33, 12], [-13, -22], [-17, -7], [-17, 7], [-13, 22], [-4, 0], [9, -6], [9, 6]], roles: 'PDDDCCCCCAA' },
+  '5-4-1': { pos: [[-46, 0], [-27, -24], [-33, -11], [-35, 0], [-33, 11], [-27, 24], [-11, -20], [-15, -7], [-15, 7], [-11, 20], [11, 0]], roles: 'PDDDDDCCCCA' },
+  '4-3-2-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-17, -13], [-20, 0], [-17, 13], [-3, -8], [11, 0], [-3, 8]], roles: 'PDDDDCCCAAA' },
+  '4-2-2-2': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-19, -7], [-19, 7], [-2, -17], [-2, 17], [9, -6], [9, 6]], roles: 'PDDDDCCCCAA' },
+  '3-4-2-1': { pos: [[-46, 0], [-33, -12], [-35, 0], [-33, 12], [-13, -22], [-17, -7], [-17, 7], [-13, 22], [-3, -8], [11, 0], [-3, 8]], roles: 'PDDDCCCCAAA' },
 };
 // le posizioni qui sopra sono scritte per un campo di 100 × 64: si allargano in proporzione al campo vero
 for (const f of Object.values(FORMS)) f.pos = f.pos.map(([x, z]) => [x * HL / 50, z * HW / 32]);
@@ -371,7 +382,7 @@ export const ECONOMIA = {
   diamanti: { serie: [4, 5, 6, 7, 8, 10, 16], settimana: 15, promozione: 25, coppa: 20, fisio: 10 },
   strutture: {
     costi: [300, 800, 2000, 5000, 12000], diamanti: [0, 0, 0, 20, 40],
-    centro: { moduli: [4, 5, 6, 7, 8, 8], riscaldamento: [1, 1, 1, 2, 2, 3], allenatori: 1 },
+    centro: { moduli: [4, 6, 8, 10, 12, 15], riscaldamento: [1, 1, 1, 2, 2, 3], allenatori: 1 },
     infermeria: .1, foresteria: [22, 24, 26, 28, 30, 32], commerciale: .1, osservatori: .1, curva: .01,
     stadio: { posti: [500, 1000, 2000, 3500, 6000, 10000], incasso: [0, .1, .2, .3, .45, .6] },
   },
