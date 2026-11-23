@@ -151,7 +151,7 @@ def divisa_volume(o, rig):
     orlo_corti = ginocchio + (anca - ginocchio) * 0.34
     calza = ginocchio - (ginocchio - caviglia) * 0.16
     # il risvolto dove lo colora il gioco (MISURE.risvolto in src/divisa.js, coordinate del gioco: h = 0,9942 z - 0,029)
-    risvolto = (0.40 + 0.029) / 0.9942
+    risvolto = (0.355 + 0.029) / 0.9942
     bm = bmesh.new(); bm.from_mesh(o.data); bm.verts.ensure_lookup_table()
     pavimento = min(v.co.z for v in bm.verts)
     suola = pavimento + 0.014
