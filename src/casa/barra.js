@@ -2,12 +2,12 @@
 // da Alex il 23/11. Da sinistra: tre pulsanti quadrati, cioè Home (che più in profondità diventa Indietro), Impostazioni
 // e Info. Poi il pulsante verde «Premio del giorno», che apre la serie di sette giorni. Poi due banner con un tempo in
 // alto a destra e sotto una barra col suo numero: la Stagione (divisione, partita, punti in classifica) e il Percorso
-// premi (sfide della settimana col loro tempo, punti verso il prossimo premio). Poi diamanti e monete in due capsule
+// premi (solo il livello, la barra e i punti verso il prossimo premio). Poi diamanti e monete in due capsule
 // colorate, senza «+» perché qui non si compra niente. All'estremità lo stemma, il manager, il club e le stelle.
 // I bollini «!» dicono dove c'è qualcosa da riscuotere.
 import * as CAR from '../carriera.js';
 import { img } from '../game.js';
-import { K, mon, fmtTempo, club } from './casa.js';
+import { K, mon, club } from './casa.js';
 import { icona, stelline } from './icone.js';
 import { adatta } from './carte.js';
 import { nomiDi } from '../dati/squadre.js';
@@ -20,13 +20,14 @@ document.getElementById('vs').insertAdjacentHTML('beforebegin', `<div id="barraF
   <button class="bt" id="bCasa"></button><button class="bt" data-vai="impostazioni" aria-label="${t('barra.impostazioni')}">${icona('impostazioni')}</button><button class="bt" data-vai="info" aria-label="${t('barra.info')}">${icona('info')}</button>
   <button class="premioG" data-az="serie">${icona('premi')}<b>${t('barra.premioGiorno').replace(' ', '<br>')}</b><em class="bollino nas" id="bSerieB">!</em></button>
   <button class="banner bStag" data-vai="carriera" aria-label="${t('barra.stagione')}">${icona('campionato')}<span class="dentro"><span class="su"><b id="bStagN"></b><i id="bStagT"></i></span><span class="giu"><span class="barretta"><i id="bStagP"></i></span><u id="bStagPt"></u></span></span></button>
-  <button class="banner bPerc" data-vai="percorso" aria-label="${t('barra.premi')}">${icona('premi')}<span class="dentro"><span class="su"><b id="bPremiL"></b><i><s id="bSettP"></s> <span id="bSettT"></span></i></span><span class="giu"><span class="barretta"><i id="bPremiP"></i></span><u id="bPremiPt"></u></span></span><em class="bollino nas" id="bPremiB">!</em></button>
+  <button class="banner bPerc" data-vai="percorso" aria-label="${t('barra.premi')}">${icona('premi')}<span class="dentro"><span class="su"><b id="bPremiL"></b></span><span class="giu"><span class="barretta"><i id="bPremiP"></i></span><u id="bPremiPt"></u></span></span><em class="bollino nas" id="bPremiB">!</em></button>
   <span class="molla"></span>
   <button class="val dia" data-vai="guadagna" aria-label="${t('barra.diamanti')}">${icona('diamante')}<b id="bDia"></b><em class="bollino nas" id="bDiaB">!</em></button>
   <button class="val mon" data-vai="guadagna" aria-label="${t('barra.monete')}">${icona('moneta')}<b id="bMon"></b><em class="bollino nas" id="bMonB">!</em></button>
   <button class="prof" data-vai="profilo" aria-label="${t('barra.profilo')}"><img id="bStemma" alt=""><span><b id="bNome" data-adatta data-sparisce></b><i id="bClub" data-adatta></i><span id="bStelle"></span></span></button>
 </div>`);
 const el = (id) => document.getElementById(id);
+const uguali = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
 // Il saldo nella barra: col punto delle migliaia fino a 99.999, poi in migliaia («120 K») e in milioni («1,2 M»)
 const saldo = (n) => (n < 1e5 ? mon(n) : n < 1e6 ? `${Math.floor(n / 1e3)} K` : `${(Math.floor(n / 1e5) / 10).toLocaleString('it-IT')} M`);
 el('barraF').addEventListener('click', (e) => {
@@ -58,8 +59,8 @@ export function mostraBarra(si) {
 export function aggiornaBarra() {
   if (!K || el('barraF').classList.contains('nas')) return;
   const oggi = new Date(), st = CAR.statoSfide(K, oggi), pe = CAR.statoPercorso(K), me = club(K.club), inHome = !livello();
-  // il primo pulsante: la casetta in Home e nelle schermate aperte dalla Home (un passo indietro è la Home), la freccia più giù
-  const casetta = livello() < 2, casa = el('bCasa'); casa.innerHTML = icona(casetta ? 'home' : 'indietro'); casa.classList.toggle('acceso', inHome); casa.setAttribute('aria-label', t(casetta ? 'barra.home' : 'barra.indietro'));
+  // il primo pulsante: la casetta nella Home, la freccia «Indietro» in tutte le altre schermate
+  const casetta = inHome, casa = el('bCasa'); casa.innerHTML = icona(casetta ? 'home' : 'indietro'); casa.classList.toggle('acceso', inHome); casa.setAttribute('aria-label', t(casetta ? 'barra.home' : 'barra.indietro'));
   // premio del giorno: il bollino resta finché non si è giocata la partita di oggi
   el('bSerieB').classList.toggle('nas', !!K.serie && K.serie.giorno === CAR.giornoDi(oggi));
   // stagione: la divisione, a che partita si è, la barra delle partite giocate e i punti in classifica
@@ -67,9 +68,8 @@ export function aggiornaBarra() {
   el('bStagN').textContent = CAR.divisione(K).nome;
   const partita = (corta) => (p ? t(corta ? 'barra.partitaCorta' : 'barra.partita', p.giornata, p.totale) : t('barra.finita')); sT.textContent = partita(false);
   el('bStagP').style.width = `${p ? Math.round((p.giornata - 1) / p.totale * 100) : 100}%`; el('bStagPt').textContent = t('barra.punti', riga ? riga.pt : 0);
-  // percorso premi: il livello, le sfide della settimana col tempo che resta, i punti verso il prossimo premio
+  // percorso premi: il livello, la barra e i punti verso il prossimo premio
   const fine = pe.livello >= pe.livelli;
-  el('bSettT').textContent = fmtTempo(CAR.fineSettimana(oggi) - oggi); el('bSettP').textContent = `${st.conti.w[0]}/${st.conti.w[1]}`;
   el('bPremiL').textContent = t('barra.livello', pe.inCorso); el('bPremiP').style.width = `${fine ? 100 : Math.round(pe.nelLivello / pe.perLivello * 100)}%`;
   el('bPremiPt').textContent = fine ? t('percorso.completo') : t('percorso.punti', pe.nelLivello, pe.perLivello);
   el('bPremiB').classList.toggle('nas', !pe.daRitirare);
@@ -80,8 +80,9 @@ export function aggiornaBarra() {
   el('bStemma').src = img(me.id + '-mini'); el('bStelle').innerHTML = stelline(me.str);
   // un nome di manager troppo lungo per il suo posto: prima resta la prima parola; se non ci sta nemmeno quella, sparisce
   const nm = el('bNome'); nm.textContent = nm.dataset.intero = K.nome; nm.dataset.corto = K.nome.split(' ')[0];
-  // il nome del club: intero, poi breve, poi la sigla
-  const cl = el('bClub'), nomi = nomiDi(me); cl.textContent = cl.dataset.intero = nomi.nome; cl.dataset.corto = nomi.breve; cl.dataset.sigla = nomi.sigla;
+  // il nome del club: intero, poi breve, poi la sigla. Se il nome breve è uguale a quello del manager (club «Lillo FC»,
+  // manager «Lillo») si salta: due righe uguali non dicono chi è chi
+  const cl = el('bClub'), nomi = nomiDi(me); cl.textContent = cl.dataset.intero = nomi.nome; cl.dataset.corto = uguali(nomi.breve, K.nome) ? nomi.sigla : nomi.breve; cl.dataset.sigla = nomi.sigla;
   // la barra si stringe a gradini finché ci sta tutto: i gradini sono nello stile, e dal secondo la partita si scrive corta
   const barra = el('barraF'); barra.classList.remove('s1', 's2', 's3', 's4'); barra.classList.add('misura');
   for (const gradino of ['s1', 's2', 's3', 's4']) { if (barra.scrollWidth <= barra.clientWidth) break; barra.classList.add(gradino); if (gradino === 's2') sT.textContent = partita(true); }

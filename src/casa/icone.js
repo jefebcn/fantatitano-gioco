@@ -9,3 +9,5 @@ document.body.insertAdjacentHTML('afterbegin', FOGLIO.replace('<svg ', '<svg id=
 export const icona = (nome, classe = '') => `<svg class="ico${classe ? ' ' + classe : ''}" aria-hidden="true"><use href="#i-${nome}"/></svg>`;
 /** Le stelle di un club o di una struttura: `n` piene su `su`. */
 export const stelline = (n, su = 5) => `<span class="stelline">${icona('stella').repeat(n)}${icona('stella-vuota').repeat(Math.max(0, su - n))}</span>`;
+/** La moneta e il diamante da mettere dentro un testo, davanti al numero (mai un pallino o un rombo scritti). */
+export const MO = icona('moneta'), DI = icona('diamante');
