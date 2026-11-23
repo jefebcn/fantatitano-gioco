@@ -116,7 +116,14 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - 4 FATTO: pallone disegnato fino a 1,7 volte più grande quando la telecamera è lontana (vero nei primi piani), più
   chiaro, ombra a disco scuro dal bordo netto (`PALLA_VISTA`, `mettiPalla` in `src/game.js`, usata anche dal replay).
   Solo grafica: partite identiche.
-- Restano: 5 palla vagante e cambio giocatore, 6 peso dei passaggi, 7 luci, 8 ombre, 9 strisce
+- 5 FATTO: la causa era la levetta. Chi riceve va da solo sul pallone, ma con la levetta tenuta mirava a un punto
+  spostato di 1,4 m, oltre la distanza di presa (1,05 m): gli correva accanto senza toccarlo. Ora 0,5 m
+  (`PASSAGGIO.incontro`). In più, a palla libera il comando passa a chi la può prendere prima (`CAMBIO`). Prova:
+  `scripts/prove/vagante.cjs` (prima 4 direzioni su 8 fallivano). Partite tra computer identiche.
+- 6 MISURATO, da decidere con Alex: `scripts/prove/passaggi.cjs` dice che a campo libero nessun passaggio è corto o lungo
+  (10 m: parte a 11,7 m/s, arriva a 8,9 in 0,67 s; 30 m: parte a 23,2, arriva a 13,5 in 1,30 s). I valori di Dream
+  League non li sappiamo: chiesto ad Alex se li vuole più forti o più lenti. Non si tocca finché non risponde.
+- Restano: 7 luci, 8 ombre, 9 strisce
   dell'erba, 10 cartelloni, 11 telecamera vicino alla linea, 12 nomi sovrapposti, 13 tasto A in difesa (chiedere),
   14 maglie simili, 15 animazioni (video rallentato dei 5 gesti).
 

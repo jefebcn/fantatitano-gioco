@@ -23,7 +23,7 @@ import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { PRATO, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { PRATO, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -1292,8 +1292,7 @@ function tempoA(p, x, z) { const d = hyp(x - p.x, z - p.z) - .6; if (d <= 0) ret
 function migliorDifensore(team, salta) {
   const b = G.ball, own = b.owner, gx = -team.side * HL; let best = null, bs = 1e9;
   const path = !own ? (G.path || FIS.percorso(b, 2.4, .1)) : null;
-  for (const p of team.players) {
-    if (p.i === 0 || p === salta || p.red) continue;
+  const voto = (p) => {
     let sc;
     if (own && own.team !== team) {
       const ux = gx - own.x, uz = -own.z, ul = hyp(ux, uz) || 1, cx = own.x + own.vx * .45 + ux / ul * 2, cz = own.z + own.vz * .45 + uz / ul * 2;
@@ -1303,12 +1302,12 @@ function migliorDifensore(team, salta) {
       sc = 5; for (const pt of path) if (pt.y < AIR.intercetta && portata(p, pt.x, pt.z, pt.t) + .6 >= hyp(pt.x - p.x, pt.z - p.z)) { sc = pt.t; break; }
       if (sc >= 5) sc = 4 + tempoA(p, b.x, b.z) * .2; // nessuno ci arriva prima: il più vicino al punto dove si ferma
     } else sc = hyp(p.x - b.x, p.z - b.z) / 8;
-    if (p.stun > 0 || p.st === 'down' || p.st === 'slide') sc += 1;
-    if (sc < bs) { bs = sc; best = p; }
-  }
-  return best ? { p: best, t: bs } : null;
+    return p.stun > 0 || p.st === 'down' || p.st === 'slide' ? sc + 1 : sc;
+  };
+  for (const p of team.players) { if (p.i === 0 || p === salta || p.red) continue; const sc = voto(p); if (sc < bs) { bs = sc; best = p; } }
+  return best ? { p: best, t: bs, voto } : null;
 }
-function switchCtrl() { const m = migliorDifensore(G.teams[0], G.ctrl); if (m) setCtrl(m.p); }
+function switchCtrl() { const m = migliorDifensore(G.teams[0], G.ctrl); if (m) { setCtrl(m.p); G.cambioT = CAMBIO.pausa; } }
 
 /* comandi dell'utente */
 function inputWorld() { return [G.in.jx, G.in.jy]; }
@@ -1908,6 +1907,11 @@ function passo(dt) {
   if (G.state === 'play' && G.ctrl && !G.auto && b.owner !== G.ctrl) {
     const c = G.ctrl, l = hyp(G.in.jx, G.in.jy); G.idle = l > .2 ? 0 : G.idle + dt;
     if (G.idle > 1.2 && hyp(c.x - b.x, c.z - b.z) > 22 && G.intended !== c) { const m = migliorDifensore(G.teams[0]); if (m && m.p !== c) setCtrl(m.p); }
+    // palla libera (non il passaggio degli avversari in viaggio): il comando va a chi la può prendere prima, vedi CAMBIO
+    G.cambioT = (G.cambioT || 0) - dt;
+    if (!b.owner && G.cambioT <= 0 && !(G.intended && G.intended.team !== c.team)) {
+      const m = migliorDifensore(G.teams[0]); if (m && m.p !== G.ctrl && m.voto(G.ctrl) - m.t > CAMBIO.margine) { setCtrl(m.p); G.cambioT = CAMBIO.pausa; }
+    }
   }
 }
 function dosa(p) {
@@ -1927,7 +1931,7 @@ function userThink(p) {
   // la palla arriva a lui (passaggio, o palla libera a pochi metri che gli viene incontro): ci va incontro da solo, a tempo;
   // la levetta sposta solo un po' il punto d'incontro (per ricevere in corsa nella direzione voluta)
   const arriva = !b.owner && G.state === 'play' && (p === G.intended || (hyp(p.x - b.x, p.z - b.z) < 4.5 && ((p.x - b.x) * b.vx + (p.z - b.z) * b.vz > 0 || hyp(b.vx, b.vz) < 3)));
-  if (arriva) { const [x, z] = intercept(p), k = l > .15 ? 1.4 / l : 0; p.tx = x + ix * k; p.tz = z + iz * k; p.user = 1; p.sprint = true; }
+  if (arriva) { const [x, z] = intercept(p), k = l > .15 ? PASSAGGIO.incontro / l : 0; p.tx = x + ix * k; p.tz = z + iz * k; p.user = 1; p.sprint = true; }
   else if (l > .15) { const k = 1 / l; p.tx = p.x + ix * k * 6; p.tz = p.z + iz * k * 6; p.user = Math.min(1, l); } // la direzione dalla levetta, la velocità da quanto è inclinata (vedi andatura)
   else if (!b.owner && hyp(p.x - b.x, p.z - b.z) < 9) { const [x, z] = intercept(p); p.tx = x; p.tz = z; p.user = 1; p.sprint = true; }
   else { p.tx = p.x; p.tz = p.z; p.user = 0; }
