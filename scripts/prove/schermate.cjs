@@ -230,6 +230,9 @@ srv.listen(0, async () => {
     await tocca('#casa .c-club');
     if (await tocca('#panC [data-club="allenamento"]')) { await foto('allenamento'); const modi = await pg.$$eval('#panC .modoA img', (l) => l.filter((i) => i.naturalWidth > 0).length); if (modi !== 5) errori.push(`${w}: in Allenamento ${modi} illustrazioni su 5`); await tocca('#bCasa'); }
     await tocca('#bCasa');
+    // il pulsante «Gioca» della carta Carriera porta dritto alla prossima partita, e Indietro riporta alla Home
+    if (await tocca('#casa [data-gioca]')) { const qui = await dove(); await foto('sfida-dalla-home'); await tocca('#bCasa'); const poi = await dove(); if (qui !== 'sfida' || poi !== 'casa') errori.push(`${w}: «Gioca» della Home porta a «${qui}» e Indietro a «${poi}»`); }
+    else errori.push(`${w}: nella Home manca il pulsante «Gioca»`);
     fs.writeFileSync(path.join(OUT, `${w}-testi.json`), JSON.stringify(testi, null, 1));
     console.log(`${w}×${h}: ${n} foto; partita ${JSON.stringify(stato)} → ${JSON.stringify(fine)}`);
     await cx.close();

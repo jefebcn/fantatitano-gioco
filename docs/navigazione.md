@@ -45,7 +45,7 @@ AVVIO
 └── carriera già iniziata → HOME
 
 HOME (livello 0)
-├── CARRIERA
+├── CARRIERA (il pulsante «GIOCA» sulla carta salta la Carriera: Sfida → Partita → Fine partita → Home)
 │   ├── GIOCA ADESSO → Sfida → Partita → Fine partita → Carriera
 │   │                  └── Squadra (e ritorno alla Sfida)
 │   ├── Classifica completa (schede: Classifica, Calendario, Risultati)
