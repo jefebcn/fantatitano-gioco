@@ -78,7 +78,7 @@ function cartaMercato(g, { attr = '', gemme = 0, preso = false, piena = false, p
   const manca = piena ? '<i class="mManca">Rosa piena</i>' : caro ? `<i class="mManca">${mancaM + mancaG === 1 ? 'Ti manca' : 'Ti mancano'} ${prezzoHtml(mancaM, mancaG)}</i>` : '';
   const sotto = preso ? `<span class="mStato">${icona('spunta')}Preso</span>` : `<span class="mPrezzo">${prezzoHtml(g.prezzo, gemme)}${pieno ? `<del>${mon(pieno)}</del>` : ''}</span>${manca}`;
   return `<${tag} class="mG${preso ? ' preso' : caro || piena ? ' caro' : ''}" ${attr} ${attr && (preso || piena || caro) ? 'disabled' : ''}>`
-    + `<span class="mCarta">${miniCarta({ val: sc.val, fascia: sc.fascia, ritr: chiRitratto(da, sc, 'carta') })}</span>`
+    + `<span class="mCarta">${miniCarta({ val: sc.val, fascia: sc.fascia, ritr: chiRitratto(da, sc, 'mini') })}</span>`
     + `<span class="mTesto"><b data-adatta data-due-righe>${esc(g.x[0])}</b><span class="mDati"><u class="mRuolo r-${sc.reparto}">${sc.ruolo}</u><i>${sc.piede === 'S' ? 'sinistro' : 'destro'} · ${sc.altezza} cm</i>${g.da ? mini(g.da) : ''}</span>${sotto}</span></${tag}>`;
 }
 let mReparto = '';

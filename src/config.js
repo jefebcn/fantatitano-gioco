@@ -425,26 +425,23 @@ export const ECONOMIA = {
 
 
 // ---------- Ritratti dei giocatori (home) ----------
-// I ritratti sono resi una volta sola con Blender (docs/ritratti.md) e composti dal gioco: la testa del giocatore, sopra
-// la maglia coi colori della sua squadra, in cima i capelli che cadono davanti alla maglia. Questi numeri devono
-// restare uguali a quelli di scripts/blender/render_ritratti.py e scripts/ritratti_webp.py.
-// cartella: dove stanno i file. lato: le due misure dei file.
+// I ritratti delle carte (docs/ritratti.md, sezione del 23/11): un'immagine intera per volto, col viso e la maglia già
+// dentro, su fondo trasparente. La testa è larga il 40% del lato e sta al centro, con la cima al 7% dall'alto; il mento
+// cade verso il 58% e la maglia arriva almeno all'86%. Il gioco la usa così com'è: ne ritaglia solo la parte che serve.
+// cartella: dove stanno i file (<volto>-512.webp e <volto>-256.webp). lato: le due misure dei file.
 // taglio: la parte del ritratto che entra nella carta (da dove parte, di lato e dall'alto, quanto è larga e quanto è
 //   alta, in parti dell'immagine) e da quale misura di file si prende. `piccolo` è per le carte piccole dei campi
-//   stretti, dove il viso riempie lo scudo. `carta` e `scheda` sono lo stesso ritaglio, alto e stretto, della carta
-//   grande (misure prese dalla foto di riferimento di Alex): la testa larga il 63% del ritaglio, i capelli in cima, il
-//   mento all'82% dell'altezza, sotto collo e maglia. `scheda` lo prende dal file grande.
-// mappa: i metri coperti dalla mappa della maglia, di lato e in altezza rispetto agli occhi. occhi: a che altezza stanno
-//   gli occhi sul calciatore della partita, per usare gli stessi disegni delle sue maglie (src/divisa.js).
-// bianco: la luce della stoffa bianca più chiara (vale come bianco pieno). ombre: quanto si approfondiscono le pieghe.
-// filo: quanta luce tengono i colori scuri, perché le pieghe si vedano anche sul nero.
-// scolli: quale maglia per ogni colletto della partita (il colletto piccolo non c'è ancora: per ora è un girocollo).
-// insieme: quanti ritratti si compongono per volta, per non fermare la schermata.
+//   stretti, dove il viso riempie lo scudo. `mini` è per la carta mini (Home, Mercato): alto e stretto come il suo
+//   riquadro, con la testa larga otto decimi. `carta` e `scheda` sono lo stesso ritaglio della carta grande: la testa
+//   larga sette decimi, i capelli in cima, il mento a tre quarti dell'altezza, sotto collo e maglia. `scheda` lo prende
+//   dal file grande.
+// insieme: quanti ritratti si preparano per volta, per non fermare la schermata.
 export const RITRATTI = {
-  cartella: 'img/ritratti/', lato: { piccolo: 256, grande: 512 }, taglio: { piccolo: { x: .18, y: .055, largo: .64, alto: .64, lato: 'piccolo' }, carta: { x: .24, y: .025, largo: .6, alto: .726, lato: 'piccolo' }, scheda: { x: .24, y: .025, largo: .6, alto: .726, lato: 'grande' } },
-  mappa: { x: [-.6, .6], z: [-.5, .1] }, occhi: 1.65,
-  bianco: .86, ombre: 2.2, filo: .07,
-  scolli: { giro: 'girocollo', v: 'v', polo: 'girocollo' },
+  cartella: 'img/ritratti-carte/', lato: { piccolo: 256, grande: 512 },
+  taglio: {
+    piccolo: { x: .17, y: .05, largo: .66, alto: .66, lato: 'piccolo' }, mini: { x: .255, y: .045, largo: .49, alto: .78, lato: 'piccolo' },
+    carta: { x: .2145, y: .055, largo: .571, alto: .692, lato: 'piccolo' }, scheda: { x: .2145, y: .055, largo: .571, alto: .692, lato: 'grande' },
+  },
   insieme: 4,
 };
 // Carta grande del giocatore: larghezza diviso altezza della cornice, misurata sulla foto di riferimento di Alex
