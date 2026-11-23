@@ -12,7 +12,7 @@ Sono nell'elenco `assets/immagini.json` coi nomi di questa tabella e importate i
 | busta-stagione.png | 687 × 1024 | busta oro: fine stagione |
 | icona-monete.png | 1024 × 1024 | premio monete (può servire anche per `premio-monete`) |
 | icona-diamanti.png | 1024 × 1024 | premio diamanti (può servire anche per `premio-diamanti`) |
-| icona-allenatore-comune / -raro / -leggendario.png | 1024 × 1024 | premio allenatore per rarità |
+| (icona-allenatore-comune / -raro / -leggendario: sostituite, ora sono in `assets/arrivo/icone/`) | | |
 | icona-contatto-agente.png | 1024 × 1024 | premio contatto agente |
 | icona-fisioterapista.png | 1024 × 1024 | premio fisioterapista |
 | icona-punti-percorso.png | 1024 × 1024 | punti del percorso premi |
