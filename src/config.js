@@ -426,27 +426,72 @@ export const ECONOMIA = {
 
 // ---------- Ritratti dei giocatori (home) ----------
 // I ritratti delle carte (docs/ritratti.md, sezione del 23/11): un'immagine intera per volto, col viso e la maglia già
-// dentro, su fondo trasparente. La testa è larga il 40% del lato e sta al centro, con la cima al 7% dall'alto; il mento
-// cade verso il 58% e la maglia arriva almeno all'86%. Il gioco la usa così com'è: ne ritaglia solo la parte che serve.
+// dentro, su fondo trasparente. Tutti hanno la stessa inquadratura: la testa è larga il 40% del lato e sta al centro,
+// con la cima al 7% dall'alto, e la maglia arriva almeno all'86%. La carta li usa interi, senza ritagliarli.
 // cartella: dove stanno i file (<volto>-512.webp e <volto>-256.webp). lato: le due misure dei file.
-// taglio: la parte del ritratto che entra nella carta (da dove parte, di lato e dall'alto, quanto è larga e quanto è
-//   alta, in parti dell'immagine) e da quale misura di file si prende. `piccolo` è per le carte piccole dei campi
-//   stretti, dove il viso riempie lo scudo. `mini` è per la carta mini (Home, Mercato): alto e stretto come il suo
-//   riquadro, con la testa larga otto decimi. `carta` e `scheda` sono lo stesso ritaglio della carta grande: la testa
-//   larga sette decimi, i capelli in cima, il mento a tre quarti dell'altezza, sotto collo e maglia. `scheda` lo prende
-//   dal file grande.
+// cima: dove sta la cima della testa, in parti del lato dall'alto.
+// grandeDa: da quanti punti di larghezza della carta si prende il file grande.
 // insieme: quanti ritratti si preparano per volta, per non fermare la schermata.
-export const RITRATTI = {
-  cartella: 'img/ritratti-carte/', lato: { piccolo: 256, grande: 512 },
-  taglio: {
-    piccolo: { x: .17, y: .05, largo: .66, alto: .66, lato: 'piccolo' }, mini: { x: .255, y: .045, largo: .49, alto: .78, lato: 'piccolo' },
-    carta: { x: .2145, y: .055, largo: .571, alto: .692, lato: 'piccolo' }, scheda: { x: .2145, y: .055, largo: .571, alto: .692, lato: 'grande' },
+export const RITRATTI = { cartella: 'img/ritratti-carte/', lato: { piccolo: 256, grande: 512 }, cima: .07, grandeDa: 80, insieme: 4 };
+
+// ---------- La carta del giocatore (proposta «A» approvata da Alex il 23/11: docs/carte-giocatori.md) ----------
+// Tutte le misure sono in parti della larghezza W della carta. Quelle segnate «di H» sono in parti dell'altezza.
+// src/casa/giocatore.js le passa allo stile (src/casa/stile.css) come variabili: nello stile non ci sono numeri.
+// alta: H diviso W. raggio: degli angoli.
+// bordo: il filo chiaro dentro la carta. lato: rientro ai lati. alto: rientro sopra e sotto, di H. Poi raggio,
+//   spessore e colore.
+// rarita: dalla più preziosa. `da`: la valutazione da cui vale. `alto` e `basso`: i colori della sfumatura, dall'alto
+//   in basso. `testo`: il colore di valutazione e ruolo.
+// ritratto: il quadrato del ritratto. lato. sinistra: distanza dal bordo sinistro. alto: distanza dal bordo alto, che
+//   è negativa perché la testa esce sopra la carta, di 0,05 H. sporge: quanto spazio lasciare sopra la carta alla testa.
+//   La proposta diceva lato 1,05, sinistra 0,065 e alto −0,1425, ma così la maglia finiva prima della fascia del nome
+//   e si vedeva il taglio: con queste misure la cima e il centro della testa sono gli stessi e la maglia arriva alla
+//   fascia, con la testa larga 0,445 W invece di 0,42. ripiego: dove sta il ritratto vecchio, ripreso dal modello 3D,
+//   quando quello nuovo manca. È la distanza dal bordo sinistro e dal bordo alto, di H. Non esce dalla carta.
+// valutazione, ruolo: grandezza del carattere e centro: x in parti di W, y di H. Il ruolo fuori posto ha fondo `fuori`.
+// fascia: la fascia del nome. da: dove comincia, di H. alta: di H. Poi il colore. nome: grandezza del cognome.
+//   margine: lo spazio libero ai lati del cognome.
+// nome: un cognome lungo si rimpicciolisce fino a `minimo`, mai sotto `punti` punti sullo schermo, poi si stringe in
+//   larghezza fino a `stretto` volte, e solo dopo prende i puntini.
+// energia: la barretta sul bordo basso della fascia. lato: rientro ai lati. spessa. Poi i colori del pieno: alta, media
+//   sotto il 70%, bassa sotto il 40%. vuota: il colore del vuoto.
+// statistiche: la zona in fondo. da: dove comincia, di H. numero e sigla: grandezza dei caratteri. opaco: quanto è
+//   opaca la sigla. per: le tre statistiche di ogni reparto: P portieri, D difensori, C centrocampisti, A attaccanti.
+// stretta: la carta del campo e dei sostituti, quando è larga meno di `sotto` punti. Niente statistiche: la fascia
+//   comincia a `fascia`, di H, e arriva in fondo, e il cognome è grande `nome`. Il ritratto è più grande, per arrivare
+//   alla fascia, con la stessa cima e lo stesso centro della testa. ruoloDa: sotto questa larghezza il ruolo non si
+//   mostra.
+// piccola: la carta dei campi stretti della Sfida, col nome sotto e senza ruolo, che non ci sta. alta: H diviso W.
+//   scritta: i punti della valutazione, perché lì vale la regola dei 12 punti. ritratto: più grande, per arrivare in
+//   fondo alla carta, e un po' più a destra, per lasciare posto alla valutazione.
+// segno: la «C» del capitano e gli incarichi, tondi in alto a destra. largo: diametro. fuori: di quanto escono dal bordo.
+// freccia: la freccia verde di chi è stato allenato, sotto il ruolo. y: il centro, di H. larga.
+// larga: quanto è larga la carta dove non lo decide il campo. scheda: in parti dell'altezza dello schermo, e il
+//   massimo in punti. mercato e
+//   capitano: in punti. home: la più stretta e la più larga, tra cui prende quella che entra nel riquadro. accanto:
+//   quanti punti devono restare, di fianco, per titolo e testo perché la carta possa essere alta quanto tutto il
+//   riquadro. Se non restano, sta solo nella parte sotto il titolo.
+export const CARTA = {
+  alta: 1.38, raggio: .12,
+  bordo: { lato: .05, alto: .04, raggio: .09, spesso: 1 / 60, colore: 'rgba(255,255,255,.47)' },
+  rarita: {
+    oro: { da: 70, alto: '#ECC85C', basso: '#96691E', testo: '#3C2808' },
+    argento: { da: 55, alto: '#DEE4EC', basso: '#828C9B', testo: '#282D37' },
+    bronzo: { da: 0, alto: '#D69660', basso: '#824B28', testo: '#321C0C' },
   },
-  insieme: 4,
+  ritratto: { lato: 1.113, sinistra: .0335, alto: -.147, sporge: .2, ripiego: { sinistra: .24, alto: .05 } },
+  valutazione: { misura: .24, x: .17, y: .12 },
+  ruolo: { misura: .15, x: .17, y: .25, fuori: '#E0262D' },
+  fascia: { da: .70, alta: .13, colore: 'rgba(15,25,55,.92)', nome: .11, margine: .05 },
+  nome: { minimo: .085, punti: 5, stretto: .8 },
+  energia: { lato: .1, spessa: .035, alta: '#50DC78', media: '#F2A93B', bassa: '#FF5A5A', vuota: '#060A17' },
+  statistiche: { da: .83, numero: .12, sigla: .085, opaco: .8, per: { P: ['RIF', 'POS', 'PAS'], D: ['DIF', 'VEL', 'PAS'], C: ['PAS', 'CON', 'RES'], A: ['TIR', 'VEL', 'CON'] } },
+  stretta: { sotto: 64, fascia: .78, nome: .135, ritratto: { lato: 1.232, sinistra: -.026, alto: -.155 }, ruoloDa: 36 },
+  piccola: { alta: 1.19, scritta: 12, ritratto: { lato: 1.354, sinistra: -.047, alto: -.164 } },
+  segno: { largo: .27, fuori: .07 },
+  freccia: { y: .36, larga: .13 },
+  larga: { scheda: [.4, 200], mercato: 90, capitano: 54, home: [40, 96], accanto: 110 },
 };
-// Carta grande del giocatore: larghezza diviso altezza della cornice, misurata sulla foto di riferimento di Alex
-// (docs/carte-giocatori.md). Le altre proporzioni della carta sono nello stile (src/casa/stile.css).
-export const CARTA_GRANDE = { forma: .737 };
 // L'apertura di un premio (src/casa/premio.js). Tempi in millesimi, rotazioni in gradi.
 // breve (busta blu del giorno e delle sfide, busta argento del percorso premi) e lunga (busta oro di fine stagione)
 // hanno gli stessi passi, con tempi diversi:
@@ -484,10 +529,11 @@ export const AUDIO = {
 };
 // La schermata Squadra (docs/navigazione.md §3.3), con le misure date da Alex il 23/11.
 // carta: quanto è larga una carta, in parti della larghezza dello schermo (uguale in campo e tra i sostituti).
+// aria: i punti che restano tra la testa di una carta e la carta della linea sopra, nei moduli con più linee.
 // stretto: la mezza larghezza del campo in alto, in percento (in basso è 50): il lato alto è il 55% di quello basso.
 // trascina: di quanti punti deve muoversi il dito perché una carta o un incarico cominci a seguirlo.
 // lungo: dopo quanti millesimi un dito fermo su una carta apre la scheda del giocatore.
-export const SQUADRA = { carta: .055, stretto: 27.5, trascina: 10, lungo: 520 };
+export const SQUADRA = { carta: .055, aria: 2, stretto: 27.5, trascina: 10, lungo: 520 };
 // ---------- Valutazioni mostrate (home, carte dei giocatori, mercato) ----------
 // La forza usata in partita non cambia: qui si decide solo che numero si vede. Funzioni in src/dati/scala.js.
 // interno: la scala di lavoro, dal giocatore più debole al più forte del suo reparto (portieri, difensori,
@@ -497,8 +543,6 @@ export const SQUADRA = { carta: .055, stretto: 27.5, trascina: 10, lungo: 520 };
 //   55 e 75, i migliori tra 76 e 82, oltre 85 solo chi si allena molto.
 // stat: il minimo e il massimo di una statistica mostrata. rumore: di quanto una statistica si scosta, giocatore per
 //   giocatore, dal profilo del suo ruolo.
-// fasce: il metallo della carta dice la rarità (deciso da Alex il 23/11). Da che valutazione la carta è d'argento e da
-//   quale è d'oro, come tutti i capitani che si possono ingaggiare. Sotto è bronzo. Con le stagioni si sale.
 // colori: da che valore una statistica è gialla e da quale è verde (sotto è rossa).
 // capitani: tra quali valutazioni stanno i candidati di «Ingaggia il tuo capitano» e quanti sono.
 // basso: il valore interno di chi ha quotazione 1. Serve ai giocatori inventati delle divisioni sotto il Campionato
@@ -508,7 +552,6 @@ export const SCALA = {
   punti: [[30, 42], [55, 55], [65, 60], [72, 64], [78, 68], [82, 71], [85, 75], [88, 82], [100, 90]],
   stat: [30, 99],
   rumore: 5,
-  fasce: { argento: 55, oro: 70 },
   colori: [60, 72],
   capitani: { min: 70, max: 78, quanti: 9 },
   basso: 20,

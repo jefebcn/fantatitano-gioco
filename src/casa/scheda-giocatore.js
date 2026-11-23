@@ -2,13 +2,12 @@
 // o toccando fuori. Mostra la carta grande, le otto statistiche col nome intero, altezza, piede, valore ed energia, e le
 // azioni: dargli la fascia di capitano, allenarlo con un allenatore dell'inventario, venderlo o svincolarlo.
 import * as CAR from '../carriera.js';
-import { img } from '../game.js';
 import { coloreStat } from '../dati/scala.js';
-import { CARTA_GRANDE } from '../config.js';
+import { CARTA } from '../config.js';
 import { K, DATI, esc, mon, salvaK, applicaMio, avviso, club } from './casa.js';
 import { icona } from './icone.js';
 import { figura } from './immagini.js';
-import { cartaCampo, riempiRitratti } from './giocatore.js';
+import { cartaGiocatore, prontaCarte } from './giocatore.js';
 import { adatta } from './carte.js';
 import { t } from './testi.js';
 import { finestra } from './finestra.js';
@@ -26,7 +25,7 @@ function disegna() {
   const c = mioClub(), sc = DATI.scheda(x, c.id), energia = CAR.energiaDi(K, x[0]), titolare = G.dove === 'xi', capitano = (K.mio || {}).capitano === x[0];
   const cr = CAR.crescitaDi(K, x[0]), quanti = adatti(x).reduce((n, a) => n + a.quanti, 0);
   foglio.innerHTML = `<button class="chiudi" data-az="chiudi" aria-label="${t('finestra.chiudi')}">${icona('chiudi')}</button>`
-    + `<div class="sgCarta">${cartaCampo(sc, { club: c.id, energia, capitano, migliorato: sc.val > sc.base, grande: true, ferma: true, stemma: img(c.id + '-mini'), taglio: 'scheda' })}</div>`
+    + `<div class="sgCarta">${cartaGiocatore(sc, { club: c.id, larga: Math.round(Math.min(innerHeight * CARTA.larga.scheda[0], CARTA.larga.scheda[1])), energia, capitano, migliorato: sc.val > sc.base, ferma: true })}</div>`
     + `<div class="sgDati"><h3 data-adatta>${esc(x[0])}</h3>`
     + `<div class="sgStat">${sc.stat.map(([k, v]) => `<span><i>${t('stat.' + k)}</i><b class="s-${coloreStat(v)}">${v}</b></span>`).join('')}</div>`
     + `<div class="sgInfo"><span><i>${t('scheda.altezza')}</i><b>${sc.altezza} cm</b></span><span><i>${t('scheda.piede')}</i><b>${t(sc.piede === 'S' ? 'scheda.sinistro' : 'scheda.destro')}</b></span>`
@@ -36,8 +35,7 @@ function disegna() {
     + `<button class="azione${capitano || !titolare ? ' spento' : ''}" data-az="capitano">${icona('capitano')}<b>${t(capitano ? 'scheda.eCapitano' : 'inc.capitano')}</b></button>`
     + `<button class="azione${quanti ? '' : ' spento'}" data-az="allena">${icona('allenamento')}<span><b>${t('scheda.allena')}</b><i>${t('scheda.allenatori', quanti)}</i></span></button>`
     + `<button class="azione" data-az="vendi">${icona('vendi')}<span><b>${t('scheda.vendi')}</b><i>${icona('moneta')} ${mon(CAR.incasso(sc.val))}</i></span></button></div>`;
-  foglio.style.setProperty('--gw', '96px'); foglio.style.setProperty('--ga', CARTA_GRANDE.forma);
-  adatta(foglio); riempiRitratti(foglio);
+  adatta(foglio); prontaCarte(foglio);
 }
 
 // Gli allenatori in inventario che si possono usare su questo giocatore: quello dei portieri solo sui portieri

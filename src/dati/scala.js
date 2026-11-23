@@ -2,7 +2,7 @@
 // La forza usata in partita (la quotazione nei dati delle squadre) non si tocca: qui si decide solo cosa si vede.
 // I numeri stanno in src/config.js, alle voci SCALA e CARTE. I ruoli precisi, il piede e l'altezza stanno in
 // src/dati/giocatori.js.
-import { SCALA, CARTE, FORMS, HL, HW } from '../config.js';
+import { SCALA, CARTE, CARTA, FORMS, HL, HW } from '../config.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 /** Lo stesso numero dal nome che usa la partita (per avere sempre gli stessi valori dallo stesso giocatore). */
@@ -22,7 +22,7 @@ export function scala(x) {
 /** Di quanto una statistica si scosta dal profilo del ruolo, giocatore per giocatore (sempre uguale per lo stesso nome). */
 export const rumore = (seme, chiave) => (hash(seme + chiave) % (SCALA.rumore * 2 + 1)) - SCALA.rumore;
 /** Il metallo della carta, cioè la rarità: bronzo, argento o oro secondo la valutazione. */
-export const fascia = (val) => (val >= SCALA.fasce.oro ? 'oro' : val >= SCALA.fasce.argento ? 'argento' : 'bronzo');
+export const fascia = (val) => Object.keys(CARTA.rarita).find((nome) => val >= CARTA.rarita[nome].da) || 'bronzo';
 /** Colore di una statistica: rosso (bassa), giallo (media), verde (alta). */
 export const coloreStat = (v) => (v >= SCALA.colori[1] ? 'verde' : v >= SCALA.colori[0] ? 'giallo' : 'rosso');
 const chiaviDi = (ruolo) => CARTE.chiavi[ruolo === 'POR' ? 'P' : 'G'];

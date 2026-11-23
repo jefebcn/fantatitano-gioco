@@ -2,10 +2,10 @@
 // il club (strutture, allenatori, finanze), il mercato (offerte a tempo, lista trasferimenti, osservatore, agente) e
 // «Come guadagnare». Tutta la logica sta in src/carriera.js: qui ci sono solo l'elenco e i pulsanti.
 import * as CAR from '../carriera.js';
-import { ECONOMIA, DIVISIONI, FORMS } from '../config.js';
+import { ECONOMIA, DIVISIONI, FORMS, CARTA } from '../config.js';
 import { K, DATI, club, pan, mini, mon, esc, fmtTempo, salvaK, applicaMio, premioTesto } from './casa.js';
 import { figura, stileFondo } from './immagini.js';
-import { miniCarta, chiRitratto, riempiRitratti } from './giocatore.js';
+import { cartaGiocatore, prontaCarte } from './giocatore.js';
 import { adatta } from './carte.js';
 import { icona, stelline, MO, DI } from './icone.js';
 import { t } from './testi.js';
@@ -67,7 +67,7 @@ export function panClubMio(tab, msg) {
 
 // un prezzo con le icone: le monete e, se servono, i diamanti
 const prezzoHtml = (m, g) => (m ? `<span>${icona('moneta')}<b>${mon(m)}</b></span>` : '') + (g ? `<span>${icona('diamante')}<b>${g}</b></span>` : '');
-// Una carta del mercato: a sinistra la carta mini del giocatore (cornice della rarità, ritratto, valutazione), a destra
+// Una carta del mercato: a sinistra la carta del giocatore (rarità, ritratto, valutazione, ruolo, cognome, statistiche), a destra
 // il nome, il ruolo preciso con piede e altezza (e lo stemma, se arriva da una squadra vera) e sotto il prezzo.
 // Chi costa troppo resta leggibile come gli altri: cambia solo il prezzo, con scritto quanto manca.
 // attr: l'attributo del pulsante (senza, la carta è ferma); gemme: i diamanti del prezzo; preso: già comprato;
@@ -78,7 +78,7 @@ function cartaMercato(g, { attr = '', gemme = 0, preso = false, piena = false, p
   const manca = piena ? '<i class="mManca">Rosa piena</i>' : caro ? `<i class="mManca">${mancaM + mancaG === 1 ? 'Ti manca' : 'Ti mancano'} ${prezzoHtml(mancaM, mancaG)}</i>` : '';
   const sotto = preso ? `<span class="mStato">${icona('spunta')}Preso</span>` : `<span class="mPrezzo">${prezzoHtml(g.prezzo, gemme)}${pieno ? `<del>${mon(pieno)}</del>` : ''}</span>${manca}`;
   return `<${tag} class="mG${preso ? ' preso' : caro || piena ? ' caro' : ''}" ${attr} ${attr && (preso || piena || caro) ? 'disabled' : ''}>`
-    + `<span class="mCarta">${miniCarta({ val: sc.val, fascia: sc.fascia, ritr: chiRitratto(da, sc, 'mini') })}</span>`
+    + `<span class="mCarta">${cartaGiocatore(sc, { club: da, larga: CARTA.larga.mercato, ferma: true })}</span>`
     + `<span class="mTesto"><b data-adatta data-due-righe>${esc(g.x[0])}</b><span class="mDati"><u class="mRuolo r-${sc.reparto}">${sc.ruolo}</u><i>${sc.piede === 'S' ? 'sinistro' : 'destro'} · ${sc.altezza} cm</i>${g.da ? mini(g.da) : ''}</span>${sotto}</span></${tag}>`;
 }
 let mReparto = '';
@@ -106,7 +106,7 @@ export function panMercato(msg) {
     + `${striscione('evento-scelte', 'Lista trasferimenti', D.nome)}<div class="lista carteM">${lista}</div><div class="seg"><button data-rinnova="1" class="${K.gemme < ECONOMIA.mercato.lista.rinnovo ? 'no' : ''}">Cambia subito la lista · ${DI} ${ECONOMIA.mercato.lista.rinnovo}</button></div><p class="nota2">La lista cambia da sola dopo ogni partita.</p>`
     + `${osservatore}${agente}`);
   // i nomi lunghi si stringono, i ritratti arrivano pochi alla volta
-  const dentro = document.querySelector('#panC'); adatta(dentro); riempiRitratti(dentro);
+  const dentro = document.querySelector('#panC'); adatta(dentro); prontaCarte(dentro);
 }
 // i cinque modi di allenamento, nell'ordine della schermata: nome dell'illustrazione e chiave dei testi
 const MODI_ALLENAMENTO = ['tutorial', 'libero', 'rigori', 'punizioni', 'angoli'];

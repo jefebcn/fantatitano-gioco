@@ -1,7 +1,7 @@
 /*
  * I ritratti dei giocatori nelle carte (docs/ritratti.md, sezione del 23/11): un'immagine intera per volto, col viso
- * realistico e la maglia già dentro, su fondo trasparente. Qui si sceglie il volto e se ne ritaglia la parte che serve
- * alla carta. La maglia è quella stampata nel ritratto: non segue i cambi di divisa (deciso da Alex).
+ * realistico e la maglia già dentro, su fondo trasparente. Qui si sceglie il volto; la carta lo usa intero. La maglia è
+ * quella stampata nel ritratto: non segue i cambi di divisa (deciso da Alex).
  * Chi ha quale volto: i giocatori veri hanno ognuno il suo; quelli inventati e del mercato ne prendono uno dai volti
  * condivisi, con una regola: mai due facce uguali nella stessa rosa, né tra un'altra squadra e la mia.
  */
@@ -60,31 +60,23 @@ export function voltoDi(clubId, nome, origine) {
 }
 
 /* ---------- le immagini ---------- */
-const IMMAGINI = new Map();
-/** Un ritratto intero, preso una volta sola; se non si riesce a prenderlo la promessa dà null. */
-function immagine(file) {
-  if (!IMMAGINI.has(file)) IMMAGINI.set(file, new Promise((fatto) => { const im = new Image(); im.onload = () => fatto(im); im.onerror = () => fatto(null); im.src = RITRATTI.cartella + file; }));
-  return IMMAGINI.get(file);
+const CI_SONO = new Map();
+/** Dice se un file di ritratto esiste, provando a caricarlo una volta sola. */
+function esiste(indirizzo) {
+  if (!CI_SONO.has(indirizzo)) CI_SONO.set(indirizzo, new Promise((fatto) => { const im = new Image(); im.onload = () => fatto(true); im.onerror = () => fatto(false); im.src = indirizzo; }));
+  return CI_SONO.get(indirizzo);
 }
 
-const FATTI = new Map();
 /**
- * L'indirizzo dell'immagine di un ritratto ritagliato, o '' se non si può fare (allora chi chiama usa il ritratto
- * vecchio, ripreso dal modello 3D). Dipende solo dal volto e dal ritaglio, non dai colori della divisa.
+ * L'indirizzo del ritratto intero di un giocatore, o '' se non c'è (allora chi chiama usa il ritratto vecchio, ripreso
+ * dal modello 3D). Dipende solo dal volto e dalla misura, non dai colori della divisa.
  * @param {string} clubId   la squadra in cui gioca adesso: serve a scegliere il volto
  * @param {string} nome
  * @param {string} origine  la squadra vera da cui viene, o 'inv'
- * @param {string} [taglio]  quale ritaglio di RITRATTI.taglio: 'piccolo', 'mini', 'carta' o 'scheda'
+ * @param {boolean} [grande]  il file grande, per le carte larghe (RITRATTI.grandeDa)
  */
-export function ritrattoNuovo(clubId, nome, origine, taglio = 'piccolo') {
+export function ritrattoNuovo(clubId, nome, origine, grande = false) {
   const volto = voltoDi(clubId, nome, origine); if (!volto) return Promise.resolve('');
-  const T = RITRATTI.taglio[taglio] || RITRATTI.taglio.piccolo, lato = RITRATTI.lato[T.lato], chiave = `${volto}|${taglio}`;
-  if (!FATTI.has(chiave)) FATTI.set(chiave, immagine(`${volto}-${lato}.webp`).then((intero) => {
-    if (!intero) return '';
-    // nella carta entra solo una parte: il ritaglio scelto, alla sua forma
-    const largo = Math.round(T.largo * lato), alto = Math.round(T.alto * lato), c = document.createElement('canvas'); c.width = largo; c.height = alto;
-    c.getContext('2d').drawImage(intero, T.x * lato, T.y * lato, largo, alto, 0, 0, largo, alto);
-    return new Promise((fatto) => c.toBlob((b) => fatto(b ? URL.createObjectURL(b) : ''), 'image/webp', .92));
-  }));
-  return FATTI.get(chiave);
+  const indirizzo = `${RITRATTI.cartella}${volto}-${RITRATTI.lato[grande ? 'grande' : 'piccolo']}.webp`;
+  return esiste(indirizzo).then((si) => (si ? indirizzo : ''));
 }
