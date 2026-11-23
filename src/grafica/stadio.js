@@ -84,17 +84,29 @@ export class Porta {
    * (la velocità verso la rete si spegne quasi tutta, un piccolo rimbalzo). Risponde true se l'ha toccata.
    */
   urta(b, br) {
-    if (!this.dentro(b)) return false;
+    const m = RETE.sacca; if (!this.dentro(b, m)) return false;
     let tocco = false;
     for (const p of this.pannelli) {
-      const l = p.locale(b); if (l.u < 0 || l.u > 1 || l.v < 0 || l.v > 1) continue;
-      const pen = l.s + br; if (pen <= 0) continue;
+      // ai bordi un pannello vale ancora per la profondità della sacca: un pallone già nella sacca del fondo, quindi oltre
+      // il bordo dei lati, passava di fianco alla rete e usciva dalla porta
+      const l = p.locale(b), eu = m / p.la, ev = m / p.lb; if (l.u < -eu || l.u > 1 + eu || l.v < -ev || l.v > 1 + ev) continue;
+      const pen = l.s + br; if (pen <= 0 || pen > m + br) continue;
       const vn = b.vx * p.n.x + b.vy * p.n.y + b.vz * p.n.z;
-      p.sacca(l.u, l.v, Math.min(pen, RETE.sacca), Math.max(0, vn) * 0.5); tocco = true; this.attiva = 1.5;
+      p.sacca(Math.min(1, Math.max(0, l.u)), Math.min(1, Math.max(0, l.v)), Math.min(pen, RETE.sacca), Math.max(0, vn) * 0.5); tocco = true; this.attiva = 1.5;
       if (vn > 0) { const k = vn * (1 + 0.12) * Math.min(1, pen / RETE.sacca + 0.15); b.vx -= p.n.x * k; b.vy -= p.n.y * k; b.vz -= p.n.z * k; b.vx *= 0.97; b.vz *= 0.97; } // la rete assorbe
       if (pen > RETE.sacca) { const f = pen - RETE.sacca; b.x -= p.n.x * f; b.y -= p.n.y * f; b.z -= p.n.z * f; }
     }
     return tocco;
+  }
+  /**
+   * Dopo un gol il pallone resta nella porta, sacca compresa, da qualunque parte spinga: oltre la linea non supera il
+   * fondo, i lati e il tetto. Davanti alla linea è libero (può rimbalzare di nuovo in campo).
+   */
+  trattieni(b, br) {
+    const m = RETE.sacca - br, ax = (b.x - this.gx) * this.d; if (ax <= 0) return;
+    if (ax > this.dep + m) { b.x = this.gx + this.d * (this.dep + m); if (b.vx * this.d > 0) b.vx = 0; }
+    if (Math.abs(b.z) > this.GH + m) { const e = Math.sign(b.z); b.z = e * (this.GH + m); if (b.vz * e > 0) b.vz = 0; }
+    if (b.y > this.GT + m) { b.y = this.GT + m; if (b.vy > 0) b.vy = 0; }
   }
   /** Un pallone che colpisce la rete da fuori (per esempio sul lato, uscendo sul fondo): la fa rientrare un po'. */
   colpoFuori(b) {

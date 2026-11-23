@@ -82,23 +82,29 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   avversaria. Ora aspettano sulla linea dell'ultimo difensore (`ATTACCO` in `src/config.js`, `homeOf` in `src/game.js`):
   stesse 16 partite, fuorigioco 0,44, gol 1,00, tiri 7,00, 0 anomalie, tutte le 11 misure dentro gli obiettivi.
 
-## Gol, tiri e difetti della partita (stato al 22/11)
-- Obiettivo di Alex: 2–3 gol e 10–12 tiri per squadra, da rivedere quando manda le statistiche di una partita di Dream
-  League (tiri per squadra). Fino ad allora NIENTE varianti di gioco. Oggi, 32 partite (semi 7–38): 1,3–1,8 gol e 7,2 tiri
-  in tutto, 28 possessi di cui 13 oltre la trequarti, un gol ogni 5 tiri.
-- Storia, misure e le venti varianti scartate: `docs/dls-gameplay.md` («Gol e tiri», «Dove si ferma l'azione»).
-- FATTO il 21/11: passaggio morbido a chi corre (#96), calci a vuoto e rinvio con le mani del portiere (#102).
+## Gol, tiri e difetti della partita (stato al 23/11)
+- Obiettivi di Alex (23/11, dalle sue statistiche di Dream League, abbassati per computer contro computer): 10–14 tiri,
+  4–6 gol (35–45 tiri in gol su 100), 30–45 passaggi per squadra. Sono in `scripts/prove/partita.cjs` e `diagnosi.cjs`.
+- Oggi, su 64 partite (semi 7–70): 7,5 tiri (5 da vicino), 2,45 gol, 32 tiri in gol su 100, 36 passaggi per squadra,
+  11–12 possessi su 27 oltre la trequarti. Prima del 23/11: 6,4 tiri e 1,75 gol.
+- FATTO il 23/11 (giro sull'IA, tabella e lezioni in `docs/studio-ia.md`, crediti in `docs/crediti.md`): smarcamento col
+  voto di chi passa (`votoPassaggio`, `puntoVoto`, `SMARCA`), inserimento a condizione (`INSERIMENTO`), mira a tre
+  bersagli (`TIRO_IA.bersagli`), portiere un po' più debole (`save` 0,42 e 0,44), rete che non lascia più uscire il
+  pallone di lato, schermo giusto dopo la rotazione su iPhone (#109).
+- Scartati dopo la misura: tre bersagli come soglia del tiro (restavano solo colpi di testa), campo di forze in
+  conduzione, premio «avanti a campo libero», portiere molto più debole. Le venti varianti di prima: `docs/dls-gameplay.md`.
+- Regola imparata: guardare i tiri di piede e di testa separati (`scripts/prove/tiri.cjs`), non solo il totale.
+- Da dove ripartire: i tiri in più sono tutti colpi di testa (da 1,4 a 4,6 a partita), quelli di piede sono rimasti 4,3:
+  servono palloni rasoterra a chi si inserisce e meno tiri da 20 metri ribattuti; poi difesa meno perfetta (ritardo 0,2–0,3 s sui
+  passaggi, linea meno compatta, anticipi sul corto tra 9 e 12 su 100).
 - Difetti ancora aperti, nell'ordine deciso: 1) giravolta di scatto (corpo che gira di oltre 120° in un fotogramma,
   `poseSkinned`: «oltre i 150° si gira subito»); 2) parate a distanza (pallone fermato a più di un metro dai guanti);
   3) chi riceve si lascia sfilare il pallone a 1,2–1,4 m (gesto di stop laterale, ma la presa arriva a 1,05 m);
   4) piedi che strisciano nel passo laterale e nei cambi di direzione, portieri che arretrano di corsa.
-- Alla ripartenza delle varianti: conduzione in avanti a campo libero, poi difesa meno perfetta (ritardo 0,2–0,3 s sui
-  passaggi, linea meno compatta, anticipi sul corto tra 9 e 12 su 100), portiere per ultimo (un gol ogni 4–5 tiri).
 - In sospeso da Alex: riprese rapide sì o no (tolgono 11 s di attesa, non danno tiri); tiro lontano o di spalle (segue
   la levetta o va sempre in porta?); cambio automatico del giocatore in difesa; calcio d'inizio che aspetta il passaggio.
-- Studio di GameplayFootball, Google Research Football e due giochi più piccoli: `docs/studio-ia.md`, con tre prove
-  proposte (smarcamento fuori dall'ombra, inserimento a condizione, tiro a tre bersagli). Aspettano il via di Alex.
-- Strumenti: `scripts/prove/diagnosi.cjs`, `registra.cjs`, `rivedi.cjs`, `analisi-partita.py` (righe in `docs/RICETTE.md`).
+- Strumenti: `scripts/prove/diagnosi.cjs`, `tiri.cjs`, `registra.cjs`, `rivedi.cjs`, `analisi-partita.py` (righe in
+  `docs/RICETTE.md`).
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato

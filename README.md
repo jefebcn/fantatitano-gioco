@@ -142,10 +142,15 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   (`HOLD`, `LANCIO`): il pallone parte nel momento in cui il braccio lo lascia.
   Le fa partire `azione(p, nome)`; velocità e sfumature stanno nella tabella `FX`.
 - IA di squadra:
-  - **Inserimenti senza palla** (`runs`, `runScore`): chi attacca valuta tre corse (dritto, taglio
-    dentro, taglio fuori) con un punteggio fatto di distanza dalla porta, spazio libero, distanza dai
-    compagni e dal pallone, linea dei difensori; parte solo sopra una soglia. Dopo un passaggio in
-    avanti può scattare il dai e vai. Chi ha palla cerca chi si inserisce e gli passa sulla corsa.
+  - **Inserimento a condizione** (`runs`, `INSERIMENTO`; idea di GameplayFootball): ogni mezzo secondo si
+    guarda il punto 26 m davanti al portatore; se lì c'è spazio parte il compagno più vicino, per 4
+    secondi, verso la porta. Uno alla volta. Dopo un passaggio in avanti può scattare il dai e vai. Chi
+    ha palla cerca chi si inserisce e gli passa sulla corsa.
+  - **Smarcamento col voto di chi passa** (`puntoVoto`, `votoPassaggio`, `SMARCA`): chi è senza palla
+    prova otto punti attorno a dove sta andando e sceglie quello a cui il portatore darebbe il voto più
+    alto per un passaggio, senza allontanarsi troppo dal posto nel modulo né ammucchiarsi.
+  - **Tiro** (`valoreTiro`, `TIRO_IA`): quando tirare dipende da angolo, distanza e avversari nel cono;
+    dove mirare si sceglie tra palo, centro e palo, guardando dove gli avversari arrivano più tardi.
   - **Difesa a tre distanze** (`chase`): il più vicino al portatore si avvicina, poi temporeggia
     tenendosi tra lui e la porta, poi va sul pallone; aspetta di meno se la porta è vicina o se è
     arrivato il raddoppio. In scivolata va solo se è stato saltato o vicino all'area.

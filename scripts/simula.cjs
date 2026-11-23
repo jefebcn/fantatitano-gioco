@@ -2,7 +2,7 @@
    La squadra di casa gioca da sola come compagni dell'utente (MATE), quella in trasferta col livello scelto (DIFF).
    Uso: npm run build && node scripts/simula.cjs [partite per difficoltà, 24]
    Serve Playwright (non è tra le dipendenze): npm i -D playwright && npx playwright install chromium
-   Per provare altri numeri senza toccare il codice: OVR='{"RUN":{"every":2},"DIFF":{"facile":{"wait":2}}}' node scripts/simula.cjs
+   Per provare altri numeri senza toccare il codice: OVR='{"INSERIMENTO":{"ogni":1},"DIFF":{"facile":{"wait":2}}}' node scripts/simula.cjs
    Solo alcune difficoltà: D=normale,difficile node scripts/simula.cjs */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
