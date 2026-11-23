@@ -457,15 +457,19 @@ export const RITRATTI = { cartella: 'img/ritratti-carte/', lato: { piccolo: 256,
 //   sotto il 70%, bassa sotto il 40%. vuota: il colore del vuoto.
 // statistiche: la zona in fondo. da: dove comincia, di H. numero e sigla: grandezza dei caratteri. opaco: quanto è
 //   opaca la sigla. per: le tre statistiche di ogni reparto: P portieri, D difensori, C centrocampisti, A attaccanti.
-// stretta: la carta del campo e dei sostituti, quando è larga meno di `sotto` punti. Niente statistiche: la fascia
-//   comincia a `fascia`, di H, e arriva in fondo, e il cognome è grande `nome`. Il ritratto ha le stesse misure della
-//   carta intera. ruoloDa: sotto questa larghezza il ruolo non si mostra.
+// stretta: la carta larga meno di `sotto` punti: campo, sostituti, scelta del capitano, riquadri della Home. Niente
+//   statistiche: la fascia comincia a `fascia`, di H, e arriva in fondo, e il cognome è grande `nome`. Il ritratto ha
+//   le stesse misure della carta intera. ruoloDa: sotto questa larghezza il ruolo non si mostra. ampia: la carta
+//   stretta larga almeno `da` punti, quella dei riquadri della Home: nel posto lasciato dalle statistiche il ritratto
+//   è più grande e arriva alla fascia, con la stessa cima e lo stesso centro della testa.
 // piccola: la carta dei campi stretti della Sfida, col nome sotto e senza ruolo, che non ci sta. alta: H diviso W.
 //   scritta: i punti della valutazione, perché lì vale la regola dei 12 punti. ritratto: più grande, per arrivare in
 //   fondo alla carta, e un po' più a destra, per lasciare posto alla valutazione.
-// segno: la «C» del capitano e gli incarichi, tondi nell'angolo in alto a destra, dentro la carta. largo: diametro, a cui si aggiunge il filo scuro intorno.
-//   fuori: di quanto escono dal bordo. aria: lo spazio tra uno e l'altro.
-// freccia: la freccia verde di chi è stato allenato, sotto il ruolo. y: il centro, di H. larga.
+// segno: la «C» del capitano e gli incarichi, tondi in colonna a sinistra, sotto il ruolo, dove non coprono il viso.
+//   largo: diametro della «C». piccolo: diametro degli incarichi, che si vedono solo sulla carta intera, cioè nella
+//   scheda: sulle carte strette non ci stanno. x: il centro della colonna. y: dove comincia, di H. aria: lo spazio tra
+//   uno e l'altro.
+// freccia: la freccia verde di chi è stato allenato, in fondo alla stessa colonna. larga.
 // larga: quanto è larga la carta dove non lo decide il campo. scheda: in parti dell'altezza dello schermo, in parti
 //   della sua larghezza, e il massimo in punti: vale la più piccola delle tre. mercato e
 //   capitano: in punti. home: la più stretta e la più larga, tra cui prende quella che entra nel riquadro. accanto:
@@ -486,11 +490,11 @@ export const CARTA = {
   nome: { minimo: .085, punti: 5, stretto: .72, fondo: 3 },
   energia: { lato: .1, spessa: .035, alta: '#50DC78', media: '#F2A93B', bassa: '#FF5A5A', vuota: '#060A17' },
   statistiche: { da: .83, numero: .12, sigla: .085, opaco: .8, per: { P: ['RIF', 'POS', 'PAS'], D: ['DIF', 'VEL', 'PAS'], C: ['PAS', 'CON', 'RES'], A: ['TIR', 'VEL', 'CON'] } },
-  stretta: { sotto: 64, fascia: .78, nome: .135, ritratto: { lato: 1.05, sinistra: .065, alto: -.1425 }, ruoloDa: 36 },
+  stretta: { sotto: 100, fascia: .78, nome: .135, ritratto: { lato: 1.05, sinistra: .065, alto: -.1425 }, ruoloDa: 36, ampia: { da: 64, ritratto: { lato: 1.232, sinistra: -.026, alto: -.155 } } },
   piccola: { alta: 1.19, scritta: 12, ritratto: { lato: 1.354, sinistra: -.047, alto: -.164 } },
-  segno: { largo: .19, fuori: 0, aria: .04 },
-  freccia: { y: .36, larga: .13 },
-  larga: { scheda: [.5, .24, 200], mercato: 100, capitano: 54, home: [40, 96], accanto: 110 },
+  segno: { largo: .17, piccolo: .09, x: .17, y: .305, aria: .008 },
+  freccia: { larga: .13 },
+  larga: { scheda: [.5, .23, 200], mercato: 100, capitano: 54, home: [40, 96], accanto: 110 },
 };
 // L'apertura di un premio (src/casa/premio.js). Tempi in millesimi, rotazioni in gradi.
 // breve (busta blu del giorno e delle sfide, busta argento del percorso premi) e lunga (busta oro di fine stagione)

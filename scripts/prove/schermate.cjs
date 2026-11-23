@@ -110,7 +110,7 @@ srv.listen(0, async () => {
     await vai('#casa .c-percorso', 'percorso');
     await vai('#casa .c-amichevole', 'amichevole', async () => { await tocca('.sq', 1); await tocca('.sq', 7); await tocca('#inizio'); await foto('sfida-amichevole'); await tocca('#sfida [data-az="cambia"]'); });
     await vai('#casa .c-sfide', 'sfide-d', async () => { for (const t of ['w', 'c', 's']) { await tocca(`[data-stab="${t}"]`); await foto(`sfide-${t}`); } });
-    // la Squadra: scambio a due tocchi e trascinando, il portiere solo in porta, incarichi trascinando le linguette,
+    // la Squadra: scambio a due tocchi e trascinando, il portiere solo in porta, capitano trascinando la «C», incarichi dalla scheda,
     // modulo, squadra migliore, scheda dal pulsante «Scheda» e con la pressione lunga
     await vai('#casa .c-squadra', 'squadra', async () => {
       const rosa = () => pg.evaluate(() => { const g = window.__g, K = g.carriera(), c = g.club(K.club); return { xi: c.xi.map((x) => x[0]), pan: c.pan.map((x) => x[0]), salvata: JSON.parse(localStorage.getItem('fantatitano-carriera')).rose[c.id].map((x) => x[0]), inc: K.incarichi || {}, cap: (K.mio || {}).capitano, form: g.sel.form, monete: K.monete, crescita: K.crescita || {}, allenatori: g.CAR.quantiAllenatori(K) }; });
@@ -125,7 +125,10 @@ srv.listen(0, async () => {
       await tocca(carta('xi:5')); await tocca(carta('pan:3')); await foto('squadra-scambio');
       const r1 = await rosa(); if (r1.xi[5] !== r0.pan[3] || r1.pan[3] !== r0.xi[5] || r1.salvata[5] !== r0.pan[3]) errori.push(`${w}: lo scambio tra titolare e sostituto non è riuscito o non è salvato`);
       await tocca(carta('xi:0')); await tocca(carta('xi:3')); const r2 = await rosa(); if (r2.xi[0] !== r1.xi[0]) errori.push(`${w}: un giocatore di movimento è finito in porta`);
-      await trascina('#squadra .gSegni [data-inc="rigori"]', carta('xi:9'), 'squadra-incarico'); const r3 = await rosa(); if (r3.inc.rigori !== r2.xi[9]) errori.push(`${w}: il rigorista non è stato assegnato`);
+      // rigori, punizioni e angoli si danno dalla scheda (pulsante «Incarichi»); la «C» si trascina sul campo
+      await tocca(carta('xi:9')); await tocca('#squadra .qScheda'); await tocca('#schedaG [data-az="incarichi"]'); await foto('squadra-incarico'); await tocca('#finS [data-scelta="rigori"]');
+      if (!(await pg.$('#schedaG .gSegno[data-inc="rigori"]'))) errori.push(`${w}: sulla carta della scheda manca il segno dei rigori`);
+      await tocca('#schedaG [data-az="chiudi"]'); const r3 = await rosa(); if (r3.inc.rigori !== r2.xi[9]) errori.push(`${w}: il rigorista non è stato assegnato`);
       await trascina('#squadra .gSegni [data-inc="capitano"]', carta('xi:4')); const r4 = await rosa(); if (r4.cap !== r2.xi[4]) errori.push(`${w}: il capitano non è stato assegnato`);
       await tocca('#squadra [data-az="modulo"]'); await foto('finestra-modulo'); await tocca('#finS [data-scelta="4-2-3-1"]'); await foto('squadra-4231');
       if ((await rosa()).form !== '4-2-3-1') errori.push(`${w}: il modulo non è cambiato`);

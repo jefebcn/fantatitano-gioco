@@ -129,13 +129,16 @@ const IT = {
   'modulo.scegli': 'Scegli il modulo',
   'fisio.pieni': 'Tutta la rosa è già al massimo dell\'energia',
   'inc.capitano': 'Capitano', 'inc.rigori': 'Rigori', 'inc.punizioni': 'Punizioni', 'inc.angoli': 'Angoli',
-  'inc.trascina': (cosa) => `${cosa}: trascina la linguetta su un altro titolare`,
+  'inc.trascina': (cosa) => `${cosa}: trascina questo segno su un altro titolare`,
   'inc.dato': (cosa, nome) => `${cosa}: ${nome}`,
   'inc.soloTitolari': 'Gli incarichi vanno ai titolari',
   // scheda del giocatore
   'scheda.altezza': 'Altezza', 'scheda.piede': 'Piede', 'scheda.destro': 'Destro', 'scheda.sinistro': 'Sinistro', 'scheda.valore': 'Valore', 'scheda.energia': 'Energia',
   'scheda.eCapitano': 'È il capitano',
   'scheda.soloTitolare': 'Il capitano deve essere un titolare',
+  'scheda.incarichi': 'Incarichi', 'scheda.nessunIncarico': 'Nessuno',
+  'scheda.incarichiTitolo': (nome) => `Incarichi di ${nome}`, 'scheda.incarichiTesto': 'Scegli cosa calcia lui. Chi lo faceva prima lo lascia.',
+  'scheda.incaricoAdesso': (nome) => `Adesso: ${nome}`,
   'scheda.allena': 'Allena',
   'scheda.vendi': 'Vendi',
   // stagione nuova (finestra di conferma)

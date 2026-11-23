@@ -1,6 +1,7 @@
 // La scheda di un giocatore del proprio club: si apre sopra la schermata (tocco lungo su una carta) e si chiude con la X
 // o toccando fuori. Mostra la carta grande, le otto statistiche col nome intero, altezza, piede, valore ed energia, e le
-// azioni: dargli la fascia di capitano, allenarlo con un allenatore dell'inventario, venderlo o svincolarlo.
+// azioni: dargli la fascia di capitano, dargli rigori, punizioni o angoli, allenarlo con un allenatore dell'inventario,
+// venderlo o svincolarlo. Gli incarichi si vedono sulla carta, in colonna sotto il ruolo.
 import * as CAR from '../carriera.js';
 import { coloreStat } from '../dati/scala.js';
 import { CARTA } from '../config.js';
@@ -11,6 +12,7 @@ import { cartaGiocatore, prontaCarte } from './giocatore.js';
 import { adatta } from './carte.js';
 import { t } from './testi.js';
 import { finestra } from './finestra.js';
+import { incarichi } from './rosa.js';
 import { ECONOMIA } from '../config.js';
 
 document.getElementById('vs').insertAdjacentHTML('beforebegin', '<div id="schedaG" class="nas"><div class="foglio" role="dialog" aria-modal="true"></div></div>');
@@ -23,9 +25,9 @@ const giocatore = () => { const c = mioClub(); return c && (G.dove === 'pan' ? c
 function disegna() {
   const x = giocatore(); if (!x) return chiudiScheda();
   const c = mioClub(), sc = DATI.scheda(x, c.id), energia = CAR.energiaDi(K, x[0]), titolare = G.dove === 'xi', capitano = (K.mio || {}).capitano === x[0];
-  const cr = CAR.crescitaDi(K, x[0]), quanti = adatti(x).reduce((n, a) => n + a.quanti, 0);
+  const cr = CAR.crescitaDi(K, x[0]), quanti = adatti(x).reduce((n, a) => n + a.quanti, 0), suoi = CALCI.filter((k) => chiHa()[k] === x[0]);
   foglio.innerHTML = `<button class="chiudi" data-az="chiudi" aria-label="${t('finestra.chiudi')}">${icona('chiudi')}</button>`
-    + `<div class="sgCarta">${cartaGiocatore(sc, { club: c.id, larga: Math.round(Math.min(innerHeight * CARTA.larga.scheda[0], innerWidth * CARTA.larga.scheda[1], CARTA.larga.scheda[2])), energia, capitano, migliorato: sc.val > sc.base, ferma: true })}</div>`
+    + `<div class="sgCarta">${cartaGiocatore(sc, { club: c.id, larga: Math.round(Math.min(innerHeight * CARTA.larga.scheda[0], innerWidth * CARTA.larga.scheda[1], CARTA.larga.scheda[2])), energia, capitano, incarichi: suoi, migliorato: sc.val > sc.base, ferma: true })}</div>`
     + `<div class="sgDati"><h3 data-adatta>${esc(x[0])}</h3>`
     + `<div class="sgStat">${sc.stat.map(([k, v]) => `<span><i>${t('stat.' + k)}</i><b class="s-${coloreStat(v)}">${v}</b></span>`).join('')}</div>`
     + `<div class="sgInfo"><span><i>${t('scheda.altezza')}</i><b>${sc.altezza} cm</b></span><span><i>${t('scheda.piede')}</i><b>${t(sc.piede === 'S' ? 'scheda.sinistro' : 'scheda.destro')}</b></span>`
@@ -33,9 +35,25 @@ function disegna() {
     + `<span><i>${t('scheda.crescita')}</i><b>${t('scheda.crescitaVal', sc.val - sc.base, cr.pot)}</b></span></div></div>`
     + '<div class="sgAzioni">'
     + `<button class="azione${capitano || !titolare ? ' spento' : ''}" data-az="capitano">${icona('capitano')}<b>${t(capitano ? 'scheda.eCapitano' : 'inc.capitano')}</b></button>`
+    + `<button class="azione${titolare ? '' : ' spento'}" data-az="incarichi">${icona('punizione')}<span><b>${t('scheda.incarichi')}</b><i>${suoi.length ? suoi.map((k) => t('inc.' + k)).join(', ') : t('scheda.nessunIncarico')}</i></span></button>`
     + `<button class="azione${quanti ? '' : ' spento'}" data-az="allena">${icona('allenamento')}<span><b>${t('scheda.allena')}</b><i>${t('scheda.allenatori', quanti)}</i></span></button>`
     + `<button class="azione" data-az="vendi">${icona('vendi')}<span><b>${t('scheda.vendi')}</b><i>${icona('moneta')} ${mon(CAR.incasso(sc.val))}</i></span></button></div>`;
   adatta(foglio); prontaCarte(foglio);
+}
+
+// Rigori, punizioni e angoli: chi li ha adesso tra i titolari (se nessuno è stato scelto, il più adatto)
+const CALCI = CAR.INCARICHI.filter((k) => k !== 'capitano');
+const chiHa = () => { const c = mioClub(); return incarichi(K, CLUBS, c.xi.map((y) => DATI.scheda(y, c.id))); };
+// «Incarichi»: si sceglie quale dare a questo giocatore; ognuno dice chi lo ha adesso
+function daiIncarico(x) {
+  if (G.dove !== 'xi') return avviso(t('inc.soloTitolari'));
+  const ha = chiHa();
+  finestra({ titolo: t('scheda.incarichiTitolo', x[0]), testo: t('scheda.incarichiTesto'),
+    scelte: CALCI.map((k) => ({ testo: t('inc.' + k), nota: t('scheda.incaricoAdesso', ha[k] || t('scheda.nessunIncarico')), valore: k, attiva: ha[k] === x[0] })),
+    fatto: (k) => {
+      if (!G || !CAR.assegnaIncarico(K, CLUBS, k, x[0])) return avviso(t('inc.soloTitolari'));
+      salvaK(); avviso(t('inc.dato', t('inc.' + k), x[0])); disegna(); if (G.cambiato) G.cambiato();
+    } });
 }
 
 // Gli allenatori in inventario che si possono usare su questo giocatore: quello dei portieri solo sui portieri
@@ -72,6 +90,7 @@ radice.addEventListener('click', (e) => {
     if (!CAR.assegnaIncarico(K, CLUBS, 'capitano', x[0])) return avviso(t('scheda.soloTitolare'));
     salvaK(); avviso(t('inc.dato', t('inc.capitano'), x[0])); disegna(); if (G.cambiato) G.cambiato();
   }
+  if (b.dataset.az === 'incarichi') return daiIncarico(x);
   if (b.dataset.az === 'allena') return allena(x);
 });
 
