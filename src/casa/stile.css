@@ -673,3 +673,32 @@ body.conBarra #nuovo .nv{padding-left:0}
 /* la scheda Divisa tiene la maglia vera a sinistra anche sugli schermi stretti */
 .negozio:has(.magliaVera){grid-template-columns:auto minmax(0,1fr)}
 .negozio .ante:has(.magliaVera){width:auto;justify-self:start}
+/* ---------- revisione del 23/11, Percorso premi e Sfide ---------- */
+/* un premio: la sua icona illustrata e il numero (o la rarità dell'allenatore) */
+.pf{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.pf .pIco{width:28px;height:28px;object-fit:contain;flex:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.pf .ico{width:20px;height:20px}
+.pf b{font:800 13px Montserrat,sans-serif}
+/* percorso: in ogni tessera il numero del livello, l'icona del premio sopra la quantità, lo stato sotto */
+#pan .livelli{gap:6px}
+#pan .livelli .liv{gap:1px;min-height:92px;padding:5px 2px 4px;justify-content:space-between;color:rgba(255,255,255,.72)}
+#pan .livelli .liv i{font:400 15px "Bebas Neue",Anton,Impact,sans-serif;font-style:normal;letter-spacing:.04em;line-height:1}
+#pan .livelli .liv .pf{flex-direction:column;gap:0}
+#pan .livelli .liv .pf .pIco{width:32px;height:32px}
+#pan .livelli .liv .pf b{font-size:12px;line-height:1.15}
+#pan .livelli .liv u{display:flex;align-items:center;justify-content:center;gap:2px;min-height:15px;font:800 12px Montserrat,sans-serif;text-transform:none;text-decoration:none;white-space:nowrap}
+#pan .livelli .liv u .ico{width:12px;height:12px;vertical-align:0}
+/* il livello in corso: bordo oro, fondo più chiaro e un alone, così si trova subito */
+#pan .livelli .liv.qui{color:#fff;border:2px solid #E8B64C;padding:4px 1px 3px;background:linear-gradient(180deg,rgba(232,182,76,.3),rgba(232,182,76,.08));box-shadow:0 0 14px rgba(232,182,76,.5)}
+#pan .livelli .liv.qui i,#pan .livelli .liv.qui u{color:#F6D684}
+#pan .livelli .liv.pronto{opacity:1;color:#1b1304;background:linear-gradient(180deg,#F6D684,#C4922F);background-image:linear-gradient(180deg,#F6D684,#C4922F)}
+#pan .livelli .liv.preso{opacity:.78}
+#pan .livelli .liv.preso .pIco{filter:saturate(.55)}
+/* sfide: il premio con le icone, il pulsante da 44 punti; quelle già riscosse stanno in fondo, più spente */
+#pan .sfida{grid-template-columns:minmax(0,1fr) 46px 132px 104px;min-height:52px}
+#pan .sfida u{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#fff}
+#pan .sfida button{min-height:44px;font-size:13px}
+#pan .sfida .fatto{display:flex;align-items:center;justify-content:center;gap:4px;font:800 12px Montserrat,sans-serif;color:#5BE37A}
+#pan .sfida .fatto .ico{width:15px;height:15px;vertical-align:0}
+#pan .sfida.presa{background:rgba(255,255,255,.03)}
+#pan .sfida.presa>div,#pan .sfida.presa>em,#pan .sfida.presa>u{opacity:.6}

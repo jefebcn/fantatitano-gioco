@@ -355,10 +355,12 @@ function panCastelli() {
 let sTab = 'd';
 function panSfide(tab) {
   if (tab) sTab = tab;
-  const st = CAR.statoSfide(K), premio = (x) => premioTesto(x.monete, x.gemme, x.allenatore);
-  const fine = (x, id) => (x.preso ? '<span class="fatto">✓</span>' : x.fatto ? `<button data-riscuoti="${sTab}:${id}">Riscuoti</button>` : '<span></span>');
-  const righe = st[sTab].map((x) => `<div class="sfida${x.fatto ? ' ok' : ''}"><div><b>${x.t}</b><span class="barra"><i style="width:${(x.prog / x.n) * 100}%"></i></span></div><em>${x.prog}/${x.n}</em><u>${premio(x)}</u>${fine(x, x.id)}</div>`).join('');
-  const b = st.bonus[sTab], bonus = b ? `<div class="sfida bonus${b.fatto ? ' ok' : ''}"><div><b>Tutte fatte</b></div><em></em><u>${premio(b)}</u>${fine(b, 'tutte')}</div>` : '';
+  const st = CAR.statoSfide(K), premio = (x) => premioIcone(x.monete, x.gemme, x.allenatore);
+  const fine = (x, id) => (x.preso ? `<span class="fatto">${icona('spunta')}Riscossa</span>` : x.fatto ? `<button data-riscuoti="${sTab}:${id}">Riscuoti</button>` : '<span></span>');
+  // l'ordine: prima le sfide da riscuotere, poi quelle ancora da fare, in fondo quelle già riscosse
+  const posto = (x) => (x.preso ? 2 : x.fatto ? 0 : 1), ordinate = st[sTab].map((x, i) => [x, i]).sort((a, b) => posto(a[0]) - posto(b[0]) || a[1] - b[1]).map((c) => c[0]);
+  const righe = ordinate.map((x) => `<div class="sfida${x.fatto ? ' ok' : ''}${x.preso ? ' presa' : ''}"><div><b>${x.t}</b><span class="barra"><i style="width:${(x.prog / x.n) * 100}%"></i></span></div><em>${x.prog}/${x.n}</em><u>${premio(x)}</u>${fine(x, x.id)}</div>`).join('');
+  const b = st.bonus[sTab], bonus = b ? `<div class="sfida bonus${b.fatto ? ' ok' : ''}${b.preso ? ' presa' : ''}"><div><b>Tutte fatte</b></div><em></em><u>${premio(b)}</u>${fine(b, 'tutte')}</div>` : '';
   const quando = sTab === 'd' ? 'Ripartono a mezzanotte' : sTab === 'w' ? `Ripartono tra ${fmtTempo(CAR.fineSettimana(new Date()) - new Date())}` : sTab === 's' ? `Valgono per la stagione ${K.stagione}` : 'Si fanno una volta sola';
   pan('Sfide', `<div class="seg">${Object.entries(CAR.GRUPPI).map(([g, n]) => `<button data-stab="${g}" class="${g === sTab ? 'on' : ''}">${n} ${st.conti[g][0]}/${st.conti[g][1]}</button>`).join('')}${st.daRiscuotere ? '<button data-az="tutto" class="oro">Riscuoti tutto</button>' : ''}</div><p class="nota2">${quando}</p>${righe}${bonus}`);
 }
@@ -388,10 +390,16 @@ const avatarNome = (n) => `${K.nome}${n ? `#${n}` : ''}`;
 // Quanti pezzi dello stemma si hanno, in percentuale (NEGOZIO in src/carriera.js)
 const stemmaFatto = () => CAR.pezziStemma(K);
 const premioTesto = (m, g, a) => [m ? `${MO} ${mon(m)}` : '', g ? `${DI} ${g}` : '', a ? `allenatore ${a}` : ''].filter(Boolean).join(' ');
+// Un premio con le icone illustrate al posto delle parole: il sacchetto di monete e i diamanti col loro numero,
+// l'allenatore con la sua rarità. Se un'illustrazione manca resta l'icona piccola (o la parola).
+const UN_ALLENATORE = { comune: 'comune', raro: 'raro', leggendario: 'leggendario' };
+const pezzoPremio = (nome, riserva, testo) => `<span class="pf">${figura(nome, 'pIco', 30) || riserva}<b>${testo}</b></span>`;
+const premioIcone = (m, g, a) => (m ? pezzoPremio('icona-monete', MO, mon(m)) : '') + (g ? pezzoPremio('icona-diamanti', DI, g) : '') + (a ? pezzoPremio('icona-allenatore-' + a, icona('allenatore'), UN_ALLENATORE[a] || a) : '');
 /** Percorso premi della stagione: venti livelli, si sale coi punti di partite e sfide, ogni livello ha un premio da ritirare. */
 function panPercorso(msg) {
   const pe = CAR.statoPercorso(K), E = ECONOMIA.percorso.punti, fine = pe.livello >= pe.livelli;
-  const tessere = pe.premi.map((x) => `<button class="liv${x.preso ? ' preso' : x.raggiunto ? ' pronto' : ''}" ${x.raggiunto && !x.preso ? `data-ritira="${x.livello}"` : 'disabled'}><i>${x.livello}</i><b>${premioTesto(x.monete, x.gemme, x.allenatore)}</b><u>${x.preso ? 'Ritirato' : x.raggiunto ? 'Ritira' : ''}</u></button>`).join('');
+  // una tessera per livello: il numero, il premio con la sua icona e lo stato. Quella del livello in corso è evidenziata
+  const tessere = pe.premi.map((x) => { const qui = !fine && x.livello === pe.inCorso && !x.raggiunto; return `<button class="liv${x.preso ? ' preso' : x.raggiunto ? ' pronto' : qui ? ' qui' : ''}" ${x.raggiunto && !x.preso ? `data-ritira="${x.livello}"` : 'disabled'}><i>${x.livello}</i>${premioIcone(x.monete, x.gemme, x.allenatore)}<u>${x.preso ? `${icona('spunta')}Preso` : x.raggiunto ? 'Ritira' : qui ? 'In corso' : ''}</u></button>`; }).join('');
   pan(`Percorso premi · stagione ${K.stagione}`, `${msg ? `<p class="avviso">${msg}</p>` : ''}<div class="perc"><b>Livello ${pe.inCorso} di ${pe.livelli}</b><span class="barra"><i style="width:${fine ? 100 : Math.round(pe.nelLivello / pe.perLivello * 100)}%"></i></span><em>${fine ? 'Percorso completato' : `${pe.nelLivello}/${pe.perLivello} punti`}</em>${pe.daRitirare ? '<button data-az="ritiraTutto" class="oro">Ritira tutto</button>' : ''}</div><div class="livelli">${tessere}</div>`
     + `<p class="nota2">Punti: partita giocata ${E.partita}, vittoria +${E.vinta}, sfida di oggi riscossa ${E.sfidaD}, obiettivo della settimana ${E.sfidaW}, sfida di stagione ${E.sfidaS}, turno di coppa superato ${E.turno}. Il percorso riparte da zero a ogni stagione.</p>`);
 }
