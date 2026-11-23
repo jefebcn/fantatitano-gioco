@@ -1,6 +1,7 @@
 // Le finestre: conferme e avvisi che si aprono sopra la schermata e si chiudono con la X, con «Annulla» o toccando
 // fuori. Non sono un livello della navigazione: Indietro non c'entra (docs/navigazione.md §1).
 import { icona } from './icone.js';
+import { fondo } from './immagini.js';
 import { t } from './testi.js';
 
 document.getElementById('vs').insertAdjacentHTML('beforebegin', `<div id="finestra" class="nas"><div class="foglio" role="dialog" aria-modal="true">
@@ -24,8 +25,11 @@ radice.addEventListener('click', (e) => {
  * scelte: invece di confermare si sceglie tra più pulsanti, ognuno con testo, nota (facoltativa), valore e attiva (quella
  * in uso); `fatto` riceve il valore scelto.
  * corpo: al posto del testo, pezzi già composti dalla schermata che apre la finestra (mai testo scritto dall'utente).
+ * decoro: il nome di un'illustrazione da mettere in alto a destra, dietro il titolo (le Tre Torri a fine stagione).
  */
-export function finestra({ titolo, testo = '', corpo = '', si = '', no, fatto, soloSi = false, scelte = null }) {
+export function finestra({ titolo, testo = '', corpo = '', si = '', no, fatto, soloSi = false, scelte = null, decoro = '' }) {
+  const foglio = radice.querySelector('.foglio'), img = decoro ? fondo(decoro) : '';
+  foglio.classList.toggle('conDecoro', !!img); foglio.style.setProperty('--decoro', img || 'none');
   el('finT').textContent = titolo; if (corpo) el('finP').innerHTML = corpo; else el('finP').textContent = testo; el('finP').classList.toggle('nas', !testo && !corpo); el('finSi').textContent = si; el('finNo').textContent = no || t('finestra.annulla');
   el('finS').innerHTML = scelte ? scelte.map((s) => `<button class="bottone${s.attiva ? '' : ' secondo'}" data-scelta="${String(s.valore).replace(/[<>&"]/g, '')}"><b>${s.testo}</b>${s.nota ? `<i>${s.nota}</i>` : ''}</button>`).join('') : '';
   // con tante scelte (i moduli) la finestra si allarga e le mette su cinque colonne, così stanno tutte nello schermo

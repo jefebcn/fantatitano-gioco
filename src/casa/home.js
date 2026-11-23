@@ -6,7 +6,7 @@ import { ECONOMIA } from '../config.js';
 import { img } from '../game.js';
 import { nomiDi } from '../dati/squadre.js';
 import { K, DATI, mon, consigliato, avviso, esc, club } from './casa.js';
-import { ILLUSTRAZIONI } from './illustrazioni.js';
+import { pronta, figura } from './immagini.js';
 import { icona, stelline } from './icone.js';
 import { carta, adatta, attrNome } from './carte.js';
 import { miniCarta, chiRitratto, riempiRitratti } from './giocatore.js';
@@ -24,8 +24,9 @@ radice.addEventListener('click', (e) => {
 radice.addEventListener('load', () => adatta(radice), true);
 addEventListener('resize', () => { if (!radice.classList.contains('nas')) adatta(radice); });
 
-// una riga della carta Carriera: l'icona della competizione, il suo nome e a che punto si è; se non ci sta, solo il punto
-const riga = (ico, nome, stato) => `<span class="riga">${icona(ico)}<i data-adatta data-corto="${stato}">${nome} · ${stato}</i></span>`;
+// una riga della carta Carriera: il trofeo della competizione (o la sua icona, se manca l'illustrazione), il suo nome e a
+// che punto si è; se non ci sta, solo il punto
+const riga = (ico, trofeo, nome, stato) => `<span class="riga">${figura(trofeo, 'trofeino', 16) || icona(ico)}<i data-adatta data-corto="${stato}">${nome} · ${stato}</i></span>`;
 // un premio del percorso: il numero del livello, l'icona (moneta o diamante) e la quantità
 const premio = (x, prossimo) => `<span class="premioL${prossimo ? ' pross' : ''}"><i>${x.livello}</i>${icona(x.monete ? 'moneta' : 'diamante')}<b>${mon(x.monete || x.gemme)}</b></span>`;
 // un anello di avanzamento delle sfide, con l'etichetta sotto
@@ -44,7 +45,7 @@ export function disegnaHome() {
   const avv = p && club(p.avv), nAvv = avv && nomiDi(avv);
   const carriera = carta({ rotta: 'carriera', titolo: t('home.carriera'), colore: 'oro', sfondo: 'carta-carriera', classe: 'c-carriera',
     corpo: `<img class="stemma" src="${img(me.id)}" alt=""><span class="club"><span class="nome"><b ${attrNome(nomi, 16)}>${esc(nomi.nome)}</b>${stelline(me.str)}</span>`
-      + `${riga('campionato', t('carriera.campionatoNome'), campionato)}${riga('coppa', t('carriera.coppa'), coppa)}${riga('castelli', t('carriera.castelli'), castelli)}</span>`
+      + `${riga('campionato', 'trofeo-campionato', t('carriera.campionatoNome'), campionato)}${riga('coppa', 'coppa-titano', t('carriera.coppa'), coppa)}${riga('castelli', 'trofeo-castelli', t('carriera.castelli'), castelli)}</span>`
       + (avv ? `<span class="prossima"><i>${t('carriera.prossima')}</i><span><img src="${img(avv.id + '-mini')}" alt=""><b ${attrNome({ breve: nAvv.sigla, sigla: nAvv.sigla })}>${esc(nAvv.breve)}</b></span><i>${t(p.inCasa ? 'carriera.inCasa' : 'carriera.trasferta')}</i></span>`
         : `<span class="prossima"><i>${t('carriera.prossima')}</i><b>${t('carriera.nuova')}</b></span>`),
     piede: `<i data-adatta>${t('carriera.motto', CAR.divisione(K).nome, K.stagione)}</i>` });
@@ -85,7 +86,7 @@ export function disegnaHome() {
   const clubC = carta({ rotta: 'club', titolo: t('home.club'), colore: 'blu', bollino: note.some((n) => n.vai === 'club'), classe: 'c-piccola c-club',
     corpo: `<img class="stemma" src="${img(me.id)}" alt=""><span class="voci">${stelline(me.str)}${voce('stadio', 'club.stadio')}${voce('personalizza', 'club.personalizza')}${voce('allenamento', 'club.allenamento')}</span>` });
 
-  radice.classList.toggle('illustrata', !!ILLUSTRAZIONI['sfondo-home']);
+  radice.classList.toggle('illustrata', pronta('sfondo-home'));
   radice.innerHTML = carriera + scenario + percorso + amichevole + sfide + squadra + mercato + clubC;
   adatta(radice); riempiRitratti(radice);
 }

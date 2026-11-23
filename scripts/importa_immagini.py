@@ -99,3 +99,5 @@ if __name__ == '__main__':
     if posto:
         print(f'Usano un\'altra immagine ({len(posto)}): ' + ', '.join(f'{n} (usa {ELENCO[n]["usa"]})' for n in posto))
     print(f'Segnaposto ({len(ELENCO) - len(ok) - len(posto)}): ' + ', '.join(n for n in ELENCO if n not in ok and n not in posto))
+    if len(ok) + len(posto) == len(ELENCO):
+        print(f'Tutte e {len(ELENCO)} le immagini dell\'elenco sono definitive: {len(ok)} con un file loro, {len(posto)} che usano quello di un\'altra.')

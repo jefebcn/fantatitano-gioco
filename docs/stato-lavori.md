@@ -169,6 +169,18 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   passa al prossimo). Riscuotendo una sfida si vedono anche i punti del percorso premi che dà. Scritta da noi con le
   animazioni del browser, senza librerie; anima solo posizione, rotazione, grandezza e trasparenza. Da fare: un suono
   all'apertura. L'icona del fisioterapista è pronta ma oggi nessun premio lo dà.
+- **Illustrazioni nelle schermate** (23/11, `src/casa/immagini.js` e lo stile in fondo a `src/casa/stile.css`): tutte e
+  38 le immagini dell'elenco sono definitive. Dove stanno: `sfondo-home` dietro Home e Carriera e, molto scurito, dietro
+  tutti i pannelli; `carta-carriera`, `carta-percorso`, `carta-amichevole`, `carta-scenario` come fondo delle carte della
+  Home (la prima anche della carta «Gioca adesso»); i tre trofei nelle righe della carta Carriera, accanto alla prossima
+  partita, nel titolo della classifica, nelle carte delle coppe, nel titolo dei pannelli Classifica, Coppa Titano e
+  Trofeo dei Castelli e al centro della Sfida; `sfondo-sfida` dietro la Sfida; `tre-torri` nel benvenuto, nella carta
+  «Nuova stagione» e nella finestra di fine stagione; `stadio-alto` in cima a Strutture (è la carta dello Stadio) e le
+  sei `struttura-…` sulle carte delle strutture; `evento-occasioni` e `evento-scelte` come striscioni di «Offerte a
+  tempo» e «Lista trasferimenti» nel Mercato; le cinque `allenamento-…` nella schermata Allenamento. Regola per il
+  testo: sta a sinistra, sopra un velo scuro che sfuma verso destra; quello che sta a destra ha un suo riquadro scuro.
+- **Allenamento** (23/11, da Il mio club): schermata nuova con le cinque carte. Sono tutte «In arrivo»: la partita non
+  ha ancora un modo per far partire un allenamento (`SA_FARE` in `docs/ponte-partita.md` §5), nemmeno i rigori.
 - **Carriere di prima**: non si possono continuare, si riparte da zero (la versione del salvataggio è la 2).
 - **Come arriva alla partita**: la partita conosce un numero solo per giocatore, la `forza`. Crescita con gli allenatori,
   riscaldamento e Curva dei tifosi ci stanno dentro. Le squadre inventate arrivano per intero nella richiesta; lo stemma

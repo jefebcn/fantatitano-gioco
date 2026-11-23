@@ -8,7 +8,7 @@ import { img, kitsFor, aiForm } from '../game.js';
 import { adatto, postiModulo } from '../dati/scala.js';
 import { nomiDi } from '../dati/squadre.js';
 import { K, DATI, sel, salvaK, maglia, avviso, esc, mon, club, moduloMio } from './casa.js';
-import { ILLUSTRAZIONI } from './illustrazioni.js';
+import { pronta, figura } from './immagini.js';
 import { icona, stelline } from './icone.js';
 import { adatta, attrNome } from './carte.js';
 import { cartaCampo, riempiRitratti } from './giocatore.js';
@@ -59,9 +59,9 @@ export function disegnaSfida(partita) {
   if (partita) S = partita;
   const H = club(S.mia), A = club(S.loro), mio = diCarriera(), [kh, ka] = kitsFor(H, A, !!S.fuori);
   const mioModulo = moduloMio(), loroModulo = aiForm(A), comp = competizione(), m = CAR.meteoPartita(mio ? K : null, S.tipo);
-  const logo = comp.immagine && ILLUSTRAZIONI[comp.immagine] ? `<img class="logo" src="img/illustrazioni/${comp.immagine}@2x.webp" alt="">` : icona(comp.ico, 'logo');
+  const logo = (comp.immagine && figura(comp.immagine, 'logo', 42)) || icona(comp.ico, 'logo');
   const risc = mio ? CAR.statoRiscaldamento(K, CLUBS, S.tipo) : null;
-  radice.classList.toggle('illustrata', !!ILLUSTRAZIONI['sfondo-sfida']);
+  radice.classList.toggle('illustrata', pronta('sfondo-sfida'));
   radice.innerHTML = '<div class="sCampo sx"></div>'
     + `<div class="sCentro">${logo}<b>${comp.nome}</b><i data-adatta>${comp.fase}</i><span class="vs">VS</span>${S.tipo === 'amichevole' ? '' : `<i class="luogo">${t(S.fuori ? 'carriera.inTrasferta' : 'carriera.inCasa')}</i>`}`
     + `<span class="meteo">${icona(m.cielo !== 'sereno' ? 'nuvola' : m.ora === 'giorno' ? 'sole' : 'luna')}<i>${m.orario}</i><i>${t('meteo.' + m.cielo)}</i><i>${m.gradi} °C</i></span></div>`
