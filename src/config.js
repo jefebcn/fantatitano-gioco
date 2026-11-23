@@ -471,7 +471,8 @@ export const RITRATTI = { cartella: 'img/ritratti-carte/', lato: { piccolo: 256,
 //   uno e l'altro.
 // freccia: la freccia verde di chi è stato allenato, in fondo alla stessa colonna. larga.
 // larga: quanto è larga la carta dove non lo decide il campo. scheda: in parti dell'altezza dello schermo, in parti
-//   della sua larghezza, e il massimo in punti: vale la più piccola delle tre. mercato e
+//   della sua larghezza, e il massimo in punti: vale la più piccola delle tre. mercato,
+//   incarico, che è la carta piccola nel pannello degli incarichi della Squadra, e
 //   capitano: in punti. home: la più stretta e la più larga, tra cui prende quella che entra nel riquadro. accanto:
 //   quanti punti devono restare, di fianco, per titolo e testo perché la carta possa essere alta quanto tutto il
 //   riquadro. Se non restano, sta solo nella parte sotto il titolo.
@@ -494,7 +495,7 @@ export const CARTA = {
   piccola: { alta: 1.19, scritta: 12, ritratto: { lato: 1.354, sinistra: -.047, alto: -.164 } },
   segno: { largo: .17, piccolo: .09, x: .17, y: .305, aria: .008 },
   freccia: { larga: .13 },
-  larga: { scheda: [.5, .23, 200], mercato: 100, capitano: 54, home: [40, 96], accanto: 110 },
+  larga: { scheda: [.5, .23, 200], mercato: 100, capitano: 54, incarico: 40, home: [40, 96], accanto: 110 },
 };
 // L'apertura di un premio (src/casa/premio.js). Tempi in millesimi, rotazioni in gradi.
 // breve (busta blu del giorno e delle sfide, busta argento del percorso premi) e lunga (busta oro di fine stagione)
