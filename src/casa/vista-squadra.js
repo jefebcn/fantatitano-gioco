@@ -8,14 +8,13 @@
 // fermo sulla carta. Capitano, rigori, punizioni e angoli sono le linguette accanto alla carta di chi li ha: si
 // trascinano su un altro titolare per passargli l'incarico. Ogni cambio è salvato subito.
 import * as CAR from '../carriera.js';
-import { FORMS, SQUADRA, CARTA_GRANDE } from '../config.js';
-import { img } from '../game.js';
+import { FORMS, SQUADRA, CARTA } from '../config.js';
 import { adatto, postiModulo } from '../dati/scala.js';
 import { K, DATI, sel, save, salvaK, applicaMio, avviso, mon, club, moduloMio } from './casa.js';
 import { icona } from './icone.js';
 import { adatta } from './carte.js';
-import { cartaCampo, riempiRitratti } from './giocatore.js';
-import { disponi, erba } from './campo.js';
+import { cartaGiocatore, prontaCarte } from './giocatore.js';
+import { disponi, erba, linee, SPORGE } from './campo.js';
 import { squadraMigliore, incarichi } from './rosa.js';
 import { apriScheda } from './scheda-giocatore.js';
 import { finestra } from './finestra.js';
@@ -46,7 +45,7 @@ export function disegnaSquadra() {
   const allenabili = CAR.quantiAllenatori(K);
   const ottima = !squadraMigliore(rosa(c), postiModulo(m)).cambiata;
   if (!extra) riserve = false;
-  radice.style.setProperty('--gw', `${larga()}px`); radice.style.setProperty('--ga', CARTA_GRANDE.forma);
+  radice.style.setProperty('--gw', `${larga()}px`);
   radice.innerHTML = TORRI + '<div class="qSx">'
     + `<button class="qB" data-az="modulo">${icona('modulo')}<b>${m}</b></button>`
     + `<button class="qB${riserve ? ' scelta' : ''}" data-az="riserve">${icona('riserve')}<b data-adatta>${t('squadra.riserve', extra)}</b></button>`
@@ -56,7 +55,7 @@ export function disegnaSquadra() {
     + `<button class="qMigliore${ottima ? ' ottima' : ''}" data-az="migliore">${icona('modulo')}<b>${t('squadra.migliora')}</b>${ottima ? `<em class="fatto">${icona('spunta')}</em>` : ''}</button>`
     + `<div class="qPan"><h3>${riserve ? t('squadra.riserve', extra) : t('squadra.sostituti', Math.min(pan.length, PANCHINA), PANCHINA)}</h3><div class="qGriglia"></div></div>`;
   campo(c, m); panchina(c);
-  adatta(radice); riempiRitratti(radice); pulsanteScheda();
+  adatta(radice); prontaCarte(radice); pulsanteScheda();
 }
 
 // il pulsante «Scheda» della carta scelta: sopra di lei, o sotto se sopra c'è la barra
@@ -74,11 +73,15 @@ function pulsanteScheda() {
 // bordato di rosso se gioca fuori ruolo
 function campo(c, m) {
   const el = radice.querySelector('.qCampo'), r = el.getBoundingClientRect(); if (!r.width) return;
-  const posti = postiModulo(m), d = disponi(posti, r.width, r.height, { stretto: SQUADRA.stretto, grande: true, fissa: larga() }), schede = c.xi.map((x) => DATI.scheda(x, c.id)), inc = incarichi(K, CLUBS, schede);
+  // nei moduli con più linee le carte si stringono quel tanto che basta perché la testa, che esce in alto, non copra la
+  // carta della linea sopra
+  const posti = postiModulo(m), stretta = Math.min(larga(), Math.floor((r.height / linee(posti).length - SQUADRA.aria) / (CARTA.alta + SPORGE)));
+  const d = disponi(posti, r.width, r.height, { stretto: SQUADRA.stretto, grande: true, fissa: stretta }), schede = c.xi.map((x) => DATI.scheda(x, c.id)), inc = incarichi(K, CLUBS, schede);
   el.innerHTML = erba(SQUADRA.stretto, true) + c.xi.map((x, i) => {
     const sc = schede[i], q = d.dove[i];
-    return cartaCampo(sc, { club: c.id, energia: CAR.energiaDi(K, x[0]), capitano: inc.capitano === x[0], incarichi: ['rigori', 'punizioni', 'angoli'].filter((k) => inc[k] === x[0]), fuori: adatto(sc.ruolo, posti[i].ruolo),
-      migliorato: !!(K.crescita || {})[x[0]], grande: true, stemma: img(c.id + '-mini'), dati: `data-g="xi:${i}"${scelto === `xi:${i}` ? ' data-scelto' : ''}`, stile: `left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px` });
+    // chi sta più in basso sta davanti: la sua testa, che esce dalla carta, non finisce sotto la carta della riga sopra
+    return cartaGiocatore(sc, { club: c.id, larga: stretta, energia: CAR.energiaDi(K, x[0]), capitano: inc.capitano === x[0], incarichi: ['rigori', 'punizioni', 'angoli'].filter((k) => inc[k] === x[0]), fuori: adatto(sc.ruolo, posti[i].ruolo),
+      migliorato: !!(K.crescita || {})[x[0]], dati: `data-g="xi:${i}"${scelto === `xi:${i}` ? ' data-scelto' : ''}`, stile: `left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px;z-index:${1 + Math.floor(q.y / r.height * 5)}` });
   }).join('');
 }
 
@@ -88,7 +91,7 @@ function panchina(c) {
   el.style.gridTemplateColumns = `repeat(${COLONNE},auto)`;
   el.innerHTML = Array.from({ length: PANCHINA }, (_, k) => {
     const x = lista[k]; if (!x) return `<span class="qVuoto"><i>${t('squadra.libero')}</i></span>`;
-    return cartaCampo(DATI.scheda(x, c.id), { club: c.id, energia: CAR.energiaDi(K, x[0]), migliorato: !!(K.crescita || {})[x[0]], grande: true, ferma: true, stemma: img(c.id + '-mini'), dati: `data-g="pan:${da + k}"${scelto === `pan:${da + k}` ? ' data-scelto' : ''}` });
+    return cartaGiocatore(DATI.scheda(x, c.id), { club: c.id, larga: larga(), energia: CAR.energiaDi(K, x[0]), migliorato: !!(K.crescita || {})[x[0]], ferma: true, dati: `data-g="pan:${da + k}"${scelto === `pan:${da + k}` ? ' data-scelto' : ''}` });
   }).join('');
 }
 addEventListener('resize', () => { if (K && !radice.classList.contains('nas')) disegnaSquadra(); });
@@ -164,8 +167,8 @@ addEventListener('pointermove', (e) => {
     presa.ombra = presa.el.cloneNode(true); presa.ombra.classList.add('ombra'); presa.dx = presa.x - r.left; presa.dy = presa.y - r.top;
     presa.ombra.style.cssText = `position:fixed;left:0;top:0;width:${r.width}px;margin:0;transform:none;z-index:30;pointer-events:none`;
     // la copia vive fuori dalla schermata: si porta dietro le misure e, se è una linguetta, anche l'aspetto
-    presa.ombra.style.setProperty('--gw', stile.getPropertyValue('--gw')); presa.ombra.style.setProperty('--ga', stile.getPropertyValue('--ga'));
-    if (presa.inc) { presa.ombra.className = 'qSegnoMobile'; presa.ombra.style.height = `${r.height}px`; presa.ombra.style.background = stile.backgroundImage; presa.ombra.style.fontSize = stile.fontSize; }
+    presa.ombra.style.setProperty('--gw', stile.getPropertyValue('--gw'));
+    if (presa.inc) { presa.ombra.className = 'qSegnoMobile'; presa.ombra.style.height = `${r.height}px`; presa.ombra.style.background = stile.backgroundImage; presa.ombra.style.color = stile.color; presa.ombra.style.fontSize = stile.fontSize; }
     document.body.appendChild(presa.ombra); presa.el.classList.add('presa');
   }
   presa.ombra.style.left = `${e.clientX - presa.dx}px`; presa.ombra.style.top = `${e.clientY - presa.dy}px`;

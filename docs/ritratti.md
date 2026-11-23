@@ -14,12 +14,12 @@ File: `public/img/ritratti-carte/<id>-512.webp` e `-256.webp` (415: i 265 veri e
 strato della maglia colorata. Si rifanno con `scripts/ritratti_gemini.py` (ricetta in `docs/RICETTE.md`).
 
 **Nel gioco (23/11 sera)**: la home li usa dappertutto. `src/casa/ritratti.js` sceglie il volto (stessa regola di
-prima: mai due facce uguali nella stessa rosa), prende il file intero da `img/ritratti-carte/` e ne ritaglia la parte
-che serve alla carta; niente più maglia composta né strato «sopra», e la memoria dei ritratti fatti dipende solo da
-volto e ritaglio. I ritagli stanno in `RITRATTI.taglio` (`src/config.js`): `piccolo` per le carte dei campi stretti,
-`mini` per la carta mini di Home e Mercato, `carta` e `scheda` per la carta grande. Se un file non arriva resta il
-ritratto ripreso dal modello 3D. I file di `public/img/ritratti/` (teste e maglie di Blender, 12,5 MB) non servono più
-al gioco: si possono togliere quando Alex ha visto che tutto funziona; `src/dati/volti.json` resta l'elenco dei volti.
+prima: mai due facce uguali nella stessa rosa) e dà il file intero di `img/ritratti-carte/`; la carta lo mostra così
+com'è, senza ritagliarlo e senza comporlo con la maglia (niente più strato «sopra»): dove sta e quanto è grande lo dice
+`CARTA.ritratto` in `src/config.js` (`docs/carte-giocatori.md`). Le carte larghe almeno 80 punti prendono il file da 512,
+le altre quello da 256. Se un file non arriva resta il ritratto ripreso dal modello 3D. I file di `public/img/ritratti/`
+(teste e maglie di Blender, 12,5 MB) non servono più al gioco: si possono togliere quando Alex ha visto che tutto
+funziona; `src/dati/volti.json` resta l'elenco dei volti.
 
 ## Ritratti composti da Blender (prima versione, 21-22/11)
 

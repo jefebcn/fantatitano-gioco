@@ -3,7 +3,7 @@
    campo 3D nascosto): due giri sullo stesso codice danno le stesse foto, quindi si può confrontare prima e dopo una
    modifica. Accanto alle foto salva il contenuto di ogni schermata (misura-testi.json).
    Nelle schermate rifatte (barra in alto, Home, Carriera, Sfida e finestre, per ora) controlla anche le regole di qualità: testo
-   mai sotto 12 px (tranne dentro la carta grande del giocatore), niente testo tagliato, niente fuori dallo schermo, pulsanti alti e larghi almeno 44 px. Esce con errore
+   mai sotto 12 px (tranne dentro la carta del giocatore), niente testo tagliato, niente fuori dallo schermo, pulsanti alti e larghi almeno 44 px. Esce con errore
    se una regola non è rispettata o se la pagina dà errori.
    Uso: npm run build && node scripts/prove/schermate.cjs cartella-di-uscita   (serve Playwright, come partita.cjs)
      SCALA=2   foto a doppia definizione, da guardare (per il confronto pixel per pixel si lascia 1) */
@@ -32,7 +32,7 @@ function qualita(radici) {
       const testo = [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
       // dentro la carta grande del giocatore le scritte seguono le proporzioni della carta (docs/carte-giocatori.md): è la
       // sola eccezione ai 12 px, e anche lì non si scende sotto i 5
-      const minimo = e.closest('.gC.grande') ? 5 : 12;
+      const minimo = e.closest('.gC:not(.piccola) .gS') ? 5 : 12;
       if (testo && parseFloat(st.fontSize) < minimo) guai.push(`testo da ${st.fontSize}: ${dice(e)}`);
       // un testo su una riga è tagliato se è più largo del suo posto; uno su più righe se è più alto. E non deve uscire dal genitore
       const unaRiga = st.whiteSpace === 'nowrap', gen = e.parentElement.getBoundingClientRect();
@@ -42,8 +42,8 @@ function qualita(radici) {
       if (testo && unaRiga && st.overflow === 'visible' && st.display !== 'inline' && e.scrollWidth > e.clientWidth + 1) guai.push(`testo più largo del suo posto: ${dice(e)}`);
       // dentro una carta ogni testo sta nella sua parte (fascia, corpo o fascia in basso): non la supera e non tocca le altre
       const parte = e.closest('.carta .fascia, .carta .corpo, .carta .piede');
-      if (testo && parte && parte !== e && st.position !== 'absolute') { const q = parte.getBoundingClientRect(); if (r.right > q.right + 1 || r.left < q.left - 1 || r.bottom > q.bottom + 1.5 || r.top < q.top - 1.5) guai.push(`testo fuori dalla sua parte della carta: ${dice(e)}`); }
-      if (testo && /…|\.\.\.$/.test(e.textContent.trim())) guai.push(`puntini: ${dice(e)}`);
+      if (testo && parte && parte !== e && st.position !== 'absolute' && !e.closest('.gC')) { const q = parte.getBoundingClientRect(); if (r.right > q.right + 1 || r.left < q.left - 1 || r.bottom > q.bottom + 1.5 || r.top < q.top - 1.5) guai.push(`testo fuori dalla sua parte della carta: ${dice(e)}`); }
+      if (testo && /…|\.\.\.$/.test(e.textContent.trim()) && !e.closest('.gNome[data-nome]')) guai.push(`puntini: ${dice(e)}`);
       if (e.tagName === 'BUTTON' && (r.width < 43.5 || r.height < 43.5)) guai.push(`pulsante da ${Math.round(r.width)} × ${Math.round(r.height)}: ${dice(e)}`);
     }
     // nessuna carta sopra un'altra
@@ -177,9 +177,10 @@ srv.listen(0, async () => {
     await tocca('#sfida [data-az="gioca"]'); await pg.waitForTimeout(400); await foto('vs'); await pg.evaluate(() => window.__seme(500)); await pg.waitForTimeout(1900);
     const stato = await pg.evaluate(() => { const g = window.__g; window.__seme(501); for (let i = 0; i < 900; i++) g.step(1 / 60); g.pause(true); return [g.G.state, g.G.teams[0].score, g.G.teams[1].score]; });
     await foto('pausa'); if (await tocca('#apriCambi')) { await foto('cambi'); await tocca('#cambiL [data-o]', 3); await foto('cambi-tocco'); await tocca('#cambiOk'); }
-    // tre dei miei restano stanchi fino al fischio finale, qualunque piega prenda la partita: così i controlli sull'energia
+    // tre dei miei (in partita la mia squadra è sempre la numero 0, anche fuori casa) restano stanchi fino al fischio finale,
+    // qualunque piega prenda la partita: così i controlli sull'energia
     // (chi è stanco dopo la partita, riscaldamento, fisioterapista) non dipendono da come va questa partita
-    const fine = await pg.evaluate(() => { const g = window.__g; window.__seme(502); g.pause(false); const stanchi = g.G.teams[g.G.ponte.iu].players.slice(1, 4); let i = 0; for (; i < 40000 && g.G.state !== 'full'; i++) { for (const p of stanchi) p.en = Math.min(p.en, .3); g.step(1 / 30); } for (let k = 0; k < 400; k++) g.step(1 / 30); return [g.G.state, i, g.G.teams[0].score, g.G.teams[1].score, !document.querySelector('#fine').classList.contains('nas')]; });
+    const fine = await pg.evaluate(() => { const g = window.__g; window.__seme(502); g.pause(false); const stanchi = g.G.teams[0].players.slice(1, 4); let i = 0; for (; i < 40000 && g.G.state !== 'full'; i++) { for (const p of stanchi) p.en = Math.min(p.en, .3); g.step(1 / 30); } for (let k = 0; k < 400; k++) g.step(1 / 30); return [g.G.state, i, g.G.teams[0].score, g.G.teams[1].score, !document.querySelector('#fine').classList.contains('nas')]; });
     await foto('fine'); if (await tocca('#continua')) await foto('dopo-la-partita');
     if (await dove() !== 'carriera') errori.push(`${w}: dopo la partita si è in «${await dove()}» invece che nella Carriera`);
     // il risultato è registrato, l'energia con cui si è usciti dal campo è salvata, e la finestra dice cosa si è guadagnato

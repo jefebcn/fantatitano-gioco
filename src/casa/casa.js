@@ -7,7 +7,7 @@ import * as T from 'three';
 import { DISEGNI } from '../divisa.js';
 import * as CLOUD from '../cloud.js';
 import * as CAR from '../carriera.js';
-import { ECONOMIA, DIFF, FORMS, PASSAGGIO, DIVISIONI, STAGIONE, MAGLIA_VERA } from '../config.js';
+import { ECONOMIA, DIFF, FORMS, PASSAGGIO, DIVISIONI, STAGIONE, MAGLIA_VERA, CARTA } from '../config.js';
 import { aiForm, $, rnd, clamp, hash, IMGX, img, G, renderer, cv, SCARPE_NEGOZIO, stemmi3d, makeSkinned, FIGURE, pickKits, PALLONI, kitsFor, AU, tactics, club as clubVero, chiudiPonte, startMatch, toMenu, CREST, loadImg, MODEL } from '../game.js';
 import HTML_CASA from './casa.html';
 import CSS_CASA from './casa.css';
@@ -22,7 +22,7 @@ import { disegnaHome } from './home.js';
 import { disegnaCarriera } from './vista-carriera.js';
 import { disegnaSfida } from './vista-sfida.js';
 import { apriSquadra } from './vista-squadra.js';
-import { cartaCampo, riempiRitratti } from './giocatore.js';
+import { cartaGiocatore, prontaCarte } from './giocatore.js';
 import { adatta, attrNome } from './carte.js';
 import { nomiDi } from '../dati/squadre.js';
 import { t } from './testi.js';
@@ -207,7 +207,7 @@ const COLLETTI = [['giro', 'Girocollo'], ['v', 'Scollo a V'], ['polo', 'Polo']];
 // I nove candidati di «Ingaggia il tuo capitano»: tra 70 e 78, nove ruoli diversi, un punto forte ciascuno (src/dati/scala.js)
 function candidatiCapitano() { return DATI.candidatiCapitano(POSTO).map((c) => ({ c: club(c.club), x: c.x, i: c.i, v: c.s.val, s: c.s })); }
 const classeStat = (v) => ({ verde: 'a', giallo: 'b', rosso: 'c' })[coloreStat(v)];
-const cartaGiocatore = (c, scelto) => `<button class="cap${scelto ? ' sel' : ''}" data-cap="${c.c.id}:${c.i}"><div class="cn"><b>${esc(c.x[0])}</b><small ${attrNome(nomiDi(c.c))}>${esc(c.c.name)}</small></div><div class="at">${c.s.stat.map(([k, v]) => `<span${k === c.s.forte ? ' class="forte"' : ''}><i>${k}</i><b class="${classeStat(v)}">${v}</b></span>`).join('')}</div><div class="cartaCap">${cartaCampo(c.s, { club: c.c.id, grande: true, ferma: true, stemma: img(c.c.id + '-mini') })}</div></button>`;
+const candidato = (c, scelto) => `<button class="cap${scelto ? ' sel' : ''}" data-cap="${c.c.id}:${c.i}"><div class="cn"><b>${esc(c.x[0])}</b><small ${attrNome(nomiDi(c.c))}>${esc(c.c.name)}</small></div><div class="at">${c.s.stat.map(([k, v]) => `<span${k === c.s.forte ? ' class="forte"' : ''}><i>${k}</i><b class="${classeStat(v)}">${v}</b></span>`).join('')}</div><div class="cartaCap">${cartaGiocatore(c.s, { club: c.c.id, larga: CARTA.larga.capitano, ferma: true })}</div></button>`;
 function mioDaModulo() { const nome = ($('#nvClub').value.trim() || NOMI[0]).slice(0, 22), sg = ($('#nvSigla').value.trim() || sigla(nome)).slice(0, 3).toUpperCase(); return { nome, sigla: sg, c1: COLORI[NV.col][0], c2: COLORI[NV.col][1], stile: NV.stile, colletto: NV.colletto, raglan: NV.raglan }; }
 function anteprimaClub() { const m = mioDaModulo(); $('#nvStemma').src = disegnaStemma(m, 160); $('#nvMaglia').innerHTML = anteMaglia(m.c1, m.c2, m.stile, m.colletto, m.raglan); $('#nvMaglia').parentNode.classList.toggle('vera', !!$('#nvMaglia .magliaVera')); for (const b of $('#nvCol').children) b.classList.toggle('on', +b.dataset.col === NV.col); for (const b of $('#nvStile').children) b.classList.toggle('on', b.dataset.stile === NV.stile); for (const b of $('#nvColletto').children) b.classList.toggle('on', b.dataset.colletto ? b.dataset.colletto === NV.colletto : NV.raglan); }
 function drawNuovo() {
@@ -228,8 +228,8 @@ function drawNuovo() {
   } else {
     const cand = candidatiCapitano();
     el.innerHTML = `<div class="testaCap"><button class="indietro" id="nvInd" aria-label="${t('barra.indietro')}">${icona('indietro')}</button><div class="titoloCap"><h2 class="h">${t('capitano.titolo')}</h2><p>${t('capitano.tocca')}</p></div>${NV.cap ? `<button class="btn ingaggia" id="nvAvanti">${t('capitano.ingaggia', esc(club(NV.cap.split(':')[0]).xi[+NV.cap.split(':')[1]][0]))}</button>` : '<span class="postoIngaggia"></span>'}</div>
-      <div class="caps">${cand.map((c) => cartaGiocatore(c, NV.cap === `${c.c.id}:${c.i}`)).join('')}</div>`;
-    adatta(el); riempiRitratti(el);
+      <div class="caps">${cand.map((c) => candidato(c, NV.cap === `${c.c.id}:${c.i}`)).join('')}</div>`;
+    adatta(el); prontaCarte(el);
     // i caratteri dei titoli possono arrivare un attimo dopo e allargare i nomi: allora si rifà la misura
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (NV.passo === 2) adatta(el); });
   }
