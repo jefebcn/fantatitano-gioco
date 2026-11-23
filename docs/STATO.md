@@ -43,8 +43,11 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   viso più scolpito, capelli con ciocche, dal riferimento generico di Alex del 23/11 (niente volti veri né grafica di altri giochi).
 - FATTO (#132): varietà, 11 capigliature + rasata, 5 corporature (`FORME_CORPO`), 26 stature (`ALTEZZA.passi`).
   Partite: 0 anomalie, gol 1,88 → 1,50 su 16 partite (la statura conta nel colpo di testa: rimescolamento, media uguale).
-- Aperto: pieghe della divisa in una normal map e risvolto dei calzettoni più alto, in `src/divisa.js` (file della
-  sessione partita: serve l'ok di Alex). Da vedere su iPhone: fps con `?debug`. Non fatto: texture KTX2 (non servono).
+- FATTO (#135): pieghe di maglia e pantaloncini nella normal map calcolata dal gioco (`pieghe()` e `PIEGHE` in
+  `src/divisa.js`: vita, ascelle, maniche, inguine, orlo; coordinate della maschera lisciate perché a 8 bit fanno gradini),
+  risvolto dei calzettoni da 4 a 8 cm (`MISURE.risvolto` 0,355 e `risvolto` in `scripts/blender/calciatore.py`).
+  Stessi triangoli, nessun file nuovo. Partite: 16 su 16 identiche prima e dopo (semi 7 e 15), 0 anomalie.
+  Foto: `docs/calciatore/16-18`. Da vedere su iPhone: fps con `?debug`. Non fatto: texture KTX2 (non servono).
 
 ## Fase 4 (verifica delle sezioni 2-6 del prompt del 21/11) — FATTO
 - C'era già tutto tranne due cose, aggiunte ora: la vista di controllo dell'IA (`?ia` o tasto O, `src/debug-ia.js`) e lo
