@@ -6,6 +6,7 @@ nel gioco. Di quella foto si riprendono solo proporzioni e disposizione: cornici
 sono di Fantatitano (regola del progetto: meccaniche sì, grafica e file di altri giochi mai).
 
 ## Misure prese dalla foto (in parti della carta)
+Queste misure valevano per la prima carta (22/11); la carta nuova tiene la forma (0,737) e la posizione del volto.
 La carta è larga 0,737 volte la sua altezza. Larghezze in percento della larghezza, altezze in percento dell'altezza.
 
 | Parte | Misura |
@@ -15,28 +16,35 @@ La carta è larga 0,737 volte la sua altezza. Larghezze in percento della larghe
 | Ritratto | riquadro dal 35% al 97,5% di lato e dal 3% al 58,7% dall'alto; la testa (orecchie comprese) è larga il 63% del riquadro, i capelli partono in cima, il mento è all'82% dell'altezza, sotto si vedono collo e maglia |
 | Fascia del nome | dal 58,7% al 71,8% (alta il 13%), più chiara della carta, nome scuro in maiuscolo al centro |
 | Riga in basso | dal 73,5% all'84% (alta il 10,4%): bandiera 21,8% di larghezza, energia 39,3% con un lampo al centro, ruolo 21,8% |
-| Punta | nella foto, una stellina al centro per chi è migliorato (da noi è una freccia verde sotto il cerchio) |
+| Punta | nella foto, una stellina al centro per chi è migliorato (da noi è una freccia verde sul fianco) |
 | Segni | capitano e incarichi in colonna fuori dalla carta, a destra, dall'alto |
 
 Colori che fanno parte della struttura: il cerchio della valutazione cambia colore col numero; il ruolo ha un colore per
 reparto.
 
-## Come è nel gioco
-- **Cornice**: `scripts/icone.mjs` (`sagomaCarta`), con una trama di piccoli rombi. Il colore è la **rarità** (deciso da
-  Alex il 23/11, `SCALA.fasce`): **bronzo** sotto 60, **azzurro** da 60 a 69, **oro** da 70 in su. Si parte con una rosa
-  di bronzi e il capitano d'oro, e con le stagioni si sale. Azzurro e non argento: `docs/riferimenti/modello-carte.png`
-  non è nel repository, quindi non c'è stato niente da allineare.
-- **Chi è stato allenato** ha una piccola freccia verde sotto il cerchio della valutazione, qualunque sia il colore.
-- **Forma**: `CARTA_GRANDE.forma` in `src/config.js` (0,737); le altre proporzioni sono nello stile, `src/casa/stile.css`
-  (`.gC.grande`), e la struttura in `src/casa/giocatore.js` (`cartaCampo`).
-- **Cerchio**: rosso sotto 60, verde da 60 in su (`SCALA.cerchio`).
-- **Ritratto**: ritaglio `carta` di `RITRATTI.taglio` (per la scheda `scheda`, dal file grande).
-- **Al posto della bandiera** c'è lo stemma del club: i giocatori non hanno una nazionalità nei dati.
-- **Ruolo**: rosso gli attaccanti, giallo i centrocampisti, blu i difensori, azzurro i portieri. Nella Squadra chi gioca
-  fuori ruolo ha il ruolo bordato di rosso (niente triangoli sul campo).
+## Come è nel gioco (carta nuova, 23/11 sera)
+Alex ha chiesto una carta nello stile di Dream League (solo la disposizione: disegni, colori e caratteri sono nostri):
+valore e ruolo in alto a sinistra, volto grande, fascia col nome e tre statistiche.
+- **Cornice**: `scripts/icone.mjs` (`sagomaCarta`): angoli alti tondi, fianchi dritti, punta bassa appena accennata, una
+  trama di piccoli rombi e la parte bassa un po' più scura. Il colore è la **rarità** (`SCALA.fasce`): **bronzo** sotto
+  55, **argento** da 55 a 69, **oro** da 70 in su.
+- **In alto a sinistra**, dall'alto: il **valore** (numero grande, senza più il cerchio rosso o verde), il **ruolo** col
+  colore del reparto (rosso attaccanti, giallo centrocampisti, blu difensori, azzurro portieri; bordato di rosso nella
+  Squadra per chi gioca fuori ruolo) e lo **stemma** del club.
+- **Volto**: il ritratto intero occupa la parte destra e alta della carta (ritaglio `carta` di `RITRATTI.taglio`, per la
+  scheda `scheda`, dal file grande).
+- **Fascia scura col nome** in bianco, da lato a lato.
+- **Tre statistiche** sotto il nome, numero sopra e sigla sotto: sono le tre che pesano di più per il ruolo
+  (`CARTE.ruoli[ruolo].pesi`, scelte da `treStatistiche` in `src/casa/giocatore.js`), per esempio tiro, velocità e
+  controllo per l'attaccante. Si vedono solo quando la carta è larga almeno 56 px (scheda del giocatore, scelta del
+  capitano): sulle carte del campo e dei sostituti (da 37 a 51 px) sarebbero alte 3 punti, quindi lì restano nome ed
+  energia. La soglia è nello stile (`@container`, `src/casa/stile.css`).
+- **Energia**: una barretta in fondo. **Chi è stato allenato** ha una piccola freccia verde sul fianco sinistro.
+- **Forma**: `CARTA_GRANDE.forma` in `src/config.js` (0,737); le altre proporzioni sono nello stile (`.gC.grande`) e la
+  struttura in `cartaCampo`.
 - **Capitano e incarichi**: linguette sul bordo destro; nella Squadra si trascinano su un altro titolare.
-- **Carta mini** (Home): stessa cornice, cerchio e ritratto negli stessi punti, senza nome e senza riga.
-- **Carta piccola** dei campi stretti (Sfida): resta com'era, con energia e nome sotto lo scudo; cambia solo il cerchio.
+- **Carta mini** (Home, Mercato): stessa cornice, valore in alto a sinistra e volto, senza nome e senza statistiche.
+- **Carta piccola** dei campi stretti (Sfida): scudo con volto, valore su un dischetto scuro e ruolo; energia e nome sotto.
 
 ## Scritte sotto i 12 px: l'unica eccezione
 Nella foto le scritte delle carte in campo sono molto piccole. Una prima versione teneva nome, ruolo e numero a 12 px
@@ -57,6 +65,5 @@ Confronto alla stessa scala con la foto, e cosa ne è uscito:
 - **Ombra a terra** sotto ogni carta del campo, ed **erba più scura**: le carte si staccano dal campo.
 
 ## Ancora diverso dalla foto
-- I ritratti sono di tre quarti e resi al computer, quelli della foto sono fotografie di fronte.
 - Al posto della bandiera c'è lo stemma: nella mia squadra è uguale per tutti, quindi dice poco. Proposta aperta: metterci
   il numero di maglia.

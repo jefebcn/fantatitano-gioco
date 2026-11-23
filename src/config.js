@@ -497,9 +497,8 @@ export const SQUADRA = { carta: .055, stretto: 27.5, trascina: 10, lungo: 520 };
 //   55 e 75, i migliori tra 76 e 82, oltre 85 solo chi si allena molto.
 // stat: il minimo e il massimo di una statistica mostrata. rumore: di quanto una statistica si scosta, giocatore per
 //   giocatore, dal profilo del suo ruolo.
-// fasce: il colore della carta dice la rarità. Da che valutazione la carta è azzurra (i rari) e da quale è oro (i
-//   più forti: tutti i capitani che si possono ingaggiare); sotto è bronzo. Si parte con una rosa di bronzi e il capitano
-//   d'oro, e con le stagioni si sale. cerchio: da che valutazione il cerchio della carta è verde (sotto è rosso).
+// fasce: il metallo della carta dice la rarità (deciso da Alex il 23/11). Da che valutazione la carta è d'argento e da
+//   quale è d'oro, come tutti i capitani che si possono ingaggiare. Sotto è bronzo. Con le stagioni si sale.
 // colori: da che valore una statistica è gialla e da quale è verde (sotto è rossa).
 // capitani: tra quali valutazioni stanno i candidati di «Ingaggia il tuo capitano» e quanti sono.
 // basso: il valore interno di chi ha quotazione 1. Serve ai giocatori inventati delle divisioni sotto il Campionato
@@ -509,8 +508,7 @@ export const SCALA = {
   punti: [[30, 42], [55, 55], [65, 60], [72, 64], [78, 68], [82, 71], [85, 75], [88, 82], [100, 90]],
   stat: [30, 99],
   rumore: 5,
-  fasce: { azzurro: 60, oro: 70 },
-  cerchio: 60,
+  fasce: { argento: 55, oro: 70 },
   colori: [60, 72],
   capitani: { min: 70, max: 78, quanti: 9 },
   basso: 20,

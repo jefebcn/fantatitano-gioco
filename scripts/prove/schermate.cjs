@@ -177,9 +177,10 @@ srv.listen(0, async () => {
     await tocca('#sfida [data-az="gioca"]'); await pg.waitForTimeout(400); await foto('vs'); await pg.evaluate(() => window.__seme(500)); await pg.waitForTimeout(1900);
     const stato = await pg.evaluate(() => { const g = window.__g; window.__seme(501); for (let i = 0; i < 900; i++) g.step(1 / 60); g.pause(true); return [g.G.state, g.G.teams[0].score, g.G.teams[1].score]; });
     await foto('pausa'); if (await tocca('#apriCambi')) { await foto('cambi'); await tocca('#cambiL [data-o]', 3); await foto('cambi-tocco'); await tocca('#cambiOk'); }
-    // tre dei miei restano stanchi fino al fischio finale, qualunque piega prenda la partita: così i controlli sull'energia
+    // tre dei miei (in partita la mia squadra è sempre la numero 0, anche fuori casa) restano stanchi fino al fischio finale,
+    // qualunque piega prenda la partita: così i controlli sull'energia
     // (chi è stanco dopo la partita, riscaldamento, fisioterapista) non dipendono da come va questa partita
-    const fine = await pg.evaluate(() => { const g = window.__g; window.__seme(502); g.pause(false); const stanchi = g.G.teams[g.G.ponte.iu].players.slice(1, 4); let i = 0; for (; i < 40000 && g.G.state !== 'full'; i++) { for (const p of stanchi) p.en = Math.min(p.en, .3); g.step(1 / 30); } for (let k = 0; k < 400; k++) g.step(1 / 30); return [g.G.state, i, g.G.teams[0].score, g.G.teams[1].score, !document.querySelector('#fine').classList.contains('nas')]; });
+    const fine = await pg.evaluate(() => { const g = window.__g; window.__seme(502); g.pause(false); const stanchi = g.G.teams[0].players.slice(1, 4); let i = 0; for (; i < 40000 && g.G.state !== 'full'; i++) { for (const p of stanchi) p.en = Math.min(p.en, .3); g.step(1 / 30); } for (let k = 0; k < 400; k++) g.step(1 / 30); return [g.G.state, i, g.G.teams[0].score, g.G.teams[1].score, !document.querySelector('#fine').classList.contains('nas')]; });
     await foto('fine'); if (await tocca('#continua')) await foto('dopo-la-partita');
     if (await dove() !== 'carriera') errori.push(`${w}: dopo la partita si è in «${await dove()}» invece che nella Carriera`);
     // il risultato è registrato, l'energia con cui si è usciti dal campo è salvata, e la finestra dice cosa si è guadagnato

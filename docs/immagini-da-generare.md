@@ -303,7 +303,7 @@ diamante hanno colori fissi e sono identici ovunque.
 | Squadra | modulo, riserve, fisioterapista, allenatore, capitano, rigore, punizione, corner, energia, scarpino, altezza, scambia, vendi, fuori-ruolo |
 | Mercato e strutture | osservatore, mistero, centro-allenamento, infermeria, foresteria, ufficio, osservatori, curva, divisa, stemma, esultanza, pallone |
 | Sfide e meteo | calendario, medaglia, premi, timer, sole, luna, nuvola, pioggia |
-| Cornici delle carte | carta-bronzo (sotto 60), carta-azzurro (60–69), carta-oro (da 70): la stessa forma a scudo |
+| Cornici delle carte | carta-bronzo (sotto 55), carta-argento (55–69), carta-oro (da 70): la stessa forma a stendardo |
 | Segnaposto dei ritratti | segnaposto-giocatore, segnaposto-manager |
 
 Icone piccole delle competizioni (campionato, coppa, castelli) sono SVG; le coppe grandi sono le illustrazioni 2, 3 e 4.

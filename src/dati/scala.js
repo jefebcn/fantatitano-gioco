@@ -21,10 +21,8 @@ export function scala(x) {
 }
 /** Di quanto una statistica si scosta dal profilo del ruolo, giocatore per giocatore (sempre uguale per lo stesso nome). */
 export const rumore = (seme, chiave) => (hash(seme + chiave) % (SCALA.rumore * 2 + 1)) - SCALA.rumore;
-/** Il colore della carta, cioè la rarità: bronzo, azzurro o oro secondo la valutazione. */
-export const fascia = (val) => (val >= SCALA.fasce.oro ? 'oro' : val >= SCALA.fasce.azzurro ? 'azzurro' : 'bronzo');
-/** Il colore del cerchio della valutazione sulla carta: verde da SCALA.cerchio in su, rosso sotto. */
-export const coloreCerchio = (val) => (val >= SCALA.cerchio ? 'verde' : 'rosso');
+/** Il metallo della carta, cioè la rarità: bronzo, argento o oro secondo la valutazione. */
+export const fascia = (val) => (val >= SCALA.fasce.oro ? 'oro' : val >= SCALA.fasce.argento ? 'argento' : 'bronzo');
 /** Colore di una statistica: rosso (bassa), giallo (media), verde (alta). */
 export const coloreStat = (v) => (v >= SCALA.colori[1] ? 'verde' : v >= SCALA.colori[0] ? 'giallo' : 'rosso');
 const chiaviDi = (ruolo) => CARTE.chiavi[ruolo === 'POR' ? 'P' : 'G'];

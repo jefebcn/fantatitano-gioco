@@ -194,9 +194,9 @@ body.conBarra .indietro{display:none}
 /* mercato: la carta del giocatore, il nome, il ruolo con lo stemma della sua squadra, il prezzo */
 .gCarta{position:relative;flex:none;display:block;height:96%;max-height:88px;aspect-ratio:.737}
 .gCarta .scudo{position:absolute;inset:0;width:100%;height:100%}
-.gCarta .gFoto{position:absolute;left:30%;top:4%;width:67.5%;height:79.5%;object-fit:cover;object-position:50% 0;color:rgba(11,21,48,.42)}
+.gCarta .gFoto{position:absolute;left:26%;top:5%;width:71.5%;height:86%;object-fit:cover;object-position:50% 0;color:rgba(11,21,48,.42)}
 .gCarta img.gFoto:not([src]),.gCarta img.gFoto[src]+.gFoto{display:none}
-.gCarta .gVal{position:absolute;left:22%;top:21%;transform:translate(-50%,-50%);display:grid;place-items:center;width:21px;height:21px;border-radius:50%;font:800 12px Montserrat,sans-serif;font-style:normal;line-height:1;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.45);box-shadow:0 0 0 1.5px var(--gscuro)}
+.gCarta .gVal{position:absolute;left:7%;top:5%;font:400 18px "Bebas Neue",Anton,Impact,sans-serif;font-style:normal;line-height:1;color:var(--gink);text-shadow:0 0 3px var(--gchiaro),0 0 2px var(--gchiaro),0 1px 0 rgba(255,255,255,.5)}
 .carta .prezzo{display:flex;align-items:center;gap:4px;font:800 13px Montserrat,sans-serif;color:#E8B64C}
 .carta .prezzo .ico{width:16px;height:16px}
 /* mercato nella Home: il ruolo sta sulla carta del giocatore, in basso; l'etichetta dice se ce lo si può permettere */
@@ -324,29 +324,26 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .sClub.dx{grid-area:2/3}
 /* l'erba in prospettiva è un disegno (src/casa/campo.js) che riempie il suo campo */
 .erbaP{position:absolute;inset:0;width:100%;height:100%;display:block}
-/* La carta di un giocatore. Struttura e proporzioni sono quelle della foto di riferimento di Alex (misure in
-   docs/carte-giocatori.md), cornici e colori sono nostri. Cornice a scudo per fascia; la valutazione in un cerchio
-   colorato (rosso, giallo, verde, come le statistiche) col centro al 22% della larghezza e al 21% dell'altezza, largo
-   il 32%; il ritratto a destra, dal 35% al 97,5%, con la testa in cima.
-   Grande: sotto il ritratto la fascia chiara del nome (alta il 13%) e la riga con stemma, energia e ruolo (alta il
-   10,4%, finisce all'84%), poi la punta con la stellina. Tutto è in proporzione alla larghezza della carta, scritte
-   comprese: qui, e solo qui, il testo scende sotto i 12 px, come nella foto (decisione del 22/11).
-   Piccola (campi stretti): energia e nome stanno sotto la cornice, il ruolo in basso dentro. */
-.f-bronzo{--gscuro:#6E3B1C;--gchiaro:#F3CFA8;--gmedio:#C98A52}
-.f-azzurro{--gscuro:#0D3F80;--gchiaro:#D9F0FF;--gmedio:#62B6F2}
-.f-oro{--gscuro:#8A6814;--gchiaro:#FFF6C8;--gmedio:#EBC552}
-.gVal.v-verde{background:#1FA54C}
-.gVal.v-giallo{background:#E2A21B}
-.gVal.v-rosso{background:#DE4348}
+/* La carta di un giocatore (carta nuova del 23/11, docs/carte-giocatori.md). Cornice a stendardo in tre metalli; in
+   alto a sinistra la valutazione, grande e senza cerchio, e sotto il ruolo col colore del reparto; a destra il volto,
+   dal 24% al 97,5% della larghezza.
+   Grande: sotto il volto la fascia scura del nome (dal 66% al 78,5% dell'altezza), poi le tre statistiche e in fondo
+   la barretta dell'energia; sotto il ruolo lo stemma del club. Tutto è in proporzione alla larghezza della carta,
+   scritte comprese: qui, e solo qui, il testo scende sotto i 12 px (decisione del 22/11).
+   Piccola (campi stretti): energia e nome stanno sotto la cornice, il ruolo in basso dentro, la valutazione in un
+   tondino del metallo scuro sull'angolo.
+   Per ogni metallo: scuro, chiaro, medio e l'inchiostro delle scritte sul metallo. */
+.f-bronzo{--gscuro:#6E3B1C;--gchiaro:#F3CFA8;--gmedio:#C98A52;--gink:#2B1307}
+.f-argento{--gscuro:#46505B;--gchiaro:#F6F8FB;--gmedio:#B7C1CC;--gink:#141A22}
+.f-oro{--gscuro:#8A6814;--gchiaro:#FFF6C8;--gmedio:#EBC552;--gink:#2A1C00}
 .gC{position:absolute;transform:translate(-50%,-50%);display:grid;justify-items:center}
 .gC.ferma{position:relative;transform:none}
 .gS{position:relative;display:block;width:var(--gw,34px);aspect-ratio:.84}
 .gS .scudo{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
 .gS .gFoto{position:absolute;left:8%;top:6%;width:84%;height:60%;object-fit:cover;object-position:top;color:rgba(11,21,48,.42)}
 .gS img.gFoto:not([src]),.gS img.gFoto[src]+.gFoto{display:none}
-.gS .gVal{position:absolute;left:-8px;top:-1px;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;font:800 12px Montserrat,sans-serif;font-style:normal;line-height:1;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.45);box-shadow:0 0 0 1.5px var(--gscuro)}
-.gS .gRuolo{position:absolute;left:0;right:0;bottom:8%;text-align:center;text-decoration:none;font:400 13px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.03em;line-height:1;color:#3B2C08}
-.gC.f-azzurro .gS .gRuolo{color:#fff}
+.gS .gVal{position:absolute;left:-8px;top:-1px;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;font:800 12px Montserrat,sans-serif;font-style:normal;line-height:1;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.45);background:var(--gscuro);box-shadow:0 0 0 1.5px var(--gmedio)}
+.gS .gRuolo{position:absolute;left:0;right:0;bottom:8%;text-align:center;text-decoration:none;font:400 13px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.03em;line-height:1;color:var(--gink)}
 .gC.f-bronzo .gS .gRuolo{color:#fff}
 .gS .gSegni{position:absolute;right:-8px;top:-1px;display:grid;gap:2px}
 .gS .gSegni .fasciaC{position:static;width:17px;height:17px;font-size:12px}
@@ -362,27 +359,41 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .gEn.e-m b{background:#F2A93B}
 .gEn.e-b b{background:#FF5A5A}
 .gNome{width:100%;text-align:center;font:400 var(--gf,13px) "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.03em;line-height:1;color:#fff;white-space:nowrap;overflow:hidden;text-shadow:0 1px 2px rgba(0,0,0,.85)}
-/* la grande: --gh è l'altezza della carta, --gn quella della fascia del nome, --gs quella della riga in basso */
-.gC.grande{display:block;width:var(--gw,64px);--gh:calc(var(--gw,64px)/var(--ga,.737));--gn:calc(var(--gh)*.13);--gs:calc(var(--gh)*.104)}
+/* la grande: --gh è l'altezza della carta, --gn quella della fascia del nome */
+/* la carta è anche un contenitore con la sua larghezza: se è stretta le tre statistiche non ci stanno (più sotto) */
+.gC.grande{display:block;width:var(--gw,64px);container-type:inline-size;--gh:calc(var(--gw,64px)/var(--ga,.737));--gn:calc(var(--gh)*.115)}
 .gC.grande .gS{aspect-ratio:var(--ga,.737)}
-.gC.grande .gFoto{left:35%;top:3%;width:62.5%;height:calc(79.3% - var(--gn) - var(--gs));object-fit:contain;object-position:50% 100%}
-.gC.grande img.gFoto{filter:drop-shadow(0 0 calc(var(--gw,64px)*.02) rgba(40,18,6,.55)) contrast(1.06) saturate(1.08)}
-.gC.grande .gVal{left:22%;top:21%;transform:translate(-50%,-50%);width:calc(var(--gw,64px)*.32);height:calc(var(--gw,64px)*.32);font-size:calc(var(--gw,64px)*.15);box-shadow:0 0 0 calc(var(--gw,64px)*.027) var(--gscuro)}
-.gC.grande .gNome{position:absolute;left:2.5%;right:2.5%;bottom:calc(17.7% + var(--gs));width:auto;height:var(--gn);display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,transparent,var(--gchiaro) 22%,var(--gchiaro) 78%,transparent);font:800 max(6px,calc(var(--gw,64px)*.112)) Montserrat,sans-serif;letter-spacing:0;line-height:1;text-transform:uppercase;color:#14161C;text-shadow:none}
-.gC.grande .gRiga{position:absolute;left:6.2%;right:5.7%;bottom:16%;height:var(--gs);display:flex;align-items:stretch;gap:calc(var(--gw,64px)*.026)}
-.gC.grande .gBox{flex:0 0 24.7%;display:grid;place-items:center;border-radius:1.5px;background:#F4F6FA;box-shadow:0 0 0 1px var(--gscuro);overflow:hidden}
-.gC.grande .gStemma{display:block;max-width:100%;height:calc(var(--gs) - 1px);width:auto}
-.gC.grande .gEn{flex:1 1 0;min-width:8px;width:auto;height:auto;border-radius:1.5px;background:rgba(0,0,0,.55);box-shadow:0 0 0 1px var(--gscuro)}
-.gC.grande .gEn b{background:linear-gradient(90deg,#17B257,#1FEF74)}
-.gC.grande .gEn.e-m b{background:linear-gradient(90deg,#D98A1C,#F6B545)}
-.gC.grande .gEn.e-b b{background:linear-gradient(90deg,#D23B40,#FF6B6B)}
-/* il lampo al centro della barra dell'energia */
-.gLampo{position:absolute;left:50%;top:50%;width:calc(var(--gs)*.62);height:calc(var(--gs)*1.02);transform:translate(-50%,-50%);background:#10131A;clip-path:polygon(62% 0,12% 58%,46% 58%,36% 100%,90% 38%,56% 38%);text-decoration:none}
-.gC.grande .gRuolo{flex:0 0 auto;min-width:24.7%;box-sizing:border-box;padding:0 calc(var(--gw,64px)*.012);display:grid;place-items:center;border-radius:1.5px;text-decoration:none;font:800 max(5px,calc(var(--gw,64px)*.092)) Montserrat,sans-serif;letter-spacing:-.01em;line-height:1;color:#fff;box-shadow:0 0 0 1px var(--gscuro)}
+.gC.grande .gFoto{left:24%;top:3%;width:73.5%;height:59%;object-fit:contain;object-position:50% 100%}
+.gC.grande img.gFoto{filter:drop-shadow(0 0 calc(var(--gw,64px)*.02) rgba(20,12,6,.5))}
+/* la valutazione: un numero grande, scritto sul metallo, senza cerchio */
+.gC.grande .gVal{left:6%;top:3.5%;width:auto;height:auto;border-radius:0;background:none;box-shadow:none;font:400 calc(var(--gw,64px)*.27) "Bebas Neue",Anton,Impact,sans-serif;line-height:.92;color:var(--gink);text-shadow:0 1px 0 rgba(255,255,255,.5)}
+/* il ruolo sotto la valutazione, col colore del reparto; sotto ancora lo stemma del club */
+.gC.grande .gRuolo{left:5.5%;right:auto;bottom:auto;top:22.5%;min-width:20%;box-sizing:border-box;padding:calc(var(--gw,64px)*.012) calc(var(--gw,64px)*.018);display:grid;place-items:center;border-radius:calc(var(--gw,64px)*.025);text-decoration:none;font:800 max(5px,calc(var(--gw,64px)*.088)) Montserrat,sans-serif;letter-spacing:-.01em;line-height:1;color:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
 .gC.grande .gRuolo.r-A{background:#E0343B}
 .gC.grande .gRuolo.r-C{background:#FFD21F;color:#14161C}
 .gC.grande .gRuolo.r-D{background:#2350C4}
 .gC.grande .gRuolo.r-P{background:#35B4F2;color:#062038}
+.gC.grande .gStemma{position:absolute;left:6.5%;top:35%;width:17%;height:13%;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))}
+/* la fascia scura col nome, da un bordo all'altro della cornice */
+.gC.grande .gNome{position:absolute;left:2.6%;right:2.6%;top:62%;width:auto;height:var(--gn);box-sizing:border-box;padding:0 3%;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#16254F,#0A1330);box-shadow:0 calc(var(--gw,64px)*-.008) 0 var(--gchiaro),0 calc(var(--gw,64px)*.008) 0 var(--gscuro);font:800 max(6px,calc(var(--gw,64px)*.1)) Montserrat,sans-serif;letter-spacing:0;line-height:1;text-transform:uppercase;color:#fff;text-shadow:none}
+/* le tre statistiche che contano per il ruolo: il numero e sotto la sigla, divise da un filo */
+.gC.grande .gStat{position:absolute;left:6%;right:6%;top:74.4%;height:15%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center}
+.gStat i{display:grid;justify-items:center;gap:calc(var(--gw,64px)*.008);font:700 max(5px,calc(var(--gw,64px)*.07)) Montserrat,sans-serif;font-style:normal;letter-spacing:.02em;line-height:1;color:var(--gink)}
+.gStat i+i{box-shadow:calc(var(--gw,64px)*-.008) 0 0 rgba(0,0,0,.28)}
+.gStat b{font:800 max(6px,calc(var(--gw,64px)*.125)) Montserrat,sans-serif;line-height:1}
+/* l'energia: una barretta in fondo, dentro la punta */
+.gC.grande .gEn{position:absolute;left:32%;top:92.3%;width:36%;height:2.5%;border-radius:calc(var(--gw,64px)*.02);background:rgba(0,0,0,.6);box-shadow:0 0 0 1px var(--gscuro)}
+/* carta stretta (in campo e tra i sostituti della Squadra): le tre statistiche sarebbero alte tre punti, quindi non si
+   mostrano; il volto scende di più, la fascia del nome è più alta e l'energia è una barretta più larga */
+@container (max-width:55.9px){
+  .gC.grande .gStat{display:none}
+  .gC.grande .gFoto{height:64%}
+  .gC.grande .gNome{top:67%;height:calc(var(--gh)*.14);font-size:max(6px,calc(var(--gw,64px)*.115))}
+  .gC.grande .gEn{left:20%;width:60%;top:85.5%;height:4.2%}
+}
+.gC.grande .gEn b{background:linear-gradient(90deg,#17B257,#1FEF74)}
+.gC.grande .gEn.e-m b{background:linear-gradient(90deg,#D98A1C,#F6B545)}
+.gC.grande .gEn.e-b b{background:linear-gradient(90deg,#D23B40,#FF6B6B)}
 /* chi gioca fuori ruolo ha il ruolo bordato di rosso */
 .gC.grande .gRuolo.fuori{box-shadow:0 0 0 calc(var(--gw,64px)*.035) #FF2D2D}
 .gC.grande .gSegni{right:auto;left:calc(100% - var(--gw,64px)*.035);top:8%;gap:calc(var(--gw,64px)*.02)}
@@ -391,7 +402,7 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 /* sul campo ogni carta ha la sua ombra a terra */
 .gC.grande:not(.ferma)::after{content:"";position:absolute;left:18%;right:18%;top:100%;height:calc(var(--gw,64px)*.07);border-radius:50%;background:rgba(0,0,0,.34);filter:blur(calc(var(--gw,64px)*.03));pointer-events:none}
 .gC.grande .gAvviso{right:auto;left:-7px;bottom:22%;width:17px;height:17px}
-.gC.grande .gFreccia{left:9%;bottom:auto;top:40%;width:calc(var(--gw,64px)*.15);height:calc(var(--gw,64px)*.18)}
+.gC.grande .gFreccia{left:9%;bottom:auto;top:50%;width:calc(var(--gw,64px)*.15);height:calc(var(--gw,64px)*.18)}
 /* al centro: la competizione, la fase, casa o trasferta, l'ora e il tempo */
 .sCentro{grid-area:1/2/3/3;display:grid;justify-items:center;align-content:center;gap:3px;min-width:0;text-align:center}
 .sCentro .logo{width:42px;height:42px;object-fit:contain;color:#E8B64C}
