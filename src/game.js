@@ -23,7 +23,7 @@ import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { PRATO, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, SMARCA, INSERIMENTO, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { PRATO, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -520,8 +520,8 @@ function stiliCapelli(hair, scene, hInv) {
   S.codino = [riga || base, orienta(new T.SphereGeometry(r * .3, 10, 8), C.clone().addScaledVector(su, r * .55).addScaledVector(davanti, -r * .85))];
   return S;
 }
-// corpo nuovo: otto capigliature (la prima è rasata: i capelli sono solo dipinti sul cuoio capelluto)
-const ACCONCIATURE_N = [null, 'Hair_Corti', 'Hair_Folti', 'Hair_Ciuffo', 'Hair_Cresta', 'Hair_Ricci', 'Hair_Lunghi', 'Hair_Riga'];
+// corpo nuovo: dodici capigliature (la prima è rasata: i capelli sono solo dipinti sul cuoio capelluto)
+const ACCONCIATURE_N = [null, 'Hair_Corti', 'Hair_Folti', 'Hair_Ciuffo', 'Hair_Cresta', 'Hair_Ricci', 'Hair_Lunghi', 'Hair_Riga', 'Hair_Afro', 'Hair_Codino', 'Hair_Spettinati', 'Hair_Sfumati'];
 const ACCONCIATURE = [null, 'Hair_Buzzed', 'Hair_SimpleParted', 'Hair_Buzzed', 'Hair_SimpleParted', 'ricci', 'cresta', 'codino', 'folti', 'ricci', 'folti'];
 // scarpini: tomaia e suola
 // Gli scarpini del negozio: colore della scarpa e della suola, uguali per tutta la squadra
@@ -610,7 +610,7 @@ const lineare = (c) => Math.pow(c, 2.2);
  */
 /** La statura di un giocatore, sempre la stessa per lo stesso seme: tra ALTEZZA.min e max con la media giusta, i portieri più alti. */
 function statura(seed, portiere) {
-  const A = ALTEZZA, u = ((seed >>> 16) % 11) / 10, esp = (A.max - A.min) / (A.media - A.min) - 1;
+  const A = ALTEZZA, u = ((seed >>> 16) % A.passi) / (A.passi - 1), esp = (A.max - A.min) / (A.media - A.min) - 1;
   return portiere ? A.portiere + (A.max - A.portiere) * u : A.min + (A.max - A.min) * Math.pow(u, esp);
 }
 function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
@@ -631,7 +631,7 @@ function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
     if (o.isSkinnedMesh && o.material.name === CORPO && MODEL.corporature) o.geometry = MODEL.corporature[(seed >>> 27) % MODEL.corporature.length]; // corporatura dal seme
     if (o.isSkinnedMesh && MODEL.nuovo) { // corpo nuovo: il livello di dettaglio lo sceglie dettagliFigure, la corporatura è una forma (snello, normale, robusto)
       const k = { SuperHero_Male: 0, Lod1: 1, Lod2: 2 }[o.name]; lod[k] = o; o.visible = k === 0;
-      const c = (seed >>> 27) % 3; if (o.morphTargetInfluences) { o.morphTargetInfluences[0] = c === 0 ? 1 : 0; o.morphTargetInfluences[1] = c === 2 ? 1 : 0; }
+      const c = FORME_CORPO[(seed >>> 27) % FORME_CORPO.length]; if (o.morphTargetInfluences) { o.morphTargetInfluences[0] = c[0]; o.morphTargetInfluences[1] = c[1]; }
     }
     if (o.isSkinnedMesh) { o.frustumCulled = false; o.material = o.material.name === CORPO ? corpo : o.material.name === OCCHI ? MODEL.occhi : pelo; if (o.material !== corpo) { o.castShadow = false; vicini.push(o); } } // occhi e sopracciglia
   });

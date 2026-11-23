@@ -7,8 +7,11 @@
 // Misure vere, in metri, niente ingrandimenti: campo 105 × 68 (HL e HW sono le metà), porta 7,32 × 2,44 (GH mezza
 // larghezza, GT altezza), pallone di 22 cm (BR il raggio). GRAV è la gravità del gioco.
 export const HL = 52.5, HW = 34, GH = 3.66, GT = 2.44, BR = 0.11, GRAV = 20;
-// Giocatori a grandezza vera: alti in media 1,80 m, da 1,70 a 1,95 secondo il giocatore; i portieri da `portiere` in su
-export const ALTEZZA = { min: 1.70, max: 1.95, media: 1.80, portiere: 1.84 };
+// Giocatori a grandezza vera: alti in media 1,80 m, da 1,70 a 1,95 secondo il giocatore; i portieri da `portiere` in su.
+// `passi`: quante stature diverse ci sono tra min e max (26 = una ogni centimetro)
+export const ALTEZZA = { min: 1.70, max: 1.95, media: 1.80, portiere: 1.84, passi: 26 };
+// Corporature del corpo nuovo: quanto pesano le due forme del modello [snello, robusto] (0 e 0 è il corpo normale)
+export const FORME_CORPO = [[1, 0], [0.5, 0], [0, 0], [0, 0.5], [0, 1]];
 // Le linee: area di rigore 16,5 × 40,32, area piccola 5,5 × 18,32, dischetto a 11 m, cerchio di centrocampo e lunetta 9,15
 export const LINEE = { area: [16.5, 40.32], piccola: [5.5, 18.32], dischetto: 11, cerchio: 9.15 };
 // Ritmo come Dream League: il cronometro corre `gioco` volte il tempo vero quando si gioca (90 minuti in 4 minuti veri) e

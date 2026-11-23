@@ -1,5 +1,5 @@
 # Stato — Fantatitano, La Partita (gioco)
-22/11/2026 · tema: verso un gioco fluido "tipo Dream League" (meccaniche sì, grafica/file/codice DLS no)
+23/11/2026 · tema: verso un gioco fluido "tipo Dream League" (meccaniche sì, grafica/file/codice DLS no)
 
 ## Dove siamo
 - Produzione: https://fantatitano-gioco.vercel.app (non pubblico, noindex).
@@ -35,15 +35,16 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Prossimo: risposte di Alex alle domande aperte; tarare la conduzione (4,5 m/s è una stima) e il portiere.
 - Prestazioni: 60 fps su iPhone nella webview dell'app, minimo 30.
 
-## Giocatori 3D: corpo nuovo MPFB (Fase 3 del prompt del 21/11) — FATTO
-- Corpo MakeHuman/MPFB (CC0, viso generico) sullo scheletro che il gioco usava già: animazioni e codice invariati.
-  Tre livelli di dettaglio (4.264 / 1.500 / 600 triangoli, soglie `LOD` in `src/config.js`), forme «snello» e «robusto»,
-  sette capigliature, capelli corti, sopracciglia e barba dipinti nello shader, un materiale solo, modello compresso con
-  Meshopt (`public/modello.js` da 656 a 329 KB). A fotogramma: ~404 mila triangoli contro ~562 mila di prima.
-- Come si rifà: `modelli/mpfb/LEGGIMI.md`. Ripiego: `?corpo=vecchio` nell'indirizzo carica il corpo di Quaternius.
-- Non fatto: texture KTX2. Le texture dei giocatori (divisa, zone, rilievo) sono disegnate dal gioco coi colori della
-  squadra, quindi non c'è un file da comprimere; maschera e pelle sono due immagini piccole (PNG e WebP).
-- Da vedere su iPhone: fps veri con `?debug`.
+## Giocatori 3D: corpo MPFB (chat «3D», aggiornato il 23/11/2026)
+- Corpo MakeHuman/MPFB (CC0, viso generico) sullo scheletro di sempre: animazioni invariate. Tre livelli di dettaglio
+  (4.266 / 1.500 / 600 triangoli), un materiale, texture 1024, `public/modello.js` compresso con Meshopt (376 KB).
+  Come si rifà: `modelli/mpfb/LEGGIMI.md` e la ricetta in `docs/RICETTE.md`. Ripiego: `?corpo=vecchio`.
+- FATTO (#131): proporzioni da atleta, divisa con volume (maglia, maniche, pantaloncini, risvolto, scarpini con suola),
+  viso più scolpito, capelli con ciocche, dal riferimento generico di Alex del 23/11 (niente volti veri né grafica di altri giochi).
+- FATTO (#132): varietà, 11 capigliature + rasata, 5 corporature (`FORME_CORPO`), 26 stature (`ALTEZZA.passi`).
+  Partite: 0 anomalie, gol 1,88 → 1,50 su 16 partite (la statura conta nel colpo di testa: rimescolamento, media uguale).
+- Aperto: pieghe della divisa in una normal map e risvolto dei calzettoni più alto, in `src/divisa.js` (file della
+  sessione partita: serve l'ok di Alex). Da vedere su iPhone: fps con `?debug`. Non fatto: texture KTX2 (non servono).
 
 ## Fase 4 (verifica delle sezioni 2-6 del prompt del 21/11) — FATTO
 - C'era già tutto tranne due cose, aggiunte ora: la vista di controllo dell'IA (`?ia` o tasto O, `src/debug-ia.js`) e lo
