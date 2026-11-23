@@ -9,7 +9,7 @@ Maschio adulto atletico, viso misto e generico (nessuna persona reale).
    `blender -b --python scripts/blender/calciatore.py -- modelli/quaternius-scheletro.glb <cartella di uscita>`
    Crea tre corpi con gli stessi vertici (normale, snello, robusto), con gli arti nelle direzioni di riposo dello scheletro
    del gioco; tiene corpo e occhi; fa i tre livelli di dettaglio (4.500, 1.500, 600 triangoli: `LOD` in cima allo script) e
-   porta su ognuno le due forme e i segni di labbra, cuoio capelluto, occhi e unghie; fa le sette capigliature dal cuoio
+   porta su ognuno le due forme (snello, robusto: il gioco le mescola con `FORME_CORPO` in `src/config.js`) e i segni di labbra, cuoio capelluto, occhi e unghie; fa le undici capigliature dal cuoio
    capelluto. La forma si regola in cima allo script: `BASE` (età, muscoli, peso), `DETTAGLI` (spalle, vita, fianchi, gambe,
    collo, testa), `VISO` (mascella, zigomi, naso, sopracciglia; `VISO_ALLEGGERISCI` dice quanto la testa resiste
    all'alleggerimento) e `CORPI` (le due corporature in più).
