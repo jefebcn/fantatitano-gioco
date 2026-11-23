@@ -762,8 +762,20 @@ button.mG{cursor:pointer}
 .catConta .pf u{font:700 12px Montserrat,sans-serif;text-decoration:none;color:rgba(255,255,255,.86)}
 .catConta .pf.zero{opacity:.62}
 /* Personalizza › Squadra: scarpini e palloni disegnati al posto dei tondi colorati */
-.ogg .oggFig{display:block;width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.ogg .oggFig{display:block;width:52px;height:52px;border-radius:0;background:none;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
 .ogg.chiuso .oggFig{opacity:.9}
+/* le scritte delle voci del negozio non scendono sotto i 12 punti */
+.ogg b,.ogg u{font-size:12px}
+.ogg .oggPr{white-space:nowrap}
+/* le file con le figure (scarpini, palloni) hanno otto colonne uguali: gli otto scarpini stanno su una riga anche sul
+   telefono stretto. Il nome può andare su due righe e il lucchetto sta nell'angolo, così non ruba posto al nome */
+.oggetti:has(.oggFig){display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.oggetti:has(.oggFig) .ogg{position:relative;min-width:0;padding:6px 3px;justify-content:flex-start}
+.oggetti:has(.oggFig) .ogg b,.oggetti:has(.oggFig) .ogg u{text-align:center;line-height:1.15}
+.oggetti:has(.oggFig) .ogg.chiuso b::before{content:none}
+.oggetti:has(.oggFig) .ogg.chiuso::after{content:"🔒";position:absolute;top:3px;right:4px;font-size:11px;line-height:1}
+/* sul telefono stretto i tre conteggi degli allenatori stanno su una riga: medaglioni e spazi un po' più piccoli */
+@media (max-width:700px){.catConta{gap:4px 7px}.catConta .pf{gap:3px}.catConta .pf .pIco{width:22px;height:22px}.catConta .pf b{font-size:13px}}
 /* «Scegli l'allenatore»: l'icona della categoria a sinistra delle scritte */
 #finestra .scelte.note .bottone.conFig{flex-direction:row;justify-content:flex-start;gap:8px;text-align:left}
 #finestra .scelte .bottone.conFig .scFig{flex:none;width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))}

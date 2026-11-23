@@ -423,7 +423,9 @@ function panNegozio(tab, msg) {
   const m = K.mio && K.club === POSTO ? K.mio : null, sc = K.scelte || (K.scelte = {}), me = club(K.club);
   const voce = (tipo, cosa, nome, scelto, dentro = '') => {
     const ho = CAR.possiede(K, tipo, cosa), c = CAR.costoOggetto(tipo, cosa), id = `${tipo}:${cosa}`, arm = nArmato === id, caro = K.monete < c.monete || K.gemme < c.gemme;
-    return `<button class="ogg${scelto ? ' on' : ''}${ho ? '' : ' chiuso'}${arm ? ' arm' : ''}" data-ogg="${id}" ${!ho && caro ? 'disabled' : ''}>${dentro}<b>${nome}</b><u>${ho ? (scelto ? 'In uso' : 'Usa') : arm ? `Conferma ${premioTesto(c.monete, c.gemme)}` : premioTesto(c.monete, c.gemme)}</u></button>`;
+    // il prezzo resta unito: se la scritta va a capo, l'icona non si stacca dal numero
+    const prezzo = `<span class="oggPr">${premioTesto(c.monete, c.gemme)}</span>`;
+    return `<button class="ogg${scelto ? ' on' : ''}${ho ? '' : ' chiuso'}${arm ? ' arm' : ''}" data-ogg="${id}" ${!ho && caro ? 'disabled' : ''}>${dentro}<b>${nome}</b><u>${ho ? (scelto ? 'In uso' : 'Usa') : arm ? `Conferma ${prezzo}` : prezzo}</u></button>`;
   };
   const fila = (titolo, tipo, scelto, dentro) => `<div class="sez">${titolo}</div><div class="oggetti">${CAR.NEGOZIO[tipo].tutti.map((x) => voce(tipo, x, NOMI_NEGOZIO[tipo] ? NOMI_NEGOZIO[tipo][x] : x, x === scelto, dentro ? dentro(x) : '')).join('')}</div>`;
   const tabs = schedePersonalizza(nTab);
