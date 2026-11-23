@@ -335,3 +335,13 @@ solo, `public/img/logo-fantatitano.png` (stesso nome di prima, quindi `src/casa/
 contiene la corona da sola su trasparente, 600 × 521. Il file con le scritte (`corona-lime.png`) non c'è più. Se la home
 mostra il logo su uno sfondo chiaro, gli metta dietro il nero (`var(--ink)`). La riga 1 della tabella in
 `docs/home-spec.md` §«decisioni» («corona lime o viola») è da segnare come decisa.
+
+## Dalla home, 23/11: la musica della home è un brano vero
+
+`src/audio.js` (il modulo audio è uno solo, per home e partita) non sintetizza più la musica dei menu: suona il brano
+`public/audio/musica-home-rise-up` (OGG, MP3 di riserva). **Per la partita non cambia niente**: `AU.musica(false)`
+all'avvio della gara e `AU.musica(true)` alla fine e in `toMenu()` restano le stesse chiamate, ora sfumano il brano e lo
+fanno riprendere da dov'era. Effetti, pubblico, fischietto, `AU.toggle()`, `AU.volume()` e `AU.muto` (modalità di prova)
+sono com'erano. La musica non usa numeri casuali. `src/game.js` non è stato toccato. Toccati due file comuni:
+`src/sw.js` (le richieste alla cartella `audio/` non passano dal service worker) e il controllo automatico (un passo in
+più: `node scripts/prove/musica.cjs`).
