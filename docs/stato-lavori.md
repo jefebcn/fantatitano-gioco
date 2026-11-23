@@ -201,7 +201,12 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   in `scripts/icone.mjs`); Negozio e Personalizza sono una sezione sola, «Personalizza», con cinque schede (Nome e
   colori, Stemma, Divisa, Manager, Squadra: `schedePersonalizza` in `src/casa/casa.js`, `sostituisci` in
   `src/casa/nav.js`); l'anteprima mostra la maglia vera, il busto del modello 3D con la divisa scelta (`magliaVera`,
-  numeri in `MAGLIA_VERA` di `src/config.js`). Restano E (Percorso e Sfide), F (Mercato).
+  numeri in `MAGLIA_VERA` di `src/config.js`). **E, Percorso premi e Sfide, fatto**: i premi si leggono dalle icone
+  illustrate (sacchetto di monete, diamanti, carta dell'allenatore con la rarità) al posto delle parole (`premioIcone` in
+  `src/casa/casa.js`); nel Percorso il livello in corso ha bordo oro, alone e la scritta «In corso», i livelli da
+  ritirare sono pieni d'oro con «Ritira», quelli ritirati spenti con la spunta e «Preso»; nelle Sfide l'ordine è: da
+  riscuotere, da fare, già riscosse in fondo (spente, con «Riscossa»), e il pulsante «Riscuoti» è alto 44 punti. Resta F
+  (Mercato).
 - **Carriere di prima**: non si possono continuare, si riparte da zero (la versione del salvataggio è la 2).
 - **Come arriva alla partita**: la partita conosce un numero solo per giocatore, la `forza`. Crescita con gli allenatori,
   riscaldamento e Curva dei tifosi ci stanno dentro. Le squadre inventate arrivano per intero nella richiesta; lo stemma
