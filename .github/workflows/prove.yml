@@ -34,6 +34,8 @@ jobs:
         run: node scripts/prove/rigori.cjs
       - name: Riprese (nessuna parte da sola, né con chi gioca né col computer)
         run: node scripts/prove/riprese.cjs
+      - name: Palla che arriva a chi gioca (levetta tenuta, cambio automatico a palla libera)
+        run: node scripts/prove/vagante.cjs
       - name: Ponte tra home e partita (una partita avviata da una richiesta, esito alla fine)
         run: node scripts/prove/ponte.cjs
       - name: Inquadratura al calcio d'inizio (misure di riferimento, margine 2 punti)
