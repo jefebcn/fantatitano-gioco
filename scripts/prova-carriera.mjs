@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import * as K from '../src/carriera.js';
+import { ECONOMIA } from '../src/config.js';
 
 const src = readFileSync(new URL('../public/data.js', import.meta.url), 'utf8');
 const clubs = JSON.parse(src.slice(src.indexOf('['), src.lastIndexOf(']') + 1));
@@ -30,6 +31,24 @@ assert.ok(tab.every((r) => r.g === 15 && r.v + r.n + r.p === 15));
 assert.equal(tab.reduce((s, r) => s + r.gf, 0), tab.reduce((s, r) => s + r.gs, 0));
 assert.equal(K.prossima(C), null); assert.equal(C.campione, 'academy'); assert.deepEqual(C.trofei, [{ stagione: 1, tipo: 'Campionato', div: 5 }]);
 assert.deepEqual(K.capocannoniere(C), { nome: 'Rossi', gol: 30 });
+// chi vince il campionato ha il premio del trofeo e non quello del piazzamento
+assert.ok(C.storico.some((m) => m.c === 'trofeo')); assert.ok(!C.storico.some((m) => m.c === 'piazzamento'));
+// premio di fine campionato per piazzamento: chi non vince ha le vittorie del suo posto, dal secondo fin dove arriva
+// l'elenco; oltre, niente. Qui un po' di carriere con risultati diversi, per coprire più posti
+{
+  // numeri a caso suoi, per non spostare quelli delle prove che seguono
+  let s2 = 99; const rnd2 = () => { s2 = (s2 * 1664525 + 1013904223) >>> 0; return s2 / 4294967296; };
+  const visti = new Set();
+  for (const [gf, gs, quante] of [[1, 1, 15], [0, 1, 15], [2, 1, 9], [1, 0, 6], [3, 2, 12], [1, 1, 8]]) {
+    const P = K.nuova(clubs, 'Piazzato', 'academy', rnd2);
+    for (let g = 0; g < 15; g++) K.giocaCampionato(P, clubs, g < quante ? gf : 0, g < quante ? gs : 2, [], rnd2);
+    const pos = K.classifica(P, clubs).findIndex((r) => r.id === 'academy') + 1, mov = P.storico.filter((m) => m.c === 'piazzamento'), atteso = ECONOMIA.premi.piazzamento[pos - 2];
+    visti.add(pos);
+    if (pos === 1 || !atteso) assert.equal(mov.length, 0, `al ${pos}° posto non c'è premio di piazzamento`);
+    else { assert.equal(mov.length, 1); assert.equal(mov[0].m, K.inMonete(P, atteso), `premio del ${pos}° posto`); }
+  }
+  assert.ok(visti.size >= 2, 'le carriere di prova devono finire in posti diversi');
+}
 assert.equal(K.giocaCampionato(C, clubs, 1, 0, [], rnd), null);
 
 // coppa: vinta passando quattro turni, con un pareggio deciso ai rigori
@@ -389,7 +408,9 @@ function RARITA_COMUNI(C) { return Object.values(C.allenatori.comune).reduce((a,
   const M = nuovaW(), mar = giorno(1), V = K.vittoria(M);
   K.aggiornaSfide(M, mar); Object.assign(M.sfide.d.c, { gioca: 1, vinte: 1, gol: 3, inviolate: 1, coppa: 1 });
   let st = K.statoSfide(M, mar); assert.deepEqual(st.conti.d, [5, 5]); assert.equal(st.daRiscuotere, 6); assert.deepEqual(st.d.map((x) => x.monete), K.SFIDE.d.map((x) => K.inMonete(M, x.v)));
-  const m0 = M.monete, g0 = M.gemme, r = K.riscuotiTutto(M, mar); assert.equal(r.n, 6); assert.equal(M.monete - m0, K.SFIDE.d.reduce((t, x) => t + K.inMonete(M, x.v), 0)); assert.equal(M.gemme, g0);
+  const m0 = M.monete, g0 = M.gemme, p0 = M.percorso.punti, r = K.riscuotiTutto(M, mar); assert.equal(r.n, 6); assert.equal(M.monete - m0, K.SFIDE.d.reduce((t, x) => t + K.inMonete(M, x.v), 0)); assert.equal(M.gemme, g0);
+  // i punti del percorso premi che la schermata mostra sono quelli dati davvero: cinque sfide del giorno, niente per il premio di gruppo
+  assert.equal(r.punti, M.percorso.punti - p0); assert.equal(r.punti, K.SFIDE.d.length * E.percorso.punti.sfidaD);
   assert.equal(M.allenatori.comune.tecnico + M.allenatori.comune.fisico + M.allenatori.comune.difesa + M.allenatori.comune.portieri, 1, 'tutte le giornaliere: un allenatore comune');
   assert.equal(K.riscuoti(M, 'd', 'd1', mar).ok, false); assert.deepEqual(K.statoSfide(M, giorno(2)).conti.d, [0, 5]);
   // settimana: tutte fatte, quindici diamanti e un allenatore raro; poi riparte il lunedì

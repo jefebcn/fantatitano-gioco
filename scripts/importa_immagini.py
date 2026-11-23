@@ -1,10 +1,15 @@
-"""Importa le illustrazioni che Alex mette in assets/arrivo/: le controlla (nome, misure, trasparenza), le ritaglia al
-centro se il rapporto è poco diverso, le prepara a 1x, 2x e 3x in WebP dentro public/img/illustrazioni/ e scrive
-src/casa/illustrazioni.js, che dice al gioco quali immagini ci sono (le altre restano segnaposto).
+"""Importa le illustrazioni che Alex mette in assets/arrivo/ (anche nelle sue sottocartelle, per esempio
+assets/arrivo/premi/): le controlla (nome, misure, trasparenza), le ritaglia al centro se il rapporto è poco diverso, le
+prepara a 1x, 2x e 3x in WebP dentro public/img/illustrazioni/ e scrive src/casa/illustrazioni.js, che dice al gioco
+quali immagini ci sono (le altre restano segnaposto).
+Nell'elenco (assets/immagini.json) un'immagine può essere segnata «rifila»: le si toglie il margine vuoto attorno e il
+soggetto riempie la misura, intero e centrato; oppure «usa»: non ha un file suo, vale quello di un'altra immagine.
+Gli stemmi delle squadre inventate (le voci con «squadra») si possono consegnare anche col solo nome della squadra, scritto
+come si vuole: «Real Acquaviva.png», «real-acquaviva.png» e «stemma-real-acquaviva.png» sono lo stesso stemma.
 Uso: python3 scripts/importa_immagini.py            importa tutto quello che c'è in assets/arrivo/
      python3 scripts/importa_immagini.py stato      dice solo quali sono definitive e quali segnaposto
 Serve Pillow (c'è già nelle sessioni di lavoro; sul computer: pip install pillow)."""
-import json, os, sys
+import json, os, sys, unicodedata
 from PIL import Image
 
 RADICE = os.path.join(os.path.dirname(__file__), '..')
@@ -15,21 +20,47 @@ ELENCO = {i['nome']: i for i in json.load(open(os.path.join(RADICE, 'assets', 'i
 TOLLERANZA = .15
 # sotto questa parte della misura piena l'immagine è troppo piccola (2x su 3x: va ancora bene su quasi tutti i telefoni)
 MINIMO = 2 / 3
+# sotto questa opacità (su 255) un punto conta come margine vuoto, quando si rifila
+RIFILA = 8
 
 
-def importa(file):
+def rifila(im, v):
+    """Toglie il margine vuoto e mette il soggetto, intero e centrato, in un riquadro col rapporto dell'elenco."""
+    im = im.crop(im.split()[3].point(lambda a: 255 if a > RIFILA else 0).getbbox())
+    voluto = v['w'] / v['h']
+    w, h = (im.width, round(im.width / voluto)) if im.width / im.height > voluto else (round(im.height * voluto), im.height)
+    tela = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    tela.paste(im, ((w - im.width) // 2, (h - im.height) // 2))
+    return tela
+
+
+def semplice(nome):
+    """Il nome in minuscolo, senza accenti, coi trattini al posto di spazi e apostrofi (come src/casa/nomi-stemmi.js)."""
+    senza = ''.join(c for c in unicodedata.normalize('NFD', nome) if unicodedata.category(c) != 'Mn').lower()
+    return '-'.join(''.join(c if c.isascii() and c.isalnum() else ' ' for c in senza).split())
+
+
+def importa(cartella, file):
     nome, est = os.path.splitext(file)
     if est.lower() not in ('.png', '.jpg', '.jpeg', '.webp'):
         return None
+    # uno stemma può arrivare col solo nome della squadra
+    if nome not in ELENCO:
+        nome = next((n for n in (semplice(nome), 'stemma-' + semplice(nome)) if n in ELENCO), nome)
     v = ELENCO.get(nome)
     if not v:
         return f'✗ {file}: nome non in elenco (vedi docs/immagini-da-generare.md)'
-    im = Image.open(os.path.join(ARRIVO, file))
+    if v.get('usa'):
+        return f'✗ {file}: non serve, al suo posto si usa {v["usa"]}'
+    im = Image.open(os.path.join(cartella, file))
     alfa = im.mode in ('RGBA', 'LA') and im.convert('RGBA').getextrema()[3][0] < 250
     if v['alfa'] and not alfa:
         return f'✗ {file}: serve lo sfondo trasparente (PNG), questa non ce l\'ha'
     im = im.convert('RGBA' if v['alfa'] else 'RGB')
-    voluto, avuto, note = v['w'] / v['h'], im.width / im.height, []
+    note = []
+    if v.get('rifila'):
+        im = rifila(im, v); note.append(f'tolto il margine vuoto: il soggetto è {im.width} × {im.height}')
+    voluto, avuto = v['w'] / v['h'], im.width / im.height
     if abs(avuto / voluto - 1) > TOLLERANZA:
         return f'✗ {file}: è {im.width} × {im.height}, serve il rapporto di {v["w"]} × {v["h"]}'
     if abs(avuto / voluto - 1) > .005:
@@ -53,19 +84,37 @@ def pronte():
     return sorted(n for n in ELENCO if os.path.exists(os.path.join(USCITA, f'{n}@3x.webp')))
 
 
+def al_posto():
+    """Le immagini senza un file loro, quando è pronta quella che usano."""
+    fatte = pronte()
+    return sorted(n for n, v in ELENCO.items() if v.get('usa') in fatte)
+
+
 if __name__ == '__main__':
     if len(sys.argv) < 2 or sys.argv[1] != 'stato':
         male = 0
-        for f in sorted(os.listdir(ARRIVO)):
-            r = importa(f)
-            if r:
-                print(r); male += r.startswith('✗')
+        for cartella, sotto, file in os.walk(ARRIVO):
+            sotto.sort()
+            for f in sorted(file):
+                r = importa(cartella, f)
+                if r:
+                    print(r); male += r.startswith('✗')
         ok = pronte()
         if ok:
             # le misure a 1x: il gioco sceglie da solo la grandezza giusta per lo schermo
             righe = {n: [round(ELENCO[n]['w'] / 3), round(ELENCO[n]['h'] / 3)] for n in ok}
             open(ELENCO_JS, 'w', encoding='utf8').write('// Generato da scripts/importa_immagini.py: le illustrazioni pronte, con le misure a 1x.\n// Quelle che qui non ci sono restano segnaposto.\nexport const ILLUSTRAZIONI = ' + json.dumps(righe, separators=(', ', ': ')) + ';\n')
         sys.exit(1 if male else 0)
-    ok = pronte()
+    ok, posto = pronte(), al_posto()
     print(f'Definitive ({len(ok)}): ' + (', '.join(ok) or 'nessuna'))
-    print(f'Segnaposto ({len(ELENCO) - len(ok)}): ' + ', '.join(n for n in ELENCO if n not in ok))
+    if posto:
+        print(f'Usano un\'altra immagine ({len(posto)}): ' + ', '.join(f'{n} (usa {ELENCO[n]["usa"]})' for n in posto))
+    # gli stemmi delle squadre inventate si contano a parte: finché mancano il gioco li disegna coi pezzi dello stemma
+    stemmi = [n for n, v in ELENCO.items() if v.get('squadra')]
+    altre = [n for n in ELENCO if n not in stemmi]
+    mancano = [n for n in altre if n not in ok and n not in posto]
+    print(f'Segnaposto ({len(mancano)}): ' + (', '.join(mancano) or 'nessuno'))
+    if not mancano:
+        print(f'Tutte e {len(altre)} le illustrazioni dell\'elenco sono definitive: {len([n for n in altre if n in ok])} con un file loro, {len(posto)} che usano quello di un\'altra.')
+    fatti = [n for n in stemmi if n in ok]
+    print(f'Stemmi delle squadre inventate: {len(fatti)} su {len(stemmi)}' + ('' if len(fatti) == len(stemmi) else ' (gli altri li disegna il gioco). Mancano: ' + ', '.join(ELENCO[n]['squadra'] for n in stemmi if n not in ok)))

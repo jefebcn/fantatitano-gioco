@@ -5,26 +5,17 @@
      inizio e fine tempo, fallo, fuorigioco, rigore e gol).
    - Il pubblico: un brusio che dipende da quanta gente c'è sugli spalti, cresce quando la palla è negli ultimi 25 metri,
      esplode al gol e fa "ooooh" sui tiri fuori di poco e sulle parate.
-   - La musica dei menu: un sequencer leggero (batteria, basso, accordi, arpeggio e melodia) che sfuma quando comincia
-     la partita e torna nei menu.
+   - La musica della home: brani veri (public/audio, elenco in AUDIO.musica di src/config.js; fonti in docs/crediti.md)
+     che girano in tutte le schermate fuori dalla partita, si ripetono con una dissolvenza, sfumano quando comincia la
+     partita e riprendono da dov'erano quando si torna alla home.
 
    Il contesto audio nasce solo al primo tocco (o tasto): i browser, iOS e Android in testa, bloccano l'audio partito
-   da solo. Volumi di musica ed effetti e il tasto acceso/spento restano salvati sul dispositivo. */
+   da solo. Volumi di musica ed effetti e il tasto muto restano salvati sul dispositivo. */
+import { AUDIO } from './config.js';
 
 const SALVA = 'fantatitano-audio';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-// la colonna sonora: La minore, 112 battiti, sedicesimi, quattro accordi (La-, Fa, Do, Sol) e una melodia di otto battute
-const BPM = 112, PASSO = 60 / BPM / 4;
-const nota = (n) => 440 * Math.pow(2, (n - 69) / 12); // numero MIDI → frequenza
-const ACCORDI = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]]; // La-, Fa, Do, Sol
-const BASSI = [45, 41, 36, 43];
-const MELODIA = [ // otto battute da sedici sedicesimi: numero MIDI o 0 (pausa), si suona dalla nona battuta in poi
-  [76, 0, 0, 0, 72, 0, 74, 0, 76, 0, 0, 0, 79, 0, 0, 0], [77, 0, 0, 0, 76, 0, 72, 0, 69, 0, 0, 0, 0, 0, 0, 0],
-  [72, 0, 0, 0, 74, 0, 76, 0, 79, 0, 0, 0, 76, 0, 74, 0], [74, 0, 0, 0, 0, 0, 71, 0, 74, 0, 0, 0, 0, 0, 0, 0],
-  [76, 0, 0, 0, 72, 0, 74, 0, 76, 0, 0, 0, 81, 0, 0, 0], [81, 0, 79, 0, 77, 0, 76, 0, 77, 0, 0, 0, 0, 0, 0, 0],
-  [79, 0, 0, 0, 76, 0, 72, 0, 76, 0, 79, 0, 84, 0, 0, 0], [83, 0, 0, 0, 79, 0, 0, 0, 74, 0, 0, 0, 0, 0, 0, 0],
-];
 // i fischi: durate (secondi) di ogni colpo e pausa tra un colpo e l'altro
 const FISCHI = {
   inizio: [[.8], .2], ripresa: [[.45], .2], fallo: [[.24], .2], fuorigioco: [[.32], .2], rigore: [[.22, .75], .14],
@@ -36,7 +27,7 @@ export function creaAudio(opz = {}) {
   const A = {
     ctx: null, on: true, vol: { musica: .6, effetti: .9 }, sbloccato: false,
     folla: { affluenza: .55, tensione: 0, attiva: false, pausa: false },
-    musicaOn: false, prossimo: 0, passo: 0, timer: null, ultimaSpallata: -9,
+    lettore: null, brano: 0, suona: false, timer: null, ultimaSpallata: -9,
   };
   try { const v = JSON.parse(localStorage.getItem(SALVA) || '{}'); if (typeof v.on === 'boolean') A.on = v.on; for (const k of ['musica', 'effetti']) if (typeof v[k] === 'number') A.vol[k] = clamp(v[k], 0, 1); } catch (e) { /* senza memoria valgono i valori di partenza */ }
   const salva = () => { try { localStorage.setItem(SALVA, JSON.stringify({ on: A.on, musica: A.vol.musica, effetti: A.vol.effetti })); } catch (e) { /* niente memoria: pazienza */ } };
@@ -55,7 +46,7 @@ export function creaAudio(opz = {}) {
       // un limitatore all'uscita: trasparente finché non serve, ferma la distorsione sul boato del gol
       this.comp = x.createDynamicsCompressor(); this.comp.threshold.value = -3; this.comp.knee.value = 0; this.comp.ratio.value = 20; this.comp.attack.value = .003; this.comp.release.value = .15; this.comp.connect(x.destination);
       this.master = x.createGain(); this.master.gain.value = this.on ? 1 : 0; this.master.connect(this.comp);
-      this.busM = x.createGain(); this.busM.gain.value = this.vol.musica * .5; this.busM.connect(this.master);
+      this.busM = x.createGain(); this.busM.gain.value = this.vol.musica * AUDIO.musica.livello; this.busM.connect(this.master);
       this.fadeM = x.createGain(); this.fadeM.gain.value = 0; this.fadeM.connect(this.busM);
       this.busE = x.createGain(); this.busE.gain.value = this.vol.effetti; this.busE.connect(this.master);
       creaFolla(this);
@@ -63,20 +54,25 @@ export function creaAudio(opz = {}) {
       // iOS sblocca l'audio solo se dentro il tocco parte davvero un suono: un campione muto basta
       const s = x.createBufferSource(); s.buffer = x.createBuffer(1, 1, x.sampleRate); s.connect(x.destination); s.start(0);
       if (x.resume) x.resume().catch(() => {});
-      document.addEventListener('visibilitychange', () => { if (!this.ctx) return; if (document.hidden) this.ctx.suspend().catch(() => {}); else if (this.sbloccato) this.ctx.resume().catch(() => {}); });
+      // gioco in secondo piano: tutto fermo, musica compresa; quando torna, riprende
+      document.addEventListener('visibilitychange', () => { if (!this.ctx) return; if (document.hidden) { fermaMusica(); this.ctx.suspend().catch(() => {}); } else if (this.sbloccato) { this.ctx.resume().catch(() => {}); aggiornaMusica(); } });
     } catch (e) { this.ctx = null; }
   };
   // al primo tocco o tasto, ovunque: crea o riprende il contesto, poi se il contesto gira smette di ascoltare
   const sblocca = () => {
     A.init(); if (!A.ctx) return;
-    const pronto = () => { if (A.ctx.state !== 'running') return; A.sbloccato = true; for (const e of EVENTI) document.removeEventListener(e, sblocca, true); if (A.voglioMusica) A.musica(true); };
+    // la musica parte qui, dentro il tocco: fuori da un tocco su iPhone un lettore non può cominciare a suonare
+    aggiornaMusica();
+    const pronto = () => { if (A.ctx.state !== 'running') return; A.sbloccato = true; for (const e of EVENTI) document.removeEventListener(e, sblocca, true); aggiornaMusica(); };
     if (A.ctx.state === 'running') pronto(); else A.ctx.resume().then(pronto).catch(() => {});
   };
   const EVENTI = ['pointerdown', 'touchend', 'keydown', 'click'];
   if (!opz.contesto) for (const e of EVENTI) document.addEventListener(e, sblocca, true);
 
-  A.toggle = function () { this.on = !this.on; salva(); if (this.ctx) this.master.gain.setTargetAtTime(this.on ? 1 : 0, this.ctx.currentTime, .05); const b = document.querySelector('#audio'); if (b) b.style.opacity = this.on ? 1 : .4; };
-  A.volume = function (k, v) { this.vol[k] = clamp(v, 0, 1); salva(); if (!this.ctx) return; const t = this.ctx.currentTime; if (k === 'musica') this.busM.gain.setTargetAtTime(this.vol.musica * .5, t, .05); else this.busE.gain.setTargetAtTime(this.vol.effetti, t, .05); };
+  /** Il tasto muto: spegne o riaccende tutto l'audio (`on` dice se è acceso). */
+  A.toggle = function () { this.on = !this.on; salva(); if (this.ctx) this.master.gain.setTargetAtTime(this.on ? 1 : 0, this.ctx.currentTime, .05); const b = document.querySelector('#audio'); if (b) b.style.opacity = this.on ? 1 : .4; aggiornaMusica(); };
+  /** Il volume di 'musica' o di 'effetti', da 0 a 1. */
+  A.volume = function (k, v) { this.vol[k] = clamp(v, 0, 1); salva(); if (!this.ctx) return; const t = this.ctx.currentTime; if (k === 'musica') { this.busM.gain.setTargetAtTime(this.vol.musica * AUDIO.musica.livello, t, .05); aggiornaMusica(); } else this.busE.gain.setTargetAtTime(this.vol.effetti, t, .05); };
 
   /* ------------------------------------------------------------ mattoni: inviluppi, rumori filtrati, oscillatori */
   const ora = () => A.ctx.currentTime;
@@ -187,45 +183,61 @@ export function creaAudio(opz = {}) {
     rumore(this.busE, { buf: 'rosa', f: 500, q: .6, vol: .12 * k, att: .3, dur: 1.6 });
   };
 
-  /* ------------------------------------------------------------ la musica dei menu */
-  const strumenti = {
-    cassa(t) { tono(A.fadeM, { f: 130, f2: 42, vol: .55, dur: .28, t }); },
-    rullante(t) { rumore(A.fadeM, { tipo: 'highpass', f: 1400, vol: .2, dur: .16, t }); tono(A.fadeM, { f: 210, f2: 150, vol: .14, dur: .09, t }); },
-    piatto(t, v = .05) { rumore(A.fadeM, { tipo: 'highpass', f: 7500, vol: v, dur: .05, t }); },
-    basso(t, n, d) { const x = A.ctx, o = x.createOscillator(), fl = x.createBiquadFilter(), g = x.createGain(), t0 = ora() + t; o.type = 'sawtooth'; o.frequency.value = nota(n); fl.type = 'lowpass'; fl.frequency.setValueAtTime(900, t0); fl.frequency.exponentialRampToValueAtTime(220, t0 + d); g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(.2, t0 + .01); g.gain.exponentialRampToValueAtTime(.0001, t0 + d); o.connect(fl); fl.connect(g); g.connect(A.fadeM); o.start(t0); o.stop(t0 + d + .05); },
-    tappeto(t, acc, d) { const x = A.ctx, fl = x.createBiquadFilter(), g = x.createGain(), t0 = ora() + t; fl.type = 'lowpass'; fl.frequency.value = 1300; g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(.05, t0 + .35); g.gain.setValueAtTime(.05, t0 + d - .3); g.gain.exponentialRampToValueAtTime(.0001, t0 + d); fl.connect(g); g.connect(A.fadeM);
-      for (const n of acc) for (const s of [-6, 6]) { const o = x.createOscillator(); o.type = 'sawtooth'; o.frequency.value = nota(n); o.detune.value = s; o.connect(fl); o.start(t0); o.stop(t0 + d + .05); } },
-    arpeggio(t, n) { tono(A.fadeM, { f: nota(n), tipo: 'triangle', vol: .06, dur: .14, t }); },
-    melodia(t, n) { tono(A.fadeM, { f: nota(n), tipo: 'square', vol: .045, att: .01, dur: PASSO * 3.2, t }); tono(A.fadeM, { f: nota(n) * 2, tipo: 'triangle', vol: .02, att: .01, dur: PASSO * 3, t }); },
-  };
-  // suona il sedicesimo numero `s` (su un giro di 16 battute) al tempo t (secondi da adesso)
-  function sedicesimo(s, t) {
-    const batt = Math.floor(s / 16) % 16, i = s % 16, acc = batt % 4, pieno = batt >= 4;
-    if (i === 0) strumenti.tappeto(t, ACCORDI[acc], PASSO * 16);
-    if ([0, 3, 6, 8, 11, 14].includes(i)) strumenti.basso(t, BASSI[acc] + (i === 14 ? 12 : 0), PASSO * 2.2);
-    if (pieno) {
-      if (i % 4 === 0) strumenti.cassa(t);
-      if (i === 4 || i === 12) strumenti.rullante(t);
-      if (i % 2 === 0) strumenti.piatto(t, i % 4 === 2 ? .06 : .03);
-      if (batt % 8 >= 4 || batt >= 12) strumenti.arpeggio(t, ACCORDI[acc][i % 3] + 12 + (i % 6 >= 3 ? 12 : 0));
-    } else if (i % 4 === 2) strumenti.piatto(t, .03);
-    if (batt >= 8) { const n = MELODIA[batt - 8][i]; if (n) strumenti.melodia(t, n); }
+  /* ------------------------------------------------------------ la musica della home */
+  // I brani sono file veri: OGG dove il browser lo sa leggere, MP3 altrimenti. Li suona un lettore solo, nel modo più
+  // semplice che c'è, perché deve andare uguale su ogni telefono: con un brano solo è il lettore stesso a farlo
+  // ricominciare quando finisce, e la dissolvenza tra la fine e l'inizio è già nel file. Con più brani, finito uno
+  // parte il successivo. Il lettore passa dal contesto audio, così volume della musica, muto e dissolvenze valgono anche
+  // per lui: su iPhone il volume di un lettore non si cambia in altro modo. Il file si scarica solo quando la musica
+  // deve suonare davvero.
+  const MU = AUDIO.musica;
+  const estensione = () => { try { return new Audio().canPlayType('audio/ogg; codecs="vorbis"') ? '.ogg' : '.mp3'; } catch (e) { return '.mp3'; } };
+  // porta un volume a `v` in circa `sec` secondi, da dovunque sia
+  const verso = (g, v, sec) => { const c = ora(); g.cancelScheduledValues(c); g.setTargetAtTime(v, c, sec / 3); };
+  // mette nel lettore il brano di turno; se è l'unico, il lettore lo ripete da sé
+  function carica() {
+    const el = A.lettore, nome = MU.cartella + MU.brani[A.brano] + A.estensione;
+    if (A.nomeBrano !== nome) { A.nomeBrano = nome; el.src = nome; }
+    el.loop = MU.brani.length === 1;
   }
-  function sequencer() {
-    if (!A.ctx || A.ctx.state !== 'running') return;
-    while (A.prossimo < ora() + .15) { sedicesimo(A.passo, Math.max(0, A.prossimo - ora())); A.passo = (A.passo + 1) % 256; A.prossimo += PASSO; }
+  // il lettore nasce dentro un tocco: su iPhone può ripartire da solo, più tardi, solo se la prima volta è partito così
+  function prepara() {
+    if (A.lettore) return;
+    const el = A.lettore = new Audio(); el.preload = 'auto'; A.estensione = estensione();
+    A.ctx.createMediaElementSource(el).connect(A.fadeM); el.addEventListener('ended', dopo); carica();
   }
-  /** Musica sì o no: sfuma in entrata (1,5 s) e in uscita; quando è spenta il sequencer si ferma e non costa niente. */
-  A.musica = function (on) {
-    this.voglioMusica = on; if (!this.ctx || this.ctx.state !== 'running') return; const c = ora();
-    this.fadeM.gain.cancelScheduledValues(c); this.fadeM.gain.setTargetAtTime(on ? 1 : 0, c, on ? .6 : .45);
-    clearTimeout(this.spegni);
-    if (on && !this.timer) { this.prossimo = c + .1; this.timer = setInterval(sequencer, 30); }
-    if (!on) this.spegni = setTimeout(() => { clearInterval(this.timer); this.timer = null; }, 2600);
-  };
-
-  /** Per le prove: suona n sedicesimi a partire dal numero `da`, subito (in un contesto offline). */
-  A.provaMusica = (da, n) => { for (let i = 0; i < n; i++) sedicesimo(da + i, i * PASSO); };
+  // Finito un brano parte il prossimo dell'elenco, da capo. Con un brano solo di norma non si arriva qui, perché il
+  // lettore lo ripete da sé: se non lo facesse, riparte da qui
+  function dopo() {
+    if (!A.suona) return;
+    A.brano = (A.brano + 1) % MU.brani.length; carica(); A.lettore.currentTime = 0; A.lettore.play().catch(() => {});
+  }
+  // Il guardiano, una volta al secondo: se la musica deve suonare ma il lettore è fermo (arrivato in fondo senza
+  // ripartire, o fermato dal telefono per una chiamata o una notifica), lo rimette in moto
+  function guardiano() {
+    const el = A.lettore; if (!A.suona) return;
+    if (el.ended) dopo(); else if (el.paused) el.play().catch(() => {});
+  }
+  function avviaMusica() {
+    prepara(); if (A.suona) return; A.suona = true; A.timer = setInterval(guardiano, 1000);
+    // riprende da dov'era. Se il browser non la lascia partire (nessun tocco ancora valido), ci riprova al prossimo tocco
+    A.lettore.play().catch(() => { fermaMusica(); document.addEventListener('pointerdown', aggiornaMusica, { once: true, capture: true }); });
+  }
+  function fermaMusica() {
+    clearTimeout(A.spegni); if (!A.suona) return;
+    A.suona = false; clearInterval(A.timer); A.timer = null; A.lettore.pause();
+  }
+  // La musica deve suonare? Solo se la schermata la vuole, l'audio non è muto, il volume della musica non è a zero e
+  // il gioco è in primo piano. Tutto quello che cambia una di queste cose passa di qui: sfuma in entrata o in uscita,
+  // e a musica spenta ferma il lettore, che così non scarica e non consuma
+  function aggiornaMusica() {
+    if (!A.ctx) return;
+    const deve = !!A.voglioMusica && A.on && A.vol.musica > 0 && !document.hidden;
+    verso(A.fadeM.gain, deve ? 1 : 0, deve ? MU.entra : MU.esce); clearTimeout(A.spegni);
+    if (deve) avviaMusica(); else if (A.suona) A.spegni = setTimeout(fermaMusica, MU.esce * 1000 + 150);
+  }
+  /** Musica sì o no: sì in tutte le schermate della home, no in partita. Sfuma in entrata e in uscita. */
+  A.musica = function (on) { this.voglioMusica = on; aggiornaMusica(); };
 
   /* ------------------------------------------------------------ compatibilità con le chiamate di prima */
   A.kick = (v) => A.calcio(v, 'tocco');

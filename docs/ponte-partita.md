@@ -305,8 +305,11 @@ stato toccato; in `src/config.js` ho aggiunto `DIVISIONI` e `STAGIONE` e riscrit
 - **Energia sotto il 60%.** Alex chiede che sotto il 60% cali prima la velocità e poi le altre doti. È una regola di
   campo, quindi tua: la home manda solo l'`energia` iniziale, come oggi.
 - **Moduli.** Il club dell'utente può usare solo i moduli aperti dal Centro allenamento (i primi quattro di `FORMS`, poi
-  uno in più per stella): nella richiesta arriva sempre un modulo aperto. La pausa in partita mostra invece tutti gli otto
-  moduli: se vuoi rispettare il limite anche lì, l'elenco è `CAR.moduliAperti(K, Object.keys(FORMS))`.
+  due in più per stella, fino a tutti e quindici): nella richiesta arriva sempre un modulo aperto. Dal 23/11 i moduli sono
+  quindici: la home ne ha aggiunti sette in coda a `FORMS` (4-5-1, 4-4-1-1, 3-4-1-2, 5-4-1, 4-3-2-1, 4-2-2-2, 3-4-2-1),
+  senza toccare gli otto di prima; le squadre del computer restano sui primi quattro. `npm run partite` dà le stesse tre
+  partite di prima, e una serie con ognuno dei sette (`MODULO=4-5-1 npm run partite`) non dà anomalie. La pausa in partita
+  mostra tutti e quindici i moduli, su quattro righe sull'iPhone piccolo (ci sta): se vuoi rispettare il limite anche lì, l'elenco è `CAR.moduliAperti(K, Object.keys(FORMS))`.
 
 ## 9. Nota per la sessione della home: saldo sul telefono o sul server (21/11)
 Alex ha deciso che per ora **non si applica niente al database** dell'app: saldo e storico restano sul telefono. Ha
@@ -332,3 +335,22 @@ solo, `public/img/logo-fantatitano.png` (stesso nome di prima, quindi `src/casa/
 contiene la corona da sola su trasparente, 600 × 521. Il file con le scritte (`corona-lime.png`) non c'è più. Se la home
 mostra il logo su uno sfondo chiaro, gli metta dietro il nero (`var(--ink)`). La riga 1 della tabella in
 `docs/home-spec.md` §«decisioni» («corona lime o viola») è da segnare come decisa.
+
+## Dalla home, 23/11: la musica della home è un brano vero
+
+`src/audio.js` (il modulo audio è uno solo, per home e partita) non sintetizza più la musica dei menu: suona il brano
+`public/audio/musica-home-rise-up` (OGG, MP3 di riserva). **Per la partita non cambia niente**: `AU.musica(false)`
+all'avvio della gara e `AU.musica(true)` alla fine e in `toMenu()` restano le stesse chiamate, ora sfumano il brano e lo
+fanno riprendere da dov'era. Effetti, pubblico, fischietto, `AU.toggle()`, `AU.volume()` e `AU.muto` (modalità di prova)
+sono com'erano. La musica non usa numeri casuali. `src/game.js` non è stato toccato. Toccati due file comuni:
+`src/sw.js` (le richieste alla cartella `audio/` non passano dal service worker) e il controllo automatico (un passo in
+più: `node scripts/prove/musica.cjs`).
+
+## Dalla home, 23/11: la schermata Allenamento aspetta la partita
+
+Da Il mio club ora si apre **Allenamento**: cinque carte (Tutorial, Allenamento libero, Rigori, Calci di punizione,
+Calci d'angolo), ognuna con la sua illustrazione. Sono tutte «In arrivo», anche i Rigori: in `src/game.js` non c'è
+ancora `SA_FARE` (§5) né un modo per far partire una richiesta con `tipo: 'allenamento'`. Quando la partita espone
+`SA_FARE.allenamenti`, la home accende le carte dei modi che trova lì e le fa partire con `ponte.avviaPartita` e
+`allenamento: { modo }`; a fine allenamento si torna alla schermata Allenamento, senza premi e senza toccare l'energia
+(§6, punto 5). Nessun file della partita è stato toccato.

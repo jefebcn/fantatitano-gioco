@@ -7,7 +7,7 @@ import * as T from 'three';
 import { DISEGNI } from '../divisa.js';
 import * as CLOUD from '../cloud.js';
 import * as CAR from '../carriera.js';
-import { ECONOMIA, DIFF, FORMS, PASSAGGIO, DIVISIONI, STAGIONE } from '../config.js';
+import { ECONOMIA, DIFF, FORMS, PASSAGGIO, DIVISIONI, STAGIONE, MAGLIA_VERA } from '../config.js';
 import { aiForm, $, rnd, clamp, hash, IMGX, img, G, renderer, cv, SCARPE_NEGOZIO, stemmi3d, makeSkinned, FIGURE, pickKits, PALLONI, kitsFor, AU, tactics, club as clubVero, chiudiPonte, startMatch, toMenu, CREST, loadImg, MODEL } from '../game.js';
 import HTML_CASA from './casa.html';
 import CSS_CASA from './casa.css';
@@ -15,8 +15,9 @@ import CSS_NUOVO from './stile.css';
 import { creaDati, coloreStat } from '../dati/scala.js';
 import { creaDivisioni } from '../dati/divisioni.js';
 import { GIOCATORI } from '../dati/giocatori.js';
-import { rotta, apri, indietro, ridisegna, tornaSotto, azzera } from './nav.js';
+import { rotta, apri, sostituisci, cima, indietro, ridisegna, tornaSotto, azzera } from './nav.js';
 import { mostraBarra, aggiornaBarra } from './barra.js';
+import { apriPremio, premiDa } from './premio.js';
 import { disegnaHome } from './home.js';
 import { disegnaCarriera } from './vista-carriera.js';
 import { disegnaSfida } from './vista-sfida.js';
@@ -25,7 +26,9 @@ import { cartaCampo, riempiRitratti } from './giocatore.js';
 import { adatta, attrNome } from './carte.js';
 import { nomiDi } from '../dati/squadre.js';
 import { t } from './testi.js';
-import { panClubMio, panMercato, panGuadagna, consigliato, toccaEconomia } from './vista-economia.js';
+import { panClubMio, panMercato, panAllenamento, panGuadagna, consigliato, toccaEconomia } from './vista-economia.js';
+import { pronta, figura, stemmaPronto } from './immagini.js';
+import { icona, MO, DI } from './icone.js';
 
 // le schermate della home e i loro stili entrano nella pagina prima di tutto il resto, nel punto dov'erano
 document.head.insertAdjacentHTML('beforeend', `<style id="casaStili">${CSS_CASA}</style><style id="casaStiliNuovi">${CSS_NUOVO}</style>`);
@@ -156,11 +159,11 @@ function applicaMio() {
   stemmi3d.delete(POSTO); loadImg(img(POSTO + '-mini')).then((i) => { CREST[POSTO] = i; stemmi3d.delete(POSTO); });
   stemmiDivisione();
 }
-// Gli stemmi delle squadre inventate si disegnano coi pezzi dello stemma, la prima volta che servono: quelli della
-// divisione in cui si gioca. Le stelle del club dell'utente dicono quanto è forte rispetto alla sua divisione.
+// Gli stemmi delle squadre inventate, la prima volta che servono (quelli della divisione in cui si gioca): l'immagine
+// consegnata, se c'è (docs/immagini-da-generare.md), se no si disegnano coi pezzi dello stemma. Le stelle del club dell'utente dicono quanto è forte rispetto alla sua divisione.
 function stemmiDivisione() {
   if (!K) return;
-  for (const id of K.squadre) { const c = club(id); if (c && c.inventata && !IMGX[id]) { IMGX[id] = disegnaStemma(c.stemma, 240); IMGX[id + '-mini'] = disegnaStemma(c.stemma, 96); loadImg(img(id + '-mini')).then((i) => { CREST[id] = i; }); } }
+  for (const id of K.squadre) { const c = club(id); if (c && c.inventata && !IMGX[id]) { const pronto = stemmaPronto(c.name); IMGX[id] = pronto ? pronto.grande : disegnaStemma(c.stemma, 240); IMGX[id + '-mini'] = pronto ? pronto.piccolo : disegnaStemma(c.stemma, 96); loadImg(img(id + '-mini')).then((i) => { CREST[id] = i; }); } }
   const me = club(K.club), [lo, hi] = CAR.divisione(K).val; if (me) me.str = clamp(Math.round(1 + (CAR.mediaTitolari(K, CLUBS) - lo) / (hi - lo) * 4), 1, 5);
 }
 // Le otto statistiche mostrate di un giocatore, come coppie sigla e valore. `clubId` è la squadra in cui sta adesso
@@ -206,25 +209,25 @@ function candidatiCapitano() { return DATI.candidatiCapitano(POSTO).map((c) => (
 const classeStat = (v) => ({ verde: 'a', giallo: 'b', rosso: 'c' })[coloreStat(v)];
 const cartaGiocatore = (c, scelto) => `<button class="cap${scelto ? ' sel' : ''}" data-cap="${c.c.id}:${c.i}"><div class="cn"><b>${esc(c.x[0])}</b><small ${attrNome(nomiDi(c.c))}>${esc(c.c.name)}</small></div><div class="at">${c.s.stat.map(([k, v]) => `<span${k === c.s.forte ? ' class="forte"' : ''}><i>${k}</i><b class="${classeStat(v)}">${v}</b></span>`).join('')}</div><div class="cartaCap">${cartaCampo(c.s, { club: c.c.id, grande: true, ferma: true, stemma: img(c.c.id + '-mini') })}</div></button>`;
 function mioDaModulo() { const nome = ($('#nvClub').value.trim() || NOMI[0]).slice(0, 22), sg = ($('#nvSigla').value.trim() || sigla(nome)).slice(0, 3).toUpperCase(); return { nome, sigla: sg, c1: COLORI[NV.col][0], c2: COLORI[NV.col][1], stile: NV.stile, colletto: NV.colletto, raglan: NV.raglan }; }
-function anteprimaClub() { const m = mioDaModulo(); $('#nvStemma').src = disegnaStemma(m, 160); $('#nvMaglia').innerHTML = maglia(m.c1, m.c2, m.stile, m.colletto, m.raglan); for (const b of $('#nvCol').children) b.classList.toggle('on', +b.dataset.col === NV.col); for (const b of $('#nvStile').children) b.classList.toggle('on', b.dataset.stile === NV.stile); for (const b of $('#nvColletto').children) b.classList.toggle('on', b.dataset.colletto ? b.dataset.colletto === NV.colletto : NV.raglan); }
+function anteprimaClub() { const m = mioDaModulo(); $('#nvStemma').src = disegnaStemma(m, 160); $('#nvMaglia').innerHTML = anteMaglia(m.c1, m.c2, m.stile, m.colletto, m.raglan); $('#nvMaglia').parentNode.classList.toggle('vera', !!$('#nvMaglia .magliaVera')); for (const b of $('#nvCol').children) b.classList.toggle('on', +b.dataset.col === NV.col); for (const b of $('#nvStile').children) b.classList.toggle('on', b.dataset.stile === NV.stile); for (const b of $('#nvColletto').children) b.classList.toggle('on', b.dataset.colletto ? b.dataset.colletto === NV.colletto : NV.raglan); }
 function drawNuovo() {
   const el = $('#nuovo');
   if (NV.passo === 1) {
     const m = NV.modifica && K && K.mio ? K.mio : null;
-    el.innerHTML = `<button class="indietro" id="nvInd">‹ Indietro</button><h2 class="h">${NV.modifica ? 'Personalizza il club' : 'Il tuo club'}</h2>
+    el.innerHTML = `<button class="indietro" id="nvInd" aria-label="Indietro">${icona('indietro')}</button><h2 class="h">${NV.modifica ? 'Personalizza' : 'Il tuo club'}</h2>${NV.modifica ? schedePersonalizza('club') : ''}
       <div class="nv"><div class="campi">${NV.modifica ? '' : '<label>Il tuo nome<input id="nvNome" maxlength="18" placeholder="Mister" autocomplete="off"></label>'}
         <label>Nome del club<span class="riga"><input id="nvClub" maxlength="22" autocomplete="off" placeholder="${NOMI[0]}"><button id="nvDado" aria-label="Nome a caso">🎲</button></span></label>
         <label>Sigla<input id="nvSigla" maxlength="3" autocomplete="off" placeholder="TIT"></label>
         <div class="lbl">Colori</div><div class="col" id="nvCol">${COLORI.map(([a, b], i) => `<button data-col="${i}" style="background:linear-gradient(135deg,${a} 50%,${b} 50%)"></button>`).join('')}</div>
         <div class="lbl">Disegno</div><div class="seg" id="nvStile">${stiliMiei().map(([k, n]) => `<button data-stile="${k}">${n}</button>`).join('')}</div>
         <div class="lbl">Colletto e maniche</div><div class="seg" id="nvColletto">${COLLETTI.map(([k, n]) => `<button data-colletto="${k}">${n}</button>`).join('')}<button data-raglan="1">Maniche raglan</button></div></div>
-      <div class="ante"><img id="nvStemma" alt=""><div id="nvMaglia"></div></div></div>
-      <button class="btn" id="nvAvanti">${NV.modifica ? 'Salva' : 'Avanti: il capitano'}</button>`;
+      <div class="lato"><div class="ante"><img id="nvStemma" alt=""><div id="nvMaglia"></div></div>${NV.modifica ? '<button class="btn" id="nvAvanti">Salva</button>' : ''}</div></div>
+      ${NV.modifica ? '' : '<button class="btn" id="nvAvanti">Avanti: il capitano</button>'}`;
     if (m) { $('#nvClub').value = m.nome; $('#nvSigla').value = m.sigla; NV.col = Math.max(0, COLORI.findIndex(([a, b]) => a === m.c1 && b === m.c2)); NV.stile = m.stile || ''; NV.colletto = m.colletto || 'giro'; NV.raglan = !!m.raglan; }
     anteprimaClub();
   } else {
     const cand = candidatiCapitano();
-    el.innerHTML = `<div class="testaCap"><button class="indietro" id="nvInd">‹ Il club</button><div class="titoloCap"><h2 class="h">${t('capitano.titolo')}</h2><p>${t('capitano.tocca')}</p></div>${NV.cap ? `<button class="btn ingaggia" id="nvAvanti">${t('capitano.ingaggia', esc(club(NV.cap.split(':')[0]).xi[+NV.cap.split(':')[1]][0]))}</button>` : '<span class="postoIngaggia"></span>'}</div>
+    el.innerHTML = `<div class="testaCap"><button class="indietro" id="nvInd" aria-label="${t('barra.indietro')}">${icona('indietro')}</button><div class="titoloCap"><h2 class="h">${t('capitano.titolo')}</h2><p>${t('capitano.tocca')}</p></div>${NV.cap ? `<button class="btn ingaggia" id="nvAvanti">${t('capitano.ingaggia', esc(club(NV.cap.split(':')[0]).xi[+NV.cap.split(':')[1]][0]))}</button>` : '<span class="postoIngaggia"></span>'}</div>
       <div class="caps">${cand.map((c) => cartaGiocatore(c, NV.cap === `${c.c.id}:${c.i}`)).join('')}</div>`;
     adatta(el); riempiRitratti(el);
     // i caratteri dei titoli possono arrivare un attimo dopo e allargare i nomi: allora si rifà la misura
@@ -235,6 +238,7 @@ function apriNuovo(modifica = false) { Object.assign(NV, { passo: 1, modifica, c
 function tapNuovo(e) {
   const b = e.target.closest('button'); if (!b) return;
   if (b.id === 'nvInd') { if (NV.passo === 2) { NV.passo = 1; drawNuovo(); return $('#nvClub') && ($('#nvClub').value = NV.club || '', $('#nvSigla').value = NV.sigla || '', $('#nvNome') && ($('#nvNome').value = NV.nome || ''), anteprimaClub()); } return NV.modifica ? indietro() : show('#home'); }
+  if (b.dataset.ntab) return sostituisci('negozio', b.dataset.ntab);
   if (b.id === 'nvDado') { const n = NOMI[(NOMI.indexOf($('#nvClub').value) + 1 + Math.floor(rnd(NOMI.length - 1))) % NOMI.length]; $('#nvClub').value = n; $('#nvSigla').value = sigla(n); return anteprimaClub(); }
   if (b.dataset.col) { NV.col = +b.dataset.col; return anteprimaClub(); }
   if (b.dataset.stile !== undefined) { NV.stile = b.dataset.stile; return anteprimaClub(); }
@@ -255,6 +259,45 @@ function tapNuovo(e) {
 /* --- la dashboard */
 // La Carriera si disegna in src/casa/vista-carriera.js: questo nome resta per chi la ridisegna da fuori
 function drawHub() { disegnaCarriera(); }
+// Fotografa una figura del modello 3D, con le luci del ritratto, in un'immagine quadrata di L punti con lo sfondo
+// trasparente. Il disegnatore della partita torna com'era.
+function scatta(fig, cam, L) {
+  const sc = new T.Scene(), luce = new T.DirectionalLight(0xffffff, 2.6), viso = new T.DirectionalLight(0xffffff, 1.6), taglio = new T.DirectionalLight(0xB9A4FF, 2.2);
+  luce.position.set(1.4, 2.4, 3); viso.position.set(-.6, .4, 3); taglio.position.set(-2, 1.5, -2); sc.add(new T.HemisphereLight(0xdfe6ff, 0x2a2550, 1.8), luce, viso, taglio, fig.root);
+  const rt = new T.WebGLRenderTarget(L, L), prima = renderer.getRenderTarget(), col = renderer.getClearColor(new T.Color()), alfa = renderer.getClearAlpha();
+  rt.texture.colorSpace = T.SRGBColorSpace;
+  renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(sc, cam);
+  const px = new Uint8Array(L * L * 4); renderer.readRenderTargetPixels(rt, 0, 0, L, L, px);
+  renderer.setRenderTarget(prima); renderer.setClearColor(col, alfa); rt.dispose();
+  const [cv2, x] = cv(L, L), dati = x.createImageData(L, L);
+  // le righe arrivano dal basso: si capovolgono
+  for (let r = 0; r < L; r++) dati.data.set(px.subarray((L - 1 - r) * L * 4, (L - r) * L * 4), r * L * 4);
+  x.putImageData(dati, 0, 0); return cv2.toDataURL('image/png');
+}
+/**
+ * La maglia vera: il busto di un giocatore del modello 3D con la divisa data (colori, disegno, colletto, maniche) e lo
+ * stemma del club sul petto, com'è in campo. Si disegna una volta per divisa e resta in memoria. Vuota se il modello
+ * non c'è ancora: chi la chiede tiene allora la maglia disegnata piatta.
+ */
+const MAGLIE_VERE = new Map();
+function magliaVera(c1, c2, st, colletto = 'giro', raglan = false) {
+  const chiave = [K ? K.club : '', c1, c2, st, colletto, raglan].join('|'); if (MAGLIE_VERE.has(chiave)) return MAGLIE_VERE.get(chiave);
+  if (!MODEL || !MODEL.scene) return '';
+  let url = '';
+  try {
+    const base = club(K ? K.club : POSTO), c = { ...base, c1, c2, st: st || undefined, col: colletto || undefined, rag: !!raglan }, ks = pickKits(c, CLUBS.find((x) => x.id !== c.id) || c);
+    const fig = makeSkinned(ks[0], 7, '', c.id, '', {}); FIGURE.delete(fig);
+    const kr = fig.metri / 2.72;
+    fig.mixer.update(0); fig.root.updateMatrixWorld(true);
+    // dal collo ai fianchi, un po' di tre quarti
+    const testa = fig.bones.Head.getWorldPosition(new T.Vector3()), cam = new T.PerspectiveCamera(26, 1, .05, 30), M = MAGLIA_VERA;
+    cam.position.set(testa.x + M.lato * kr, testa.y - M.sotto * kr, testa.z + M.lontano * kr); cam.lookAt(testa.x, testa.y - M.centro * kr, testa.z);
+    url = scatta(fig, cam, M.punti);
+  } catch (e) { url = ''; }
+  MAGLIE_VERE.set(chiave, url); return url;
+}
+// la maglia vera se si riesce a disegnarla, se no quella piatta
+const anteMaglia = (c1, c2, st, colletto, raglan, dove = '') => { const u = magliaVera(c1, c2, st, colletto, raglan); return u ? `<img class="magliaVera" src="${u}" alt="">` : maglia(c1, c2, st, colletto, raglan, dove); };
 /*
  * Ritratto di un giocatore (o del mister) dal modello 3D del gioco: la stessa faccia, capelli e divisa che ha in campo,
  * disegnati una volta in un'immagine piccola e tenuti in memoria. mister: senza numero né nome sulla schiena.
@@ -268,24 +311,19 @@ function ritratto(clubId, nome, num, portiere, mister = false) {
     const c = club(clubId), ks = pickKits(c, CLUBS.find((x) => x.id !== clubId) || c), kit = portiere ? ks[2] : ks[0];
     const fig = makeSkinned(kit, hash(clubId + nome), mister ? '' : num, portiere ? null : clubId, mister ? '' : nome, {}); FIGURE.delete(fig);
     const kr = fig.metri / 2.72; // le distanze della ripresa erano pensate per una figura di 2,72 m
-    const sc = new T.Scene(), luce = new T.DirectionalLight(0xffffff, 2.6), viso = new T.DirectionalLight(0xffffff, 1.6), taglio = new T.DirectionalLight(0xB9A4FF, 2.2);
-    luce.position.set(1.4, 2.4, 3); viso.position.set(-.6, .4, 3); taglio.position.set(-2, 1.5, -2); sc.add(new T.HemisphereLight(0xdfe6ff, 0x2a2550, 1.8), luce, viso, taglio, fig.root);
     fig.mixer.update(0); fig.root.updateMatrixWorld(true);
-    const testa = fig.bones.Head.getWorldPosition(new T.Vector3()), cam = new T.PerspectiveCamera(26, 1, .05, 20), L = 256;
+    const testa = fig.bones.Head.getWorldPosition(new T.Vector3()), cam = new T.PerspectiveCamera(26, 1, .05, 20);
     cam.position.set(testa.x + .28 * kr, testa.y + .1 * kr, testa.z + 1.15 * kr); cam.lookAt(testa.x, testa.y - .02 * kr, testa.z);
-    const rt = new T.WebGLRenderTarget(L, L), prima = renderer.getRenderTarget(), col = renderer.getClearColor(new T.Color()), alfa = renderer.getClearAlpha();
-    rt.texture.colorSpace = T.SRGBColorSpace;
-    renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(sc, cam);
-    const px = new Uint8Array(L * L * 4); renderer.readRenderTargetPixels(rt, 0, 0, L, L, px);
-    renderer.setRenderTarget(prima); renderer.setClearColor(col, alfa); rt.dispose();
-    const [cv2, x] = cv(L, L), dati = x.createImageData(L, L);
-    // le righe arrivano dal basso: si capovolgono
-    for (let r = 0; r < L; r++) dati.data.set(px.subarray((L - 1 - r) * L * 4, (L - r) * L * 4), r * L * 4);
-    x.putImageData(dati, 0, 0); url = cv2.toDataURL('image/png');
+    url = scatta(fig, cam, 256);
   } catch (e) { url = ''; }
   RITRATTI.set(chiave, url); return url;
 }
-function pan(titolo, html) { $('#panT').textContent = titolo; $('#panC').innerHTML = html; show('#pan'); aggiornaBarra(); }
+// Apre un pannello col suo titolo e il suo contenuto. trofeo: il nome di un'illustrazione da mettere accanto al titolo
+// (i trofei, nelle schermate delle competizioni). Lo sfondo è quello della home, scurito.
+function pan(titolo, html, trofeo = '') {
+  $('#panT').innerHTML = (trofeo ? figura(trofeo, 'panTrofeo', 36) : '') + esc(titolo); $('#panC').innerHTML = html;
+  $('#pan').classList.toggle('illustrata', pronta('sfondo-home')); show('#pan'); aggiornaBarra();
+}
 const riga = (a, b, r, rg) => `<div class="${a === K.club || b === K.club ? 'io' : ''}"><span>${esc(club(a).name)} – ${esc(club(b).name)}</span><b>${r[0]}-${r[1]}${rg ? ` (${rg[0]}-${rg[1]} rig.)` : ''}</b></div>`;
 const tabella = (tab, corta) => `<table class="tab"><tr><th></th><th>Squadra</th><th>G</th>${corta ? '' : '<th>V</th><th>N</th><th>P</th>'}<th>GF</th><th>GS</th><th>DR</th><th>PT</th></tr>${tab.map((r, i) => `<tr class="${r.id === K.club ? 'io' : ''}"><td>${i + 1}</td><td>${mini(r.id)}${esc(club(r.id).name)}</td><td>${r.g}</td>${corta ? '' : `<td>${r.v}</td><td>${r.n}</td><td>${r.p}</td>`}<td>${r.gf}</td><td>${r.gs}</td><td>${r.gf - r.gs}</td><td>${r.pt}</td></tr>`).join('')}</table>`;
 function panClassifica() {
@@ -299,7 +337,7 @@ function panClassifica() {
   const obiettivi = `<div class="sez">Obiettivi della stagione</div><div class="ris2">${CAR.obiettivi(K, CLUBS).map((o) => `<div class="${o.fatto ? 'io' : ''}"><span>${frase[o.id](o)}</span><b>${o.fatto ? '✓ fatto' : 'da fare'}</b></div>`).join('')}</div>`
     + `<p class="nota2">${sopra ? `Con ${STAGIONE.servono} obiettivi su 4 sali in ${sopra.nome}.` : 'Sei nella divisione più alta.'}${K.div < DIVISIONI.length ? ` Chi arriva tra le ultime ${STAGIONE.retrocedono} scende.` : ''} Una vittoria qui vale ${D.vittoria} monete.</p>`;
   pan(`${D.nome} · stagione ${K.stagione}`, obiettivi + tabella(CAR.classifica(K, CLUBS)) + (g >= 0 ? `<div class="sez">Giornata ${g + 1}: tutti i risultati</div><div class="ris2">${K.cal[g].map(([a, b], i) => riga(a, b, K.ris[g][i])).join('')}</div>` : '')
-    + `<div class="sez">Il tuo calendario</div><div class="ris2 cale">${mie}</div>`);
+    + `<div class="sez">Il tuo calendario</div><div class="ris2 cale">${mie}</div>`, 'trofeo-campionato');
 }
 // Come nelle schermate dei tornei: prima il quadro, e in cima il tasto per giocare la prossima partita
 function giocaCoppa() { const p = CAR.coppaProssima(K); if (p) apri('sfida', 'coppa', p.avv, `Coppa Titano · ${p.nome.toLowerCase()}`, false, true); }
@@ -307,24 +345,26 @@ function giocaCastelli() { const p = CAR.castelliProssima(K); if (p) apri('sfida
 const tastoGioca = (p, az) => (p ? `<button class="btn gioca2" data-az="${az}">Gioca · ${esc(p.nome)} contro ${esc(club(p.avv).name)}</button>` : '');
 function panCoppa() {
   const k = K.coppa;
-  pan('Coppa Titano', tastoGioca(CAR.coppaProssima(K), 'giocaCoppa') + k.storia.map((t, i) => `<div class="sez">${CAR.TURNI[i]}</div><div class="ris2">${t.map((m) => riga(m.a, m.b, m.r, m.rg)).join('')}</div>`).join('') || '<p class="vuoto">La coppa comincia dagli ottavi di finale: sedici squadre, partita secca, rigori in caso di parità.</p>');
+  pan('Coppa Titano', tastoGioca(CAR.coppaProssima(K), 'giocaCoppa') + k.storia.map((t, i) => `<div class="sez">${CAR.TURNI[i]}</div><div class="ris2">${t.map((m) => riga(m.a, m.b, m.r, m.rg)).join('')}</div>`).join('') || '<p class="vuoto">La coppa comincia dagli ottavi di finale: sedici squadre, partita secca, rigori in caso di parità.</p>', 'coppa-titano');
 }
 function panCastelli() {
   const k = K.castelli, mio = CAR.castelliGirone(K);
   pan('Trofeo dei Castelli', tastoGioca(CAR.castelliProssima(K), 'giocaCastelli') + `<p class="nota2">Quattro gironi da quattro, tre giornate: le prime due vanno ai quarti, poi semifinale e finale con i rigori in caso di parità.</p><div class="gironi">${k.gironi.map((g, gi) => `<div class="${gi === mio ? 'mio' : ''}"><div class="sez">Girone ${'ABCD'[gi]}</div>${tabella(CAR.castelliTabella(K, gi), true)}</div>`).join('')}</div>`
-    + (k.ko ? k.ko.storia.map((t, i) => `<div class="sez">${CAR.TURNI_KO[i]}</div><div class="ris2">${t.map((m) => riga(m.a, m.b, m.r, m.rg)).join('')}</div>`).join('') : ''));
+    + (k.ko ? k.ko.storia.map((t, i) => `<div class="sez">${CAR.TURNI_KO[i]}</div><div class="ris2">${t.map((m) => riga(m.a, m.b, m.r, m.rg)).join('')}</div>`).join('') : ''), 'trofeo-castelli');
 }
 let sTab = 'd';
 function panSfide(tab) {
   if (tab) sTab = tab;
-  const st = CAR.statoSfide(K), premio = (x) => premioTesto(x.monete, x.gemme, x.allenatore);
-  const fine = (x, id) => (x.preso ? '<span class="fatto">✓</span>' : x.fatto ? `<button data-riscuoti="${sTab}:${id}">Riscuoti</button>` : '<span></span>');
-  const righe = st[sTab].map((x) => `<div class="sfida${x.fatto ? ' ok' : ''}"><div><b>${x.t}</b><span class="barra"><i style="width:${(x.prog / x.n) * 100}%"></i></span></div><em>${x.prog}/${x.n}</em><u>${premio(x)}</u>${fine(x, x.id)}</div>`).join('');
-  const b = st.bonus[sTab], bonus = b ? `<div class="sfida bonus${b.fatto ? ' ok' : ''}"><div><b>Tutte fatte</b></div><em></em><u>${premio(b)}</u>${fine(b, 'tutte')}</div>` : '';
+  const st = CAR.statoSfide(K), premio = (x) => premioIcone(x.monete, x.gemme, x.allenatore);
+  const fine = (x, id) => (x.preso ? `<span class="fatto">${icona('spunta')}Riscossa</span>` : x.fatto ? `<button data-riscuoti="${sTab}:${id}">Riscuoti</button>` : '<span></span>');
+  // l'ordine: prima le sfide da riscuotere, poi quelle ancora da fare, in fondo quelle già riscosse
+  const posto = (x) => (x.preso ? 2 : x.fatto ? 0 : 1), ordinate = st[sTab].map((x, i) => [x, i]).sort((a, b) => posto(a[0]) - posto(b[0]) || a[1] - b[1]).map((c) => c[0]);
+  const righe = ordinate.map((x) => `<div class="sfida${x.fatto ? ' ok' : ''}${x.preso ? ' presa' : ''}"><div><b>${x.t}</b><span class="barra"><i style="width:${(x.prog / x.n) * 100}%"></i></span></div><em>${x.prog}/${x.n}</em><u>${premio(x)}</u>${fine(x, x.id)}</div>`).join('');
+  const b = st.bonus[sTab], bonus = b ? `<div class="sfida bonus${b.fatto ? ' ok' : ''}${b.preso ? ' presa' : ''}"><div><b>Tutte fatte</b></div><em></em><u>${premio(b)}</u>${fine(b, 'tutte')}</div>` : '';
   const quando = sTab === 'd' ? 'Ripartono a mezzanotte' : sTab === 'w' ? `Ripartono tra ${fmtTempo(CAR.fineSettimana(new Date()) - new Date())}` : sTab === 's' ? `Valgono per la stagione ${K.stagione}` : 'Si fanno una volta sola';
   pan('Sfide', `<div class="seg">${Object.entries(CAR.GRUPPI).map(([g, n]) => `<button data-stab="${g}" class="${g === sTab ? 'on' : ''}">${n} ${st.conti[g][0]}/${st.conti[g][1]}</button>`).join('')}${st.daRiscuotere ? '<button data-az="tutto" class="oro">Riscuoti tutto</button>' : ''}</div><p class="nota2">${quando}</p>${righe}${bonus}`);
 }
-function riscuotiTutto() { const r = CAR.riscuotiTutto(K); if (!r.n) return avviso('Niente da riscuotere: completa le sfide'); salvaK(); avviso(`Premi riscossi: ${[r.monete ? `+${mon(r.monete)} monete` : '', r.gemme ? `+${r.gemme} diamanti` : ''].filter(Boolean).join(', ')}`); }
+function riscuotiTutto() { const r = CAR.riscuotiTutto(K); if (!r.n) return avviso('Niente da riscuotere: completa le sfide'); salvaK(); apriPremio({ titolo: t('premio.riscosso'), premi: premiDa({ monete: r.monete, gemme: r.gemme, punti: r.punti }) }); }
 function panInfo() {
   pan('Come si gioca', `<div class="info"><div><div class="sez">In campo</div><p>Levetta a sinistra per muovere il giocatore. <b>Passa</b>, <b>Cross</b> e <b>Tira</b>: tieni premuto e la barra sotto il giocatore mostra la potenza (la tacca bianca è quella giusta per il compagno che punti, il rosso nel tiro manda la palla alta); un tocco veloce su Passa o Cross fa il passaggio dosato da solo. <b>Scatto</b> per correre. Senza palla: <b>Cambia</b> giocatore e <b>Scivolata</b> (da dietro è fallo). La scritta sopra la mappa cambia la mentalità; dalla pausa si fanno le sostituzioni.</p>
     <div class="sez">La carriera</div><p>Campionato a 16 squadre, Coppa Titano a eliminazione diretta e Trofeo dei Castelli a gironi. Le partite danno monete; le sfide e il percorso premi danno monete e diamanti. Con le monete si fanno scambi al mercato e sedute di allenamento; con monete e diamanti si migliorano l'allenatore e lo stadio, che rende di più a ogni partita in casa.</p></div>
@@ -345,17 +385,22 @@ function panProfilo() {
     + `<div class="sez">Mercato</div><p class="vuoto">${K.movimenti.length ? K.movimenti.slice(0, 6).map((m) => (m.preso ? `Preso ${esc(m.preso)}${m.da && club(m.da) ? ` (${esc(club(m.da).name)})` : ''} per ${mon(m.costo)} monete` : `Venduto ${esc(m.ceduto)} per ${mon(-m.costo)} monete`)).join(' · ') : 'Ancora nessun movimento'}</p>` : ''));
 }
 /* --- pannelli della home nuova (docs/home-spec.md) */
-const borsaHtml = () => `<div class="borsa"><i class="mo">●</i> <b>${mon(K.monete)}</b><i class="di">◆</i> <b>${K.gemme}</b></div>`;
 // L'avatar del manager: un busto generico disegnato dal modello 3D, scelto tra quelli del negozio (cambia il seme, quindi faccia e capelli)
 const avatarNome = (n) => `${K.nome}${n ? `#${n}` : ''}`;
 // Quanti pezzi dello stemma si hanno, in percentuale (NEGOZIO in src/carriera.js)
 const stemmaFatto = () => CAR.pezziStemma(K);
-const premioTesto = (m, g, a) => [m ? `● ${mon(m)}` : '', g ? `◆ ${g}` : '', a ? `allenatore ${a}` : ''].filter(Boolean).join(' ');
+const premioTesto = (m, g, a) => [m ? `${MO} ${mon(m)}` : '', g ? `${DI} ${g}` : '', a ? `allenatore ${a}` : ''].filter(Boolean).join(' ');
+// Un premio con le icone illustrate al posto delle parole: il sacchetto di monete e i diamanti col loro numero,
+// l'allenatore con la sua rarità. Se un'illustrazione manca resta l'icona piccola (o la parola).
+const UN_ALLENATORE = { comune: 'comune', raro: 'raro', leggendario: 'leggendario' };
+const pezzoPremio = (nome, riserva, testo) => `<span class="pf">${figura(nome, 'pIco', 30) || riserva}<b>${testo}</b></span>`;
+const premioIcone = (m, g, a) => (m ? pezzoPremio('icona-monete', MO, mon(m)) : '') + (g ? pezzoPremio('icona-diamanti', DI, g) : '') + (a ? pezzoPremio('icona-allenatore-' + a, icona('allenatore'), UN_ALLENATORE[a] || a) : '');
 /** Percorso premi della stagione: venti livelli, si sale coi punti di partite e sfide, ogni livello ha un premio da ritirare. */
 function panPercorso(msg) {
   const pe = CAR.statoPercorso(K), E = ECONOMIA.percorso.punti, fine = pe.livello >= pe.livelli;
-  const tessere = pe.premi.map((x) => `<button class="liv${x.preso ? ' preso' : x.raggiunto ? ' pronto' : ''}" ${x.raggiunto && !x.preso ? `data-ritira="${x.livello}"` : 'disabled'}><i>${x.livello}</i><b>${premioTesto(x.monete, x.gemme, x.allenatore)}</b><u>${x.preso ? 'Ritirato' : x.raggiunto ? 'Ritira' : ''}</u></button>`).join('');
-  pan(`Percorso premi · stagione ${K.stagione}`, `${borsaHtml()}${msg ? `<p class="avviso">${msg}</p>` : ''}<div class="perc"><b>Livello ${pe.inCorso} di ${pe.livelli}</b><span class="barra"><i style="width:${fine ? 100 : Math.round(pe.nelLivello / pe.perLivello * 100)}%"></i></span><em>${fine ? 'Percorso completato' : `${pe.nelLivello}/${pe.perLivello} punti`}</em>${pe.daRitirare ? '<button data-az="ritiraTutto" class="oro">Ritira tutto</button>' : ''}</div><div class="livelli">${tessere}</div>`
+  // una tessera per livello: il numero, il premio con la sua icona e lo stato. Quella del livello in corso è evidenziata
+  const tessere = pe.premi.map((x) => { const qui = !fine && x.livello === pe.inCorso && !x.raggiunto; return `<button class="liv${x.preso ? ' preso' : x.raggiunto ? ' pronto' : qui ? ' qui' : ''}" ${x.raggiunto && !x.preso ? `data-ritira="${x.livello}"` : 'disabled'}><i>${x.livello}</i>${premioIcone(x.monete, x.gemme, x.allenatore)}<u>${x.preso ? `${icona('spunta')}Preso` : x.raggiunto ? 'Ritira' : qui ? 'In corso' : ''}</u></button>`; }).join('');
+  pan(`Percorso premi · stagione ${K.stagione}`, `${msg ? `<p class="avviso">${msg}</p>` : ''}<div class="perc"><b>Livello ${pe.inCorso} di ${pe.livelli}</b><span class="barra"><i style="width:${fine ? 100 : Math.round(pe.nelLivello / pe.perLivello * 100)}%"></i></span><em>${fine ? 'Percorso completato' : `${pe.nelLivello}/${pe.perLivello} punti`}</em>${pe.daRitirare ? '<button data-az="ritiraTutto" class="oro">Ritira tutto</button>' : ''}</div><div class="livelli">${tessere}</div>`
     + `<p class="nota2">Punti: partita giocata ${E.partita}, vittoria +${E.vinta}, sfida di oggi riscossa ${E.sfidaD}, obiettivo della settimana ${E.sfidaW}, sfida di stagione ${E.sfidaS}, turno di coppa superato ${E.turno}. Il percorso riparte da zero a ogni stagione.</p>`);
 }
 /* --- il negozio: quello che si compra con diamanti e monete. Solo aspetto e comodità, niente che aiuti in partita
@@ -369,15 +414,21 @@ const NOMI_NEGOZIO = {
   bordo: { semplice: 'Semplice', doppio: 'Doppio', sottile: 'Sottile', punti: 'A punti', oro: 'Oro' },
 };
 let nTab = 'stemma', nArmato = '';
+// Personalizza è una sezione sola con cinque schede: «Nome e colori» (il modulo del club, gratis) e le quattro del negozio
+// (stemma, divisa, manager, squadra: i pezzi che si comprano). La prima è una schermata a parte, le altre un pannello.
+const SCHEDE_PERSONALIZZA = [['club', 'Nome e colori'], ['stemma', 'Stemma'], ['divisa', 'Divisa'], ['manager', 'Manager'], ['squadra', 'Squadra']];
+const schedePersonalizza = (accesa) => `<div class="seg schedeP">${SCHEDE_PERSONALIZZA.map(([k, n]) => `<button ${k === 'club' ? 'data-club="personalizza"' : `data-ntab="${k}"`} class="${k === accesa ? 'on' : ''}">${n}</button>`).join('')}</div>`;
 function panNegozio(tab, msg) {
   if (tab) { nTab = tab; nArmato = ''; }
   const m = K.mio && K.club === POSTO ? K.mio : null, sc = K.scelte || (K.scelte = {}), me = club(K.club);
   const voce = (tipo, cosa, nome, scelto, dentro = '') => {
     const ho = CAR.possiede(K, tipo, cosa), c = CAR.costoOggetto(tipo, cosa), id = `${tipo}:${cosa}`, arm = nArmato === id, caro = K.monete < c.monete || K.gemme < c.gemme;
-    return `<button class="ogg${scelto ? ' on' : ''}${ho ? '' : ' chiuso'}${arm ? ' arm' : ''}" data-ogg="${id}" ${!ho && caro ? 'disabled' : ''}>${dentro}<b>${nome}</b><u>${ho ? (scelto ? 'In uso' : 'Usa') : arm ? `Conferma ${premioTesto(c.monete, c.gemme)}` : premioTesto(c.monete, c.gemme)}</u></button>`;
+    // il prezzo resta unito: se la scritta va a capo, l'icona non si stacca dal numero
+    const prezzo = `<span class="oggPr">${premioTesto(c.monete, c.gemme)}</span>`;
+    return `<button class="ogg${scelto ? ' on' : ''}${ho ? '' : ' chiuso'}${arm ? ' arm' : ''}" data-ogg="${id}" ${!ho && caro ? 'disabled' : ''}>${dentro}<b>${nome}</b><u>${ho ? (scelto ? 'In uso' : 'Usa') : arm ? `Conferma ${prezzo}` : prezzo}</u></button>`;
   };
   const fila = (titolo, tipo, scelto, dentro) => `<div class="sez">${titolo}</div><div class="oggetti">${CAR.NEGOZIO[tipo].tutti.map((x) => voce(tipo, x, NOMI_NEGOZIO[tipo] ? NOMI_NEGOZIO[tipo][x] : x, x === scelto, dentro ? dentro(x) : '')).join('')}</div>`;
-  const tabs = `<div class="seg">${[['stemma', 'Stemma'], ['divisa', 'Divisa'], ['manager', 'Manager'], ['squadra', 'Squadra']].map(([k, n]) => `<button data-ntab="${k}" class="${k === nTab ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+  const tabs = schedePersonalizza(nTab);
   const soloMio = '<p class="vuoto">Stemma e divisa si personalizzano col club creato da te all\'inizio della carriera.</p>';
   let corpo;
   if (nTab === 'stemma') {
@@ -385,7 +436,7 @@ function panNegozio(tab, msg) {
       + fila('Forma', 'forma', m.forma || 'scudo') + fila('Simbolo in cima', 'simbolo', m.simbolo || 'corona') + fila('Bordo', 'bordo', m.bordo || 'semplice') + '</div></div>' : soloMio;
   } else if (nTab === 'divisa') {
     const terza = CAR.possiede(K, 'terza', 'terza'), t3 = m && m.terza;
-    corpo = m ? `<div class="negozio"><div class="ante">${maglia(me.c1, me.c2, me.st, m.colletto || 'giro', !!m.raglan, 'n')}</div><div>`
+    corpo = m ? `<div class="negozio"><div class="ante">${anteMaglia(me.c1, me.c2, me.st, m.colletto || 'giro', !!m.raglan, 'n')}</div><div>`
       + fila('Disegni speciali della prima maglia', 'disegno', m.stile, (x) => `<i class="mg">${maglia(m.c1, m.c2, x, m.colletto || 'giro', !!m.raglan, 'n')}</i>`).replace(/>(onde|chevron|sfumata|mimetica|pennellata)</g, (_, k) => `>${STILI.find(([s]) => s === k)[1]}<`)
       + `<div class="sez">Terza maglia</div>` + (terza && t3
         ? `<div class="seg"><button data-indossa="prima" class="${m.indossa === 'terza' ? '' : 'on'}">In partita: prima maglia</button><button data-indossa="terza" class="${m.indossa === 'terza' ? 'on' : ''}">In partita: terza maglia</button></div>`
@@ -396,10 +447,10 @@ function panNegozio(tab, msg) {
     corpo = fila('Avatar del manager', 'avatar', K.avatar || 0, (n) => `<img src="${ritratto(K.club, avatarNome(n), '', false, true)}" alt="">`).replace(/<b>\d<\/b>/g, '<b></b>')
       + fila('Cornice del ritratto', 'cornice', CAR.possiede(K, 'cornice', sc.cornice) ? sc.cornice : 'semplice', (x) => `<i class="tondo cor-${x}"></i>`);
   } else {
-    corpo = fila('Scarpini della squadra', 'scarpini', CAR.possiede(K, 'scarpini', sc.scarpini) ? sc.scarpini : 'misti', (x) => `<i class="tondo" style="background:${SCARPE_NEGOZIO[x] ? SCARPE_NEGOZIO[x][0] : 'conic-gradient(#16161a,#F3F3F3,#D9F51F,#FF5A1F,#1E6FB5,#16161a)'}"></i>`)
-      + fila('Pallone delle partite in casa', 'pallone', CAR.possiede(K, 'pallone', sc.pallone) ? sc.pallone : 'classico', (x) => `<i class="tondo" style="background:radial-gradient(circle at 50% 50%,${PALLONI[x][1][1]} 0 28%,${PALLONI[x][0]} 30%)"></i>`);
+    corpo = fila('Scarpini della squadra', 'scarpini', CAR.possiede(K, 'scarpini', sc.scarpini) ? sc.scarpini : 'misti', (x) => figura('scarpini-' + x, 'oggFig', 52) || `<i class="tondo" style="background:${SCARPE_NEGOZIO[x] ? SCARPE_NEGOZIO[x][0] : 'conic-gradient(#16161a,#F3F3F3,#D9F51F,#FF5A1F,#1E6FB5,#16161a)'}"></i>`)
+      + fila('Pallone delle partite in casa', 'pallone', CAR.possiede(K, 'pallone', sc.pallone) ? sc.pallone : 'classico', (x) => figura('pallone-' + x, 'oggFig', 52) || `<i class="tondo" style="background:radial-gradient(circle at 50% 50%,${PALLONI[x][1][1]} 0 28%,${PALLONI[x][0]} 30%)"></i>`);
   }
-  pan('Negozio', `${borsaHtml()}${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}<p class="nota2">Qui si comprano solo aspetto e comodità: niente di quello che c'è nel negozio rende più forte la squadra.</p>`);
+  pan('Personalizza', `${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}<p class="nota2">Qui si comprano solo aspetto e comodità: niente di quello che c'è nel negozio rende più forte la squadra.</p>`);
 }
 /** Mette in uso un oggetto del negozio che si ha già. */
 function usaOggetto(tipo, cosa) {
@@ -415,7 +466,7 @@ function usaOggetto(tipo, cosa) {
 let armato = false;
 function panImp() {
   pan('Impostazioni', `<div class="sez">Difficoltà</div><div class="seg">${Object.keys(DIFF).map((d) => `<button data-d="${d}" class="${d === sel.diff ? 'on' : ''}">${d}</button>`).join('')}</div>`
-    + `<div class="sez">Audio</div><div class="seg"><button data-az="audio" class="${AU.on ? 'on' : ''}">${AU.on ? 'Acceso' : 'Spento'}</button></div>`
+    + `<div class="sez">Audio</div><div class="seg"><button data-az="audio" class="${AU.on ? '' : 'on'}">Muto: ${AU.on ? 'no' : 'sì'}</button></div>`
     + `<label class="vol">Volume musica<input type="range" min="0" max="100" step="5" data-vol="musica" value="${Math.round(AU.vol.musica * 100)}"><b>${Math.round(AU.vol.musica * 100)}</b></label>`
     + `<label class="vol">Volume effetti<input type="range" min="0" max="100" step="5" data-vol="effetti" value="${Math.round(AU.vol.effetti * 100)}"><b>${Math.round(AU.vol.effetti * 100)}</b></label>`
     + `<div class="sez">Comandi</div><div class="seg"><button data-az="assistito" class="${sel.assistito ? 'on' : ''}">Passaggio assistito: ${sel.assistito ? 'sì' : 'no'}</button></div>`
@@ -427,7 +478,7 @@ function panImp() {
 // Torna ai menu. Senza carriera: il benvenuto. Con la carriera: la schermata da cui si era partiti, che all'avvio è la
 // Home. Dopo una partita la Sfida non serve più e si torna a quella sotto: Carriera, Amichevole e così via.
 const casa = () => { if (K) tornaSotto('sfida', 'sfidaLibera'); else { drawHome(); show('#home'); } };
-function drawHome() { $('#carr').textContent = K ? 'Continua la carriera' : 'Inizia la carriera'; const u = CLOUD.info().utente; $('#hAcc').textContent = u ? `Connesso come ${u.nome || u.email}` : 'Accedi con l\'account Fantatitano'; }
+function drawHome() { $('#home').classList.toggle('illustrata', pronta('tre-torri')); $('#carr').textContent = K ? 'Continua la carriera' : 'Inizia la carriera'; const u = CLOUD.info().utente; $('#hAcc').textContent = u ? `Connesso come ${u.nome || u.email}` : 'Accedi con l\'account Fantatitano'; }
 
 /* --- salvataggio: sempre sul dispositivo, e sull'account se c'è l'accesso */
 let syncT = 0;
@@ -496,7 +547,7 @@ function buildMenu() {
   rotta('classifica', panClassifica); rotta('coppa', panCoppa); rotta('castelli', panCastelli);
   rotta('sfide', (tab) => panSfide(tab)); rotta('percorso', () => panPercorso()); rotta('guadagna', panGuadagna);
   rotta('profilo', panProfilo); rotta('info', panInfo); rotta('impostazioni', () => { armato = false; panImp(); });
-  rotta('mercato', () => panMercato());
+  rotta('mercato', () => panMercato()); rotta('allenamento', panAllenamento);
   rotta('club', (tab) => panClubMio(tab)); rotta('negozio', (tab) => panNegozio(tab)); rotta('personalizza', () => apriNuovo(true));
   rotta('amichevole', vai); rotta('sfidaLibera', () => { show('#sfida'); disegnaSfida({ tipo: 'amichevole', mia: sel.mia, loro: sel.loro, fuori: false, rigori: false }); });
   rotta('squadra', () => { show('#squadra'); apriSquadra(); });
@@ -508,7 +559,7 @@ function buildMenu() {
   $('#nuovo').addEventListener('input', (e) => { if (e.target.id === 'nvSigla') e.target.dataset.mano = 1; if (e.target.id === 'nvClub' && !$('#nvSigla').dataset.mano) $('#nvSigla').value = sigla(e.target.value); if (NV.passo === 1) anteprimaClub(); });
   $('#carr').onclick = () => { AU.init(); if (K) casa(); else apriNuovo(); };
   $('#hAcc').onclick = () => panProfilo();
-  const clubAz = (k) => (k === 'personalizza' ? (K.mio && K.club === POSTO ? apri('personalizza') : avviso('Si personalizza il club creato all\'inizio della carriera')) : k === 'amichevole' ? apri('amichevole') : apri('club', k));
+  const clubAz = (k) => (k === 'personalizza' ? (K.mio && K.club === POSTO ? (cima() === 'negozio' ? sostituisci('personalizza') : apri('personalizza')) : cima() === 'negozio' ? avviso('Nome e colori si cambiano solo al club creato all\'inizio della carriera') : apri('negozio', 'manager')) : k === 'amichevole' ? apri('amichevole') : k === 'allenamento' ? apri('allenamento') : apri('club', k));
   $('#campoA').addEventListener('click', tapRosa);
   $('#panInd').onclick = () => (K ? indietro() : casa()); $('#continua').onclick = () => { const fine = chiudiPonte(true); toMenu(); if (fine) fine(); };
   // i cursori del volume (impostazioni): musica ed effetti separati, salvati sul dispositivo
@@ -517,12 +568,13 @@ function buildMenu() {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.az && await tapAccount(b.dataset.az)) return;
     if (b.dataset.stab) return apri('sfide', b.dataset.stab);
-    if (b.dataset.riscuoti) { const [g, id] = b.dataset.riscuoti.split(':'), r = CAR.riscuoti(K, g, id); if (r.ok) { salvaK(); avviso(`Premio riscosso: ${[r.monete ? `+${mon(r.monete)} monete` : '', r.gemme ? `+${r.gemme} diamanti` : '', r.allenatore ? `un allenatore ${r.allenatore}` : ''].filter(Boolean).join(', ')}`); } return panSfide(); }
+    if (b.dataset.riscuoti) { const [g, id] = b.dataset.riscuoti.split(':'), r = CAR.riscuoti(K, g, id); if (r.ok) { salvaK(); apriPremio({ titolo: t('premio.riscosso'), premi: premiDa({ monete: r.monete, gemme: r.gemme, allenatori: r.allenatore ? 1 : 0, rarita: r.allenatore || 'raro', punti: r.punti }) }); } return panSfide(); }
+    if (b.dataset.az === 'inArrivo') return avviso(t('inArrivo'));
     if (b.dataset.az === 'giocaCoppa') return giocaCoppa();
     if (b.dataset.az === 'giocaCastelli') return giocaCastelli();
     if (b.dataset.az === 'tutto') { riscuotiTutto(); return panSfide(); }
     if (b.dataset.ctab) return apri('club', b.dataset.ctab);
-    if (b.dataset.ritira || b.dataset.az === 'ritiraTutto') { const q = CAR.ritiraPercorso(K, +(b.dataset.ritira || 0)); if (q.ok) salvaK(); return panPercorso(q.ok ? `Ritirato: ${premioTesto(q.monete, q.gemme, q.allenatori ? 'raro' : '')}` : ''); }
+    if (b.dataset.ritira || b.dataset.az === 'ritiraTutto') { const livello = +(b.dataset.ritira || 0), q = CAR.ritiraPercorso(K, livello); if (q.ok) { salvaK(); apriPremio({ titolo: t('premio.percorso'), sotto: livello ? t('premio.livello', livello) : '', busta: 'percorso', premi: premiDa({ monete: q.monete, gemme: q.gemme, allenatori: q.allenatori, rarita: 'raro' }) }); } return panPercorso(); }
     if (b.dataset.az === 'guadagna') return apri('guadagna');
     if (b.dataset.ntab) return apri('negozio', b.dataset.ntab);
     if (b.dataset.ogg) {
@@ -560,4 +612,4 @@ function buildMenu() {
 function caricaCarriera() { K = CAR.carica(); if (K && !club(K.club)) K = null; CAR.applica(K, CLUBS); applicaMio(); }
 
 // quello che la partita (src/game.js) prende da qui
-export { club, moduloMio, pan, mini, borsaHtml, premioTesto, DATI, fmtTempo, ritratto, consigliato, avviso, ridisegna, maglia, show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera };
+export { club, moduloMio, pan, mini, premioTesto, DATI, fmtTempo, ritratto, consigliato, avviso, ridisegna, maglia, show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera };

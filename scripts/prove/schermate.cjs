@@ -15,7 +15,7 @@ const mime = { '.html': 'text/html', '.js': 'text/javascript', '.webp': 'image/w
 const srv = http.createServer((q, r) => { const u = q.url.split('?')[0], f = path.join(root, u === '/' ? 'index.html' : decodeURIComponent(u)); fs.readFile(f, (e, d) => { if (e) { r.writeHead(404); r.end(); } else { r.writeHead(200, { 'content-type': mime[path.extname(f)] || 'application/octet-stream' }); r.end(d); } }); });
 const MISURE = [[667, 375], [844, 390], [932, 430]];
 // le parti della pagina già rifatte secondo le regole di qualità: qui si controlla ogni elemento
-const RIFATTE = ['#barraF', '#casa', '#carriera', '#sfida', '#squadra', '#schedaG', '#finestra'];
+const RIFATTE = ['#barraF', '#casa', '#carriera', '#sfida', '#squadra', '#schedaG', '#finestra', '#premio'];
 
 // Gira nella pagina: elenca le regole di qualità non rispettate dentro le parti rifatte che si vedono
 function qualita(radici) {
@@ -26,7 +26,9 @@ function qualita(radici) {
     for (const e of [radice, ...radice.querySelectorAll('*')]) {
       if (!vista(e) || e.closest('svg')) continue;
       const r = e.getBoundingClientRect(), st = getComputedStyle(e);
-      if (r.right > W + .5 || r.bottom > H + .5 || r.left < -.5 || r.top < -.5) guai.push(`fuori dallo schermo: ${dice(e)}`);
+      // un decoro (luci e raggi dietro la scena: vuoto, non si tocca, nascosto a chi legge lo schermo) può uscire dai bordi
+      const decoro = e.getAttribute('aria-hidden') === 'true' && st.pointerEvents === 'none' && !e.textContent.trim();
+      if (!decoro && (r.right > W + .5 || r.bottom > H + .5 || r.left < -.5 || r.top < -.5)) guai.push(`fuori dallo schermo: ${dice(e)}`);
       const testo = [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
       // dentro la carta grande del giocatore le scritte seguono le proporzioni della carta (docs/carte-giocatori.md): è la
       // sola eccezione ai 12 px, e anche lì non si scende sotto i 5
@@ -66,6 +68,8 @@ srv.listen(0, async () => {
     pg.on('pageerror', (e) => errori.push(`${w}: ${e.message}`)); pg.on('console', (m) => { if (m.type() === 'error') errori.push(`${w}: console ${m.text().slice(0, 200)}`); });
     await pg.addInitScript(() => {
       let sd = 12345; Math.random = () => (sd = (sd * 16807) % 2147483647) / 2147483647; window.__seme = (k) => { sd = 1000 + k * 7919; };
+      // l'apertura dei premi senza movimento: nelle foto si vede subito il premio
+      window.__fermo = true;
       // sabato 21 novembre 2026
       const D = Date, t0 = 1795262400000;
       window.Date = class extends D { constructor(...a) { if (a.length) super(...a); else super(t0); } static now() { return t0; } };
@@ -74,10 +78,18 @@ srv.listen(0, async () => {
     await pg.goto(`http://localhost:${srv.address().port}/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
     await pg.waitForFunction(() => window.__g && !document.querySelector('#carica'), null, { timeout: 90000 });
     await pg.addStyleTag({ content: 'canvas#c{visibility:hidden}*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}#avviso{display:none!important}' });
+    // le illustrazioni si caricano tutte prima di cominciare: così nelle foto gli sfondi ci sono sempre, a ogni giro
+    const illustrazioni = fs.readdirSync(path.join(root, 'img', 'illustrazioni')).filter((f) => f.endsWith('.webp'));
+    await pg.evaluate((elenco) => Promise.all(elenco.map((f) => new Promise((fatto) => { const i = new Image(); i.onload = i.onerror = fatto; i.src = 'img/illustrazioni/' + f; }))), illustrazioni);
     let n = 0; const testi = {};
     const dove = () => pg.evaluate(() => { const s = [...document.querySelectorAll('.scr')].find((e) => !e.classList.contains('nas')); return s ? s.id : 'nessuna'; });
     const foto = async (nome) => {
       await pg.waitForFunction(() => !document.querySelector('.scr:not(.nas) img[data-ritr]:not([src])'), null, { timeout: 60000, polling: 100 });
+      // le illustrazioni del premio aperto devono essere arrivate: una che manca è un errore
+      if (await pg.$('#premio:not(.nas)')) { await pg.waitForFunction(() => [...document.querySelectorAll('#premio img')].every((i) => i.complete), null, { timeout: 20000, polling: 100 }); const rotte = await pg.evaluate(() => [...document.querySelectorAll('#premio img')].filter((i) => !i.naturalWidth).map((i) => i.getAttribute('src'))); if (rotte.length) errori.push(`${w}: nel premio mancano le immagini ${rotte.join(', ')}`); }
+      // lo stesso per le illustrazioni della schermata: devono essere arrivate, e una che manca è un errore
+      await pg.waitForFunction(() => [...document.querySelectorAll('.scr:not(.nas) img[src*="img/illustrazioni/"]')].every((i) => i.complete), null, { timeout: 20000, polling: 100 });
+      const mancano = await pg.evaluate(() => [...document.querySelectorAll('.scr:not(.nas) img[src*="img/illustrazioni/"]')].filter((i) => !i.naturalWidth).map((i) => i.getAttribute('src'))); if (mancano.length) errori.push(`${w}: in ${nome} mancano le immagini ${mancano.join(', ')}`);
       await pg.waitForTimeout(350); const f = `${String(++n).padStart(2, '0')}-${nome}`; await pg.screenshot({ path: path.join(OUT, `${w}-${f}.png`) });
       testi[f] = await pg.evaluate(() => { const pulisci = (t) => t.replace(/src="(data|blob):[^"]+"/g, 'src="$1"').replace(/url\(&quot;data:[^)]*\)/g, 'url(data)'), s = [...document.querySelectorAll('.scr')].find((e) => !e.classList.contains('nas')), b = document.querySelector('#barraF'); return (s ? s.id + '|' + pulisci(s.innerHTML) : 'nessuna') + (b && !b.classList.contains('nas') ? '|barra|' + pulisci(b.innerHTML) : ''); });
       for (const g of await pg.evaluate(qualita, RIFATTE)) regole.push(`${w} ${f}: ${g}`);
@@ -146,15 +158,17 @@ srv.listen(0, async () => {
     await vai('#barraF [data-vai="impostazioni"]', 'impostazioni'); await vai('#barraF [data-vai="info"]', 'info'); await vai('#barraF [data-vai="profilo"]', 'profilo');
     await vai('#barraF [data-vai="percorso"]', 'percorso-dalla-barra'); await tocca('#barraF [data-az="serie"]'); await foto('premio-del-giorno'); await tocca('#finestra [data-az="si"]');
     await vai('#barraF [data-vai="guadagna"]', 'guadagna', async () => {
-      // dal «come guadagnare» al negozio: un livello in più, e Indietro torna al «come guadagnare»
-      if (!(await tocca('#panC [data-ntab]'))) return; await foto('negozio');
+      // dal «come guadagnare» a Personalizza (prima il modulo del club, poi le schede dei pezzi che si comprano): un
+      // livello in più, e Indietro torna al «come guadagnare»
+      if (!(await tocca('#panC [data-club="personalizza"]'))) return; await foto('negozio');
+      const vera = await pg.evaluate(() => { const i = document.querySelector('#nvMaglia .magliaVera'); return !!i && i.naturalWidth > 0; }); if (!vera) errori.push(`${w}: in Personalizza manca l'anteprima della maglia vera`);
+      if (!(await tocca('#nuovo [data-ntab="stemma"]'))) return;
       const tab = await pg.$$eval('#panC [data-ntab]', (l) => l.map((b) => b.dataset.ntab)); for (const t of tab) { await tocca(`#panC [data-ntab="${t}"]`); await foto(`negozio-${t}`); }
       await tocca('#panC .ogg.chiuso', 0); await foto('negozio-armato'); await tocca('#bCasa');
     });
     // la Carriera e le sue schermate
     await tocca('#casa .c-carriera'); await foto('carriera');
     await vai('#carriera .k-classifica', 'classifica'); await vai('#carriera .k-castelli', 'castelli'); await vai('#carriera .k-titano', 'coppa'); await vai('#carriera .k-prossima', 'sfida-campionato');
-    for (const r of ['sfide', 'squadra', 'mercato', 'club']) await vai(`#carriera .scorc[data-vai="${r}"]`, `scorciatoia-${r}`);
     // dal profilo a «Personalizza»: due livelli sotto la Carriera
     await tocca('#barraF [data-vai="profilo"]'); await vai('#panC [data-club="personalizza"]', 'personalizza'); await tocca('#bCasa');
     // partita: si entra dal campionato, si gioca a passi fissi, poi pausa, sostituzioni e fine; «Continua» torna alla Carriera
@@ -169,7 +183,10 @@ srv.listen(0, async () => {
     // il risultato è registrato, l'energia con cui si è usciti dal campo è salvata, e la finestra dice cosa si è guadagnato
     const dopo = await pg.evaluate(() => { const g = window.__g, K = g.carriera(), en = Object.values(K.energia || {}); return { giocate: K.giornata, stanchi: en.filter((x) => x < 100).length, finestra: !document.querySelector('#finestra').classList.contains('nas'), monete: K.monete }; });
     if (dopo.giocate !== 1 || !dopo.stanchi || !dopo.finestra) errori.push(`${w}: dopo la partita ${JSON.stringify(dopo)}`);
-    await tocca('#finSi'); await foto('carriera-dopo-la-partita');
+    // chiusa la finestra del risultato si apre il premio del giorno: è la prima partita della giornata
+    await tocca('#finSi'); await foto('premio-del-giorno-preso');
+    if (await pg.evaluate(() => document.querySelector('#premio').classList.contains('nas'))) errori.push(`${w}: dopo la prima partita del giorno non si apre il premio del giorno`); else await tocca('#prOk');
+    await foto('carriera-dopo-la-partita');
     // la partita dopo: i titolari sono stanchi, il riscaldamento costa monete e dà energia, una volta sola
     await tocca('#carriera .k-prossima'); await foto('sfida-stanchi'); await tocca('#sfida [data-az="riscaldamento"]'); await foto('finestra-riscaldamento'); await tocca('#finSi'); await foto('sfida-riscaldati');
     const risc = await pg.evaluate(() => { const g = window.__g, K = g.carriera(); return { monete: K.monete, spento: document.querySelector('#sfida .azione.risc').classList.contains('spento') }; });
@@ -183,16 +200,41 @@ srv.listen(0, async () => {
     await tocca('#bCasa'); await tocca('#bCasa');
     // fine del campionato: le altre giornate giocate a tavolino, poi la carta diventa «Nuova stagione» con la finestra di conferma
     await pg.evaluate(() => { const g = window.__g, K = g.carriera(); window.__seme(600); while (g.CAR.prossima(K)) g.CAR.giocaCampionato(K, window.CLUBS, 1, 1, []); g.salvaK(); });
-    await tocca('#carriera .scorc[data-vai="sfide"]'); await tocca('#bCasa'); await foto('carriera-fine-campionato');
+    await tocca('#carriera .k-classifica'); await tocca('#bCasa'); await foto('carriera-fine-campionato');
     await tocca('#carriera .k-prossima'); await foto('finestra-nuova-stagione');
     if (!(await pg.evaluate(() => !document.querySelector('#finestra').classList.contains('nas')))) errori.push(`${w}: la finestra della stagione nuova non si apre`);
-    await tocca('#finNo'); await tocca('#carriera .k-prossima'); await tocca('#finSi'); await foto('finestra-premi-stagione'); await tocca('#finSi'); await foto('carriera-stagione-2');
+    await tocca('#finNo'); await tocca('#carriera .k-prossima'); await tocca('#finSi'); await foto('premi-stagione');
+    if (await pg.evaluate(() => document.querySelector('#premio').classList.contains('nas'))) errori.push(`${w}: a stagione nuova non si aprono i premi di fine stagione`); else await tocca('#prOk');
+    await foto('carriera-stagione-2');
     if ((await pg.evaluate(() => window.__g.carriera().stagione)) !== 2) errori.push(`${w}: la stagione nuova non è cominciata`);
     await tocca('#bCasa'); await foto('home-stagione-2');
     // prova coi casi scomodi: nomi lunghi e saldi grandi non devono tagliare né spingere niente fuori
     await pg.evaluate(() => { const g = window.__g, K = g.carriera(); K.nome = 'Massimiliano Bianchi'.slice(0, 18); K.mio.nome = 'Sporting Serravalle U'; K.mio.sigla = 'SSE'; K.monete = 1234567; K.gemme = 98765; K.div = 2; g.applicaMio(); g.salvaK(); });
     await tocca('#casa .c-sfide'); await tocca('#bCasa'); await foto('home-nomi-lunghi');
     await tocca('#casa .c-carriera'); await foto('carriera-nomi-lunghi'); await tocca('#bCasa');
+    // l'apertura di un premio col movimento vero: un livello del percorso da ritirare. Appena partita la busta è ancora
+    // chiusa; un tocco la salta e si vede il premio; «Continua» chiude
+    await pg.evaluate(() => { window.__fermo = false; const g = window.__g, K = g.carriera(); g.CAR.puntiPercorso(K, 'vinta', 4); g.salvaK(); });
+    await tocca('#barraF [data-vai="percorso"]'); await tocca('#panC [data-ritira]');
+    await pg.waitForFunction(() => document.querySelector('#premio .pBusta').getAnimations().length, null, { timeout: 5000, polling: 20 }).catch(() => {});
+    const busta = await pg.evaluate(() => { const p = document.querySelector('#premio'); return { aperta: !p.classList.contains('nas'), premio: p.classList.contains('aperto'), animazioni: p.querySelector('.pBusta').getAnimations().length, argento: !!p.querySelector('.pBusta img[src*="busta-percorso"]') }; });
+    if (!busta.aperta || busta.premio || !busta.animazioni || !busta.argento) errori.push(`${w}: l'apertura del premio non parte col movimento ${JSON.stringify(busta)}`);
+    await tocca('#premio'); if (!(await pg.evaluate(() => document.querySelector('#premio').classList.contains('aperto')))) errori.push(`${w}: un tocco non salta l'apertura del premio`);
+    await tocca('#prOk'); if (!(await pg.evaluate(() => document.querySelector('#premio').classList.contains('nas')))) errori.push(`${w}: «Continua» non chiude il premio`);
+    await pg.evaluate(() => { window.__fermo = true; }); await tocca('#bCasa');
+    // una sfida riscossa: busta blu, e tra i premi ci sono i punti del percorso premi
+    await tocca('#casa .c-sfide'); let daRiscuotere = false;
+    for (const g of ['d', 'w', 's', 'c']) { await tocca(`[data-stab="${g}"]`); if (await pg.$('[data-riscuoti]')) { daRiscuotere = true; break; } }
+    if (!daRiscuotere) errori.push(`${w}: nessuna sfida da riscuotere per provare il premio`);
+    else if (await tocca('[data-riscuoti]')) { await foto('premio-sfida'); const sfida = await pg.evaluate(() => { const p = document.querySelector('#premio'); return { aperta: p.classList.contains('aperto'), blu: !!p.querySelector('.pBusta img[src*="busta-giorno"]'), punti: !!p.querySelector('#prL img[src*="icona-punti-percorso"]') }; }); if (!sfida.aperta || !sfida.blu || !sfida.punti) errori.push(`${w}: il premio di una sfida ${JSON.stringify(sfida)}`); await tocca('#prOk'); }
+    await tocca('#bCasa');
+    // Allenamento, da Il mio club: cinque carte con la loro illustrazione, per ora tutte «In arrivo»
+    await tocca('#casa .c-club');
+    if (await tocca('#panC [data-club="allenamento"]')) { await foto('allenamento'); const modi = await pg.$$eval('#panC .modoA img', (l) => l.filter((i) => i.naturalWidth > 0).length); if (modi !== 5) errori.push(`${w}: in Allenamento ${modi} illustrazioni su 5`); await tocca('#bCasa'); }
+    await tocca('#bCasa');
+    // il pulsante «Gioca» della carta Carriera porta dritto alla prossima partita, e Indietro riporta alla Home
+    if (await tocca('#casa [data-gioca]')) { const qui = await dove(); await foto('sfida-dalla-home'); await tocca('#bCasa'); const poi = await dove(); if (qui !== 'sfida' || poi !== 'casa') errori.push(`${w}: «Gioca» della Home porta a «${qui}» e Indietro a «${poi}»`); }
+    else errori.push(`${w}: nella Home manca il pulsante «Gioca»`);
     fs.writeFileSync(path.join(OUT, `${w}-testi.json`), JSON.stringify(testi, null, 1));
     console.log(`${w}×${h}: ${n} foto; partita ${JSON.stringify(stato)} → ${JSON.stringify(fine)}`);
     await cx.close();

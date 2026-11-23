@@ -67,6 +67,17 @@ export const FORMS = {
   '5-3-2': { pos: [[-46, 0], [-27, -24], [-33, -11], [-35, 0], [-33, 11], [-27, 24], [-14, -12], [-17, 0], [-14, 12], [9, -6], [9, 6]], roles: 'PDDDDDCCCAA' },
   '4-1-4-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-22, 0], [-9, -22], [-12, -7], [-12, 7], [-9, 22], [11, 0]], roles: 'PDDDDCCCCCA' },
   '3-4-3': { pos: [[-46, 0], [-33, -12], [-35, 0], [-33, 12], [-14, -23], [-17, -7], [-17, 7], [-14, 23], [7, -19], [11, 0], [7, 19]], roles: 'PDDDCCCCAAA' },
+  // i sette moduli aggiunti il 23/11, sempre per la home e con le stesse regole. Quali moduli e la disposizione di
+  // partenza vengono dalla tabella di react-native-football-formation, con licenza MIT: i crediti sono in
+  // docs/crediti.md. Le posizioni sono state riscritte sulle nostre linee: difese, mediane e punte stanno agli stessi
+  // metri dei moduli qui sopra
+  '4-5-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-11, -23], [-15, -10], [-18, 0], [-15, 10], [-11, 23], [11, 0]], roles: 'PDDDDCCCCCA' },
+  '4-4-1-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-11, -21], [-15, -7], [-15, 7], [-11, 21], [1, 0], [11, 0]], roles: 'PDDDDCCCCAA' },
+  '3-4-1-2': { pos: [[-46, 0], [-33, -12], [-35, 0], [-33, 12], [-13, -22], [-17, -7], [-17, 7], [-13, 22], [-4, 0], [9, -6], [9, 6]], roles: 'PDDDCCCCCAA' },
+  '5-4-1': { pos: [[-46, 0], [-27, -24], [-33, -11], [-35, 0], [-33, 11], [-27, 24], [-11, -20], [-15, -7], [-15, 7], [-11, 20], [11, 0]], roles: 'PDDDDDCCCCA' },
+  '4-3-2-1': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-17, -13], [-20, 0], [-17, 13], [-3, -8], [11, 0], [-3, 8]], roles: 'PDDDDCCCAAA' },
+  '4-2-2-2': { pos: [[-46, 0], [-30, -20], [-33, -7], [-33, 7], [-30, 20], [-19, -7], [-19, 7], [-2, -17], [-2, 17], [9, -6], [9, 6]], roles: 'PDDDDCCCCAA' },
+  '3-4-2-1': { pos: [[-46, 0], [-33, -12], [-35, 0], [-33, 12], [-13, -22], [-17, -7], [-17, 7], [-13, 22], [-3, -8], [11, 0], [-3, 8]], roles: 'PDDDCCCCAAA' },
 };
 // le posizioni qui sopra sono scritte per un campo di 100 × 64: si allargano in proporzione al campo vero
 for (const f of Object.values(FORMS)) f.pos = f.pos.map(([x, z]) => [x * HL / 50, z * HW / 32]);
@@ -305,6 +316,10 @@ export const ATTACCO = { sullaLinea: 1.2, massimo: 44 };
 // obiettivi: i quattro obiettivi della stagione, più difficili salendo. posizione: arrivare tra le prime tante in
 // campionato. coppa: quanti turni di Coppa Titano superare (1 = arrivare ai quarti, 2 = in semifinale). castelli: 1 =
 // passare i gironi del Trofeo dei Castelli, 2 = arrivare in semifinale. media: la valutazione media dei titolari.
+// La maglia vera nell'anteprima di Personalizza: il busto del modello 3D ripreso di tre quarti. Distanze in metri per una
+// figura di 2,72 m (come il ritratto): quanto di lato, quanto sotto la testa sta la macchina, quanto lontano, a che
+// altezza sotto la testa guarda; `punti` è il lato dell'immagine.
+export const MAGLIA_VERA = { lato: .6, sotto: .4, lontano: 2.75, centro: .6, punti: 384 };
 export const DIVISIONI = [
   { id: 'sammarinese', nome: 'Campionato Sammarinese', val: [55, 75], vittoria: 250, fine: 50, vere: true, obiettivi: { posizione: 3, coppa: 2, castelli: 2 } },
   { id: 'cadetta', nome: 'Serie Cadetta del Titano', val: [54, 68], vittoria: 180, fine: 40, obiettivi: { posizione: 3, coppa: 2, castelli: 2, media: 67 } },
@@ -321,6 +336,9 @@ export const STAGIONE = { servono: 3, retrocedono: 2 };
 // divisione in cui si gioca: così crescono da soli salendo di divisione.
 // inizio: monete e diamanti di partenza; tra quali valutazioni sta la rosa iniziale e quante riserve ha.
 // premi: pareggio e sconfitta sono una parte della vittoria; turno di coppa superato e trofei vinti, in vittorie.
+//   piazzamento: il premio di fine campionato per chi non lo vince, dal secondo posto in giù, in vittorie: così vale
+//   qualcosa anche un quarto posto, e vale di più nelle divisioni alte, dove una vittoria paga di più. Oltre l'ultimo
+//   posto dell'elenco non c'è premio.
 //   arrotonda: a quante monete si arrotonda ogni importo calcolato.
 // valore: un giocatore vale `base` monete a valutazione `a` e raddoppia ogni `raddoppia` punti; vendendolo si incassa
 //   la parte `vendita`. minimo: sotto quanti giocatori in rosa non si vende più.
@@ -351,7 +369,7 @@ export const STAGIONE = { servono: 3, retrocedono: 2 };
 //   si hanno dall'inizio sta in NEGOZIO, in src/carriera.js.
 export const ECONOMIA = {
   inizio: { monete: 150, diamanti: 20, rosa: [42, 50], panchina: 7 },
-  premi: { pareggio: .5, sconfitta: .25, turno: .5, campionato: 8, coppa: 5, castelli: 4, arrotonda: 5 },
+  premi: { pareggio: .5, sconfitta: .25, turno: .5, campionato: 8, piazzamento: [5, 3.5, 2.5, 2, 1.5, 1, 1], coppa: 5, castelli: 4, arrotonda: 5 },
   valore: { base: 100, a: 55, raddoppia: 5, vendita: .5, minimo: 16 },
   allenatori: {
     rarita: { comune: { punti: 1 }, raro: { punti: 2, diamanti: 15 }, leggendario: { punti: 3, diamanti: 40, potenziale: .25 } },
@@ -368,7 +386,7 @@ export const ECONOMIA = {
   diamanti: { serie: [4, 5, 6, 7, 8, 10, 16], settimana: 15, promozione: 25, coppa: 20, fisio: 10 },
   strutture: {
     costi: [300, 800, 2000, 5000, 12000], diamanti: [0, 0, 0, 20, 40],
-    centro: { moduli: [4, 5, 6, 7, 8, 8], riscaldamento: [1, 1, 1, 2, 2, 3], allenatori: 1 },
+    centro: { moduli: [4, 6, 8, 10, 12, 15], riscaldamento: [1, 1, 1, 2, 2, 3], allenatori: 1 },
     infermeria: .1, foresteria: [22, 24, 26, 28, 30, 32], commerciale: .1, osservatori: .1, curva: .01,
     stadio: { posti: [500, 1000, 2000, 3500, 6000, 10000], incasso: [0, .1, .2, .3, .45, .6] },
   },
@@ -417,6 +435,41 @@ export const RITRATTI = {
 // Carta grande del giocatore: larghezza diviso altezza della cornice, misurata sulla foto di riferimento di Alex
 // (docs/carte-giocatori.md). Le altre proporzioni della carta sono nello stile (src/casa/stile.css).
 export const CARTA_GRANDE = { forma: .737 };
+// L'apertura di un premio (src/casa/premio.js). Tempi in millesimi, rotazioni in gradi.
+// breve (busta blu del giorno e delle sfide, busta argento del percorso premi) e lunga (busta oro di fine stagione)
+// hanno gli stessi passi, con tempi diversi:
+//   entra: la busta sale dal basso e rimbalza;
+//   onde: le vibrazioni, una per coppia [quanto dura, fin dove ruota]; intanto la luce dorata dietro cresce fino ad
+//     `alone` di opacità e la busta si ingrandisce di `cresce`; nella lunga ogni ondata è più ampia e più corta;
+//   pausa: la busta si raddrizza e resta un attimo ferma prima di aprirsi;
+//   strappo: il bordo in alto si stacca e vola via; lampo: quanto dura il lampo; via: in quanto sparisce la busta;
+//   scintille: quante particelle partono col lampo.
+// lunga.uno: i premi uno alla volta, grandi al centro: in quanto sale, quanto resta (un tocco passa al prossimo), in
+//   quanto va via.
+// scintilla: una particella: fin dove arriva (in parti dell'altezza dello schermo), quanto vive, quanto è grande in
+//   punti, di quanto ricade alla fine (in parti dell'altezza).
+// raggi: in quanto i raggi dietro la busta d'oro fanno un giro. riposo: la luce dorata che resta dietro ai premi.
+// sale: in quanto sale ogni premio nell'elenco finale; tra: quanto dopo il precedente; riflesso: in quanto il riflesso
+//   attraversa il premio. guardia: nella breve un tocco qualsiasi chiude, ma solo dopo questo tempo (chi tocca due volte
+//   per saltare non deve perdersi il premio). attesa: quanto si aspettano al massimo le immagini prima di partire.
+// misure: altezza della busta, lato di un premio nell'elenco e lato del premio grande, in centesimi dell'altezza dello
+//   schermo.
+export const PREMIO = {
+  breve: { entra: 420, onde: [[70, 4], [70, -4], [70, 5], [70, -5], [60, 3], [60, 0]], alone: .75, cresce: .05, pausa: 0, strappo: 220, lampo: 320, via: 200, scintille: 16 },
+  lunga: { entra: 620, onde: [[300, 3], [300, -3], [220, 0], [240, 6], [220, -6], [190, 8], [170, -9], [160, 10], [130, -11], [120, 12], [100, -13], [100, 14], [90, -14], [140, 15]], alone: 1, cresce: .12, pausa: 280, strappo: 260, lampo: 480, via: 220, scintille: 34, uno: { sale: 460, resta: 950, via: 200 } },
+  scintilla: { lancio: [.16, .5], dura: [520, 950], grande: [3, 8], cade: .07 },
+  raggi: 16000, riposo: .34,
+  sale: 420, tra: 150, riflesso: 620, guardia: 500, attesa: 1200,
+  misure: { busta: 56, premio: 25, uno: 44 },
+};
+// L'audio (src/audio.js). musica: la musica della home.
+//   cartella e brani: i file, senza estensione: di ognuno c'è l'OGG e l'MP3 di riserva. Con un brano solo si ripete
+//     quello, e la dissolvenza tra la fine e l'inizio è già nel file. Con più brani si alternano nell'ordine scritto.
+//   livello: quanto suona la musica col cursore al massimo (1 = com'è il file).
+//   entra: in quanti secondi la musica torna quando si rientra nella home; esce: in quanti sfuma quando parte la partita.
+export const AUDIO = {
+  musica: { cartella: 'audio/', brani: ['musica-home-rise-up'], livello: 1, entra: 1.5, esce: 1.2 },
+};
 // La schermata Squadra (docs/navigazione.md §3.3), con le misure date da Alex il 23/11.
 // carta: quanto è larga una carta, in parti della larghezza dello schermo (uguale in campo e tra i sostituti).
 // stretto: la mezza larghezza del campo in alto, in percento (in basso è 50): il lato alto è il 55% di quello basso.

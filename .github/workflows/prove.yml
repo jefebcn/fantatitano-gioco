@@ -36,3 +36,5 @@ jobs:
         run: node scripts/prove/ponte.cjs
       - name: Inquadratura al calcio d'inizio (misure di riferimento, margine 2 punti)
         run: node scripts/prove/inquadratura.cjs
+      - name: Musica della home (primo tocco, muto e volumi, cambio in dissolvenza, partita e ritorno)
+        run: node scripts/prove/musica.cjs

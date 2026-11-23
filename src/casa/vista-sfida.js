@@ -8,13 +8,15 @@ import { img, kitsFor, aiForm } from '../game.js';
 import { adatto, postiModulo } from '../dati/scala.js';
 import { nomiDi } from '../dati/squadre.js';
 import { K, DATI, sel, salvaK, maglia, avviso, esc, mon, club, moduloMio } from './casa.js';
-import { ILLUSTRAZIONI } from './illustrazioni.js';
+import { pronta, figura } from './immagini.js';
 import { icona, stelline } from './icone.js';
 import { adatta, attrNome } from './carte.js';
 import { cartaCampo, riempiRitratti } from './giocatore.js';
 import { disponi, erba } from './campo.js';
 import { incarichi } from './rosa.js';
 import { finestra } from './finestra.js';
+import { apriPremio, premiDa } from './premio.js';
+import { ECONOMIA } from '../config.js';
 import { t } from './testi.js';
 import { apri, ridisegna, indietro } from './nav.js';
 
@@ -57,9 +59,9 @@ export function disegnaSfida(partita) {
   if (partita) S = partita;
   const H = club(S.mia), A = club(S.loro), mio = diCarriera(), [kh, ka] = kitsFor(H, A, !!S.fuori);
   const mioModulo = moduloMio(), loroModulo = aiForm(A), comp = competizione(), m = CAR.meteoPartita(mio ? K : null, S.tipo);
-  const logo = comp.immagine && ILLUSTRAZIONI[comp.immagine] ? `<img class="logo" src="img/illustrazioni/${comp.immagine}@2x.webp" alt="">` : icona(comp.ico, 'logo');
+  const logo = (comp.immagine && figura(comp.immagine, 'logo', 42)) || icona(comp.ico, 'logo');
   const risc = mio ? CAR.statoRiscaldamento(K, CLUBS, S.tipo) : null;
-  radice.classList.toggle('illustrata', !!ILLUSTRAZIONI['sfondo-sfida']);
+  radice.classList.toggle('illustrata', pronta('sfondo-sfida'));
   radice.innerHTML = '<div class="sCampo sx"></div>'
     + `<div class="sCentro">${logo}<b>${comp.nome}</b><i data-adatta>${comp.fase}</i><span class="vs">VS</span>${S.tipo === 'amichevole' ? '' : `<i class="luogo">${t(S.fuori ? 'carriera.inTrasferta' : 'carriera.inCasa')}</i>`}`
     + `<span class="meteo">${icona(m.cielo !== 'sereno' ? 'nuvola' : m.ora === 'giorno' ? 'sole' : 'luna')}<i>${m.orario}</i><i>${t('meteo.' + m.cielo)}</i><i>${m.gradi} °C</i></span></div>`
@@ -126,6 +128,8 @@ function finePartita(p, e) {
   const iu = p.fuori ? 1 : 0, gf = e.punteggio[iu], gs = e.punteggio[1 - iu];
   if (p.tipo === 'amichevole' || !K || p.mia !== K.club || !e.finita) return;
   const marcatori = e.marcatori.filter((x) => x.squadra === iu && x.tipo !== 'autogol').map((x) => x.nome), rigori = e.rigori ? [e.rigori[iu], e.rigori[1 - iu]] : null;
+  // il premio del giorno arriva con la prima partita della giornata: si capisce dal giorno segnato nella serie, prima e dopo
+  const giornoPrima = K.serie ? K.serie.giorno : '';
   let nota = '', r = null;
   if (p.tipo === 'camp') { r = CAR.giocaCampionato(K, CLUBS, gf, gs, marcatori); if (r) nota = r.finita ? (r.campione === K.club ? t('dopo.campioni') : t('dopo.stagioneFinita', r.posizione)) : t('dopo.posizione', r.posizione); }
   else {
@@ -136,5 +140,8 @@ function finePartita(p, e) {
   CAR.energiaDopoPartita(K, CLUBS, e.giocatori.filter((g) => g.squadra === iu).map((g) => ({ nome: g.nome, energia: g.energia })));
   salvaK(); ridisegna();
   const passa = r && r.rigori ? r.passa : null, esitoT = passa !== null ? t(passa ? 'dopo.avantiRigori' : 'dopo.fuoriRigori') : t(gf > gs ? 'dopo.vittoria' : gf < gs ? 'dopo.sconfitta' : 'dopo.pareggio');
-  finestra({ titolo: `${esitoT} · ${gf}-${gs}${rigori ? ` (${rigori[0]}-${rigori[1]})` : ''}`, testo: [nota, r && r.monete ? t('dopo.premio', mon(r.monete)) : ''].filter(Boolean).join(' · '), si: t('dopo.continua'), soloSi: true });
+  const S = K.serie, D = ECONOMIA.diamanti.serie, delGiorno = S && S.giorno !== giornoPrima;
+  finestra({ titolo: `${esitoT} · ${gf}-${gs}${rigori ? ` (${rigori[0]}-${rigori[1]})` : ''}`, testo: [nota, r && r.monete ? t('dopo.premio', mon(r.monete)) : ''].filter(Boolean).join(' · '), si: t('dopo.continua'), soloSi: true,
+    // chiusa la finestra del risultato si apre il premio del giorno, se è arrivato con questa partita
+    fatto: delGiorno ? () => apriPremio({ titolo: t('serie.titolo'), sotto: t('premio.giorno', S.n, D.length), premi: premiDa({ gemme: D[S.n - 1], contatti: S.n === D.length ? 1 : 0 }) }) : null });
 }

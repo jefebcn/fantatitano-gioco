@@ -334,20 +334,21 @@ export function statoSfide(C, oggi = new Date()) {
   }
   return out;
 }
-/** Riscuote il premio di una sfida fatta (id 'tutte' per il premio di gruppo): monete, diamanti e, se c'è, un allenatore. */
+/** Riscuote il premio di una sfida fatta (id 'tutte' per il premio di gruppo): monete, diamanti, se c'è un allenatore, e i punti del percorso premi. */
 export function riscuoti(C, gruppo, id, oggi = new Date(), rnd = Math.random) {
   const st = statoSfide(C, oggi), x = id === 'tutte' ? st.bonus[gruppo] : (st[gruppo] || []).find((y) => y.id === id);
   if (!x || !x.fatto || x.preso) return { ok: false };
   C.sfide.presi[chiavePremio(C, gruppo, id)] = 1; muovi(C, x.monete || 0, x.gemme || 0, 'sfida', id === 'tutte' ? `Tutte le sfide: ${GRUPPI[gruppo]}` : x.t);
   if (x.allenatore) daiAllenatore(C, x.allenatore, null, rnd);
-  if (id !== 'tutte') puntiPercorso(C, { d: 'sfidaD', w: 'sfidaW', s: 'sfidaS', c: 'sfidaC' }[gruppo]);
-  return { ok: true, monete: x.monete || 0, gemme: x.gemme || 0, allenatore: x.allenatore || null };
+  const fonte = id === 'tutte' ? '' : { d: 'sfidaD', w: 'sfidaW', s: 'sfidaS', c: 'sfidaC' }[gruppo];
+  if (fonte) puntiPercorso(C, fonte);
+  return { ok: true, monete: x.monete || 0, gemme: x.gemme || 0, allenatore: x.allenatore || null, punti: ECONOMIA.percorso.punti[fonte] || 0 };
 }
 /** Riscuote tutto quello che c'è da riscuotere. */
 export function riscuotiTutto(C, oggi = new Date()) {
-  const st = statoSfide(C, oggi), tot = { monete: 0, gemme: 0, n: 0 };
+  const st = statoSfide(C, oggi), tot = { monete: 0, gemme: 0, punti: 0, n: 0 };
   for (const g of Object.keys(SFIDE)) {
-    for (const x of st[g]) if (x.fatto && !x.preso) { const r = riscuoti(C, g, x.id, oggi); tot.monete += r.monete; tot.gemme += r.gemme; tot.n++; }
+    for (const x of st[g]) if (x.fatto && !x.preso) { const r = riscuoti(C, g, x.id, oggi); tot.monete += r.monete; tot.gemme += r.gemme; tot.punti += r.punti; tot.n++; }
     if (st.bonus[g] && st.bonus[g].fatto && !st.bonus[g].preso) { const r = riscuoti(C, g, 'tutte', oggi); tot.monete += r.monete; tot.gemme += r.gemme; tot.n++; }
   }
   return tot;
@@ -692,6 +693,8 @@ export function giocaCampionato(C, clubs, gf, gs, marcatori, rnd = Math.random, 
   if (finita) {
     C.campione = tab[0].id; if (pos <= 4) evento(C, 'top4', 1, oggi);
     if (tab[0].id === C.club) { const m = inMonete(C, ECONOMIA.premi.campionato); C.trofei.push({ stagione: C.stagione, tipo: 'Campionato', div: C.div }); muovi(C, m, 0, 'trofeo', `${divisione(C).nome}: vinto`); monete += m; }
+    // chi non vince ha il premio del suo piazzamento, dal secondo posto fin dove arriva l'elenco
+    else if (ECONOMIA.premi.piazzamento[pos - 2]) { const m = inMonete(C, ECONOMIA.premi.piazzamento[pos - 2]); muovi(C, m, 0, 'piazzamento', `${divisione(C).nome}: ${pos}° posto`); monete += m; }
   }
   return { posizione: pos, finita, campione: C.campione, monete };
 }

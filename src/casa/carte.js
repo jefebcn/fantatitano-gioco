@@ -1,7 +1,7 @@
 // Le carte di navigazione (docs/navigazione.md §1): una fascia in alto col titolo e «>>», il riassunto al centro, una
 // fascia sottile in basso con una frase o un tempo. Tutta la carta si tocca. I colori della fascia: oro la Carriera,
 // rosso scuro lo Scenario, azzurro o blu le altre.
-import { ILLUSTRAZIONI } from './illustrazioni.js';
+import { stileFondo } from './immagini.js';
 import { icona } from './icone.js';
 import { t } from './testi.js';
 
@@ -13,7 +13,7 @@ import { t } from './testi.js';
  * sfondo: il nome dell'illustrazione di fondo (si usa se è stata consegnata, se no resta il fondo pulito).
  */
 export function carta({ rotta, titolo, nota = '', colore = 'azzurra', corpo, piede = '', bollino = false, chiusa = false, sfondo = '', classe = '' }) {
-  const img = sfondo && ILLUSTRAZIONI[sfondo] ? ` style="--sfondo:image-set(url(img/illustrazioni/${sfondo}@1x.webp) 1x,url(img/illustrazioni/${sfondo}@2x.webp) 2x,url(img/illustrazioni/${sfondo}@3x.webp) 3x)"` : '';
+  const img = sfondo ? stileFondo(sfondo) : '';
   return `<button class="carta tono-${colore}${chiusa ? ' chiusa' : ''}${img ? ' illustrata' : ''}${bollino ? ' avvisa' : ''}${classe ? ' ' + classe : ''}" data-vai="${rotta}"${chiusa ? ' data-chiusa="1"' : ''}${img}>`
     + `<span class="fascia"><b>${titolo}</b>${nota ? `<i class="nota">${nota}</i>` : ''}${chiusa ? icona('lucchetto') : icona('avanti')}</span><span class="corpo">${corpo}</span>`
     + (chiusa ? `<span class="piede">${t('inArrivo')}</span>` : piede ? `<span class="piede">${piede}</span>` : '') + (bollino ? '<em class="bollino">!</em>' : '') + '</button>';

@@ -28,6 +28,10 @@ Stato di ogni schermata: in fondo, §6.
   stringe a gradini: spariscono i nomi dentro i banner, poi le barre e le stelle, poi il profilo si accorcia. Nella barra
   non c'è più il titolo della schermata, né il collegamento diretto alle sfide della settimana (ci si arriva dalla Home).
   In partita la barra non c'è. Nella Sfida (pre-partita) c'è.
+- **Apertura dei premi** (`src/casa/premio.js`, dal 23/11): una busta che si apre e mostra il premio. Breve, meno di un
+  secondo, per il premio del giorno (dopo la prima partita della giornata), le sfide riscosse e i livelli del percorso
+  premi; lunga, circa tre secondi, per i premi di fine stagione. Un tocco la salta; chi ha chiesto al telefono meno
+  movimento vede subito il premio. Non è un livello della navigazione.
 - **Bollino «!»** su ogni carta o pulsante dove c'è qualcosa da ritirare o da fare. La campanella delle notifiche non è
   più nella barra: gli avvisi sono i bollini (vedi §5, domanda 1).
 - **Carte di navigazione**: fascia in alto col TITOLO e «>>», riassunto al centro, fascia sottile in basso con una frase
@@ -41,13 +45,12 @@ AVVIO
 └── carriera già iniziata → HOME
 
 HOME (livello 0)
-├── CARRIERA
+├── CARRIERA (il pulsante «GIOCA» sulla carta salta la Carriera: Sfida → Partita → Fine partita → Home)
 │   ├── GIOCA ADESSO → Sfida → Partita → Fine partita → Carriera
 │   │                  └── Squadra (e ritorno alla Sfida)
 │   ├── Classifica completa (schede: Classifica, Calendario, Risultati)
 │   ├── Trofeo dei Castelli (gironi, poi tabellone) → Sfida
-│   ├── Coppa Titano (tabellone) → Sfida
-│   └── scorciatoie: Sfide, Squadra, Mercato, Il mio club
+│   └── Coppa Titano (tabellone) → Sfida
 ├── SCENARIO → Sfida già impostata → Partita → Fine partita → Scenario
 ├── PERCORSO PREMI
 ├── AMICHEVOLE → scelta dell'avversario → Sfida → Partita → Fine partita → Amichevole
@@ -98,7 +101,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Schermata | Liv. | Si entra da | Indietro | Cosa si tocca |
 |---|---|---|---|---|
 | **Home** | 0 | avvio; Indietro dal livello 1 | — | le 8 carte (§2) |
-| **Carriera** | 1 | Home, carta CARRIERA | Home | Prossima partita → Sfida; Classifica → Classifica completa; Trofeo dei Castelli → gironi; Coppa Titano → tabellone; 4 scorciatoie |
+| **Carriera** | 1 | Home, carta CARRIERA | Home | Prossima partita → Sfida; Classifica → Classifica completa; Trofeo dei Castelli → gironi; Coppa Titano → tabellone (le quattro scorciatoie in basso sono state tolte il 23/11: Sfide, Squadra, Mercato e Il mio club si aprono dalla Home) |
 | Classifica completa | 2 | Carriera, carta Classifica | Carriera | schede Classifica, Calendario, Risultati |
 | Trofeo dei Castelli | 2 | Carriera | Carriera | gironi (poi tabellone); «Gioca» → Sfida |
 | Coppa Titano | 2 | Carriera | Carriera | tabellone; «Gioca» → Sfida |
@@ -121,7 +124,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Schermata | Liv. | Si entra da | Indietro | Cosa si tocca |
 |---|---|---|---|---|
 | **Squadra** | 1 (2 dalla Sfida) | Home; scorciatoia in Carriera; Sfida | da dove sei venuto | scambio (campo, sostituti, riserve) con due tocchi o trascinando una carta sull'altra; il primo tocco sceglie la carta e mostra il pulsante «Scheda», ritoccarla o toccare il vuoto annulla; pressione lunga → scheda; le linguette C, rigori, punizioni e corner si trascinano su un altro titolare; tessera Squadra migliore |
-| Modulo | finestra | Squadra | chiude | 8 moduli |
+| Modulo | finestra | Squadra | chiude | 15 moduli su cinque colonne; quelli chiusi hanno il lucchetto |
 | Riserve | 2 | Squadra | Squadra | i giocatori fuori dai 19 convocati; scambio con la panchina |
 | Fisioterapista | 2 | Squadra | Squadra | recupero dell'energia per monete (uno o tutti) |
 | Allenatore | 2 | Squadra; scheda del giocatore («Allena») | Squadra | sedute di allenamento per giocatore |
@@ -139,7 +142,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 
 | Schermata | Liv. | Si entra da | Indietro | Cosa si tocca |
 |---|---|---|---|---|
-| **Il mio club** | 1 | Home; scorciatoia in Carriera | da dove sei venuto | 4 carte: Stadio e strutture, Personalizza, Allenamento, Amichevole |
+| **Il mio club** | 1 | Home | da dove sei venuto | 4 carte: Stadio e strutture, Personalizza, Allenamento, Amichevole |
 | Stadio e strutture | 2 | Il mio club | Il mio club | 6 strutture → finestra (livello, effetto del successivo, costo, Migliora) |
 | Personalizza | 2 | Il mio club; Profilo | da dove sei venuto | Divisa, Stemma, Nome, Modifica giocatori, Modifica manager, Negozio |
 | Divisa, Stemma, Modifica giocatori, Modifica manager | 3 | Personalizza | Personalizza | — |
@@ -187,8 +190,8 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 |---|---|
 | Benvenuto, Crea il club, Ingaggia il capitano | fatti: logo senza scritta, scala nuova, nove candidati con ruoli diversi, pulsante fuori dalle carte. Le carte a scudo ci sono nella Sfida; qui arrivano con la Squadra |
 | Barra in alto e navigazione a livelli | fatte: uguali in tutte le schermate, Indietro torna da dove si era arrivati |
-| Home (8 carte) | fatta, coi dati veri; illustrazioni ancora segnaposto |
-| Carriera | fatta: prossima partita, classifica a cinque righe, le due coppe, scorciatoie; stagione nuova con finestra di conferma |
+| Home (8 carte) | fatta, coi dati veri e con le illustrazioni definitive (sfondo e quattro carte) |
+| Carriera | fatta: prossima partita, classifica a cinque righe, le due coppe; stagione nuova con finestra di conferma |
 | Classifica completa, Trofeo dei Castelli, Coppa Titano | esistono |
 | Sfida | fatta: due campi con le carte, competizione e tempo al centro, Squadra, Riscaldamento, Gioca; dopo la partita una finestra dice risultato e premio |
 | Scenario | da fare (serve l'aggancio nella partita) |
@@ -197,6 +200,6 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Squadra | fatta, con la struttura del 23/11: quattro pulsanti a sinistra, campo fino al bordo in basso, sostituti a destra, incarichi trascinabili, squadra migliore, scheda del giocatore |
 | Mercato | esiste a scambio, da rifare |
 | Il mio club, Stadio e strutture | esiste con stadio e allenatore, da rifare con le 6 strutture |
-| Personalizza, Negozio | esistono, da risistemare (anteprima grande, testi chiari) |
-| Allenamento (5 modi) | da fare (serve la partita) |
+| Personalizza, Negozio | dal 23/11 sono una sezione sola, «Personalizza», con cinque schede: Nome e colori (il modulo del club), Stemma, Divisa, Manager, Squadra (i pezzi che si comprano). Passare da una scheda all'altra non aggiunge livelli: Indietro torna da dove si è venuti. L'anteprima mostra la maglia vera (il busto del modello 3D) |
+| Allenamento (5 modi) | la schermata c'è (da Il mio club), con le cinque carte illustrate; tutti i modi «In arrivo» finché la partita non sa farli partire (`SA_FARE` in docs/ponte-partita.md §5) |
 | Impostazioni, Info, Come guadagnare, Profilo | esistono |

@@ -148,7 +148,76 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
 - **Simulazione** (`node scripts/simula-carriera.mjs 1000`): un giocatore che vince il 50%, pareggia il 30% e perde il 20%
   arriva dalla Lega Esordienti al Campionato Sammarinese in **6,9 stagioni** in media (la metà entro 6, nove su dieci
   entro 10; circa 150 partite). Coi primi numeri erano 5,0: corretto con obiettivi più difficili salendo di divisione e
-  con le monete delle sfide dimezzate. Giocatore forte (65/20/15): 4,7 stagioni; debole (40/30/30): 15.
+  con le monete delle sfide dimezzate. Giocatore forte (65/20/15): 4,7 stagioni; debole (40/30/30): 15. Dal 23/11 c'è
+  anche il premio di fine campionato per piazzamento (dal secondo all'ottavo posto, `ECONOMIA.premi.piazzamento`): circa
+  due vittorie a stagione in più, senza cambiare questi tempi.
+- **Moduli** (23/11): da 8 a 15, i sette nuovi in coda a `FORMS` partendo dalla tabella MIT citata in `docs/crediti.md`.
+  Il Centro allenamento ne apre 4, 6, 8, 10, 12, 15 secondo le stelle. La finestra di scelta li mostra su cinque colonne.
+- **Musica della home** (23/11, `src/audio.js`, valori in `AUDIO` di `src/config.js`): «Rise Up (Fantatitano)» al posto
+  della musica sintetizzata di prima. Parte al primo tocco, gira in tutte le schermate fuori dalla partita, a fine brano
+  ricomincia da capo (un lettore solo che si ripete da sé, più un controllo ogni secondo che lo rimette in moto se si
+  ferma; la dissolvenza tra fine e inizio è quella del file: 3 secondi in uscita, 0,4 in entrata), sfuma in 1,2 secondi quando parte la partita e riprende da
+  dov'era, in 1,5 secondi, tornando alla home. OGG dove il browser lo legge, MP3 altrimenti. Nelle Impostazioni: tasto
+  Muto e due cursori (Musica, Effetti), salvati sul telefono. Muta, a volume zero o col gioco in secondo piano la musica
+  si ferma e non scarica niente. Non è nel precarico e non passa dal service worker: senza rete il gioco va, senza
+  musica. Prova: `node scripts/prove/musica.cjs` (anche nel controllo automatico). Fonte in `docs/crediti.md`.
+- **Apertura dei premi** (23/11, `src/casa/premio.js`, tempi e misure in `PREMIO` di `src/config.js`): con le
+  illustrazioni di Alex (`assets/arrivo/premi/`). Busta blu per premio del giorno e sfide, argento per il percorso premi,
+  oro per la fine della stagione. La busta entra dal basso con un rimbalzo, vibra mentre dietro cresce la luce dorata, il
+  bordo in alto si strappa con un lampo e le scintille, il premio sale con un riflesso che lo attraversa. Con la busta
+  d'oro l'apertura è lunga: dietro girano i raggi e i premi si vedono uno alla volta, grandi, prima dell'elenco (un tocco
+  passa al prossimo). Riscuotendo una sfida si vedono anche i punti del percorso premi che dà. Scritta da noi con le
+  animazioni del browser, senza librerie; anima solo posizione, rotazione, grandezza e trasparenza. Da fare: un suono
+  all'apertura. L'icona del fisioterapista è pronta ma oggi nessun premio lo dà.
+- **Illustrazioni nelle schermate** (23/11, `src/casa/immagini.js` e lo stile in fondo a `src/casa/stile.css`): tutte e
+  38 le immagini dell'elenco sono definitive. Dove stanno: `sfondo-home` dietro Home e Carriera e, molto scurito, dietro
+  tutti i pannelli; `carta-carriera`, `carta-percorso`, `carta-amichevole`, `carta-scenario` come fondo delle carte della
+  Home (la prima anche della carta «Gioca adesso»); i tre trofei nelle righe della carta Carriera, accanto alla prossima
+  partita, nel titolo della classifica, nelle carte delle coppe, nel titolo dei pannelli Classifica, Coppa Titano e
+  Trofeo dei Castelli e al centro della Sfida; `sfondo-sfida` dietro la Sfida; `tre-torri` nel benvenuto, nella carta
+  «Nuova stagione» e nella finestra di fine stagione; `stadio-alto` in cima a Strutture (è la carta dello Stadio) e le
+  sei `struttura-…` sulle carte delle strutture; `evento-occasioni` e `evento-scelte` come striscioni di «Offerte a
+  tempo» e «Lista trasferimenti» nel Mercato; le cinque `allenamento-…` nella schermata Allenamento. Regola per il
+  testo: sta a sinistra, sopra un velo scuro che sfuma verso destra; quello che sta a destra ha un suo riquadro scuro.
+- **Allenamento** (23/11, da Il mio club): schermata nuova con le cinque carte. Sono tutte «In arrivo»: la partita non
+  ha ancora un modo per far partire un allenamento (`SA_FARE` in `docs/ponte-partita.md` §5), nemmeno i rigori.
+- **Revisione di Alex, sei punti, una PR per punto** (23/11). **A, difetti generali, fatto**: monete e diamanti con
+  la loro icona al posto di «●» e «◆» (`MO` e `DI` in `src/casa/icone.js`); tolto il saldo ripetuto sotto i titoli (è
+  già nella barra); «Indietro» è ovunque lo stesso pulsante quadrato con la freccia, in alto a sinistra (nella barra la
+  casetta resta solo in Home); in alto a destra, se il nome breve del club è uguale al nome dell'allenatore si scrive
+  la sigla; il banner del percorso ha solo livello, barra e punti; «−0» diventa «0» (`conSegno`); i pulsanti che non si
+  possono usare sono grigi pieni con la scritta chiara (in fondo a `src/casa/stile.css`); «Monete e diamanti» sta
+  tutta nello schermo. **B, Home, fatto**: nella carta Carriera il pulsante grande oro «GIOCA» con l'avversario porta
+  dritto alla prossima partita di campionato (Indietro e fine partita riportano alla Home); lo Scenario, finché è
+  chiuso, sta nella riga bassa al posto dell'Amichevole, che sale; la carta Mercato mostra il più forte che ci si può
+  permettere adesso tra lista trasferimenti e offerte a tempo («Per te»), o il meno caro se non ci si può permettere
+  nessuno (`consigliato` in `src/casa/vista-economia.js`). **C, Gioca adesso, fatto**: tolte dalla Carriera le quattro
+  scorciatoie in basso (le carte hanno più posto; Sfide, Squadra, Mercato e Il mio club si aprono dalla Home); pronti i
+  sessanta riquadri per gli stemmi delle squadre inventate (**stemmi arrivati e importati il 23/11, 60 su 60**;
+  `docs/immagini-da-generare.md` §2b, `assets/immagini.json`,
+  `scripts/stemmi.mjs`): quando arriva il file, il gioco lo usa al posto dello stemma disegnato (`stemmaPronto` in
+  `src/casa/immagini.js`). **D, Il mio club, fatto**: le strutture sono carte (disegno, nome, stelle vere, «Adesso» e
+  «Con una stella in più», pulsante «Migliora · prezzo»), tre per riga sotto lo Stadio; le tre strutture rifatte da Alex
+  (PR #119) sono importate; le Finanze hanno un'icona per riquadro (icone nuove `finanze`, `entrate`, `uscite`, `agente`
+  in `scripts/icone.mjs`); Negozio e Personalizza sono una sezione sola, «Personalizza», con cinque schede (Nome e
+  colori, Stemma, Divisa, Manager, Squadra: `schedePersonalizza` in `src/casa/casa.js`, `sostituisci` in
+  `src/casa/nav.js`); l'anteprima mostra la maglia vera, il busto del modello 3D con la divisa scelta (`magliaVera`,
+  numeri in `MAGLIA_VERA` di `src/config.js`). **E, Percorso premi e Sfide, fatto**: i premi si leggono dalle icone
+  illustrate (sacchetto di monete, diamanti, carta dell'allenatore con la rarità) al posto delle parole (`premioIcone` in
+  `src/casa/casa.js`); nel Percorso il livello in corso ha bordo oro, alone e la scritta «In corso», i livelli da
+  ritirare sono pieni d'oro con «Ritira», quelli ritirati spenti con la spunta e «Preso»; nelle Sfide l'ordine è: da
+  riscuotere, da fare, già riscosse in fondo (spente, con «Riscossa»), e il pulsante «Riscuoti» è alto 44 punti.
+  **F, Mercato, fatto**: i giocatori in vendita sono carte (`cartaMercato` in `src/casa/vista-economia.js`): la carta
+  mini col ritratto, la cornice della rarità e la valutazione, poi nome, ruolo colorato, piede, altezza e prezzo con le
+  icone; due per riga (tre dove lo schermo è più largo). Chi costa troppo resta leggibile come gli altri: cambia
+  solo il colore del prezzo e sotto c'è scritto quanto manca («Ti mancano …») o «Rosa piena»; chi è già stato comprato
+  ha «Preso» con la spunta. Osservatore e Agente hanno un riquadro a testa con l'icona in un tondo (lente blu, tessera
+  oro), il nome e che cosa fanno; l'Agente mostra quanti contatti si hanno. La revisione dal video è finita.
+- **Icone nuove (23/11, PR #127)**: importate le venti icone. Gli allenatori rifatti (stesso nome) si vedono nel Percorso
+  premi e nei premi di fine stagione; la scheda Allenatori ha una carta per categoria con l'icona, che cosa allena e
+  quanti se ne hanno per rarità (col medaglione); la finestra «Scegli l'allenatore» ha l'icona della categoria accanto
+  a ogni scelta (`figura` nelle scelte di `src/casa/finestra.js`); in Personalizza › Squadra scarpini e palloni sono
+  disegnati. Se un file manca resta il disegno di prima.
 - **Carriere di prima**: non si possono continuare, si riparte da zero (la versione del salvataggio è la 2).
 - **Come arriva alla partita**: la partita conosce un numero solo per giocatore, la `forza`. Crescita con gli allenatori,
   riscaldamento e Curva dei tifosi ci stanno dentro. Le squadre inventate arrivano per intero nella richiesta; lo stemma
@@ -157,6 +226,12 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   divisione; «+1, +2, +3» degli allenatori letti come punti sulle statistiche della categoria; prezzi in vittorie di
   osservatore, agente, riscaldamento e fisioterapista; costo delle stelle delle strutture; bonus della Curva 1% per
   stella; incasso dello Stadio; rosa mai sotto 16; chi arriva tra le ultime due scende anche con gli obiettivi fatti.
+- **Ritocchi dalla foto di Alex (23/11 sera)**: nella carta Carriera della Home divisione e stagione sono salite nella
+  fascia dorata (la `nota` di `carta`), così nome, righe e pulsante «Gioca» non toccano più la fascia; nella barra
+  diamanti e monete hanno le icone dipinte (`icona-diamanti`, `icona-monete`) su capsule scure col bordo del loro
+  colore. Nel testo, davanti ai numeri piccoli, restano la moneta e il diamante a tratto (`MO`, `DI`).
+- **Deciso da Alex (23/11)**: in alto a destra il nome del club resta intero quando ci sta; se la barra è stretta va
+  bene il nome breve o la sigla. È un'eccezione voluta alla regola «niente sigle»: non va «corretta».
 - **Resta da fare**: aspetto nuovo di Mercato (passo 9), Il mio club (10) e Sfide (11); «sotto il 60% di energia cala
   prima la velocità» (sessione della partita); il limite dei moduli nella pausa della partita; l'esultanza del capitano
   (servono animazioni); il listino del database.

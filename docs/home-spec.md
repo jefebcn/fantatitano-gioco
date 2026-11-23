@@ -317,7 +317,7 @@ quarta e la quinta anche 20 e 40 diamanti.
 
 | Struttura | Cosa dà per stella |
 |---|---|
-| Centro allenamento | moduli aperti 4, 5, 6, 7, 8; riscaldamento che dura 1, 1, 1, 2, 2, 3 partite; 1 allenatore comune a settimana |
+| Centro allenamento | moduli aperti 4, 6, 8, 10, 12, 15 (dal 23/11, coi sette moduli nuovi; prima 4, 5, 6, 7, 8); riscaldamento che dura 1, 1, 1, 2, 2, 3 partite; 1 allenatore comune a settimana |
 | Infermeria | +10% di energia recuperata tra le partite |
 | Foresteria | rosa massima 22, 24, 26, 28, 30, 32 |
 | Ufficio commerciale | +10% di monete a partita |
@@ -341,11 +341,12 @@ regole vere; cambiano solo i risultati delle partite del giocatore, tirati a sor
 |---|---|---|---|
 | medio: 50% vittorie, 30% pareggi, 20% sconfitte | **6,9** | 6 | 10 |
 | forte: 65 / 20 / 15 | 4,7 | 4 | 6 |
-| debole: 40 / 30 / 30 | 15,3 | 14 | 25 |
+| debole: 40 / 30 / 30 | 15,5 | 14 | 25 |
 
-Giocatore medio, divisione per divisione: Esordienti 1,3 stagioni (sale il 78% delle volte), Borghi 1,5 (67%), Contrade
-1,9 (53%), Cadetta 2,3 (44%). In tutto circa 150 partite. Entrate in monete per stagione, contate in vittorie: partite 17,
-sfide 10, vendite 7, percorso premi 5, trofei e turni di coppa 5.
+Giocatore medio, divisione per divisione: Esordienti 1,3 stagioni (sale il 79% delle volte), Borghi 1,5 (68%), Contrade
+1,9 (52%), Cadetta 2,2 (46%). In tutto circa 150 partite. Entrate in monete per stagione, contate in vittorie: partite 17,
+sfide 11, vendite 7, percorso premi 5, trofei e turni di coppa 5, piazzamento in campionato 2 (numeri del 23/11, col
+premio per piazzamento).
 
 Cosa ha insegnato la simulazione:
 - Coi primi numeri (obiettivi uguali in tutte le divisioni, sfide che pagavano il doppio) il giocatore medio arrivava in
@@ -369,6 +370,11 @@ Cosa ha insegnato la simulazione:
 - Percorso premi, 20 livelli a stagione: monete (0,7 vittorie, 1 ai livelli 17 e 19), 60 diamanti in tutto, un allenatore
   raro ai livelli 5 e 15.
 - Turno di coppa superato: mezza vittoria. Campionato vinto: 8 vittorie; Coppa Titano 5; Trofeo dei Castelli 4.
+- Piazzamento in campionato (deciso da Alex il 23/11): chi non vince ha comunque un premio a fine campionato, in
+  vittorie della sua divisione: secondo 5, terzo 3,5, quarto 2,5, quinto 2, sesto 1,5, settimo e ottavo 1; dal nono in
+  giù niente. Vale di più nelle divisioni alte, dove una vittoria paga di più. Misurato con la simulazione prima e
+  dopo: al giocatore medio dà 2,1 vittorie a stagione in più (da 44,3 a 46,8 con 300 carriere), le strutture all'arrivo
+  passano da 11,8 a 13,0 stelle su 35, e le stagioni per arrivare in cima non cambiano (6,9 con mille carriere).
 
 ### 5.10 Negozio: l'aspetto (approvato il 21/11, fatto)
 Una cosa non ancora presa si compra in due tocchi e poi resta per sempre.

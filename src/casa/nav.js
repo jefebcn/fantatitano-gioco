@@ -20,6 +20,8 @@ export function apri(nome, ...par) {
   if (c && c.nome === nome) c.par = par; else pila.push({ nome, par });
   ROTTE[nome](...par); avvisa();
 }
+/** Apre una schermata al posto di quella in cima: le schede di una stessa sezione che sono schermate diverse. */
+export function sostituisci(nome, ...par) { if (pila.length > 1) pila.pop(); apri(nome, ...par); }
 /** Ridisegna la schermata in cima (la Home, se la pila è vuota). */
 export function ridisegna() {
   if (!pila.length) pila.push({ nome: 'home', par: [] });
