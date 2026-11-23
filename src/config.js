@@ -321,6 +321,9 @@ export const STAGIONE = { servono: 3, retrocedono: 2 };
 // divisione in cui si gioca: così crescono da soli salendo di divisione.
 // inizio: monete e diamanti di partenza; tra quali valutazioni sta la rosa iniziale e quante riserve ha.
 // premi: pareggio e sconfitta sono una parte della vittoria; turno di coppa superato e trofei vinti, in vittorie.
+//   piazzamento: il premio di fine campionato per chi non lo vince, dal secondo posto in giù, in vittorie: così vale
+//   qualcosa anche un quarto posto, e vale di più nelle divisioni alte, dove una vittoria paga di più. Oltre l'ultimo
+//   posto dell'elenco non c'è premio.
 //   arrotonda: a quante monete si arrotonda ogni importo calcolato.
 // valore: un giocatore vale `base` monete a valutazione `a` e raddoppia ogni `raddoppia` punti; vendendolo si incassa
 //   la parte `vendita`. minimo: sotto quanti giocatori in rosa non si vende più.
@@ -351,7 +354,7 @@ export const STAGIONE = { servono: 3, retrocedono: 2 };
 //   si hanno dall'inizio sta in NEGOZIO, in src/carriera.js.
 export const ECONOMIA = {
   inizio: { monete: 150, diamanti: 20, rosa: [42, 50], panchina: 7 },
-  premi: { pareggio: .5, sconfitta: .25, turno: .5, campionato: 8, coppa: 5, castelli: 4, arrotonda: 5 },
+  premi: { pareggio: .5, sconfitta: .25, turno: .5, campionato: 8, piazzamento: [5, 3.5, 2.5, 2, 1.5, 1, 1], coppa: 5, castelli: 4, arrotonda: 5 },
   valore: { base: 100, a: 55, raddoppia: 5, vendita: .5, minimo: 16 },
   allenatori: {
     rarita: { comune: { punti: 1 }, raro: { punti: 2, diamanti: 15 }, leggendario: { punti: 3, diamanti: 40, potenziale: .25 } },
