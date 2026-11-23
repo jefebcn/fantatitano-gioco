@@ -129,7 +129,10 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   guardava attraverso. Ora si spengono in aria vicino al tetto e sono più leggeri; un po' più di luce diffusa sui
   giocatori. Le chiazze biancastre erano i riflessi dei quattro faretti d'angolo sull'erba: ora sono deboli e la luce
   viene dall'alto, uguale su tutto il campo (`NOTTURNA` in `src/config.js`, `src/grafica/luce.js`).
-- Restano: 8 ombre, 10 cartelloni, 11 telecamera vicino alla linea, 12 nomi sovrapposti, 13 tasto A in difesa (chiedere),
+- 8 FATTO: in notturna ogni giocatore ha l'ombra corta e morbida sotto i piedi più quattro ombre leggere a croce, una
+  per faro (`NOTTURNA.croce`, `dettagliFigure` in `src/game.js`: una sola chiamata di disegno). I cunei erano i fasci
+  di luce del punto 7, non ombre dello stadio.
+- Restano: 10 cartelloni, 11 telecamera vicino alla linea, 12 nomi sovrapposti, 13 tasto A in difesa (chiedere),
   14 maglie simili, 15 animazioni (video rallentato dei 5 gesti).
 
 ## Prova di Alex su iPhone (21/11): punti in ordine

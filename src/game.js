@@ -659,8 +659,13 @@ const FIGURE = new Set(), DETT = { vicino: 14 * 14, lontano: 16 * 16 }, OMBRE = 
 const ombreTutte = new T.InstancedMesh(GEO.shadow, shadowMat, OMBRE.max); ombreTutte.frustumCulled = false; ombreTutte.count = 0; scene.add(ombreTutte);
 const _m4 = new T.Matrix4(), _q = new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), -Math.PI / 2), _s = new T.Vector3(1.5, 1.5, 1.5), _p = new T.Vector3();
 const _qL = new T.Quaternion(), _sL = new T.Vector3(1.4, 3.2, 1.5), _asseY = new T.Vector3(0, 1, 0);
+// in notturna ogni persona ha anche quattro ombre leggere, una per faro, che si aprono a croce dai piedi (NOTTURNA.croce)
+const ombreFari = new T.InstancedMesh(GEO.shadow, new T.MeshBasicMaterial({ map: shadowMat.map, transparent: true, opacity: NOTTURNA.croce.forza, depthWrite: false }), OMBRE.max * 4);
+ombreFari.frustumCulled = false; ombreFari.count = 0; scene.add(ombreFari);
+const _qF = new T.Quaternion(), _sF = new T.Vector3(), _pF = new T.Vector3();
 function dettagliFigure() {
-  let n = 0; const lunghe = !sun.castShadow, sl = Math.hypot(SOLE.x, SOLE.z) || 1;
+  let n = 0, nf = 0; const lunghe = !sun.castShadow, sl = Math.hypot(SOLE.x, SOLE.z) || 1;
+  const C = NOTTURNA.croce, torri = ATMO && ATMO.ora === 'notte' && FARI ? FARI.luci : null;
   // l'ombra lunga verso la parte opposta al sole: il piano steso (asse lungo verso -z) girato attorno alla verticale
   if (lunghe) { const dx = -SOLE.x / sl, dz = -SOLE.z / sl; _qL.setFromAxisAngle(_asseY, Math.atan2(-dx, -dz)).multiply(_q); }
   if (FIGURE.size > 120) for (const f of FIGURE) if (!f.root.parent) FIGURE.delete(f); // giocatori di partite finite
@@ -674,10 +679,18 @@ function dettagliFigure() {
       // senza le ombre del sole (qualità bassa) l'ombra di contatto si allunga dalla parte opposta al sole: mai nessuno senza ombra
       if (lunghe) { const k = .55 * (f.metri || 1.8); _p.set(r.position.x - SOLE.x / sl * k, .03, r.position.z - SOLE.z / sl * k); _m4.compose(_p, _qL, _sL); }
       else { _p.set(r.position.x, .03, r.position.z); _m4.compose(_p, _q, _s); }
-      ombreTutte.setMatrixAt(n++, _m4); } }
+      ombreTutte.setMatrixAt(n++, _m4);
+      // le quattro ombre dei fari: ognuna parte dai piedi e va dalla parte opposta alla sua torre, più lunga se la torre
+      // è lontana (quindi bassa sull'orizzonte), entro i limiti di NOTTURNA.croce.lungo
+      if (torri) for (const l of torri) {
+        const dx = r.position.x - l.pos.x, dz = r.position.z - l.pos.z, d = Math.hypot(dx, dz) || 1, lungo = clamp((f.metri || 1.8) * d / l.pos.y, C.lungo[0], C.lungo[1]);
+        _pF.set(r.position.x + dx / d * lungo * .45, .028, r.position.z + dz / d * lungo * .45); _qF.setFromAxisAngle(_asseY, Math.atan2(-dx, -dz)).multiply(_q); _sF.set(C.largo, lungo, 1);
+        _m4.compose(_pF, _qF, _sF); ombreFari.setMatrixAt(nf++, _m4);
+      } } }
     else f.ombra.visible = true; // dentro un altro gruppo o oltre il massimo: tiene la sua
   }
   ombreTutte.count = n; ombreTutte.instanceMatrix.needsUpdate = true;
+  ombreFari.count = nf; if (nf) ombreFari.instanceMatrix.needsUpdate = true;
 }
 /** Fango ed erba dopo una scivolata, una caduta o un tuffo: restano fino alla fine della partita. */
 const SPORCA = { scivolata: [.22, .3], caduta: [.16, .14], tuffoS: [.2, .26], tuffoD: [.2, .26] };
