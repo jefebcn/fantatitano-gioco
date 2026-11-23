@@ -193,7 +193,8 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   permettere adesso tra lista trasferimenti e offerte a tempo («Per te»), o il meno caro se non ci si può permettere
   nessuno (`consigliato` in `src/casa/vista-economia.js`). **C, Gioca adesso, fatto**: tolte dalla Carriera le quattro
   scorciatoie in basso (le carte hanno più posto; Sfide, Squadra, Mercato e Il mio club si aprono dalla Home); pronti i
-  sessanta riquadri per gli stemmi delle squadre inventate (`docs/immagini-da-generare.md` §2b, `assets/immagini.json`,
+  sessanta riquadri per gli stemmi delle squadre inventate (**stemmi arrivati e importati il 23/11, 60 su 60**;
+  `docs/immagini-da-generare.md` §2b, `assets/immagini.json`,
   `scripts/stemmi.mjs`): quando arriva il file, il gioco lo usa al posto dello stemma disegnato (`stemmaPronto` in
   `src/casa/immagini.js`). **D, Il mio club, fatto**: le strutture sono carte (disegno, nome, stelle vere, «Adesso» e
   «Con una stella in più», pulsante «Migliora · prezzo»), tre per riga sotto lo Stadio; le tre strutture rifatte da Alex

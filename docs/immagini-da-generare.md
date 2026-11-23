@@ -184,7 +184,10 @@ semitrasparenti: deve essere scuro e tranquillo, coi punti luminosi al centro.
 >
 > 26 `allenamento-angoli`: Pallone fermo accanto alla bandierina del calcio d'angolo, porta e area sullo sfondo.
 
-## 2b. Stemmi delle squadre inventate (60 riquadri, da generare)
+## 2b. Stemmi delle squadre inventate (60 su 60, fatti il 23/11)
+
+Consegnati con la PR #125 (`assets/arrivo/stemmi/`) e importati: il gioco li usa in Home, Carriera, classifica, prepartita
+e schermata «contro». Quello che segue resta come regola per rifarne uno o aggiungerne altri.
 
 Le sessanta squadre delle quattro divisioni sotto il Campionato Sammarinese oggi hanno uno stemma disegnato dal gioco coi
 pezzi dello stemma (forma, simbolo, colori, sigla). Ognuna ha un riquadro pronto per uno stemma vero: quando il file
