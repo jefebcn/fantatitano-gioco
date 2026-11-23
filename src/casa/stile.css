@@ -782,7 +782,13 @@ button.mG{cursor:pointer}
 /* «Scegli l'allenatore»: l'icona della categoria a sinistra delle scritte */
 #finestra .scelte.note .bottone.conFig{flex-direction:row;justify-content:flex-start;gap:8px;text-align:left}
 #finestra .scelte .bottone.conFig .scFig{flex:none;width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))}
-#finestra .scelte .bottone.conFig span{display:flex;flex-direction:column;gap:2px;min-width:0}
+#finestra .scelte .bottone.conFig>span{display:flex;flex-direction:column;gap:2px;min-width:0}
+/* la carta piccola di un giocatore dentro una scelta (pannello degli incarichi): niente stili del pulsante */
+#finestra .scCarta{flex:none;display:block;font-style:normal;letter-spacing:0;line-height:1}
+#finestra .scelte .scCarta .gNome{font-weight:800}
+/* un nome lungo in una scelta si rimpicciolisce invece di uscire dal pulsante */
+#finestra .scelte.note .bottone b{max-width:100%}
+#finestra .scNome{display:block;overflow:hidden;white-space:nowrap}
 /* ---------- ritocchi del 23/11 sera: carta Carriera della Home e saldo nella barra ---------- */
 /* carta Carriera: divisione e stagione sono salite nella fascia dorata, così nome, righe e pulsante «Gioca» hanno aria
    sopra e sotto invece di toccare la fascia */

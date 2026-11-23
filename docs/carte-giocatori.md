@@ -24,8 +24,9 @@ moltiplicazioni per la larghezza (`--gw`) o l'altezza (`--gh`) della carta. La s
 - **Tre statistiche** in fondo, numero in Anton e sigla sotto, secondo il reparto (`CARTA.statistiche.per`): portieri
   riflessi, posizione, passaggio; difensori difesa, velocità, passaggio; centrocampisti passaggio, controllo,
   resistenza; attaccanti tiro, velocità, controllo.
-- **Capitano e incarichi**: tondi in alto a destra, la «C» gialla e sotto rigori, punizioni e angoli; nella Squadra si
-  trascinano su un altro titolare.
+- **Capitano e incarichi**: tondi in colonna a sinistra sotto il ruolo, la «C» gialla e sotto rigori, punizioni e
+  angoli; nella Squadra la «C» si trascina su un altro titolare, gli altri si danno dal pannello «Incarichi» o dalla
+  scheda.
 - **Chi è stato allenato** ha una piccola freccia verde sotto il ruolo.
 
 ## Cosa si vede a ogni larghezza
@@ -60,7 +61,9 @@ La carta è una sola; cosa mostra dipende da quanto è larga (lo decide `cartaGi
   coprono il viso. Prima la «C» (0,17 W), poi rigori, punizioni e angoli, più piccoli (0,09 W). Sulle carte strette i
   quattro segni non ci stanno: lì si vede solo la «C», gli incarichi si vedono sulla carta della scheda. La «C» è nello
   stesso posto dappertutto (campo, scheda, Home). In Squadra la «C» si trascina ancora su un altro titolare; rigori,
-  punizioni e angoli si danno dalla scheda, col pulsante «Incarichi». La freccia verde di chi è stato allenato sta in
+  punizioni e angoli si danno dalla scheda, col pulsante «Incarichi», oppure dal pannello «Incarichi» della Squadra
+  (pulsante nella colonna di sinistra): quattro voci, ognuna con la carta da 40 punti di chi ce l'ha adesso; toccandone
+  una si sceglie un altro titolare da un elenco e si torna al pannello. La freccia verde di chi è stato allenato sta in
   fondo alla stessa colonna.
 - **Teste e carte vicine**: sul campo chi sta più in basso sta davanti; nei moduli con cinque linee le carte del campo
   si stringono di un punto o due (`SQUADRA.aria`) perché la testa non copra la carta della linea sopra.

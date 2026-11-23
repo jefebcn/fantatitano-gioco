@@ -123,7 +123,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 
 | Schermata | Liv. | Si entra da | Indietro | Cosa si tocca |
 |---|---|---|---|---|
-| **Squadra** | 1 (2 dalla Sfida) | Home; scorciatoia in Carriera; Sfida | da dove sei venuto | scambio (campo, sostituti, riserve) con due tocchi o trascinando una carta sull'altra; il primo tocco sceglie la carta e mostra il pulsante «Scheda», ritoccarla o toccare il vuoto annulla; pressione lunga → scheda; le linguette C, rigori, punizioni e corner si trascinano su un altro titolare; tessera Squadra migliore |
+| **Squadra** | 1 (2 dalla Sfida) | Home; scorciatoia in Carriera; Sfida | da dove sei venuto | scambio (campo, sostituti, riserve) con due tocchi o trascinando una carta sull'altra; il primo tocco sceglie la carta e mostra il pulsante «Scheda», ritoccarla o toccare il vuoto annulla; pressione lunga → scheda; la «C» del capitano si trascina su un altro titolare; il pulsante «Incarichi» apre il pannello di capitano, rigori, punizioni e angoli, dove si tocca una voce e si sceglie un titolare; tessera Squadra migliore |
 | Modulo | finestra | Squadra | chiude | 15 moduli su cinque colonne; quelli chiusi hanno il lucchetto |
 | Riserve | 2 | Squadra | Squadra | i giocatori fuori dai 19 convocati; scambio con la panchina |
 | Fisioterapista | 2 | Squadra | Squadra | recupero dell'energia per monete (uno o tutti) |
@@ -197,7 +197,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Scenario | da fare (serve l'aggancio nella partita) |
 | Percorso premi, Sfide | esistono, da risistemare (schede, giorni di fila) |
 | Amichevole | esiste |
-| Squadra | fatta, con la struttura del 23/11: quattro pulsanti a sinistra, campo fino al bordo in basso, sostituti a destra, «C» del capitano trascinabile, rigori, punizioni e angoli dalla scheda del giocatore, squadra migliore |
+| Squadra | fatta, con la struttura del 23/11: cinque pulsanti a sinistra, campo fino al bordo in basso, sostituti a destra, «C» del capitano trascinabile, pannello «Incarichi» con le quattro voci, rigori, punizioni e angoli anche dalla scheda del giocatore, squadra migliore |
 | Mercato | esiste a scambio, da rifare |
 | Il mio club, Stadio e strutture | esiste con stadio e allenatore, da rifare con le 6 strutture |
 | Personalizza, Negozio | dal 23/11 sono una sezione sola, «Personalizza», con cinque schede: Nome e colori (il modulo del club), Stemma, Divisa, Manager, Squadra (i pezzi che si comprano). Passare da una scheda all'altra non aggiunge livelli: Indietro torna da dove si è venuti. L'anteprima mostra la maglia vera (il busto del modello 3D) |
