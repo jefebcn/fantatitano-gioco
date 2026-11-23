@@ -138,7 +138,10 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - 11 FATTO: la telecamera non scende (resta a 12,5 m): sulla linea laterale vicina sale sopra la tribuna e le prime file
   spuntavano in basso. Ora quella tribuna non si disegna quando la telecamera le è sopra (`CAMERA.spalle`,
   `spalle` in `src/grafica/spalti.js`); il cambio avviene quando è ancora fuori dallo schermo.
-- Restano: 12 nomi sovrapposti, 13 tasto A in difesa (chiedere),
+- 12 FATTO: un solo segnalino, sul giocatore comandato (quello grigio sul compagno è spento: `SEGNI.grigio`); il nome
+  dell'avversario col pallone si nasconde quando finirebbe sopra nome o segnalino del comandato (`SEGNI.largo`,
+  `sopraIlNome` in `src/regia.js`); lettere col bordo scuro, leggibili anche davanti ai cartelloni.
+- Restano: 13 tasto A in difesa (chiedere),
   14 maglie simili, 15 animazioni (video rallentato dei 5 gesti).
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
