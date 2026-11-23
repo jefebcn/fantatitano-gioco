@@ -239,6 +239,9 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   riferimento in `docs/riferimenti/carta-proposta-A.jpg`. Tolte le cornici disegnate (`carta-*` nel foglio delle icone)
   e i ritagli dei ritratti. Nella prova delle schermate i tre giocatori tenuti stanchi sono della squadra 0, che in
   partita è sempre la mia anche fuori casa.
+- **Carta, ritocchi sulla guida (23/11 notte)**: ritratto alle misure esatte della guida (1,05 W, anche nella carta
+  stretta); «C» e incarichi dentro l'angolo; cognomi lunghi mai tagliati (niente puntini); scheda più grande (fino a
+  200 punti), Mercato a 100; nei riquadri della Home «ruolo · valutazione» e «ruolo · prezzo» come testo semplice.
 - **Resta da fare**: aspetto nuovo di Mercato (passo 9), Il mio club (10) e Sfide (11); «sotto il 60% di energia cala
   prima la velocità» (sessione della partita); il limite dei moduli nella pausa della partita; l'esultanza del capitano
   (servono animazioni); il listino del database.
