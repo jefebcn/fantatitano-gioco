@@ -2717,8 +2717,16 @@ function showEnd() {
 // Solo orizzontale, senza girare il gioco a forza: col telefono in verticale compare «Ruota il telefono» (#ruota) e la
 // partita si ferma. Su iOS l'orientamento del manifest non vale e girando il gioco via CSS barra di stato e tastiera
 // restavano in verticale. Su un computer la finestra stretta resta com'è (non c'è niente da girare).
+// SCHERMO tiene le misure applicate l'ultima volta. Su iPhone, girando il telefono, l'evento «resize» arriva quando la
+// larghezza è ancora quella di prima e poi non ne arriva un altro: restavano campo schiacciato e tabellone stretto.
+// Per questo le misure si prendono dalla tela, che riempie lo schermo ed è quello che si vede davvero, e il ciclo le
+// riconfronta a ogni fotogramma (misureCambiate) richiamando resize appena non tornano.
+const SCHERMO = { w: 0, h: 0 };
+function misure() { const c = renderer.domElement, w = c.clientWidth, h = c.clientHeight; return w && h ? [w, h] : [window.innerWidth, window.innerHeight]; }
+function misureCambiate() { const [w, h] = misure(); return w !== SCHERMO.w || h !== SCHERMO.h; }
 function resize() {
-  const iw = window.innerWidth, ih = window.innerHeight, root = document.documentElement, st = document.body.style;
+  const [iw, ih] = misure(), root = document.documentElement, st = document.body.style;
+  SCHERMO.w = iw; SCHERMO.h = ih;
   const verticale = ih > iw && matchMedia('(pointer: coarse)').matches;
   root.classList.toggle('verticale', verticale); if (verticale && G.state !== 'menu' && G.state !== 'full' && !G.paused && !G.auto) pause(true);
   st.width = `${iw}px`; st.height = `${ih}px`;
@@ -2772,6 +2780,7 @@ function rallenta() {
 }
 function loop(ts) {
   requestAnimationFrame(loop);
+  if (misureCambiate()) resize();
   const vero = (ts - last) / 1000 || 0, dt = Math.min(.05, vero); last = ts; qualita(Math.min(vero, .5)); // la qualità guarda il tempo vero tra i fotogrammi
   PERF.inizio();
   const lento = rallenta(); // il leggero rallentatore dopo il gol
@@ -2781,7 +2790,7 @@ function loop(ts) {
   PERF.fine();
 }
 async function boot() {
-  resize(); window.addEventListener('resize', resize);
+  resize(); window.addEventListener('resize', resize); window.addEventListener('orientationchange', resize);
   if (window.visualViewport) { window.visualViewport.addEventListener('resize', tastiera); window.visualViewport.addEventListener('scroll', tastiera); }
   document.addEventListener('focusin', () => setTimeout(tastiera, 300)); document.addEventListener('focusout', () => setTimeout(tastiera, 100));
   await Promise.all([buildPitch(), loadModel()]); // il campo carica le sue texture mentre arriva il modello

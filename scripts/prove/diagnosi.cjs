@@ -27,8 +27,9 @@ const N = +process.argv[2] || 3, DIFFI = process.argv[3] || 'normale', SEME = +p
 // passaggi è quello di un gioco, non quello della realtà.
 // Sono la direzione verso cui tarare l'IA; quelli ancora lontani escono segnati con ✗ ma non bloccano, salvo SEVERO=1.
 const OBIETTIVI = {
-  gol: [1, 6],
-  tiri: [7, 30],
+  gol: [4, 6],
+  tiri: [10, 14],
+  'passaggi per squadra': [30, 45],
   'passaggi riusciti %': [70, 90],
   angoli: [.3, 3],
   'rimesse laterali': [1.5, 12],
@@ -129,6 +130,7 @@ function partita([seme, diffi, casa, ospiti]) {
     misure: {
       gol: G.teams[0].score + G.teams[1].score,
       tiri: s.shots[0] + s.shots[1],
+      'passaggi per squadra': Math.round(pa / 2),
       'passaggi riusciti %': pa ? Math.round(pc / pa * 100) : 0,
       angoli: s.corners[0] + s.corners[1],
       'rimesse laterali': conta(/laterale/),
@@ -188,7 +190,8 @@ srv.listen(0, async () => {
   { const P = partite.flatMap((r) => r.poss), m = (k) => partite.reduce((a, r) => a + r.misure[k], 0) / N, tt = {}; for (const r of partite) for (const [k, v] of Object.entries(r.tempi)) tt[k] = (tt[k] || 0) + v / N;
     const fermo = Object.entries(tt).filter(([k]) => k.startsWith('fermo:') && !/half|full/.test(k)).reduce((a, [, v]) => a + v, 0), gioco = Object.entries(tt).filter(([k]) => !/^(fermo:|n:|avanza|fermo a)/.test(k)).reduce((a, [, v]) => a + v, 0);
     console.log('\nPalla ferma, secondi per partita (e quante volte): ' + Object.entries(tt).filter(([k]) => k.startsWith('fermo:')).sort((x, y) => y[1] - x[1]).map(([k, v]) => k.slice(6) + ' ' + v.toFixed(1) + ' (' + (tt['n:' + k.slice(6)] || 0).toFixed(1) + ')').join(' · '));
-    console.log('RIGA gol ' + m('gol').toFixed(2) + ' | tiri ' + m('tiri').toFixed(2) + ' (casa ' + (partite.reduce((x, r) => x + r.tiriSq[0], 0) / N).toFixed(2) + ', ospiti ' + (partite.reduce((x, r) => x + r.tiriSq[1], 0) / N).toFixed(2) + ')' + ' | possessi ' + (P.length / N).toFixed(1) + ' | oltre trequarti ' + (P.filter((p) => p.xm >= 17.5).length / N).toFixed(1) + ' | falli ' + m('falli').toFixed(2) + ' | energia ' + (partite.reduce((a, r) => a + r.energia[0], 0) / N).toFixed(0) + ' (minima ' + (partite.reduce((a, r) => a + r.energia[1], 0) / N).toFixed(0) + ') | passaggi ' + m('passaggi riusciti %').toFixed(0) + '% | in gioco s ' + gioco.toFixed(0) + ' | fermo s ' + fermo.toFixed(0) + ' | portiere con palla s ' + (tt['portiere con palla'] || 0).toFixed(1) + ' | battitore fermo s ' + (tt['battitore fermo (in gioco)'] || 0).toFixed(1)); }
+const T = partite.flatMap((r) => r.tiriD), Q = partite.flatMap((r) => r.passi).filter((p) => !p.alto && p.av > 8), ok = Q.filter((p) => p.es === 'ok').length;
+    console.log('RIGA tiri ' + m('tiri').toFixed(2) + ' (entro 18 m ' + (T.filter(([x]) => x < 18).length / N).toFixed(1) + ', oltre ' + (T.filter(([x]) => x >= 18).length / N).toFixed(1) + ') | gol ' + m('gol').toFixed(2) + ' | tiri in gol ' + (m('gol') / m('tiri') * 100).toFixed(0) + '% | passaggi per squadra ' + m('passaggi per squadra').toFixed(1) + ' (riusciti ' + m('passaggi riusciti %').toFixed(0) + '%) | in avanti riusciti ' + (ok / N).toFixed(1) + ' su ' + (Q.length / N).toFixed(1) + ' (' + (ok / (Q.length || 1) * 100).toFixed(0) + '%) | possessi ' + (P.length / N).toFixed(1) + ' | oltre trequarti ' + (P.filter((p) => p.xm >= 17.5).length / N).toFixed(1) + ' | falli ' + m('falli').toFixed(2) + ' | energia ' + (partite.reduce((a, r) => a + r.energia[0], 0) / N).toFixed(0)); }
   const anomalie = partite.reduce((a, r) => a + Object.values(r.anomalie).reduce((x, y) => x + y, 0), 0);
   const unici = [...new Set(errori)];
   console.log(`\nAnomalie: ${anomalie}  ·  errori nella pagina: ${unici.length}${unici.length ? `\n  ${unici.slice(0, 5).join('\n  ')}` : ''}  ·  misure fuori obiettivo: ${fuori}`);
