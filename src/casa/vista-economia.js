@@ -5,6 +5,8 @@ import * as CAR from '../carriera.js';
 import { ECONOMIA, DIVISIONI, FORMS } from '../config.js';
 import { K, DATI, club, pan, mini, mon, esc, fmtTempo, salvaK, applicaMio, premioTesto } from './casa.js';
 import { figura, stileFondo } from './immagini.js';
+import { miniCarta, chiRitratto, riempiRitratti } from './giocatore.js';
+import { adatta } from './carte.js';
 import { icona, stelline, MO, DI } from './icone.js';
 import { t } from './testi.js';
 
@@ -61,11 +63,21 @@ export function panClubMio(tab, msg) {
   pan(me.name, `${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}`);
 }
 
-// una riga del mercato: il giocatore (con lo stemma, se arriva da una squadra vera), il ruolo preciso, la valutazione,
-// piede e altezza, e a destra il prezzo
-function riga(g, prezzo, attr, spento) {
-  const sc = DATI.scheda(g.x, g.da || K.club), tag = attr ? 'button' : 'div';
-  return `<${tag} class="gioc${attr ? '' : ' sel'}" ${attr || ''} ${spento ? 'disabled' : ''}>${g.da ? mini(g.da) : ''}<b>${esc(g.x[0])}</b><span>${sc.ruolo} · ${sc.val} · ${sc.piede === 'S' ? 'sinistro' : 'destro'} · ${sc.altezza} cm</span><em>${prezzo}</em></${tag}>`;
+// un prezzo con le icone: le monete e, se servono, i diamanti
+const prezzoHtml = (m, g) => (m ? `<span>${icona('moneta')}<b>${mon(m)}</b></span>` : '') + (g ? `<span>${icona('diamante')}<b>${g}</b></span>` : '');
+// Una carta del mercato: a sinistra la carta mini del giocatore (cornice della rarità, ritratto, valutazione), a destra
+// il nome, il ruolo preciso con piede e altezza (e lo stemma, se arriva da una squadra vera) e sotto il prezzo.
+// Chi costa troppo resta leggibile come gli altri: cambia solo il prezzo, con scritto quanto manca.
+// attr: l'attributo del pulsante (senza, la carta è ferma); gemme: i diamanti del prezzo; preso: già comprato;
+// piena: la rosa è piena; pieno: il prezzo senza sconto, da scrivere barrato.
+function cartaMercato(g, { attr = '', gemme = 0, preso = false, piena = false, pieno = 0 } = {}) {
+  const da = g.da || K.club, sc = DATI.scheda(g.x, da), tag = attr ? 'button' : 'div';
+  const mancaM = Math.max(0, g.prezzo - K.monete), mancaG = Math.max(0, gemme - K.gemme), caro = mancaM > 0 || mancaG > 0;
+  const manca = piena ? '<i class="mManca">Rosa piena</i>' : caro ? `<i class="mManca">${mancaM + mancaG === 1 ? 'Ti manca' : 'Ti mancano'} ${prezzoHtml(mancaM, mancaG)}</i>` : '';
+  const sotto = preso ? `<span class="mStato">${icona('spunta')}Preso</span>` : `<span class="mPrezzo">${prezzoHtml(g.prezzo, gemme)}${pieno ? `<del>${mon(pieno)}</del>` : ''}</span>${manca}`;
+  return `<${tag} class="mG${preso ? ' preso' : caro || piena ? ' caro' : ''}" ${attr} ${attr && (preso || piena || caro) ? 'disabled' : ''}>`
+    + `<span class="mCarta">${miniCarta({ val: sc.val, fascia: sc.fascia, ritr: chiRitratto(da, sc, 'carta') })}</span>`
+    + `<span class="mTesto"><b data-adatta data-due-righe>${esc(g.x[0])}</b><span class="mDati"><u class="mRuolo r-${sc.reparto}">${sc.ruolo}</u><i>${sc.piede === 'S' ? 'sinistro' : 'destro'} · ${sc.altezza} cm</i>${g.da ? mini(g.da) : ''}</span>${sotto}</span></${tag}>`;
 }
 let mReparto = '';
 /** Il mercato: offerte a tempo, lista trasferimenti, osservatore, agente. */
@@ -73,19 +85,26 @@ export function panMercato(msg) {
   const D = CAR.divisione(K), M = K.mercato, piena = CAR.quantiInRosa(K, CLUBS) >= CAR.rosaMax(K), sopra = DIVISIONI[Math.max(0, K.div - 2)], ora = new Date();
   const testa = `${msg ? `<p class="avviso">${msg}</p>` : ''}<p class="nota2">Rosa: ${CAR.quantiInRosa(K, CLUBS)} giocatori su ${CAR.rosaMax(K)}${piena ? ' (piena: per comprare vendi qualcuno o fai crescere la Foresteria)' : ''}. Per vendere o svincolare un giocatore: Squadra, tieni premuto sulla sua carta.</p>`;
   const elenco = CAR.offerte(K, CLUBS, ora), scade = elenco.length ? elenco[0].scade : ora.getTime();
-  const offerte = elenco.map((g) => riga(g, g.presa ? 'presa' : `${MO} ${mon(g.prezzo)} ${DI} ${g.gemme}`, `data-offerta="${g.k}"`, g.presa || piena || K.monete < g.prezzo || K.gemme < g.gemme)).join('');
-  const lista = CAR.listaMercato(K, CLUBS).map((g, k) => riga(g, g.preso ? 'preso' : `${MO} ${mon(g.prezzo)}`, `data-lista="${k}"`, g.preso || piena || K.monete < g.prezzo)).join('');
+  const offerte = elenco.map((g) => cartaMercato(g, { attr: `data-offerta="${g.k}"`, gemme: g.gemme, preso: g.presa, piena })).join('');
+  const lista = CAR.listaMercato(K, CLUBS).map((g, k) => cartaMercato(g, { attr: `data-lista="${k}"`, preso: g.preso, piena })).join('');
   const reparti = `<div class="seg">${[['', 'Qualsiasi ruolo'], ...Object.entries(NOMI_REPARTI)].map(([r, n]) => `<button data-reparto="${r}" class="${r === mReparto ? 'on' : ''}">${n}</button>`).join('')}</div>`;
-  const trovato = (g, chi) => `${riga(g, `${MO} ${mon(g.prezzo)}${g.pieno ? ` invece di ${mon(g.pieno)}` : ''}`)}<div class="seg"><button data-trovato="${chi}" class="${piena || K.monete < g.prezzo ? 'no' : 'oro'}">Compra</button><button data-lascia="${chi}">Lascialo andare</button></div>`;
-  const osservatore = M.osservato ? trovato(M.osservato, 'osservato')
-    : `<p class="nota2">Per monete trova un giocatore della ${D.nome} nella fascia che scegli, con lo sconto del ${Math.round(ECONOMIA.mercato.osservatore.sconto * 100)}%.</p>${reparti}<div class="seg">${CAR.FASCE.map((f) => `<button data-osserva="${f}" class="${K.monete < CAR.costoOsservatore(K, f) ? 'no' : ''}">${NOMI_FASCE[f]} · ${MO} ${mon(CAR.costoOsservatore(K, f))}</button>`).join('')}</div>`;
-  const agente = M.agente ? trovato(M.agente, 'agente')
-    : `<p class="nota2">Per un contatto e monete trova un giocatore ${K.div === 1 ? 'tra i migliori del Campionato Sammarinese' : `della divisione sopra (${sopra.nome})`}, a prezzo pieno. Contatti: ${K.contatti || 0}.</p>${reparti}<div class="seg"><button data-agente="1" class="${!(K.contatti > 0) || K.monete < CAR.costoAgente(K) ? 'no' : ''}">Chiama l'agente · 1 contatto e ${MO} ${mon(CAR.costoAgente(K))}</button><button data-contatto="1" class="${K.gemme < ECONOMIA.mercato.agente.diamanti ? 'no' : ''}">Compra un contatto · ${DI} ${ECONOMIA.mercato.agente.diamanti}</button></div>`;
+  const trovato = (g, chi) => `<div class="lista carteM">${cartaMercato(g, { piena, pieno: g.pieno })}</div><div class="seg"><button data-trovato="${chi}" class="${piena || K.monete < g.prezzo ? 'no' : 'oro'}">Compra</button><button data-lascia="${chi}">Lascialo andare</button></div>`;
+  // osservatore e agente: ognuno nel suo riquadro, con la sua icona in un tondo, il nome e che cosa fa
+  const servizio = (ico, classe, titolo, nota, dentro, lato = '') => `<div class="servizio ${classe}"><div class="svTesta"><span class="svIco">${icona(ico)}</span><span class="svNome"><b>${titolo}</b><i>${nota}</i></span>${lato}</div>${dentro}</div>`;
+  const osservatore = M.osservato ? servizio('osservatore', 'oss', 'Osservatore', 'Ha trovato un giocatore: compralo o lascialo andare.', trovato(M.osservato, 'osservato'))
+    : servizio('osservatore', 'oss', 'Osservatore', `Per monete trova un giocatore della ${D.nome} nella fascia che scegli, con lo sconto del ${Math.round(ECONOMIA.mercato.osservatore.sconto * 100)}%.`,
+      `${reparti}<div class="seg">${CAR.FASCE.map((f) => `<button data-osserva="${f}" class="${K.monete < CAR.costoOsservatore(K, f) ? 'no' : ''}">${NOMI_FASCE[f]} · ${MO} ${mon(CAR.costoOsservatore(K, f))}</button>`).join('')}</div>`);
+  const contatti = K.contatti || 0, quanti = `<span class="svConta">${figura('icona-contatto-agente', 'pIco', 30) || icona('agente')}<b>${contatti}</b><i>${contatti === 1 ? 'contatto' : 'contatti'}</i></span>`;
+  const agente = M.agente ? servizio('agente', 'age', 'Agente', 'Ha trovato un giocatore: compralo o lascialo andare.', trovato(M.agente, 'agente'), quanti)
+    : servizio('agente', 'age', 'Agente', `Per un contatto e monete trova un giocatore ${K.div === 1 ? 'tra i migliori del Campionato Sammarinese' : `della divisione sopra (${sopra.nome})`}, a prezzo pieno.`,
+      `${reparti}<div class="seg"><button data-agente="1" class="${!(K.contatti > 0) || K.monete < CAR.costoAgente(K) ? 'no' : ''}">Chiama l'agente · 1 contatto e ${MO} ${mon(CAR.costoAgente(K))}</button><button data-contatto="1" class="${K.gemme < ECONOMIA.mercato.agente.diamanti ? 'no' : ''}">Compra un contatto · ${DI} ${ECONOMIA.mercato.agente.diamanti}</button></div>`, quanti);
   // i due striscioni: il titolo e una riga sotto, a sinistra, sopra l'illustrazione
   const striscione = (figuraS, titolo, sotto) => `<div class="striscione">${figura(figuraS, 'stFig', 300)}<b>${titolo}</b><i>${sotto}</i></div>`;
-  pan('Mercato', `${testa}${striscione('evento-occasioni', 'Offerte a tempo', `${icona('orologio')} ancora ${fmtTempo(scade - ora)}`)}<div class="lista">${offerte}</div>`
-    + `${striscione('evento-scelte', 'Lista trasferimenti', D.nome)}<div class="lista">${lista}</div><div class="seg"><button data-rinnova="1" class="${K.gemme < ECONOMIA.mercato.lista.rinnovo ? 'no' : ''}">Cambia subito la lista · ${DI} ${ECONOMIA.mercato.lista.rinnovo}</button></div><p class="nota2">La lista cambia da sola dopo ogni partita.</p>`
-    + `<div class="sez">Osservatore</div>${osservatore}<div class="sez">Agente</div>${agente}`);
+  pan('Mercato', `${testa}${striscione('evento-occasioni', 'Offerte a tempo', `${icona('orologio')} ancora ${fmtTempo(scade - ora)}`)}<div class="lista carteM">${offerte}</div>`
+    + `${striscione('evento-scelte', 'Lista trasferimenti', D.nome)}<div class="lista carteM">${lista}</div><div class="seg"><button data-rinnova="1" class="${K.gemme < ECONOMIA.mercato.lista.rinnovo ? 'no' : ''}">Cambia subito la lista · ${DI} ${ECONOMIA.mercato.lista.rinnovo}</button></div><p class="nota2">La lista cambia da sola dopo ogni partita.</p>`
+    + `${osservatore}${agente}`);
+  // i nomi lunghi si stringono, i ritratti arrivano pochi alla volta
+  const dentro = document.querySelector('#panC'); adatta(dentro); riempiRitratti(dentro);
 }
 // i cinque modi di allenamento, nell'ordine della schermata: nome dell'illustrazione e chiave dei testi
 const MODI_ALLENAMENTO = ['tutorial', 'libero', 'rigori', 'punizioni', 'angoli'];

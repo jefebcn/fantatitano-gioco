@@ -702,3 +702,48 @@ body.conBarra #nuovo .nv{padding-left:0}
 #pan .sfida .fatto .ico{width:15px;height:15px;vertical-align:0}
 #pan .sfida.presa{background:rgba(255,255,255,.03)}
 #pan .sfida.presa>div,#pan .sfida.presa>em,#pan .sfida.presa>u{opacity:.6}
+/* ---------- revisione del 23/11, Mercato ---------- */
+/* i giocatori in vendita sono carte: due per riga sui telefoni, tre dove lo schermo è più largo */
+#pan .lista.carteM{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.mG{display:flex;align-items:center;gap:10px;min-width:0;min-height:98px;margin:0;padding:6px 10px 6px 8px;text-align:left;color:#fff;border-radius:12px;border:1px solid rgba(232,182,76,.45);background:linear-gradient(180deg,rgba(26,42,92,.94),rgba(11,21,48,.94));font-family:Montserrat,sans-serif}
+button.mG{cursor:pointer}
+.mG .mCarta{flex:none;display:flex;align-items:center;height:84px}
+.mG .mCarta .gCarta{height:84px;max-height:none}
+.mG .mTesto{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.mG .mTesto>b{font:800 14px Montserrat,sans-serif;line-height:1.15;overflow:hidden}
+.mDati{display:flex;align-items:center;gap:6px;min-width:0;font:700 12px Montserrat,sans-serif;color:rgba(255,255,255,.85)}
+.mDati i{font-style:normal;white-space:nowrap}
+.mDati img{flex:none;width:18px;height:18px;object-fit:contain}
+.mRuolo{flex:none;min-width:30px;box-sizing:border-box;padding:1px 5px;border-radius:5px;text-align:center;text-decoration:none;font:800 12px Montserrat,sans-serif;line-height:1.35;color:#fff}
+.mRuolo.r-A{background:#E0343B}
+.mRuolo.r-C{background:#FFD21F;color:#14161C}
+.mRuolo.r-D{background:#2350C4}
+.mRuolo.r-P{background:#35B4F2;color:#062038}
+.mPrezzo{display:flex;align-items:center;flex-wrap:wrap;gap:0 10px;font:800 15px Montserrat,sans-serif;line-height:1.2;color:#F6D684}
+.mPrezzo span,.mManca span{display:inline-flex;align-items:center;gap:4px;flex:none}
+.mPrezzo .ico{width:16px;height:16px}
+.mPrezzo del{font:700 12px Montserrat,sans-serif;color:rgba(255,255,255,.72)}
+.mManca{display:flex;align-items:center;flex-wrap:wrap;gap:0 6px;font:700 12px Montserrat,sans-serif;font-style:normal;line-height:1.2;color:#FFB4AA}
+.mManca .ico{width:13px;height:13px}
+.mStato{display:flex;align-items:center;gap:4px;font:800 13px Montserrat,sans-serif;color:#5BE37A}
+.mStato .ico{width:15px;height:15px}
+/* chi costa troppo: la carta resta piena e leggibile, cambiano solo il bordo e il colore del prezzo */
+.mG.caro{border-color:rgba(255,255,255,.22)}
+.mG.caro .mPrezzo{color:#E4E8F1}
+.mG.preso{border-color:rgba(91,227,122,.45);background:rgba(11,21,48,.7)}
+.mG.preso .mCarta,.mG.preso .mTesto>b,.mG.preso .mDati{opacity:.6}
+/* osservatore e agente: un riquadro a testa, con l'icona in un tondo, il nome e che cosa fa */
+.servizio{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(11,21,48,.78)}
+.svTesta{display:flex;align-items:center;gap:10px}
+.svIco{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:linear-gradient(180deg,#2B5BD6,#17358C);box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.svIco .ico{width:24px;height:24px;color:#fff}
+.servizio.age .svIco{background:linear-gradient(180deg,#F6D684,#C4922F)}
+.servizio.age .svIco .ico{color:#1b1304}
+.svNome{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.svNome b{font:400 20px "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.05em;line-height:1;color:#E8B64C}
+.svNome i{font:700 12px Montserrat,sans-serif;font-style:normal;line-height:1.3;color:rgba(255,255,255,.86)}
+.svConta{flex:none;display:flex;align-items:center;gap:5px;padding:3px 10px 3px 6px;border-radius:10px;background:rgba(255,255,255,.08);font:800 15px Montserrat,sans-serif;color:#fff}
+.svConta .pIco{width:30px;height:30px;object-fit:contain}
+.svConta .ico{width:20px;height:20px}
+.svConta i{font:700 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.86)}
+.servizio .lista.carteM{margin-top:8px}

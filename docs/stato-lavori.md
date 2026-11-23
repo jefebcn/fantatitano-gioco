@@ -205,8 +205,13 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   illustrate (sacchetto di monete, diamanti, carta dell'allenatore con la rarità) al posto delle parole (`premioIcone` in
   `src/casa/casa.js`); nel Percorso il livello in corso ha bordo oro, alone e la scritta «In corso», i livelli da
   ritirare sono pieni d'oro con «Ritira», quelli ritirati spenti con la spunta e «Preso»; nelle Sfide l'ordine è: da
-  riscuotere, da fare, già riscosse in fondo (spente, con «Riscossa»), e il pulsante «Riscuoti» è alto 44 punti. Resta F
-  (Mercato).
+  riscuotere, da fare, già riscosse in fondo (spente, con «Riscossa»), e il pulsante «Riscuoti» è alto 44 punti.
+  **F, Mercato, fatto**: i giocatori in vendita sono carte (`cartaMercato` in `src/casa/vista-economia.js`): la carta
+  mini col ritratto, la cornice della rarità e la valutazione, poi nome, ruolo colorato, piede, altezza e prezzo con le
+  icone; due per riga (tre dove lo schermo è più largo). Chi costa troppo resta leggibile come gli altri: cambia
+  solo il colore del prezzo e sotto c'è scritto quanto manca («Ti mancano …») o «Rosa piena»; chi è già stato comprato
+  ha «Preso» con la spunta. Osservatore e Agente hanno un riquadro a testa con l'icona in un tondo (lente blu, tessera
+  oro), il nome e che cosa fanno; l'Agente mostra quanti contatti si hanno. La revisione dal video è finita.
 - **Carriere di prima**: non si possono continuare, si riparte da zero (la versione del salvataggio è la 2).
 - **Come arriva alla partita**: la partita conosce un numero solo per giocatore, la `forza`. Crescita con gli allenatori,
   riscaldamento e Curva dei tifosi ci stanno dentro. Le squadre inventate arrivano per intero nella richiesta; lo stemma
