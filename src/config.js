@@ -22,15 +22,19 @@ export const VELOCITA = { corsa: 5, scatto: 7, scattoPalla: 6, qualita: .5, squa
 export const HALF_SECS = 45 * 60 / RITMO.gioco;
 export const DIFF = {
   facile:    { spd: .88, steal: .7,  save: .48, err: 1.7, think: .6, wait: 1.2, slide: 1.5 },
-  normale:   { spd: .97, steal: 1.25, save: .58, err: 1.0, think: .4, wait: 1.0, slide: 4 },
+  normale:   { spd: .97, steal: 1.25, save: .42, err: 1.0, think: .4, wait: 1.0, slide: 4 },
   difficile: { spd: 1.04, steal: 1.9, save: .8, err: .6, think: .26, wait: .6, slide: 6 },
 };
-export const MATE = { spd: 1, steal: .95, save: .6, err: 1, think: .4, wait: .9, slide: 4 };
+export const MATE = { spd: 1, steal: .95, save: .44, err: 1, think: .4, wait: .9, slide: 4 };
 // `save`: quanto para il portiere (da 0 a 1). Quello di MATE è il portiere della squadra di chi gioca.
 // `wait`: secondi in cui chi difende temporeggia prima di andare sul pallone; `slide`: scivolate al secondo quando ce n'è l'occasione
-// Inserimenti senza palla: ogni quanti secondi si valuta, quanti insieme, quanto durano, punteggio minimo per partire, profondità in metri,
-// probabilità del dai e vai dopo un passaggio e di cercare chi si inserisce
-export const RUN = { every: 1.55, max: 2, life: 2.8, min: 8.5, depth: 13, oneTwo: .35, thru: .3 };
+// Inserimento a condizione (idea di GameplayFootball, docs/crediti.md): ogni `ogni` secondi si guarda il punto `avanti`
+// metri davanti al portatore. Parte il compagno più vicino a quel punto se il voto supera `soglia`: il voto scende con la
+// distanza (zero a `raggio` metri) e con gli avversari attorno al punto (`ingombro`: peso di ognuno, entro quanti metri,
+// quanti contarne). Dura `dura` secondi e va verso la porta, fino a `fondo` metri dalla linea, stringendo al centro (`centro`).
+export const INSERIMENTO = { ogni: .5, avanti: 26, raggio: 40, ingombro: [.3, 15, 4], soglia: .5, dura: 4, centro: .5, fondo: 9 };
+// `oneTwo`: probabilità del dai e vai dopo un passaggio
+export const RUN = { oneTwo: .35 };
 // Difesa a tre distanze dal portatore: oltre `far` ci si avvicina, fino a `near` si temporeggia, sotto si va sul pallone.
 // `danger` è la distanza dalla propria porta sotto cui non si aspetta più; `slide` l'intervallo utile per la scivolata
 export const DEF = { far: 8.5, near: 2.4, hold: 2.3, danger: 24, slide: [1.6, 3.4] };
@@ -300,15 +304,23 @@ export const DUELLO = { vicini: 0.63, corsa: 3, paralleli: 0.35, spinta: 14, sbi
 // `piede` metri davanti al bacino, con uno spessore `raggio`. Tempi e misure vengono dall'animazione del modello.
 export const SCIVOLATA = { v0: 8.5, spinta: 1.1, attrito: 2.2, durata: 0.75, attiva: 0.16, fine: 0.62, anca: 0.13, piede: 0.83, raggio: 0.25, giuPalla: 0.5, uomo: 0.33, dopo: 0.12 };
 
-// Quando il computer tira. La bontà dell'occasione va da 0 a 1 e la calcola valoreTiro in game.js.
-// Tira sempre sopra `buona`. Tira sopra il primo numero di `pressato` se l'avversario arriva entro il secondo (in secondi).
-// Con un'occasione almeno `minima` tira sempre entro `vicino` metri dalla porta e, entro il primo numero di `daFuori`
-// (metri), con la probabilità del secondo a ogni decisione.
-export const TIRO_IA = { buona: .12, pressato: [.06, .9], minima: .03, vicino: 20, daFuori: [30, .8] };
+// Quando il computer tira: con una buona occasione (`buona`), prima se pressato (`pressato`: occasione minima, secondi
+// all'arrivo dell'avversario), sempre da vicino (`minima` entro `vicino` metri) e ogni tanto da fuori (`daFuori`: entro
+// quanti metri, con che probabilità). Dove mira (idea di GameplayFootball, docs/studio-ia.md e docs/crediti.md): prova tre
+// bersagli, i due pali a `bersagli` della mezza porta e il centro, e sceglie quello dove gli avversari, portiere compreso,
+// arrivano più tardi sulla traiettoria. `velocita`: la velocità del tiro usata nel conto, in m/s.
+export const TIRO_IA = { buona: .12, pressato: [.06, .9], minima: .03, vicino: 20, daFuori: [30, .8], bersagli: .8, velocita: 27 };
 
 // Le punte quando la squadra ha palla: aspettano `sullaLinea` metri dietro la linea del fuorigioco (l'ultimo difensore),
 // mai oltre `massimo` metri dal centro del campo verso la porta avversaria.
 export const ATTACCO = { sullaLinea: 1.2, massimo: 44 };
+// Smarcamento (squadra in possesso, chi non è difensore): ogni `ogni` secondi chi è senza palla prova il punto dov'è
+// diretto e otto punti a `raggio` metri attorno, e sceglie quello col voto più alto. Il voto è lo stesso che dà chi passa
+// (votoPassaggio in game.js: avanzare, spazio attorno, pallone che arriva prima degli avversari), meno: `casa` per ogni
+// metro oltre `liberta` dal posto nel modulo (centrocampisti e punte), `compagni` per ogni compagno entro `spazio` metri
+// (pieno quando gli si è addosso), `vicino[1]` per ogni metro sotto `vicino[0]` dal portatore, `strada` per ogni metro
+// da fare. L'idea delle spinte viene da GameplayFootball (docs/studio-ia.md).
+export const SMARCA = { ogni: .2, raggio: 5, liberta: { C: 10, A: 12 }, casa: 1.5, compagni: 6, spazio: 10.5, vicino: [8, 2], strada: .15 };
 
 // Le cinque divisioni della carriera, dalla più alta (docs/home-spec.md, §3). Si parte dall'ultima.
 // val: tra quali valutazioni stanno i giocatori della divisione. vittoria: monete per una vittoria. fine: diamanti a

@@ -23,7 +23,7 @@ import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { PRATO, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { PRATO, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, SMARCA, INSERIMENTO, ALTEZZA, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -1138,6 +1138,16 @@ function laneBlocked(p, m, tx = m.x, tz = m.z) {
   return false;
 }
 /**
+ * Il voto di un rasoterra del portatore p al compagno m nel punto (x, z): quanto fa avanzare, quanto spazio c'è lì, se il
+ * pallone ci arriva prima degli avversari (margine dei tempi), quanto è vicino alla porta. Lo usa chi passa per scegliere
+ * il compagno e chi è senza palla per scegliere dove mettersi: così chi si smarca va dove il passaggio conviene.
+ */
+function votoPassaggio(p, m, x, z, corsa = false) {
+  const s = p.team.side, dx = x - p.x, d = hyp(dx, z - p.z), chiusa = laneBlocked(p, m, x, z), lib = Math.min(liberoIn(p.team, x, z), 6);
+  const f = d > 18 && chiusa ? null : forzaPassaggio(p, x, z, m, corsa ? RASO_CORSA : RASO), mg = f ? f.mg : (chiusa ? -.3 : .3), vic = Math.max(0, 30 - hyp(s * HL - x, z));
+  return { sc: dx * s * .55 + lib * 1.1 + clamp(mg, -.6, .6) * 26 - (mg < 0 ? 14 : 0) - d * .06 + vic * .5 - (x * s < -30 ? 6 : 0), chiusa };
+}
+/**
  * Il compagno a cui passare. Con la levetta: chi sta nel cono della levetta (guardando sia dove è sia dove riceverebbe),
  * preferendo i più centrati nel cono, liberi e con la linea di passaggio pulita. Senza levetta (l'IA): chi fa avanzare
  * la squadra senza rischi. Il punto d'incontro è quello di puntoIncontro (piedi o spazio).
@@ -1155,9 +1165,8 @@ function bestPass(p, ix, iz, voglio) {
       if (cono < .55) continue;
       sc = (cono > .82 ? 40 : 18) * cono - d * .25 + lib * .8 - (chiusa ? 6 : 0) + (pt.spazio ? 3 : 0) + dx * s * .08 - (off ? 12 : 0) - (voglio ? Math.abs(d - voglio) * .9 : 0); // con la barra: il compagno alla distanza scelta
     } else { // l'IA: avanzare, ma solo se il pallone arriva davvero (margine sui tempi di tutti gli avversari)
-      const f = d > 18 && chiusa ? null : forzaPassaggio(p, pt.x, pt.z, m, pt.corsa ? RASO_CORSA : RASO), mg = f ? f.mg : (chiusa ? -.3 : .3), gx = s * HL, vic = Math.max(0, 30 - hyp(gx - pt.x, pt.z));
       const oltre = pt.x * s > p.team.offLine - 3 && !off ? 8 : 0; // dietro la linea difensiva avversaria (in gioco): il passaggio che rompe la difesa
-      sc = dx * s * .55 + Math.min(lib, 6) * 1.1 + clamp(mg, -.6, .6) * 26 - (mg < 0 ? 14 : 0) - d * .06 + vic * .5 + oltre + (m.run ? 5 : 0) + (pt.spazio ? 2 : 0) - (pt.x * s < -30 ? 6 : 0) - (over > CALCI.vedeFuori && off ? 30 : 0) + rnd(2); // il fuorigioco di meno di un metro chi passa non lo vede
+      sc = votoPassaggio(p, m, pt.x, pt.z, pt.corsa).sc + oltre + (m.run ? 5 : 0) + (pt.spazio ? 2 : 0) - (over > CALCI.vedeFuori && off ? 30 : 0) + rnd(2); // il fuorigioco di meno di un metro chi passa non lo vede
       if (m.stun > 0 || m.inj) sc -= 6;
       DBG_IA.passaggio(p, m, sc, pt.x, pt.z, chiusa);
     }
@@ -1423,14 +1432,6 @@ function roles() {
 function defLine(t) { // fin dove arriva l'ultimo difensore avversario, nel verso d'attacco di t
   const s = t.side; let l = G.ball.x * s; for (const o of t.opp.players) if (o.i) l = Math.max(l, o.x * s); return l;
 }
-function runScore(p, x, z, line) {
-  const t = p.team, s = t.side, b = G.ball; let opp = 99, mate = 99;
-  for (const o of t.opp.players) if (o.i) opp = Math.min(opp, hyp(o.x - x, o.z - z));
-  for (const m of t.players) { if (m === p || m.i === 0) continue; const r = m.run; mate = Math.min(mate, hyp((r ? r.x : m.x) - x, (r ? r.z : m.z) - z)); }
-  const dGoal = hyp(s * HL - x, z), dBall = hyp(x - b.x, z - b.z);
-  // vicino alla porta, in uno spazio libero, lontano dai compagni, a distanza di passaggio, non oltre la linea dei difensori
-  return (55 - dGoal) * .14 + Math.min(opp, 8) * .8 + Math.min(mate, 9) * .4 - Math.abs(dBall - 16) * .15 - Math.max(0, x * s - line - 3) * 1.2 + (x - p.x) * s * .1;
-}
 function runs(dt) {
   const b = G.ball, own = b.owner;
   for (const t of G.teams) {
@@ -1443,18 +1444,19 @@ function runs(dt) {
       const lato = sgn(rif.z), fb = t.players.find((p) => p.role === 'D' && p.i && !p.run && sgn(p.z) === lato && Math.abs(p.z) > 8 && (rif.x - p.x) * s0 > 1 && (rif.x - p.x) * s0 < 26 && !userDrives(p) && p.stun <= 0);
       if (fb) { fb.run = { x: clamp(rif.x * s0 + 13, -HL, HL - 5) * s0, z: lato * (HW - 3.5), t: 3.4, g: 1, sovr: true }; G.stats.runs[t.idx]++; t.sovrT = G.t + 9; }
     }
-    t.runT = (t.runT || 0) - dt; if (t.runT > 0 || n >= RUN.max + Math.min(t.ment, 0)) continue; t.runT = RUN.every * rnd(.7, 1.3) * (1 - MENT.runs * t.ment); // con la difensiva un solo inserimento alla volta
-    const s = t.side, line = defLine(t); let best = null, bs = RUN.min, bx = 0, bz = 0;
+    // un solo inserimento a condizione alla volta: finché quello in corso non finisce non se ne valuta un altro
+    const I = INSERIMENTO; t.runT = (t.runT || 0) - dt; if (t.runT > 0 || t.players.some((p) => p.run && p.run.cond)) continue; t.runT = I.ogni * (1 - MENT.runs * t.ment);
+    const s = t.side, px = clamp(rif.x + s * I.avanti, -HL + I.fondo, HL - I.fondo), pz = rif.z; let best = null, bd = I.raggio;
     for (const p of t.players) {
       if (p.i === 0 || p === rif || p.run || p.role === 'D' || p.stun > 0 || userDrives(p)) continue;
-      if (hyp(p.x - rif.x, p.z - rif.z) > 34 || (p.x - rif.x) * s < -8) continue;
-      const ax = Math.min(p.x * s + RUN.depth, HL - 6, line + 4); if (ax - p.x * s < 5) continue;
-      for (const k of [-1, 0, 1]) { // dritto, taglio dentro, taglio fuori
-        const z = clamp(p.z + k * 8, -HW + 3, HW - 3), sc = runScore(p, ax * s, z, line) + rnd(1.5);
-        if (sc > bs) { bs = sc; best = p; bx = ax * s; bz = z; }
-      }
+      const d = hyp(p.x - px, p.z - pz); if (d < bd) { bd = d; best = p; }
     }
-    if (best) { best.run = { x: bx, z: bz, t: RUN.life, g: rnd(-.5, 2.2) }; G.stats.runs[t.idx]++; }
+    if (!best) continue;
+    // il voto: vicinanza al punto per quanto è sgombro dagli avversari più vicini
+    const vicini = t.opp.players.map((q) => hyp(q.x - px, q.z - pz)).sort((a, c) => a - c).slice(0, I.ingombro[2]);
+    let ingombro = 0; for (const d of vicini) ingombro += I.ingombro[0] * Math.max(0, 1 - d / I.ingombro[1]);
+    if (Math.sqrt(1 - bd / I.raggio) * Math.max(0, 1 - ingombro) < I.soglia) continue;
+    best.run = { x: s * (HL - I.fondo), z: best.z * I.centro, t: I.dura, g: rnd(-.5, 2.2), cond: true }; G.stats.runs[t.idx]++;
   }
 }
 // Il più vicino al portatore: si avvicina, temporeggia tenendosi tra lui e la porta, poi va sul pallone; in scivolata solo se serve
@@ -1543,7 +1545,7 @@ function think(p, dt) {
       p.tx = p.sost.x; p.tz = p.sost.z; p.stato = 'sostegno'; return onside();
     }
     if (p.role !== 'D' && hyp(p.x - own.x, p.z - own.z) < 34) { // gli altri cercano spazio libero vicino alla loro posizione
-      if (!p.smarca || G.t > p.smarcaT) { p.smarca = puntoLibero(p, own, h); p.smarcaT = G.t + .5 + rnd(.25); }
+      if (!p.smarca || G.t > p.smarcaT) { p.smarca = puntoVoto(p, own, h); p.smarcaT = G.t + SMARCA.ogni * rnd(.8, 1.2); }
       p.tx = p.smarca.x; p.tz = p.smarca.z; p.stato = 'smarcamento';
     }
     onside();
@@ -1564,11 +1566,20 @@ function puntoSostegno(p, own) {
   return best;
 }
 // Smarcamento: il punto più libero intorno alla propria posizione, raggiungibile da un passaggio pulito
-function puntoLibero(p, own, h) {
-  const s = p.team.side; let best = { x: h[0], z: h[1] }, bs = -1e9;
-  for (const [dx, dz] of [[0, 0], [5, 0], [-5, 0], [0, 5], [0, -5], [4, 4], [4, -4], [-4, 4], [-4, -4]]) {
-    const x = clamp(h[0] + dx * s, -HL + 2, HL - 2), z = clamp(h[1] + dz, -HW + 2, HW - 2);
-    const sc = Math.min(liberoIn(p.team, x, z), 9) - (laneBlocked(own, p, x, z) ? 5 : 0) - hyp(dx, dz) * .15 + dx * .05;
+/**
+ * Dove si mette chi è senza palla (SMARCA): tra il punto dov'è diretto e otto punti attorno sceglie quello dove il
+ * portatore gli darebbe il voto più alto (votoPassaggio), restando vicino al suo posto nel modulo, lontano dai compagni
+ * e non addosso al portatore. Rifatto spesso, si sposta poco per volta verso il punto migliore.
+ */
+function puntoVoto(p, own, h) {
+  const t = p.team, s = t.side, S = SMARCA, c = p.smarca && G.t - p.smarcaT < 1 ? p.smarca : { x: h[0], z: h[1] }, lib = S.liberta[p.role] || 0, limite = t.offLine - .5;
+  let best = c, bs = -1e9;
+  for (let k = -1; k < 8; k++) {
+    const a = k * Math.PI / 4, x = clamp(c.x + (k < 0 ? 0 : Math.sin(a) * S.raggio), -HL + 2, HL - 2), z = clamp(c.z + (k < 0 ? 0 : Math.cos(a) * S.raggio), -HW + 2, HW - 2);
+    if (x * s > limite) continue; // oltre la linea del fuorigioco non serve
+    let sc = votoPassaggio(own, p, x, z).sc - Math.max(0, hyp(x - h[0], z - h[1]) - lib) * S.casa - hyp(x - p.x, z - p.z) * S.strada;
+    const dp = hyp(x - own.x, z - own.z); if (dp < S.vicino[0]) sc -= (S.vicino[0] - dp) * S.vicino[1];
+    for (const m of t.players) { if (m === p || m === own || m.i === 0) continue; const mx = m.smarca && m.stato === 'smarcamento' ? m.smarca.x : m.x, mz = m.smarca && m.stato === 'smarcamento' ? m.smarca.z : m.z, dm = hyp(x - mx, z - mz); if (dm < S.spazio) sc -= (1 - dm / S.spazio) * S.compagni; }
     if (sc > bs) { bs = sc; best = { x, z }; }
   }
   return best;
@@ -1595,12 +1606,23 @@ function possesso(t, own) {
  * tra pallone e porta. E dove mirare: nell'angolo più lontano dal portiere.
  */
 function valoreTiro(p) {
-  const s = p.team.side, gx = s * HL, o = piede(p), dx = (gx - o.x) * s; if (dx < 1.5) return { q: 0, tz: 0 };
+  const s = p.team.side, gx = s * HL, o = piede(p), dx = (gx - o.x) * s, Z = TIRO_IA; if (dx < 1.5) return { q: 0, tz: 0 };
   const ang = Math.abs(Math.atan2(GH - o.z, dx) - Math.atan2(-GH - o.z, dx)), d = hyp(dx, o.z);
   let muro = 0; for (const q of p.team.opp.players) { if (q.i === 0) continue; const qx = (q.x - o.x) * s; if (qx < .5 || qx > dx) continue; const zc = o.z + (0 - o.z) * qx / dx, w = .9 + GH * qx / dx; if (Math.abs(q.z - zc) < w) muro++; }
-  const gk = p.team.opp.players[0], lato = gk && Math.abs(gk.z - GH) > Math.abs(gk.z + GH) ? 1 : -1;
+  // dove mirare: dei tre bersagli vince quello dove gli avversari arrivano più tardi sulla traiettoria
+  let best = 1e9, tz = 0;
+  for (const k of [-1, 0, 1]) {
+    const bz = k * GH * Z.bersagli, lx = gx - o.x, lz = bz - o.z, L = hyp(lx, lz) || 1; let pericolo = 0;
+    for (const q of p.team.opp.players) {
+      if (q.stun > 0 && q.st === 'down') continue;
+      // il punto della traiettoria più vicino all'avversario: il tempo del pallone fin lì contro il suo per arrivarci
+      const t = clamp(((q.x - o.x) * lx + (q.z - o.z) * lz) / (L * L), 0, 1), fuori = hyp(o.x + lx * t - q.x, o.z + lz * t - q.z);
+      pericolo += clamp(CARICO.calcia + t * L / Z.velocita - (fuori + 1) / VELOCITA.scatto + 1, 0, 2);
+    }
+    if (pericolo < best) { best = pericolo; tz = bz; }
+  }
   const q = clamp((ang - .1) / .55, 0, 1) * clamp((32 - d) / 20, 0, 1) * Math.pow(.75, muro);
-  return { q, tz: lato * GH * rnd(.55, .85), d };
+  return { q, tz, d };
 }
 /**
  * Dove portare palla: si provano nove direzioni attorno a quella della porta (e indietro se si è pressati) e si sceglie lo
@@ -1644,7 +1666,7 @@ function ownerThink(p, dt) {
   p.thinkT -= dt; if (p.thinkT > 0) return; p.thinkT = D.think * rnd(...TENUTA.pensa) * (press < .6 ? .5 : 1); // sotto pressione si decide prima
   p.conduci = conduzione(p, press < .6);
   const tiro = valoreTiro(p), errore = D.err * (1 + (1 - clamp(press, 0, 1)) * .5);
-  // si tira con una buona occasione, prima se pressati, sempre da vicino; e ogni tanto anche da fuori
+  // si tira quando almeno uno dei tre bersagli è abbastanza libero (TIRO_IA): più è libero, più è sicuro che parte
   if (tiro.q > TIRO_IA.buona || (tiro.q > TIRO_IA.pressato[0] && press < TIRO_IA.pressato[1]) || (tiro.q > TIRO_IA.minima && tiro.d < TIRO_IA.vicino) || (tiro.q > TIRO_IA.minima && tiro.d < TIRO_IA.daFuori[0] && rnd() < TIRO_IA.daFuori[1])) { const f = tiro.d < 13 ? rnd(.5, .68) : rnd(.68, .84); DBG_IA.scelta(p, 'tira'); return prepara(p, 'calcia', s * HL, tiro.tz, () => shoot(p, tiro.tz, f, errore * 1.1), f > .7); }
   if (canCross(p) && rnd() < AIR.cross * 1.4) { const m = crossTarget(p); if (m && openness(m) > 1.4) { DBG_IA.scelta(p, 'cross per ' + m.name); return prepara(p, 'lancia', m.x, m.z, () => cross(p, m)); } }
   const m = bestPass(p), sp = bestPass.punteggio, cd = p.conduci;
@@ -1987,6 +2009,7 @@ function moveBall(dt) {
   const vy0 = b.vy; if (FIS.passo(b, dt)) AU.rimbalzo(-vy0); // gravità, aria, effetto, rimbalzi e attrito dell'erba (src/fisica/pallone.js), e il rimbalzo si sente
   if (G.state !== 'play') { // dentro la rete
     for (const p of PORTE) p.urta(b, BR); // la rete cede e frena il pallone
+    if (G.state === 'goal') for (const p of PORTE) if (p.d === sgn(b.x)) p.trattieni(b, BR); // gol fatto: dalla porta non esce più di lato o da dietro
     if (Math.abs(b.x) > HL + 3) { b.x = sgn(b.x) * (HL + 3); b.vx = 0; } // sicurezza: oltre la sacca della rete non si va
   }
 }
@@ -2807,5 +2830,5 @@ async function boot() {
 }
 // quello che la home (src/casa/casa.js) prende da qui
 export { aiForm, $, rnd, clamp, hash, IMGX, img, G, renderer, cv, SCARPE_NEGOZIO, stemmi3d, makeSkinned, FIGURE, formaMaglia, pickKits, PALLONI, kitsFor, AU, tactics, club, chiudiPonte, startMatch, toMenu, CREST, loadImg, MODEL };
-window.__g = { prova, avviaPartita, hud, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { prova, avviaPartita, hud, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, INSERIMENTO, SMARCA, TIRO_IA, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
