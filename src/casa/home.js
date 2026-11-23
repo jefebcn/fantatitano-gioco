@@ -77,7 +77,7 @@ export function disegnaHome() {
   const mioCap = K.mio && me.xi.find((x) => x[0] === K.mio.capitano), cap = mioCap || me.xi.slice().sort((a, b) => DATI.valore(b[1], b[3]) - DATI.valore(a[1], a[3]))[0], sc = DATI.scheda(cap, K.club);
   const squadra = carta({ rotta: 'squadra', titolo: t('home.squadra'), colore: 'blu', classe: 'c-piccola c-squadra',
     corpo: `<span class="conC">${cartaGiocatore(sc, { club: K.club, capitano: !!mioCap, ferma: true, entra: true })}</span>`
-      + `<span class="testo"><i class="su">${t(mioCap ? 'squadra.capitano' : 'squadra.migliore')}</i><b data-adatta data-due-righe>${esc(cap[0])}</b><span class="gDati"><u>${sc.ruolo}</u></span></span>` });
+      + `<span class="testo"><i class="su">${t(mioCap ? 'squadra.capitano' : 'squadra.migliore')}</i><b data-adatta data-due-righe>${esc(cap[0])}</b><span class="gDati"><u>${sc.ruolo} · ${sc.val}</u></span></span>` });
 
   // mercato: il giocatore più forte che ci si può permettere adesso (tra lista trasferimenti e offerte a tempo) con la sua
   // carta e il ritratto, il ruolo sulla carta, il nome e il prezzo; se non ci si può permettere nessuno, il meno caro
@@ -85,7 +85,7 @@ export function disegnaHome() {
   const mercato = carta({ rotta: 'mercato', titolo: t('home.mercato'), colore: 'blu', classe: 'c-piccola c-mercato',
     corpo: c ? `<span class="conC">${cartaGiocatore(cs, { club: c.c.id, ferma: true, entra: true })}</span>`
       + `<span class="testo"><i class="su${c.posso ? ' si' : ''}" data-adatta data-due-righe>${t(c.posso ? 'mercato.perTe' : 'mercato.menoCaro')}</i><b data-adatta data-due-righe>${esc(c.x[0])}</b>`
-      + `<span class="prezzo${c.posso ? '' : ' caro'}"><span>${icona('moneta')}<b>${mon(c.costo)}</b></span>${c.gemme ? `<span>${icona('diamante')}<b>${c.gemme}</b></span>` : ''}</span></span>`
+      + `<span class="prezzo${c.posso ? '' : ' caro'}"><span class="rp">${cs.ruolo} ·</span><span>${icona('moneta')}<b>${mon(c.costo)}</b></span>${c.gemme ? `<span>${icona('diamante')}<b>${c.gemme}</b></span>` : ''}</span></span>`
       : `${icona('mercato', 'grande')}<span class="testo"><b>${t('mercato.vuoto')}</b></span>` });
 
   // il mio club: lo stemma, le stelle e le tre voci, ognuna con la sua icona e il suo nome

@@ -3,8 +3,9 @@
 // 70, argento da 55 a 69, bronzo sotto. In alto a sinistra la valutazione e sotto il ruolo, solo scritti; il giocatore
 // sta davanti, spostato a destra, e la testa esce sopra il bordo. Sotto c'è la fascia scura col cognome, con la
 // barretta dell'energia sul bordo basso, e in fondo le tre statistiche del reparto.
-// La carta è una sola e cambia con la larghezza: sotto CARTA.stretta.sotto punti (campo e sostituti) non ha le
-// statistiche e la fascia del nome arriva in fondo; più stretta ancora perde anche il ruolo. Nei campi stretti della
+// La carta è una sola e cambia con la larghezza: sotto CARTA.stretta.sotto punti (campo, sostituti, Home) non ha le
+// statistiche e la fascia del nome arriva in fondo; più stretta ancora perde anche il ruolo. La «C» del capitano e
+// gli incarichi stanno in colonna a sinistra, sotto il ruolo. Nei campi stretti della
 // Sfida c'è la carta piccola: stessi colori e stesso ritratto, senza ruolo, con energia e nome sotto.
 // Tutte le misure stanno in CARTA (src/config.js): qui diventano variabili dello stile.
 import { icona } from './icone.js';
@@ -26,7 +27,8 @@ const MISURE = {
   sd: C.statistiche.da, sn: C.statistiche.numero, ss: C.statistiche.sigla, so: C.statistiche.opaco,
   kf: C.stretta.fascia, kn: C.stretta.nome, kl: C.stretta.ritratto.lato, ks: C.stretta.ritratto.sinistra, ka: C.stretta.ritratto.alto,
   pa: C.piccola.alta, pt: `${C.piccola.scritta}px`, pl: C.piccola.ritratto.lato, ps: C.piccola.ritratto.sinistra, pr: C.piccola.ritratto.alto, np: `${C.nome.punti}px`,
-  gl: C.segno.largo, gf: C.segno.fuori, zy: C.freccia.y, zl: C.freccia.larga,
+  al: C.stretta.ampia.ritratto.lato, as: C.stretta.ampia.ritratto.sinistra, aa: C.stretta.ampia.ritratto.alto,
+  gl: C.segno.largo, gp: C.segno.piccolo, gx: C.segno.x, gy: C.segno.y, gg: C.segno.aria, zl: C.freccia.larga,
 };
 document.head.insertAdjacentHTML('beforeend', `<style id="misureCarta">:root{${Object.entries(MISURE).map(([k, v]) => `--c-${k}:${v}`).join(';')}}`
   + Object.entries(C.rarita).map(([nome, r]) => `.f-${nome}{--c-su:${r.alto};--c-giu:${r.basso};--c-testo:${r.testo}}`).join('') + '</style>');
@@ -40,20 +42,24 @@ const nomeCorto = (nome) => { const p = String(nome).split(' '); return p.length
 const cognome = (nome) => { const p = String(nome).split(' '); while (p.length > 1 && p[0].endsWith('.')) p.shift(); return p.join(' '); };
 // gli incarichi che si vedono accanto alla carta, coi loro segni
 const SEGNI = { rigori: 'rigore', punizioni: 'punizione', angoli: 'corner' };
+// la freccia verde di chi è stato allenato
+const FRECCIA = '<em class="gFreccia"><i></i></em>';
 /** Le tre statistiche del reparto (CARTA.statistiche.per), ognuna col valore del giocatore. */
 function treStatistiche(sc) {
   const valori = new Map(sc.stat || []);
   return (C.statistiche.per[sc.reparto] || []).filter((k) => valori.has(k)).map((k) => [k, valori.get(k)]);
 }
-// le classi che dipendono dalla larghezza: stretta senza statistiche, e più stretta ancora senza ruolo
-const classiLarghezza = (larga) => (larga < C.stretta.sotto ? ' stretta' : '') + (larga < C.stretta.ruoloDa ? ' senzaRuolo' : '');
+// le classi che dipendono dalla larghezza: stretta senza statistiche (ampia, col ritratto più grande, se non è poi
+// così stretta), e più stretta ancora senza ruolo
+const eAmpia = (larga) => larga < C.stretta.sotto && larga >= C.stretta.ampia.da;
+const classiLarghezza = (larga) => (larga < C.stretta.sotto ? ' stretta' : '') + (eAmpia(larga) ? ' ampia' : '') + (larga < C.stretta.ruoloDa ? ' senzaRuolo' : '');
 
 /**
  * La carta di un giocatore, da mettere su un campo, in una griglia o in un riquadro.
  * sc: la sua scheda (DATI.scheda); club: l'id del club in cui gioca (serve a scegliere il volto);
  * larga: quanti punti è larga la carta (da lì vengono tutte le altre misure e cosa si vede);
  * energia: da 0 a 100, o null se la barretta non serve (mercato, home); capitano: ha la «C»; incarichi: elenco tra
- * 'rigori', 'punizioni' e 'angoli'; fuori: 0 nel suo ruolo, 1 in un ruolo vicino, 2 fuori ruolo (il ruolo diventa
+ * 'rigori', 'punizioni' e 'angoli' (si vedono solo sulla carta intera, nella scheda); fuori: 0 nel suo ruolo, 1 in un ruolo vicino, 2 fuori ruolo (il ruolo diventa
  * rosso; nella piccola, che non ha il ruolo, c'è un triangolino); migliorato: ha fatto sedute di allenamento (freccia verde); stile: dove sta sul campo (left, top…);
  * ferma: sta in una griglia o in un riquadro invece che in un punto del campo; piccola: la carta dei campi stretti
  * della Sfida, con energia e nome sotto; entra: la larghezza la decide il riquadro in cui sta (prontaCarte la misura,
@@ -70,8 +76,8 @@ export function cartaGiocatore(sc, { club, larga = C.stretta.sotto, energia = nu
   const grande = larga >= RITRATTI.grandeDa;
   return `<span class="gC f-${sc.fascia}${piccola ? ' piccola' : classiLarghezza(larga)}${ferma ? ' ferma' : ''}${barra ? ' conEnergia' : ''}" style="--gw:${larga}px${stile ? ';' + stile : ''}"${entra ? ' data-entra' : ''}${dati ? ' ' + dati : ''}><span class="gS">`
     + `<span class="gRit"><img class="gFoto" alt="" data-ritr="${chiRitratto(club, sc, grande)}">${icona('sagoma', 'gFoto')}</span>`
-    + `<em class="gVal">${sc.val}</em>${piccola ? (fuori === 2 ? `<em class="gAvviso">${icona('fuori-ruolo')}</em>` : '') : `<u class="gRuolo${fuori === 2 ? ' fuori' : ''}">${sc.ruolo}</u>`}${migliorato ? '<em class="gFreccia"><i></i></em>' : ''}`
-    + (piccola ? '' : nome + statistiche + barra) + (segni ? `<span class="gSegni">${segni}</span>` : '') + '</span>'
+    + `<em class="gVal">${sc.val}</em>${piccola ? (fuori === 2 ? `<em class="gAvviso">${icona('fuori-ruolo')}</em>` : '') : `<u class="gRuolo${fuori === 2 ? ' fuori' : ''}">${sc.ruolo}</u>`}${piccola && migliorato ? FRECCIA : ''}`
+    + (piccola ? '' : nome + statistiche + barra) + (segni || (migliorato && !piccola) ? `<span class="gSegni">${segni}${migliorato && !piccola ? FRECCIA : ''}</span>` : '') + '</span>'
     + (piccola ? barra + nome : '') + '</span>';
 }
 
@@ -93,18 +99,19 @@ function entra(el) {
   }
   if (!larga) larga = quanto(dentro.clientHeight);
   el.style.setProperty('--gw', `${larga}px`); if (riquadro) riquadro.style.setProperty('--cw', `${larga}px`);
-  el.classList.toggle('stretta', larga < C.stretta.sotto); el.classList.toggle('senzaRuolo', larga < C.stretta.ruoloDa);
+  el.classList.toggle('stretta', larga < C.stretta.sotto); el.classList.toggle('ampia', eAmpia(larga)); el.classList.toggle('senzaRuolo', larga < C.stretta.ruoloDa);
 }
-// Il cognome nella fascia: se è più largo del posto il carattere si rimpicciolisce fino al minimo, poi le lettere si
-// stringono, e solo se non basta ancora il cognome viene accorciato coi puntini. Niente esce dalla carta.
+// Il cognome nella fascia non esce mai dalla carta e non viene mai tagliato: se è più largo del posto il carattere si
+// rimpicciolisce fino al minimo, poi le lettere si stringono, e se non basta ancora il carattere scende sotto il minimo
+// finché il cognome entra tutto.
 function sistemaNome(el) {
   const s = el.firstElementChild, W = parseFloat(getComputedStyle(el).getPropertyValue('--gw')); if (!s || !W || !el.clientWidth) return;
-  let testo = el.dataset.nome; s.textContent = testo; s.style.transform = ''; el.style.fontSize = '';
+  s.textContent = el.dataset.nome; s.style.transform = ''; el.style.fontSize = '';
   const posto = el.clientWidth - 2 * C.fascia.margine * W, min = Math.max(C.nome.punti, C.nome.minimo * W);
   let px = parseFloat(getComputedStyle(el).fontSize);
   while (s.offsetWidth > posto && px > min) { px = Math.max(min, px - .5); el.style.fontSize = `${px}px`; }
   if (s.offsetWidth <= posto) return;
-  while (s.offsetWidth * C.nome.stretto > posto && testo.length > 2) { testo = testo.slice(0, -1).trimEnd(); s.textContent = testo + '…'; }
+  while (s.offsetWidth * C.nome.stretto > posto && px > C.nome.fondo) { px = Math.max(C.nome.fondo, px - .25); el.style.fontSize = `${px}px`; }
   s.style.transform = `scaleX(${Math.min(1, posto / s.offsetWidth).toFixed(3)})`;
 }
 
