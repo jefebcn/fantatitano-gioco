@@ -1,17 +1,21 @@
-// La Squadra (docs/navigazione.md §3.3): la gestione della formazione. Al centro il campo in prospettiva con le undici
-// carte dei titolari secondo il modulo; a sinistra i pulsanti Modulo, Riserve, Fisioterapista e Allenatore e i quattro
-// incarichi, cioè capitano, rigori, punizioni e angoli. A destra la panchina in due colonne, sul campo «Squadra migliore».
-// Due giocatori si scambiano toccandoli uno dopo l'altro o trascinando una carta sull'altra; un tocco lungo apre la
-// scheda del giocatore. Ogni cambio è salvato subito.
+// La Squadra (docs/navigazione.md §3.3): la gestione della formazione, con la struttura chiesta da Alex il 23/11.
+// A sinistra quattro pulsanti bassi: il modulo, le riserve, il fisioterapista e gli allenatori. Al centro il campo in
+// prospettiva, alto fino al bordo dello schermo, con le undici carte dei titolari secondo il modulo. A destra del campo la
+// tessera «Squadra migliore» e il riquadro dei sostituti, in due colonne.
+// Due giocatori si scambiano, tra campo, sostituti e riserve, in due modi: toccandoli uno dopo l'altro, oppure
+// trascinando una carta sull'altra. Il primo tocco sceglie la carta, che si illumina e mostra un piccolo pulsante «Scheda»;
+// toccarla di nuovo, o toccare il vuoto, annulla. La scheda del giocatore si apre da quel pulsante o tenendo il dito
+// fermo sulla carta. Capitano, rigori, punizioni e angoli sono le linguette accanto alla carta di chi li ha: si
+// trascinano su un altro titolare per passargli l'incarico. Ogni cambio è salvato subito.
 import * as CAR from '../carriera.js';
-import { FORMS } from '../config.js';
+import { FORMS, SQUADRA, CARTA_GRANDE } from '../config.js';
 import { img } from '../game.js';
 import { adatto, postiModulo } from '../dati/scala.js';
 import { K, DATI, sel, save, salvaK, applicaMio, avviso, mon, club, moduloMio } from './casa.js';
 import { icona } from './icone.js';
 import { adatta } from './carte.js';
 import { cartaCampo, riempiRitratti } from './giocatore.js';
-import { disponi, misuraGriglia, erba } from './campo.js';
+import { disponi, erba } from './campo.js';
 import { squadraMigliore, incarichi } from './rosa.js';
 import { apriScheda } from './scheda-giocatore.js';
 import { finestra } from './finestra.js';
@@ -20,17 +24,18 @@ import { apri } from './nav.js';
 
 document.getElementById('vs').insertAdjacentHTML('beforebegin', '<div id="squadra" class="scr nas"></div>');
 const radice = document.getElementById('squadra');
-// in panchina ci stanno PANCHINA giocatori, in due colonne; gli altri sono le riserve. Il campo si stringe in alto fino
-// a STRETTO per cento di mezza larghezza. Un tocco tenuto LUNGO millesimi apre la scheda; oltre TRASCINA punti di
-// spostamento la carta si trascina.
-const PANCHINA = 8, COLONNE = 2, STRETTO = 30, LUNGO = 520, TRASCINA = 10;
-const SEGNO = { capitano: 'capitano', rigori: 'rigore', punizioni: 'punizione', angoli: 'corner' };
-// scelto: la carta toccata, in attesa della seconda, come 'xi:3' o 'pan:1'. armato: l'incarico da dare al prossimo titolare
-// toccato; riserve: la colonna di destra mostra le riserve invece della panchina
-let scelto = null, armato = null, riserve = false;
+// tra i sostituti ci stanno PANCHINA giocatori, in COLONNE colonne; gli altri sono le riserve
+const PANCHINA = 8, COLONNE = 2;
+// scelto: la carta toccata, in attesa della seconda, come 'xi:3' o 'pan:1'. riserve: la colonna di destra mostra le
+// riserve invece dei sostituti
+let scelto = null, riserve = false;
 const modulo = () => moduloMio();
 const posto = (g) => { const [dove, i] = g.split(':'); return { dove, i: +i }; };
 const dopoCambio = () => { applicaMio(); salvaK(); };
+// le Tre Torri del Titano, stilizzate e molto trasparenti, in basso a sinistra dietro il campo: il monte e le tre torri coi merli
+const TORRI = '<svg class="qTorri" viewBox="0 0 64 64" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path d="M2 60 14 40l8 6 10-20 10 20 8-6 12 20z" opacity=".55"/><path d="M10 40V26h2v-3h2v3h2v-3h2v3h2v14zM27 30V10h2V7h2v3h2V7h2v3h2v20zM44 40V26h2v-3h2v3h2v-3h2v3h2v14z"/></svg>';
+// quanto è larga una carta: una parte fissa della larghezza dello schermo, uguale in campo e tra i sostituti
+const larga = () => Math.round(innerWidth * SQUADRA.carta);
 
 // tutta la rosa con scheda ed energia: prima i titolari nell'ordine dei posti, poi gli altri
 function rosa(c) { return c.xi.concat(c.pan || []).map((x) => ({ x, sc: DATI.scheda(x, c.id), energia: CAR.energiaDi(K, x[0]) })); }
@@ -41,42 +46,49 @@ export function disegnaSquadra() {
   const allenabili = CAR.quantiAllenatori(K);
   const ottima = !squadraMigliore(rosa(c), postiModulo(m)).cambiata;
   if (!extra) riserve = false;
-  radice.innerHTML = '<div class="qSx">'
-    + `<button class="qB" data-az="modulo">${icona('modulo')}<span><b data-adatta data-min="13">${t('squadra.modulo')}</b><i>${m}</i></span></button>`
-    + `<button class="qB${riserve ? ' accesa' : ''}" data-az="riserve">${icona('riserve')}<span><b data-adatta data-min="13">${t('squadra.riserve', extra)}</b></span></button>`
-    + `<button class="qB" data-az="fisio">${icona('fisioterapista')}<span><b data-adatta data-min="13">${t('squadra.fisio')}</b>${fisio.manca ? `<i data-adatta>${t('fisio.stanca')}</i>` : `<i data-adatta data-corto="${t('fisio.alMassimoCorto')}">${t('fisio.alMassimo')}</i>`}</span></button>`
-    + `<button class="qB accesa" data-az="allenatore">${icona('allenatore')}<span><b data-adatta data-min="13">${t('squadra.allenatore')}</b></span>${allenabili ? `<em class="num">${allenabili}</em>` : ''}</button>`
-    + `<div class="qInc">${CAR.INCARICHI.map((k) => `<button class="${armato === k ? 'armato' : ''}" data-inc="${k}">${icona(SEGNO[k])}<b>${t('inc.' + k)}</b></button>`).join('')}</div></div>`
-    + `<div class="qCampo"></div>`
-    + `<div class="qPan"><h3>${riserve ? t('squadra.riserve', extra) : t('squadra.panchina', Math.min(pan.length, PANCHINA), PANCHINA)}</h3><div class="qGriglia"></div></div>`
-    + `<button class="qMigliore${ottima ? ' ottima' : ''}" data-az="migliore">${icona(ottima ? 'spunta' : 'scambia')}<b>${t('squadra.migliora')}</b></button>`;
+  radice.style.setProperty('--gw', `${larga()}px`); radice.style.setProperty('--ga', CARTA_GRANDE.forma);
+  radice.innerHTML = TORRI + '<div class="qSx">'
+    + `<button class="qB" data-az="modulo">${icona('modulo')}<b>${m}</b></button>`
+    + `<button class="qB${riserve ? ' scelta' : ''}" data-az="riserve">${icona('riserve')}<b data-adatta>${t('squadra.riserve', extra)}</b></button>`
+    + `<button class="qB" data-az="fisio">${icona('fisioterapista')}<b data-adatta>${t('squadra.fisio')}</b>${fisio.manca ? '<em class="bollino">!</em>' : ''}</button>`
+    + `<button class="qB accesa" data-az="allenatore">${icona('allenatore')}<span><b data-adatta>${t('squadra.allenatori')}</b><i data-adatta data-corto="${t('squadra.allenatoriCorto')}">${t('squadra.allenatoriSotto')}</i></span>${allenabili ? `<em class="bollino">${allenabili}</em>` : ''}</button></div>`
+    + '<div class="qCampo"></div>'
+    + `<button class="qMigliore${ottima ? ' ottima' : ''}" data-az="migliore">${icona('modulo')}<b>${t('squadra.migliora')}</b>${ottima ? `<em class="fatto">${icona('spunta')}</em>` : ''}</button>`
+    + `<div class="qPan"><h3>${riserve ? t('squadra.riserve', extra) : t('squadra.sostituti', Math.min(pan.length, PANCHINA), PANCHINA)}</h3><div class="qGriglia"></div></div>`;
   campo(c, m); panchina(c);
-  adatta(radice); riempiRitratti(radice);
+  adatta(radice); riempiRitratti(radice); pulsanteScheda();
 }
 
-// il campo con gli undici titolari: ognuno al suo posto del modulo, con la fascia, i segni degli incarichi, l'avviso di
-// fuori ruolo; le carte sono grandi se ci stanno, se no piccole
+// il pulsante «Scheda» della carta scelta: sopra di lei, o sotto se sopra c'è la barra
+function pulsanteScheda() {
+  const el = scelto && radice.querySelector(`.gC[data-g="${scelto}"]`); if (!el) { scelto = null; return; }
+  const r = el.getBoundingClientRect(), q = radice.getBoundingClientRect(), barra = parseFloat(getComputedStyle(document.body).getPropertyValue('--barra')) || 0;
+  radice.insertAdjacentHTML('beforeend', `<button class="qScheda" data-az="scheda">${icona('info')}<b>${t('squadra.scheda')}</b></button>`);
+  const b = radice.lastElementChild, alto = b.offsetHeight, sopra = r.top - alto >= q.top + barra;
+  // il pulsante ha un margine invisibile sopra e sotto (per il tocco): quello che si vede tocca appena la carta
+  const margine = parseFloat(getComputedStyle(b).borderTopWidth) || 0;
+  b.style.left = `${r.left + r.width / 2 - q.left}px`; b.style.top = `${(sopra ? r.top - alto + margine - 1 : r.bottom - margine + 1) - q.top}px`;
+}
+
+// il campo con gli undici titolari: ognuno al suo posto del modulo, con le linguette degli incarichi e il ruolo
+// bordato di rosso se gioca fuori ruolo
 function campo(c, m) {
   const el = radice.querySelector('.qCampo'), r = el.getBoundingClientRect(); if (!r.width) return;
-  const posti = postiModulo(m), d = disponi(posti, r.width, r.height, { stretto: STRETTO, grande: true }), schede = c.xi.map((x) => DATI.scheda(x, c.id)), inc = incarichi(K, CLUBS, schede);
-  el.style.setProperty('--gw', `${d.gw}px`); el.style.setProperty('--gf', `${d.scritta}px`); el.style.setProperty('--ga', d.forma);
-  el.innerHTML = erba(STRETTO) + c.xi.map((x, i) => {
-    const sc = schede[i], q = d.dove[i], g = `xi:${i}`;
+  const posti = postiModulo(m), d = disponi(posti, r.width, r.height, { stretto: SQUADRA.stretto, grande: true, fissa: larga() }), schede = c.xi.map((x) => DATI.scheda(x, c.id)), inc = incarichi(K, CLUBS, schede);
+  el.innerHTML = erba(SQUADRA.stretto, true) + c.xi.map((x, i) => {
+    const sc = schede[i], q = d.dove[i];
     return cartaCampo(sc, { club: c.id, energia: CAR.energiaDi(K, x[0]), capitano: inc.capitano === x[0], incarichi: ['rigori', 'punizioni', 'angoli'].filter((k) => inc[k] === x[0]), fuori: adatto(sc.ruolo, posti[i].ruolo),
-      migliorato: !!(K.crescita || {})[x[0]], grande: d.grande, stemma: img(c.id + '-mini'), dati: `data-g="${g}"${scelto === g ? ' data-scelto' : ''}`,
-      stile: `left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px${d.grande ? '' : `;width:${Math.floor(q.posto - 2)}px`}` });
+      migliorato: !!(K.crescita || {})[x[0]], grande: true, stemma: img(c.id + '-mini'), dati: `data-g="xi:${i}"${scelto === `xi:${i}` ? ' data-scelto' : ''}`, stile: `left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px` });
   }).join('');
 }
 
-// la panchina (o le riserve): carte in due colonne, coi posti liberi segnati
+// i sostituti (o le riserve): carte in due colonne, uguali a quelle in campo, coi posti liberi segnati
 function panchina(c) {
-  const el = radice.querySelector('.qGriglia'), r = el.getBoundingClientRect(); if (!r.width) return;
-  const pan = c.pan || [], da = riserve ? PANCHINA : 0, lista = pan.slice(da, da + PANCHINA), righe = PANCHINA / COLONNE, d = misuraGriglia(r.width, r.height, COLONNE, righe, 3);
-  el.style.setProperty('--gw', `${d.gw}px`); el.style.setProperty('--gf', `${d.scritta}px`); el.style.setProperty('--ga', d.forma); el.classList.toggle('piccole', !d.grande);
+  const el = radice.querySelector('.qGriglia'), pan = c.pan || [], da = riserve ? PANCHINA : 0, lista = pan.slice(da, da + PANCHINA);
+  el.style.gridTemplateColumns = `repeat(${COLONNE},auto)`;
   el.innerHTML = Array.from({ length: PANCHINA }, (_, k) => {
     const x = lista[k]; if (!x) return `<span class="qVuoto"><i>${t('squadra.libero')}</i></span>`;
-    const g = `pan:${da + k}`;
-    return cartaCampo(DATI.scheda(x, c.id), { club: c.id, energia: CAR.energiaDi(K, x[0]), migliorato: !!(K.crescita || {})[x[0]], grande: d.grande, ferma: true, stemma: img(c.id + '-mini'), dati: `data-g="${g}"${scelto === g ? ' data-scelto' : ''}` });
+    return cartaCampo(DATI.scheda(x, c.id), { club: c.id, energia: CAR.energiaDi(K, x[0]), migliorato: !!(K.crescita || {})[x[0]], grande: true, ferma: true, stemma: img(c.id + '-mini'), dati: `data-g="pan:${da + k}"${scelto === `pan:${da + k}` ? ' data-scelto' : ''}` });
   }).join('');
 }
 addEventListener('resize', () => { if (K && !radice.classList.contains('nas')) disegnaSquadra(); });
@@ -88,18 +100,20 @@ function scambia(a, b) {
   if (!r.ok) avviso(t(r.motivo === 'portiere' ? 'squadra.portiere' : 'squadra.nonSiPuo')); else { dopoCambio(); avviso(t('squadra.scambiati', na, nb)); }
   disegnaSquadra();
 }
-// il tocco su una carta: dà l'incarico armato, oppure sceglie la carta, oppure la scambia con quella già scelta
+// un incarico passa al titolare su cui è stata lasciata la sua linguetta
+function passaIncarico(tipo, g) {
+  const p = posto(g), c = club(K.club);
+  if (p.dove !== 'xi') return avviso(t('inc.soloTitolari'));
+  const nome = c.xi[p.i][0]; CAR.assegnaIncarico(K, CLUBS, tipo, nome); salvaK(); avviso(t('inc.dato', t('inc.' + tipo), nome)); scelto = null; disegnaSquadra();
+}
+// il tocco su una carta: la sceglie, oppure la lascia se era già scelta, oppure la scambia con quella scelta prima
 function toccaCarta(g) {
-  if (armato) {
-    const p = posto(g), c = club(K.club);
-    if (p.dove !== 'xi') return avviso(t('inc.soloTitolari'));
-    const nome = c.xi[p.i][0]; CAR.assegnaIncarico(K, CLUBS, armato, nome); salvaK(); avviso(t('inc.dato', t('inc.' + armato), nome)); armato = null;
-    return disegnaSquadra();
-  }
   if (!scelto) { scelto = g; return disegnaSquadra(); }
   if (scelto === g) { scelto = null; return disegnaSquadra(); }
   scambia(scelto, g);
 }
+// la scheda del giocatore di una carta: si apre sopra la schermata, e alla chiusura la Squadra si ridisegna
+function scheda(g) { const p = posto(g); scelto = null; apriScheda(p.dove, p.i, disegnaSquadra); disegnaSquadra(); }
 function scegliModulo() {
   const m = modulo();
   // i moduli oltre i primi si aprono col Centro allenamento: quelli chiusi si vedono, col lucchetto
@@ -125,56 +139,66 @@ function migliore() {
   CAR.schiera(K, CLUBS, r.ordine.map((i) => tutti[i].x), r.fuori.map((i) => tutti[i].x)); dopoCambio(); scelto = null; avviso(t('squadra.schierata')); disegnaSquadra();
 }
 
-// Tocco, tocco lungo e trascinamento sulle carte. Il tocco semplice arriva come «click»; il tocco lungo apre la scheda;
-// spostando il dito la carta lo segue e, lasciata sopra un'altra, si scambiano. Dopo un tocco lungo o un trascinamento
-// il «click» che segue subito non conta.
+// Tocco, pressione lunga e trascinamento. Si prende una carta oppure la linguetta di un incarico: spostando il dito di
+// SQUADRA.trascina punti la cosa presa lo segue. Una carta lasciata sopra un'altra le scambia; una linguetta lasciata
+// sopra un titolare gli passa l'incarico. Il dito fermo su una carta per SQUADRA.lungo millesimi apre la scheda. Senza
+// spostamento e senza attesa è un tocco: arriva come «click». Dopo una pressione lunga o un trascinamento il «click» che
+// segue subito non conta.
 let presa = null, saltaFino = 0;
 const saltaIlClick = () => { saltaFino = performance.now() + 400; };
 const cartaDi = (e) => { const el = e && e.closest ? e.closest('.gC[data-g]') : null; return el && radice.contains(el) ? el : null; };
+const segnoDi = (e) => { const el = e && e.closest ? e.closest('.gSegni [data-inc]') : null; return el && radice.contains(el) ? el : null; };
 const lascia = () => { if (!presa) return; clearTimeout(presa.timer); if (presa.ombra) presa.ombra.remove(); presa.el.classList.remove('presa'); presa = null; };
 radice.addEventListener('pointerdown', (e) => {
-  const el = cartaDi(e.target); if (!el || armato) return;
-  lascia(); presa = { el, g: el.dataset.g, x: e.clientX, y: e.clientY, ombra: null, timer: setTimeout(() => { if (!presa || presa.ombra) return; const p = posto(presa.g); lascia(); saltaIlClick(); scelto = null; apriScheda(p.dove, p.i, disegnaSquadra); disegnaSquadra(); }, LUNGO) };
+  const segno = segnoDi(e.target), el = segno || cartaDi(e.target); if (!el) return;
+  lascia(); presa = { el, inc: segno ? segno.dataset.inc : '', g: segno ? '' : el.dataset.g, x: e.clientX, y: e.clientY, ombra: null, timer: 0 };
+  // solo le carte hanno la pressione lunga
+  if (!segno) presa.timer = setTimeout(() => { if (!presa || presa.ombra) return; const g = presa.g; lascia(); saltaIlClick(); scheda(g); }, SQUADRA.lungo);
 });
 addEventListener('pointermove', (e) => {
   if (!presa) return;
   if (!presa.ombra) {
-    if (Math.hypot(e.clientX - presa.x, e.clientY - presa.y) < TRASCINA) return;
-    clearTimeout(presa.timer); const r = presa.el.getBoundingClientRect();
+    if (Math.hypot(e.clientX - presa.x, e.clientY - presa.y) < SQUADRA.trascina) return;
+    clearTimeout(presa.timer);
+    const r = presa.el.getBoundingClientRect(), stile = getComputedStyle(presa.el);
     presa.ombra = presa.el.cloneNode(true); presa.ombra.classList.add('ombra'); presa.dx = presa.x - r.left; presa.dy = presa.y - r.top;
     presa.ombra.style.cssText = `position:fixed;left:0;top:0;width:${r.width}px;margin:0;transform:none;z-index:30;pointer-events:none`;
-    presa.ombra.style.setProperty('--gw', getComputedStyle(presa.el).getPropertyValue('--gw')); presa.ombra.style.setProperty('--ga', getComputedStyle(presa.el).getPropertyValue('--ga'));
+    // la copia vive fuori dalla schermata: si porta dietro le misure e, se è una linguetta, anche l'aspetto
+    presa.ombra.style.setProperty('--gw', stile.getPropertyValue('--gw')); presa.ombra.style.setProperty('--ga', stile.getPropertyValue('--ga'));
+    if (presa.inc) { presa.ombra.className = 'qSegnoMobile'; presa.ombra.style.height = `${r.height}px`; presa.ombra.style.background = stile.backgroundImage; presa.ombra.style.fontSize = stile.fontSize; }
     document.body.appendChild(presa.ombra); presa.el.classList.add('presa');
   }
   presa.ombra.style.left = `${e.clientX - presa.dx}px`; presa.ombra.style.top = `${e.clientY - presa.dy}px`;
 });
 addEventListener('pointerup', (e) => {
   if (!presa) return;
-  const trascinata = !!presa.ombra, da = presa.g; lascia();
+  const trascinata = !!presa.ombra, da = presa.g, inc = presa.inc; lascia();
   if (!trascinata) return;
   saltaIlClick();
-  const sopra = cartaDi(document.elementFromPoint(e.clientX, e.clientY));
-  if (sopra && sopra.dataset.g !== da) scambia(da, sopra.dataset.g);
+  const sopra = cartaDi(document.elementFromPoint(e.clientX, e.clientY)); if (!sopra) return;
+  if (inc) passaIncarico(inc, sopra.dataset.g); else if (sopra.dataset.g !== da) scambia(da, sopra.dataset.g);
 });
 addEventListener('pointercancel', lascia);
 // le immagini delle carte non devono partire col trascinamento del browser, che interromperebbe il nostro
 radice.addEventListener('dragstart', (e) => e.preventDefault());
-radice.addEventListener('dblclick', (e) => { const el = cartaDi(e.target); if (!el) return; const p = posto(el.dataset.g); scelto = null; apriScheda(p.dove, p.i, disegnaSquadra); disegnaSquadra(); });
 
 radice.addEventListener('click', (e) => {
   if (performance.now() < saltaFino) return;
   const b = e.target.closest('button');
-  if (b && b.dataset.inc) { armato = armato === b.dataset.inc ? null : b.dataset.inc; scelto = null; if (armato) avviso(t('inc.tocca', t('inc.' + armato))); return disegnaSquadra(); }
   if (b && b.dataset.az) {
     const az = b.dataset.az;
     if (az === 'modulo') return scegliModulo();
     if (az === 'fisio') return fisioterapista();
     if (az === 'allenatore') return apri('club', 'allenatori');
     if (az === 'migliore') return migliore();
+    if (az === 'scheda') return scelto ? scheda(scelto) : undefined;
     if (az === 'riserve') { if (!(club(K.club).pan || []).slice(PANCHINA).length) return avviso(t('squadra.nessunaRiserva')); riserve = !riserve; scelto = null; return disegnaSquadra(); }
   }
-  const el = cartaDi(e.target); if (el) toccaCarta(el.dataset.g);
+  // una linguetta toccata senza trascinarla dice come si usa; una carta toccata si sceglie o si scambia; il vuoto annulla
+  const segno = segnoDi(e.target); if (segno) return avviso(t('inc.trascina', t('inc.' + segno.dataset.inc)));
+  const el = cartaDi(e.target); if (el) return toccaCarta(el.dataset.g);
+  if (scelto) { scelto = null; disegnaSquadra(); }
 });
 
-/** Da chiamare quando si entra nella Squadra: niente carte scelte né incarichi armati rimasti da prima. */
-export function apriSquadra() { scelto = null; armato = null; riserve = false; disegnaSquadra(); }
+/** Da chiamare quando si entra nella Squadra: niente carte scelte rimaste da prima, e si riparte dai sostituti. */
+export function apriSquadra() { scelto = null; riserve = false; disegnaSquadra(); }

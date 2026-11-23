@@ -17,15 +17,16 @@ Stato di ogni schermata: in fondo, §6.
 
   | Zona | Cosa | Tocco |
   |---|---|---|
-  | sinistra | **Home** (accesa, nella home) oppure **freccia Indietro** (altrove) | livello precedente |
-  | sinistra | Impostazioni | Impostazioni |
-  | sinistra | Info | Info |
-  | centro | Evento della settimana: timer e progresso («2g 9h · 1/5») | Sfide, scheda Settimanali |
-  | centro | Percorso premi: livello e barra («Liv. 4 · 25/40») | Percorso premi |
-  | destra | Diamanti e «+» | Come guadagnare |
-  | destra | Monete e «+» | Come guadagnare |
-  | estrema destra | stemma, nome del manager, nome del club, stelle | Profilo |
+  | sinistra | tre pulsanti quadrati: **Home** (la casetta: accesa nella home; nelle schermate aperte dalla home riporta lì; più in profondità diventa la **freccia Indietro**), Impostazioni, Info | livello precedente, Impostazioni, Info |
+  | sinistra | **Premio del giorno**, verde | finestra con la serie di sette giorni |
+  | centro | banner **Stagione**: divisione, «Partita 3 di 15», barra delle partite giocate, punti in classifica | Carriera |
+  | centro | banner **Percorso premi**: livello, sfide della settimana col tempo che resta («2/5 1g 12h»), barra e punti verso il prossimo premio | Percorso premi |
+  | destra | Diamanti e Monete in due capsule colorate, senza «+» (qui non si compra niente) | Come guadagnare |
+  | estrema destra | stemma; nome del manager, nome del club e stelle uno sotto l'altro | Profilo |
 
+  Struttura chiesta da Alex il 23/11. I pezzi si vedono alti 36 px e si toccano su 44. Se non ci sta tutto la barra si
+  stringe a gradini: spariscono i nomi dentro i banner, poi le barre e le stelle, poi il profilo si accorcia. Nella barra
+  non c'è più il titolo della schermata, né il collegamento diretto alle sfide della settimana (ci si arriva dalla Home).
   In partita la barra non c'è. Nella Sfida (pre-partita) c'è.
 - **Bollino «!»** su ogni carta o pulsante dove c'è qualcosa da ritirare o da fare. La campanella delle notifiche non è
   più nella barra: gli avvisi sono i bollini (vedi §5, domanda 1).
@@ -119,12 +120,12 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 
 | Schermata | Liv. | Si entra da | Indietro | Cosa si tocca |
 |---|---|---|---|---|
-| **Squadra** | 1 (2 dalla Sfida) | Home; scorciatoia in Carriera; Sfida | da dove sei venuto | tocco su due carte o trascinamento = scambio; icone C, rigori, punizioni, corner; SQUADRA MIGLIORE; tocco lungo → scheda |
+| **Squadra** | 1 (2 dalla Sfida) | Home; scorciatoia in Carriera; Sfida | da dove sei venuto | scambio (campo, sostituti, riserve) con due tocchi o trascinando una carta sull'altra; il primo tocco sceglie la carta e mostra il pulsante «Scheda», ritoccarla o toccare il vuoto annulla; pressione lunga → scheda; le linguette C, rigori, punizioni e corner si trascinano su un altro titolare; tessera Squadra migliore |
 | Modulo | finestra | Squadra | chiude | 8 moduli |
 | Riserve | 2 | Squadra | Squadra | i giocatori fuori dai 19 convocati; scambio con la panchina |
 | Fisioterapista | 2 | Squadra | Squadra | recupero dell'energia per monete (uno o tutti) |
 | Allenatore | 2 | Squadra; scheda del giocatore («Allena») | Squadra | sedute di allenamento per giocatore |
-| Scheda del giocatore | finestra | tocco lungo su una carta (Squadra, Riserve, Mercato, Gestisci giocatori) | chiude | statistiche, altezza, piede, valore; Vendi, Allena, Capitano (o Compra, dal Mercato) |
+| Scheda del giocatore | finestra | pulsante «Scheda» della carta scelta o pressione lunga (Squadra, Riserve, Mercato, Gestisci giocatori) | chiude | statistiche, altezza, piede, valore; Vendi, Allena, Capitano (o Compra, dal Mercato) |
 
 ### 3.5 Mercato
 
@@ -193,7 +194,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Scenario | da fare (serve l'aggancio nella partita) |
 | Percorso premi, Sfide | esistono, da risistemare (schede, giorni di fila) |
 | Amichevole | esiste |
-| Squadra | fatta: campo con gli undici, panchina, modulo, incarichi, fisioterapista, squadra migliore, scheda del giocatore |
+| Squadra | fatta, con la struttura del 23/11: quattro pulsanti a sinistra, campo fino al bordo in basso, sostituti a destra, incarichi trascinabili, squadra migliore, scheda del giocatore |
 | Mercato | esiste a scambio, da rifare |
 | Il mio club, Stadio e strutture | esiste con stadio e allenatore, da rifare con le 6 strutture |
 | Personalizza, Negozio | esistono, da risistemare (anteprima grande, testi chiari) |

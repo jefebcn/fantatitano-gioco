@@ -21,8 +21,10 @@ export function scala(x) {
 }
 /** Di quanto una statistica si scosta dal profilo del ruolo, giocatore per giocatore (sempre uguale per lo stesso nome). */
 export const rumore = (seme, chiave) => (hash(seme + chiave) % (SCALA.rumore * 2 + 1)) - SCALA.rumore;
-/** Carta bronzo, argento o oro secondo la valutazione. */
-export const fascia = (val) => (val >= SCALA.fasce.oro ? 'oro' : val >= SCALA.fasce.argento ? 'argento' : 'bronzo');
+/** Il colore della carta, cioè la rarità: bronzo, azzurro o oro secondo la valutazione. */
+export const fascia = (val) => (val >= SCALA.fasce.oro ? 'oro' : val >= SCALA.fasce.azzurro ? 'azzurro' : 'bronzo');
+/** Il colore del cerchio della valutazione sulla carta: verde da SCALA.cerchio in su, rosso sotto. */
+export const coloreCerchio = (val) => (val >= SCALA.cerchio ? 'verde' : 'rosso');
 /** Colore di una statistica: rosso (bassa), giallo (media), verde (alta). */
 export const coloreStat = (v) => (v >= SCALA.colori[1] ? 'verde' : v >= SCALA.colori[0] ? 'giallo' : 'rosso');
 const chiaviDi = (ruolo) => CARTE.chiavi[ruolo === 'POR' ? 'P' : 'G'];
@@ -105,8 +107,8 @@ export function creaDati(clubs, giocatori, crescita = null) {
   const scheda = (x, clubId) => {
     const a = anagrafe(x, clubId), s = statistiche(`${a.club}/${a.nome}`, a.ruolo, interno(x[1], x[3])), cr = crescita ? crescita(x, clubId) : null;
     const stat = cr ? s.stat.map(([k, v]) => [k, Math.min(SCALA.stat[1], v + (cr[k] || 0))]) : s.stat, val = cr ? Math.max(s.val, Math.round(pesata(stat.map((v) => v[1]), a.ruolo))) : s.val;
-    const forte = stat.reduce((m, v) => (v[1] > m[1] ? v : m))[0];
-    return { nome: x[0], numero: x[2], reparto: x[1], ruolo: a.ruolo, piede: a.piede, altezza: a.altezza, val, base: s.val, stat, forte, fascia: fascia(val), origine: a.club };
+    const forte = stat.reduce((m, v) => (v[1] > m[1] ? v : m))[0], migliorato = !!cr && Object.values(cr).some((v) => v > 0);
+    return { nome: x[0], numero: x[2], reparto: x[1], ruolo: a.ruolo, piede: a.piede, altezza: a.altezza, val, base: s.val, migliorato, stat, forte, fascia: fascia(val), origine: a.club };
   };
   /** La valutazione di un giocatore messo in un altro posto: stesse statistiche, pesi del posto. */
   const valoreIn = (sc, posto) => {

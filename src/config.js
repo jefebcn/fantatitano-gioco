@@ -390,6 +390,39 @@ export const ECONOMIA = {
   },
 };
 
+
+// ---------- Ritratti dei giocatori (home) ----------
+// I ritratti sono resi una volta sola con Blender (docs/ritratti.md) e composti dal gioco: la testa del giocatore, sopra
+// la maglia coi colori della sua squadra, in cima i capelli che cadono davanti alla maglia. Questi numeri devono
+// restare uguali a quelli di scripts/blender/render_ritratti.py e scripts/ritratti_webp.py.
+// cartella: dove stanno i file. lato: le due misure dei file.
+// taglio: la parte del ritratto che entra nella carta (da dove parte, di lato e dall'alto, quanto è larga e quanto è
+//   alta, in parti dell'immagine) e da quale misura di file si prende. `piccolo` è per le carte piccole dei campi
+//   stretti, dove il viso riempie lo scudo. `carta` e `scheda` sono lo stesso ritaglio, alto e stretto, della carta
+//   grande (misure prese dalla foto di riferimento di Alex): la testa larga il 63% del ritaglio, i capelli in cima, il
+//   mento all'82% dell'altezza, sotto collo e maglia. `scheda` lo prende dal file grande.
+// mappa: i metri coperti dalla mappa della maglia, di lato e in altezza rispetto agli occhi. occhi: a che altezza stanno
+//   gli occhi sul calciatore della partita, per usare gli stessi disegni delle sue maglie (src/divisa.js).
+// bianco: la luce della stoffa bianca più chiara (vale come bianco pieno). ombre: quanto si approfondiscono le pieghe.
+// filo: quanta luce tengono i colori scuri, perché le pieghe si vedano anche sul nero.
+// scolli: quale maglia per ogni colletto della partita (il colletto piccolo non c'è ancora: per ora è un girocollo).
+// insieme: quanti ritratti si compongono per volta, per non fermare la schermata.
+export const RITRATTI = {
+  cartella: 'img/ritratti/', lato: { piccolo: 256, grande: 512 }, taglio: { piccolo: { x: .18, y: .055, largo: .64, alto: .64, lato: 'piccolo' }, carta: { x: .24, y: .025, largo: .6, alto: .726, lato: 'piccolo' }, scheda: { x: .24, y: .025, largo: .6, alto: .726, lato: 'grande' } },
+  mappa: { x: [-.6, .6], z: [-.5, .1] }, occhi: 1.65,
+  bianco: .86, ombre: 2.2, filo: .07,
+  scolli: { giro: 'girocollo', v: 'v', polo: 'girocollo' },
+  insieme: 4,
+};
+// Carta grande del giocatore: larghezza diviso altezza della cornice, misurata sulla foto di riferimento di Alex
+// (docs/carte-giocatori.md). Le altre proporzioni della carta sono nello stile (src/casa/stile.css).
+export const CARTA_GRANDE = { forma: .737 };
+// La schermata Squadra (docs/navigazione.md §3.3), con le misure date da Alex il 23/11.
+// carta: quanto è larga una carta, in parti della larghezza dello schermo (uguale in campo e tra i sostituti).
+// stretto: la mezza larghezza del campo in alto, in percento (in basso è 50): il lato alto è il 55% di quello basso.
+// trascina: di quanti punti deve muoversi il dito perché una carta o un incarico cominci a seguirlo.
+// lungo: dopo quanti millesimi un dito fermo su una carta apre la scheda del giocatore.
+export const SQUADRA = { carta: .055, stretto: 27.5, trascina: 10, lungo: 520 };
 // ---------- Valutazioni mostrate (home, carte dei giocatori, mercato) ----------
 // La forza usata in partita non cambia: qui si decide solo che numero si vede. Funzioni in src/dati/scala.js.
 // interno: la scala di lavoro, dal giocatore più debole al più forte del suo reparto (portieri, difensori,
@@ -399,8 +432,10 @@ export const ECONOMIA = {
 //   55 e 75, i migliori tra 76 e 82, oltre 85 solo chi si allena molto.
 // stat: il minimo e il massimo di una statistica mostrata. rumore: di quanto una statistica si scosta, giocatore per
 //   giocatore, dal profilo del suo ruolo.
-// fasce: da che valutazione la carta è argento e da quale è oro (sotto è bronzo). colori: da che valore una statistica è
-//   gialla e da quale è verde (sotto è rossa).
+// fasce: il colore della carta dice la rarità. Da che valutazione la carta è azzurra (i rari) e da quale è oro (i
+//   più forti: tutti i capitani che si possono ingaggiare); sotto è bronzo. Si parte con una rosa di bronzi e il capitano
+//   d'oro, e con le stagioni si sale. cerchio: da che valutazione il cerchio della carta è verde (sotto è rosso).
+// colori: da che valore una statistica è gialla e da quale è verde (sotto è rossa).
 // capitani: tra quali valutazioni stanno i candidati di «Ingaggia il tuo capitano» e quanti sono.
 // basso: il valore interno di chi ha quotazione 1. Serve ai giocatori inventati delle divisioni sotto il Campionato
 //   Sammarinese, più deboli del più debole giocatore vero: sotto il minimo vero la quotazione scende fino a 1.
@@ -409,7 +444,8 @@ export const SCALA = {
   punti: [[30, 42], [55, 55], [65, 60], [72, 64], [78, 68], [82, 71], [85, 75], [88, 82], [100, 90]],
   stat: [30, 99],
   rumore: 5,
-  fasce: { argento: 65, oro: 75 },
+  fasce: { azzurro: 60, oro: 70 },
+  cerchio: 60,
   colori: [60, 72],
   capitani: { min: 70, max: 78, quanti: 9 },
   basso: 20,

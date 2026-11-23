@@ -115,14 +115,14 @@ Un'altra sessione lavora sulla partita: questa non tocca i suoi file senza averl
 | 5 | Home a otto carte (`home.js`): righe al 38, 27 e 35%; nessun testo abbreviato o tagliato (nomi delle squadre in tre misure, `src/dati/squadre.js`); Carriera con le tre competizioni e la prossima partita; Percorso premi coi livelli da 1 e i prossimi quattro premi; Squadra con la fascia «C»; Mercato con la carta del giocatore, lo stemma e il prezzo; Scenario col premio; sfondo blu notte con vignettatura | fatta, coi dati veri; restano le illustrazioni (segnaposto) e il premio ridotto dell'amichevole |
 | 6 | Carriera (`vista-carriera.js`): prossima partita con «Gioca adesso», classifica a cinque righe con le medaglie, Trofeo dei Castelli, Coppa Titano, quattro scorciatoie. Stagione nuova con finestra di conferma (`finestra.js`). Classifica a pari punti: differenza reti, gol fatti, nome. Tolta la schermata di prima e 200 regole di stile rimaste senza uso | fatto |
 | 7 | Sfida (`vista-sfida.js`): due campi in prospettiva con le carte a scudo dei giocatori secondo il modulo (`giocatore.js`: valutazione, ritratto, ruolo, energia, nome, fascia «C», avviso di fuori ruolo), competizione, fase, ora e tempo al centro, sotto ogni campo stemma, nome, stelle, modulo e maglia della partita; in basso Squadra, Riscaldamento e Gioca. La partita parte dal ponte e alla fine la home registra il risultato, salva l'energia e mostra il premio in una finestra. Energia tra le partite, riscaldamento e orario in `src/carriera.js`, coi numeri in `ECONOMIA.energia` e `METEO` | fatto |
-| carte | Cornice delle carte ridisegnata sul modello di Alex (`docs/riferimenti/modello-carte.png`): scudo con angoli smussati e punta, bordo, riflessi, tre fasce. Tre misure in `giocatore.js`: grande (tutto dentro, nome su fascia scura, stemma ed energia), piccola (per i campi stretti, nome sotto) e mini (Home). Usata in Home, Sfida, Squadra, scheda del giocatore e scelta del capitano | fatto |
-| 8 | Squadra (`vista-squadra.js`): titolo «Gestione squadra» nella barra; campo in prospettiva con gli undici (`campo.js`), panchina a due colonne, Modulo, Riserve, Fisioterapista, Allenatore, i quattro incarichi, «Squadra migliore» (`rosa.js`). Scambio a tocchi o trascinando, tocco lungo per la scheda del giocatore (`scheda-giocatore.js`: statistiche, altezza, piede, valore, capitano, allena, vendi). In `src/carriera.js`: `schiera`, `spostaGiocatori`, incarichi, fisioterapista | fatto |
+| carte | Carta del giocatore rifatta il 22/11 sulle misure della foto di riferimento di Alex (`docs/carte-giocatori.md`): cornice a scudo con lato alto ad arco e punta, cerchio della valutazione colorato in alto a sinistra, ritratto a destra, fascia chiara col nome, riga con stemma, energia e ruolo colorato per reparto, stellina nella punta. Tre misure in `giocatore.js`: grande (tutto dentro), piccola (per i campi stretti, nome sotto) e mini (Home). Usata in Home, Sfida, Squadra, scheda del giocatore e scelta del capitano | fatto; dentro la carta grande le scritte seguono le proporzioni della carta (sola eccezione ai 12 px) |
+| 8 | Squadra (`vista-squadra.js`), rifatta il 23/11 con la struttura e le misure date da Alex (`SQUADRA` in `src/config.js`, percentuali nello stile): niente titolo; a sinistra quattro pulsanti bassi (modulo, Riserve, Fisioterapista, Allenatori); campo in prospettiva da sotto la barra al bordo in basso, con le frecce verso l'attacco (`campo.js`); carte larghe il 5,5% dello schermo; a destra la tessera «Squadra migliore» (`rosa.js`) e il riquadro azzurro «Sost (8/8)». Due carte si scambiano con due tocchi o trascinandone una sull'altra; la carta scelta ha il pulsante «Scheda», e la scheda si apre anche con la pressione lunga (`scheda-giocatore.js`: statistiche, altezza, piede, valore, capitano, allena, vendi); capitano, rigori, punizioni e angoli si passano trascinando la linguetta accanto alla carta. I pulsanti di sinistra si vedono bassi ma si toccano su 44 px. Dietro il campo, in basso a sinistra, le Tre Torri del Titano appena visibili. Chi è fuori ruolo ha il ruolo bordato di rosso. Barra in alto nuova (`barra.js`). In `src/carriera.js`: `schiera`, `spostaGiocatori`, incarichi, fisioterapista | fatto |
 | economia | Carriera a cinque divisioni, economia, diamanti e strutture approvate da Alex (`docs/home-spec.md` §5): sessanta squadre inventate (`src/dati/divisioni.js`), obiettivi, promozione e retrocessione, valore dei giocatori, vendita e svincolo, allenatori in inventario, lista trasferimenti, osservatore, agente, offerte a tempo, sette strutture, fisioterapista a tre interventi, riscaldamento, serie di sette giorni (`src/carriera.js`, numeri in `DIVISIONI`, `STAGIONE`, `ECONOMIA` di `src/config.js`). Collegata a Home, Carriera, Sfida, Squadra e scheda del giocatore; pannelli semplici per Mercato, Il mio club e «Come guadagnare» (`vista-economia.js`). Simulazione: `node scripts/simula-carriera.mjs` | fatto; l'aspetto di Mercato e Club arriva coi passi 9 e 10 |
 | 9–11 | Mercato, Il mio club, Sfide | da ridisegnare: funzionano già con le regole nuove, ma con l'aspetto di prima sotto la barra nuova |
 | 12 | Database dell'economia | fermo per decisione di Alex (21/11): saldo e storico restano sul telefono. Il file SQL è da riscrivere coi numeri nuovi; la proposta della «cassa» è in `docs/ponte-partita.md` §9 |
 
 Immagini: tutte le 26 illustrazioni sono **segnaposto** (nessuna consegnata); icone e cornici **definitive**; ritratti:
-quelli che il gioco disegna da sé, in attesa dei render da Blender.
+**definitivi**, resi con Blender (sezione «Ritratti»).
 
 Controllo delle schermate: `node scripts/prove/schermate.cjs cartella` fotografa tutto alle tre misure di iPhone e, nelle
 parti rifatte (barra, Home, Carriera, Sfida, Squadra, scheda del giocatore, finestre), controlla le regole di qualità: testo mai sotto 12 px, niente tagli, niente fuori schermo,
@@ -166,25 +166,26 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   la home prepara all'avvio.
 
 ## Ritratti (21/11)
-Come sono fatti e come si rifanno: `docs/ritratti.md`. Strumenti: `scripts/blender/render_ritratti.py`, `scripts/ritratti_webp.py`.
+Come sono fatti, chi ha quale volto e come si rifanno: `docs/ritratti.md`. Strumenti: `scripts/aspetti.mjs`,
+`scripts/blender/render_ritratti.py`, `scripts/blender/tutti.sh`, `scripts/ritratti_webp.py`, `scripts/volti.mjs`.
 
-- **Stato**: terzo foglio di prova da 12 mandato ad Alex; **gli altri non si generano prima del suo OK**. Nel gioco i
-  ritratti sono ancora quelli vecchi.
-- **Decisioni di Alex**: maglia neutra colorata dal gioco; un ritratto per ogni giocatore vero e circa 150 volti
-  condivisi per inventati e mercato, mai due facce uguali nella stessa rosa o nella stessa partita; di base girocollo o
-  scollo a V, colletto piccolo solo come variante di alcune squadre; colore degli occhi legato alla pelle.
-- **Terzo giro, fatto**: ritratto a strati (testa del giocatore, maglia uguale per tutti e colorata dopo, capelli e
-  barba che le cadono davanti); girocollo e scollo a V al posto della polo; righe e scacchi che seguono la stoffa; pelle
-  meno liscia e meno lucida con la luce di contorno neutra; sopracciglia a peli veri; occhi scuri con le pelli scure;
-  attaccatura dei capelli sfumata; velo di barba.
-- **Ancora da fare sui ritratti**: il colletto piccolo (due prove non all'altezza: serve un modello suo).
-  `docs/riferimenti/modello-carte.png` non è nel repository: il confronto affiancato manca ancora.
+- **Stato (22/11)**: Alex ha approvato il terzo foglio di prova e ha chiesto tutti i ritratti. **Tutti generati**: 415
+  volti (265 giocatori veri + 150 condivisi), in `public/img/ritratti/`; l'elenco per il gioco è `src/dati/volti.json`
+  (da rifare con `node scripts/volti.mjs` se cambiano i volti). I fogli completi sono stati mandati ad Alex.
+- **Nel gioco, fatto**: la home compone i ritratti nuovi (`src/casa/ritratti.js`, numeri in `RITRATTI` di
+  `src/config.js`): testa, maglia coi colori e i disegni della squadra in cui il giocatore gioca adesso, capelli
+  davanti. Carte piccole col viso, carta grande col busto. Se un ritratto manca o non si carica resta quello vecchio, disegnato
+  dal modello 3D.
+- **Regola dei volti, fatta**: un volto per ogni giocatore vero; 150 condivisi per inventati e mercato, mai due facce
+  uguali nella stessa rosa né tra un'altra squadra e la mia (nella mia rosa i volti restano scritti nella carriera).
+- **Decisioni di Alex**: maglia neutra colorata dal gioco; di base girocollo o scollo a V, colletto piccolo solo come
+  variante di alcune squadre; colore degli occhi legato alla pelle.
+- **Ancora da fare**: il colletto piccolo (per ora chi ha la polo in partita ha il girocollo nel ritratto); gli avatar
+  del manager sono ancora quelli vecchi del modello 3D. `docs/riferimenti/modello-carte.png` non è nel repository: il
+  confronto affiancato con il modello non è stato fatto. Giro completo delle foto alle tre misure di iPhone con tutti i
+  volti: fatto il 22/11, nessun errore.
 - **Tempi** (computer cloud, 4 processori, senza scheda grafica, 800 punti di lato, 256 campioni con soglia di rumore):
-  in media 77 secondi a volto (da 50 a 160: il più lento è chi ha i capelli lunghi, che ha anche lo strato «sopra»), più
-  3 di preparazione; ogni maglia 26 secondi, una volta sola. 265 veri + 150 condivisi = 415 volti: circa 9 ore; a 1024
-  punti circa 15.
-- **Peso**: testa a 512 e 256 punti insieme circa 27 KB a volto (415 volti: circa 11 MB); le due maglie 345 KB in tutto.
-- **Dopo l'OK, da fare**: l'«aspetto» di ogni giocatore vero nei dati e l'insieme dei 150 condivisi; lo scollo di ogni
-  squadra nei dati; la regola che assegna i volti senza doppioni in rosa e in partita; nel gioco, il conto che colora la
-  maglia (lo stesso di `componi` in `scripts/ritratti_webp.py`) e i ritratti nuovi al posto di quelli disegnati dal
-  modello 3D.
+  in media 67 secondi di render a volto (chi ha i capelli lunghi arriva a 160, perché ha anche lo strato «sopra»), circa
+  80 contando preparazione e passaggio a WebP; ogni maglia 26 secondi, una volta sola. 415 volti: poco più di 9 ore.
+- **Peso**: testa a 512 e 256 punti insieme circa 27 KB a volto (415 volti, coi 35 strati «sopra» e le maglie: 12,5 MB in tutto); le due maglie 345 KB.
+  I ritratti non si precaricano: ogni telefono prende solo quelli che guarda.
