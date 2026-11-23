@@ -110,7 +110,7 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 #chi,#en{display:none!important}
 /* palle ferme come Dream League: tipo sotto il tabellone, comandi nascosti, icone dei calci piazzati, dissolvenza della rimessa */
 #tipo{position:absolute;top:calc(var(--su) + var(--alto) + 6px);left:calc(var(--sx) + var(--alto) + 6px);font-family:Anton;font-size:14px;letter-spacing:.08em;text-transform:uppercase;background:var(--lime);color:var(--ink);padding:3px 12px 2px;border-radius:7px;display:none}
-#hud.fermo #tipo:not(:empty){display:block}#hud.fermo #stickZona,#hud.fermo #tasti{visibility:hidden}
+#hud.fermo #tipo:not(:empty){display:block}#hud.fermo:not(.batte) #stickZona,#hud.fermo:not(.batte) #tasti{visibility:hidden}
 #icone{position:absolute;top:calc(var(--su) + var(--alto) + 6px);right:calc(env(safe-area-inset-right,0px) + 8px);display:none;gap:6px}#hud.piazzato #icone{display:flex}
 #icone button{width:38px;height:38px;border-radius:10px;background:rgba(10,10,12,.6);color:#fff;pointer-events:auto;padding:7px}#icone svg{width:100%;height:100%}
 #buio{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:19}#buio.va{animation:buio var(--d) ease-in-out both}

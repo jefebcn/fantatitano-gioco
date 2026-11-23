@@ -3,7 +3,7 @@
 
 ## Dove siamo
 - Produzione: https://fantatitano-gioco.vercel.app (non pubblico, noindex).
-- Rete di sicurezza: `npm run partite` (partite riproducibili + obiettivi), `scripts/prove/rigori.cjs`,
+- Rete di sicurezza: `npm run partite` (partite riproducibili + obiettivi), `scripts/prove/rigori.cjs`, `riprese.cjs`,
   `scripts/prove/fluidita.cjs`, CI `.github/workflows/prove.yml` a ogni PR.
 - IA: TENUTA (regola GameplayFootball), PRESSING a due, CALCI (angoli dal gioco, fuorigioco), PASSA.
 - Animazioni GameplayFootball: esultanze, rimessa con le mani, testa, scivolata/caduta + rialzarsi, cartellino,
@@ -105,6 +105,17 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   la levetta o va sempre in porta?); cambio automatico del giocatore in difesa; calcio d'inizio che aspetta il passaggio.
 - Strumenti: `scripts/prove/diagnosi.cjs`, `tiri.cjs`, `registra.cjs`, `rivedi.cjs`, `analisi-partita.py` (righe in
   `docs/RICETTE.md`).
+
+## Video di Alex del 23/11 sera: quindici punti, una PR per punto
+- Elenco completo nel messaggio di Alex (priorità 1 riprese, 2 palla e passaggi, 3 luci e campo, 4 telecamera,
+  interfaccia, animazioni). Alla fine: video di 30 s con calcio d'inizio, punizione e rimessa.
+- 1, 2, 3 FATTI insieme (stessa regola, stesso meccanismo): nessuna ripresa parte da sola. `G.attesa`, `aspetta`,
+  `attesaPasso`, `postoFermo` in `src/game.js`; valori in `FERMI`; prova `scripts/prove/riprese.cjs` (anche in CI).
+  32 partite, semi 7–38: 0 anomalie, tiri e gol dentro il rumore. Dettagli in `docs/dls-gameplay.md` §7.
+- Da chiedere ad Alex: cosa fanno le tre icone in alto a destra; se sulla rimessa dal fondo il pallone va a terra.
+- Restano: 4 palla più visibile, 5 palla vagante e cambio giocatore, 6 peso dei passaggi, 7 luci, 8 ombre, 9 strisce
+  dell'erba, 10 cartelloni, 11 telecamera vicino alla linea, 12 nomi sovrapposti, 13 tasto A in difesa (chiedere),
+  14 maglie simili, 15 animazioni (video rallentato dei 5 gesti).
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato
