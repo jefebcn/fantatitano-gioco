@@ -151,6 +151,8 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   con le monete delle sfide dimezzate. Giocatore forte (65/20/15): 4,7 stagioni; debole (40/30/30): 15. Dal 23/11 c'è
   anche il premio di fine campionato per piazzamento (dal secondo all'ottavo posto, `ECONOMIA.premi.piazzamento`): circa
   due vittorie a stagione in più, senza cambiare questi tempi.
+- **Moduli** (23/11): da 8 a 15, i sette nuovi in coda a `FORMS` partendo dalla tabella MIT citata in `docs/crediti.md`.
+  Il Centro allenamento ne apre 4, 6, 8, 10, 12, 15 secondo le stelle. La finestra di scelta li mostra su cinque colonne.
 - **Carriere di prima**: non si possono continuare, si riparte da zero (la versione del salvataggio è la 2).
 - **Come arriva alla partita**: la partita conosce un numero solo per giocatore, la `forza`. Crescita con gli allenatori,
   riscaldamento e Curva dei tifosi ci stanno dentro. Le squadre inventate arrivano per intero nella richiesta; lo stemma

@@ -28,6 +28,8 @@ radice.addEventListener('click', (e) => {
 export function finestra({ titolo, testo = '', corpo = '', si = '', no, fatto, soloSi = false, scelte = null }) {
   el('finT').textContent = titolo; if (corpo) el('finP').innerHTML = corpo; else el('finP').textContent = testo; el('finP').classList.toggle('nas', !testo && !corpo); el('finSi').textContent = si; el('finNo').textContent = no || t('finestra.annulla');
   el('finS').innerHTML = scelte ? scelte.map((s) => `<button class="bottone${s.attiva ? '' : ' secondo'}" data-scelta="${String(s.valore).replace(/[<>&"]/g, '')}"><b>${s.testo}</b>${s.nota ? `<i>${s.nota}</i>` : ''}</button>`).join('') : '';
+  // con tante scelte (i moduli) la finestra si allarga e le mette su cinque colonne, così stanno tutte nello schermo
+  radice.classList.toggle('larga', !!scelte && scelte.length > 8);
   el('finS').classList.toggle('note', !!scelte && scelte.some((x) => x.nota)); el('finS').classList.toggle('nas', !scelte); el('finSi').classList.toggle('nas', !!scelte); el('finNo').classList.toggle('nas', soloSi || !!scelte);
   quando = fatto; radice.classList.remove('nas');
 }
