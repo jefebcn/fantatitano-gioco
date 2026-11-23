@@ -197,7 +197,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Scenario | da fare (serve l'aggancio nella partita) |
 | Percorso premi, Sfide | esistono, da risistemare (schede, giorni di fila) |
 | Amichevole | esiste |
-| Squadra | fatta, con la struttura del 23/11: quattro pulsanti a sinistra, campo fino al bordo in basso, sostituti a destra, incarichi trascinabili, squadra migliore, scheda del giocatore |
+| Squadra | fatta, con la struttura del 23/11: quattro pulsanti a sinistra, campo fino al bordo in basso, sostituti a destra, «C» del capitano trascinabile, rigori, punizioni e angoli dalla scheda del giocatore, squadra migliore |
 | Mercato | esiste a scambio, da rifare |
 | Il mio club, Stadio e strutture | esiste con stadio e allenatore, da rifare con le 6 strutture |
 | Personalizza, Negozio | dal 23/11 sono una sezione sola, «Personalizza», con cinque schede: Nome e colori (il modulo del club), Stemma, Divisa, Manager, Squadra (i pezzi che si comprano). Passare da una scheda all'altra non aggiunge livelli: Indietro torna da dove si è venuti. L'anteprima mostra la maglia vera (il busto del modello 3D) |

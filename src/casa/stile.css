@@ -342,8 +342,8 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 /* chi gioca fuori ruolo ha il ruolo su fondo rosso; sulle carte più strette il ruolo si vede solo in quel caso */
 .gRuolo.fuori{padding:0 .22em;border-radius:.18em;background:var(--c-uf);color:#fff}
 .gC.senzaRuolo .gRuolo:not(.fuori){display:none}
-/* chi è stato allenato: una piccola freccia verde che sale, sotto il ruolo */
-.gFreccia{position:absolute;left:calc(var(--gw)*var(--c-ux));top:calc(var(--gh)*var(--c-zy));transform:translate(-50%,-50%);display:block;width:calc(var(--gw)*var(--c-zl));height:calc(var(--gw)*var(--c-zl)*1.2);filter:drop-shadow(0 0 1px #04260F) drop-shadow(0 0 1px #04260F)}
+/* chi è stato allenato: una piccola freccia verde che sale, in fondo alla colonna sotto il ruolo */
+.gFreccia{flex:none;display:block;width:calc(var(--gw)*var(--c-zl));height:calc(var(--gw)*var(--c-zl)*1.2);filter:drop-shadow(0 0 1px #04260F) drop-shadow(0 0 1px #04260F)}
 .gFreccia i{display:block;width:100%;height:100%;background:linear-gradient(180deg,#7CF59A,#1FB84A);clip-path:polygon(50% 0,100% 48%,70% 48%,70% 100%,30% 100%,30% 48%,0 48%)}
 /* la fascia del nome, col cognome bianco al centro (giocatore.js lo fa stare dentro) */
 .gNome[data-nome]{position:absolute;left:0;right:0;top:calc(var(--gh)*var(--c-fd));height:calc(var(--gh)*var(--c-fa));display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--c-fc);color:#fff;font:800 max(var(--c-np),calc(var(--gw)*var(--c-fn)))/1 Montserrat,sans-serif;text-transform:uppercase;white-space:nowrap}
@@ -357,16 +357,20 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .gEn b{display:block;height:100%;background:var(--c-ea)}
 .gEn.e-m b{background:var(--c-em)}
 .gEn.e-b b{background:var(--c-eb)}
-/* la «C» del capitano e gli incarichi: tondi in alto a destra, appena fuori dal bordo */
-.gSegni{position:absolute;right:calc(var(--gw)*var(--c-gf)*-1);top:calc(var(--gw)*var(--c-gf)*-1);display:grid;gap:calc(var(--gw)*var(--c-gg))}
-.gSegni .fasciaC,.gSegno{display:grid;place-items:center;width:calc(var(--gw)*var(--c-gl));height:calc(var(--gw)*var(--c-gl));border-radius:50%;font:800 max(var(--c-np),calc(var(--gw)*var(--c-gl)*.64))/1 Montserrat,sans-serif;font-style:normal;box-shadow:0 0 0 max(1px,calc(var(--gw)*var(--c-bs))) #0B1530}
+/* la «C» del capitano e gli incarichi: tondi in colonna a sinistra, sotto il ruolo, dove non coprono il viso. Gli
+   incarichi sono più piccoli e si vedono solo sulla carta intera (la scheda): su quella stretta non ci stanno */
+.gSegni{--filo:max(1px,calc(var(--gw)*var(--c-bs)/2));position:absolute;left:calc(var(--gw)*var(--c-gx));top:calc(var(--gh)*var(--c-gy));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:calc(var(--gw)*var(--c-gg) + var(--filo)*2)}
+.gSegni .fasciaC,.gSegno{flex:none;display:grid;place-items:center;width:calc(var(--gw)*var(--c-gl));height:calc(var(--gw)*var(--c-gl));border-radius:50%;font:800 max(var(--c-np),calc(var(--gw)*var(--c-gl)*.64))/1 Montserrat,sans-serif;font-style:normal;box-shadow:0 0 0 var(--filo) #0B1530}
+.gSegno{width:calc(var(--gw)*var(--c-gp));height:calc(var(--gw)*var(--c-gp))}
+.gC.stretta .gSegno{display:none}
 .gSegni .fasciaC{background:linear-gradient(160deg,#FFE27A,#F5B90F);color:#0B1530}
 .gSegno{background:linear-gradient(160deg,#1B2C5E,#0B1530);color:#3FC6FF}
 .gSegno .ico{width:64%;height:64%}
-/* la carta stretta (campo e sostituti): niente statistiche, la fascia del nome scende e arriva in fondo, con l'energia
-   sotto il cognome; il ritratto è più grande, per arrivare alla fascia */
+/* la carta stretta (campo, sostituti, Home): niente statistiche, la fascia del nome scende e arriva in fondo, con
+   l'energia sotto il cognome. In quella ampia (Home) il ritratto è più grande e arriva alla fascia */
 .gC.stretta .gRit{clip-path:inset(calc(var(--gh)*var(--c-rp)*-1) 0 calc(var(--gh)*(1 - var(--c-kf))) 0)}
 .gC.stretta .gFoto{left:calc(var(--gw)*var(--c-ks));top:calc(var(--gw)*var(--c-ka));width:calc(var(--gw)*var(--c-kl));height:calc(var(--gw)*var(--c-kl))}
+.gC.ampia .gFoto{left:calc(var(--gw)*var(--c-as));top:calc(var(--gw)*var(--c-aa));width:calc(var(--gw)*var(--c-al));height:calc(var(--gw)*var(--c-al))}
 .gC.stretta .gRit img.gFoto.vecchio{left:calc(var(--gw)*var(--c-os));top:calc(var(--gh)*var(--c-oa));width:calc(var(--gw)*(1 - var(--c-os)));height:calc(var(--gh)*(var(--c-kf) - var(--c-oa)))}
 .gC.stretta .gNome{top:calc(var(--gh)*var(--c-kf));height:auto;bottom:0;border-radius:0 0 var(--gr) var(--gr);font-size:max(var(--c-np),calc(var(--gw)*var(--c-kn)))}
 .gC.stretta.conEnergia .gNome{padding-bottom:calc(var(--gh)*var(--c-ba) + var(--gw)*var(--c-es))}
@@ -383,8 +387,8 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .gC.piccola .gVal{left:5%;top:3%;transform:none;font-size:var(--c-pt);text-shadow:0 0 2px var(--c-su),0 0 2px var(--c-su),0 0 1px var(--c-su)}
 .gC.piccola .gAvviso{position:absolute;right:-7px;bottom:6%;display:grid;width:15px;height:15px;color:#FF5A5A}
 .gC.piccola .gAvviso .ico{width:100%;height:100%}
-.gC.piccola .gFreccia{left:-5px;top:auto;bottom:8%;transform:none;width:10px;height:12px}
-.gC.piccola .gSegni{right:-7px;top:-3px}
+.gC.piccola .gFreccia{position:absolute;left:-5px;bottom:8%;width:10px;height:12px}
+.gC.piccola .gSegni{left:auto;right:-7px;top:-3px;transform:none}
 .gC.piccola .gSegni .fasciaC{width:16px;height:16px;font-size:12px}
 .gC.piccola .gEn{position:relative;display:block;width:calc(var(--gw)*.88);height:3px;margin-top:2px;border-radius:2px;background:rgba(0,0,0,.6);overflow:hidden}
 .gC.piccola .gNome{width:100%;text-align:center;font:400 var(--gf,13px) "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.03em;line-height:1;color:#fff;white-space:nowrap;overflow:hidden;text-shadow:0 1px 2px rgba(0,0,0,.85)}
@@ -484,9 +488,9 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 /* le Tre Torri del Titano dietro il campo, appena visibili */
 .qTorri{position:absolute;left:-1%;bottom:-3%;width:33%;aspect-ratio:1;fill:#A9D4FF;opacity:.13;pointer-events:none}
 .gC.ombra{filter:drop-shadow(0 6px 8px rgba(0,0,0,.6))}
-/* le linguette degli incarichi si prendono col dito: il posto da toccare è più largo di quello che si vede */
+/* la «C» del capitano si prende col dito: il posto da toccare è più largo di quello che si vede */
 #squadra .gSegni [data-inc]{position:relative;left:0;top:0;cursor:grab;touch-action:none}
-#squadra .gSegni [data-inc]::before{content:"";position:absolute;inset:-1px -10px -1px -3px}
+#squadra .gSegni [data-inc]::before{content:"";position:absolute;inset:-5px}
 .qSegnoMobile{display:grid;place-items:center;border-radius:50%;font-weight:800;font-family:Montserrat,sans-serif;font-style:normal;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 5px 8px rgba(0,0,0,.5)}
 .qSegnoMobile .ico{width:70%;height:70%}
 
@@ -540,11 +544,10 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 
 /* ---------- scheda del giocatore: carta grande, statistiche col nome intero, altezza, piede, valore, azioni ---------- */
 #schedaG{position:fixed;inset:0;z-index:38;display:grid;place-items:center;padding:10px;background:rgba(3,7,20,.78);font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff}
-#schedaG .foglio{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) minmax(128px,auto);gap:14px;align-items:center;width:min(720px,100%);max-height:100%;overflow:auto;padding:14px 16px;border-radius:14px;border:1px solid rgba(232,182,76,.7);background:linear-gradient(170deg,#12244F,#0A1330)}
+#schedaG .foglio{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) fit-content(26%);gap:12px;align-items:center;width:min(720px,100%);max-height:100%;overflow:auto;padding:14px 16px;border-radius:14px;border:1px solid rgba(232,182,76,.7);background:linear-gradient(170deg,#12244F,#0A1330)}
 #schedaG .chiudi{position:absolute;top:0;right:0;width:44px;height:44px;display:grid;place-items:center;background:none;color:#fff}
 #schedaG .chiudi .ico{width:20px;height:20px}
-/* la carta ha la «C» che esce a destra: un po' di posto in più prima dei dati */
-.sgCarta{padding-right:6px}
+.sgCarta{padding-right:2px}
 .sgDati{min-width:0}
 .sgDati h3{margin:0 0 8px;font:400 26px/1 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.05em;color:#E8B64C;white-space:nowrap;overflow:hidden}
 .sgStat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px}
@@ -557,11 +560,14 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .sgInfo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.16)}
 .sgInfo b{display:flex;align-items:center;gap:3px;font:800 13px Montserrat,sans-serif;white-space:nowrap}
 .sgInfo b .ico{width:14px;height:14px}
-.sgAzioni{display:grid;gap:7px;align-self:end;margin-top:34px}
+.sgAzioni{display:grid;gap:7px;align-self:end;min-width:128px;margin-top:34px}
 .sgAzioni .azione{justify-content:flex-start;padding:0 12px}
 .sgAzioni .azione span{display:grid;justify-items:start;line-height:1.15;min-width:0}
 .sgAzioni .azione i{display:flex;align-items:center;gap:3px;font:600 12px Montserrat,sans-serif;font-style:normal;color:rgba(255,255,255,.84);white-space:nowrap}
 .sgAzioni .azione i .ico{width:13px;height:13px}
+/* l'elenco degli incarichi può essere lungo: va a capo invece di allargare la colonna dei pulsanti */
+.sgAzioni .azione[data-az="incarichi"]{padding-top:4px;padding-bottom:4px}
+.sgAzioni .azione[data-az="incarichi"] i{display:block;white-space:normal;text-align:left}
 
 /* ---------- le illustrazioni nelle sezioni ---------- */
 /* Regola comune: il testo sta a sinistra, sopra un velo scuro che sfuma verso destra, dove si vede l'immagine. */

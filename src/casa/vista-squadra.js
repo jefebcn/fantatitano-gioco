@@ -5,8 +5,9 @@
 // Due giocatori si scambiano, tra campo, sostituti e riserve, in due modi: toccandoli uno dopo l'altro, oppure
 // trascinando una carta sull'altra. Il primo tocco sceglie la carta, che si illumina e mostra un piccolo pulsante «Scheda»;
 // toccarla di nuovo, o toccare il vuoto, annulla. La scheda del giocatore si apre da quel pulsante o tenendo il dito
-// fermo sulla carta. Capitano, rigori, punizioni e angoli sono le linguette accanto alla carta di chi li ha: si
-// trascinano su un altro titolare per passargli l'incarico. Ogni cambio è salvato subito.
+// fermo sulla carta. Il capitano ha la «C» sulla carta, sotto il ruolo: si trascina su un altro titolare per passargli
+// la fascia. Rigori, punizioni e angoli non stanno sulle carte del campo: si vedono e si danno dalla scheda. Ogni
+// cambio è salvato subito.
 import * as CAR from '../carriera.js';
 import { FORMS, SQUADRA, CARTA } from '../config.js';
 import { adatto, postiModulo } from '../dati/scala.js';
@@ -69,7 +70,7 @@ function pulsanteScheda() {
   b.style.left = `${r.left + r.width / 2 - q.left}px`; b.style.top = `${(sopra ? r.top - alto + margine - 1 : r.bottom - margine + 1) - q.top}px`;
 }
 
-// il campo con gli undici titolari: ognuno al suo posto del modulo, con le linguette degli incarichi e il ruolo
+// il campo con gli undici titolari: ognuno al suo posto del modulo, con la «C» del capitano e il ruolo
 // bordato di rosso se gioca fuori ruolo
 function campo(c, m) {
   const el = radice.querySelector('.qCampo'), r = el.getBoundingClientRect(); if (!r.width) return;
@@ -142,8 +143,8 @@ function migliore() {
   CAR.schiera(K, CLUBS, r.ordine.map((i) => tutti[i].x), r.fuori.map((i) => tutti[i].x)); dopoCambio(); scelto = null; avviso(t('squadra.schierata')); disegnaSquadra();
 }
 
-// Tocco, pressione lunga e trascinamento. Si prende una carta oppure la linguetta di un incarico: spostando il dito di
-// SQUADRA.trascina punti la cosa presa lo segue. Una carta lasciata sopra un'altra le scambia; una linguetta lasciata
+// Tocco, pressione lunga e trascinamento. Si prende una carta oppure il segno di un incarico: spostando il dito di
+// SQUADRA.trascina punti la cosa presa lo segue. Una carta lasciata sopra un'altra le scambia; un segno lasciato
 // sopra un titolare gli passa l'incarico. Il dito fermo su una carta per SQUADRA.lungo millesimi apre la scheda. Senza
 // spostamento e senza attesa è un tocco: arriva come «click». Dopo una pressione lunga o un trascinamento il «click» che
 // segue subito non conta.

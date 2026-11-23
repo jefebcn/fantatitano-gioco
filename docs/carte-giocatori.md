@@ -30,12 +30,16 @@ moltiplicazioni per la larghezza (`--gw`) o l'altezza (`--gh`) della carta. La s
 
 ## Cosa si vede a ogni larghezza
 La carta è una sola; cosa mostra dipende da quanto è larga (lo decide `cartaGiocatore` dalla larghezza che riceve).
-- **Da 64 punti in su** (`CARTA.stretta.sotto`): tutto, con le tre statistiche. Scheda del giocatore (metà
-  dell'altezza dello schermo, non più del 24% della larghezza né di 200 punti: 160, 195 e 200 alle tre misure di
-  iPhone), Mercato (100), riquadri della Home dove c'è posto.
-- **Sotto i 64 punti**, la carta stretta: niente statistiche, la fascia del nome parte da 0,78 H e arriva in fondo, il
-  cognome è più grande e l'energia sta sotto il cognome. Campo e sostituti della Squadra (il 5,5% della larghezza dello
-  schermo: 37, 46 e 51 punti alle tre misure di iPhone), scelta del capitano (54).
+- **Da 100 punti in su** (`CARTA.stretta.sotto`): tutto, con le tre statistiche. Scheda del giocatore (metà
+  dell'altezza dello schermo, non più del 23% della larghezza né di 200 punti: 153, 194 e 200 alle tre misure di
+  iPhone) e Mercato (100). Regola di Alex del 23/11: sotto i 100 punti niente statistiche.
+- **Sotto i 100 punti**, la carta stretta: niente statistiche, la fascia del nome parte da 0,78 H e arriva in fondo, il
+  cognome è più grande e l'energia sta sotto il cognome, dentro la fascia.
+  - Campo e sostituti della Squadra (il 5,5% della larghezza dello schermo: 37, 46 e 51 punti alle tre misure di
+    iPhone) e scelta del capitano (54): ritratto alle misure della carta intera.
+  - Riquadri della Home (da 64 punti in su, la carta «ampia»: circa 70 punti dove c'è posto): nel posto lasciato dalle
+    statistiche il ritratto è più grande (1,232 W) e arriva alla fascia, con la stessa cima e lo stesso centro della
+    testa.
 - **Sotto i 36 punti** il ruolo non si mostra (si vede solo se è rosso, cioè fuori ruolo).
 - **Carta piccola** dei campi stretti della Sfida (da 22 a 32 punti): stessi colori, stesso ritratto con la testa che
   esce, valutazione a 12 punti, niente ruolo (chi è fuori ruolo ha un triangolino rosso); energia e nome stanno sotto
@@ -52,20 +56,22 @@ La carta è una sola; cosa mostra dipende da quanto è larga (lo decide `cartaGi
   puntini, il cognome non si taglia mai. Coi cognomi più lunghi dei dati (Scognamiglio, Pyantkivskyi, Mazzavillani,
   Colagiovanni, Garcia Rufer) entra tutto anche sulle carte da 37 punti del telefono più piccolo, senza scendere sotto
   i 5 punti.
-- **«C» del capitano e incarichi**: tondi dentro l'angolo in alto a destra della carta, larghi 0,19 W più il filo scuro
-  (0,22 W in tutto, come nella guida). La lettera non scende sotto i 5 punti.
+- **«C» del capitano e incarichi** (risposta di Alex del 23/11 notte): in colonna a sinistra, sotto il ruolo, dove non
+  coprono il viso. Prima la «C» (0,17 W), poi rigori, punizioni e angoli, più piccoli (0,09 W). Sulle carte strette i
+  quattro segni non ci stanno: lì si vede solo la «C», gli incarichi si vedono sulla carta della scheda. La «C» è nello
+  stesso posto dappertutto (campo, scheda, Home). In Squadra la «C» si trascina ancora su un altro titolare; rigori,
+  punizioni e angoli si danno dalla scheda, col pulsante «Incarichi». La freccia verde di chi è stato allenato sta in
+  fondo alla stessa colonna.
 - **Teste e carte vicine**: sul campo chi sta più in basso sta davanti; nei moduli con cinque linee le carte del campo
   si stringono di un punto o due (`SQUADRA.aria`) perché la testa non copra la carta della linea sopra.
 - **Home**: la carta entra intera nel riquadro, testa compresa. Dove di fianco restano almeno 110 punti per titolo e
-  testo è alta quanto tutto il riquadro (circa 70 punti di larghezza, con le statistiche); sul telefono più stretto sta
-  sotto il titolo (48 punti, senza statistiche). Di fianco, come nella guida: etichetta, nome e una riga «ruolo ·
-  valutazione» (Squadra) o «ruolo · prezzo» (Mercato, dove c'è posto), senza riquadri colorati. Per avere qui una carta
-  da 100 punti la riga in basso della Home dovrebbe essere alta 150 punti invece di 112: non ci sta senza togliere
-  spazio a Carriera e Percorso premi.
+  testo è alta quanto tutto il riquadro (circa 70 punti di larghezza); sul telefono più stretto sta sotto il titolo (48
+  punti). Non ha le statistiche (sono nella scheda) e il volto è più grande. Di fianco: etichetta, nome e una riga
+  «ruolo · valutazione» (Squadra) o «ruolo · prezzo» (Mercato, dove c'è posto), senza riquadri colorati.
 - **Liste**: nel Mercato la carta è larga 100 punti; i sostituti sono grandi come le carte in campo, senza statistiche,
   come nella guida.
 - **Fascia del nome nella carta stretta**: arriva in fondo alla carta, con la barretta dell'energia dentro, sul bordo
-  basso (così dicono i due messaggi di Alex; nel disegno sotto la fascia c'è ancora una striscia del colore della carta).
+  basso. La striscia sotto la fascia che si vede nel disegno era un errore della guida (Alex, 23/11).
 - **Ritratto mancante**: se il file non c'è resta il ritratto vecchio, ripreso dal modello 3D: sta tutto dentro la carta,
   a destra della valutazione.
 
