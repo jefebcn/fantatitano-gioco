@@ -226,6 +226,12 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   divisione; «+1, +2, +3» degli allenatori letti come punti sulle statistiche della categoria; prezzi in vittorie di
   osservatore, agente, riscaldamento e fisioterapista; costo delle stelle delle strutture; bonus della Curva 1% per
   stella; incasso dello Stadio; rosa mai sotto 16; chi arriva tra le ultime due scende anche con gli obiettivi fatti.
+- **Ritocchi dalla foto di Alex (23/11 sera)**: nella carta Carriera della Home divisione e stagione sono salite nella
+  fascia dorata (la `nota` di `carta`), così nome, righe e pulsante «Gioca» non toccano più la fascia; nella barra
+  diamanti e monete hanno le icone dipinte (`icona-diamanti`, `icona-monete`) su capsule scure col bordo del loro
+  colore. Nel testo, davanti ai numeri piccoli, restano la moneta e il diamante a tratto (`MO`, `DI`).
+- **Deciso da Alex (23/11)**: in alto a destra il nome del club resta intero quando ci sta; se la barra è stretta va
+  bene il nome breve o la sigla. È un'eccezione voluta alla regola «niente sigle»: non va «corretta».
 - **Resta da fare**: aspetto nuovo di Mercato (passo 9), Il mio club (10) e Sfide (11); «sotto il 60% di energia cala
   prima la velocità» (sessione della partita); il limite dei moduli nella pausa della partita; l'esultanza del capitano
   (servono animazioni); il listino del database.
