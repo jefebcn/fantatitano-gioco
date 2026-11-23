@@ -1,5 +1,20 @@
 # Ritratti dei giocatori
 
+## Ritratti delle carte fatti con Gemini (23/11)
+Alex ha scartato i volti di Blender per le carte: troppo poco realistici. Blender resta solo per i giocatori 3D in
+partita. Decisioni di Alex:
+- **Volti realistici generati con Gemini**, tutti inventati, mai somiglianti a calciatori o persone famose (Alex li ha
+  controllati uno per uno; 22 sono stati rifatti cambiando la descrizione del viso).
+- **Maglia stampata nel ritratto**, già coi colori e il disegno della squadra: la carta non segue i cambi di divisa e va
+  bene così. Maglie da calcio vere, con disegno che cambia ogni pochi giocatori; i 150 volti condivisi hanno colori a caso.
+- Pose diverse tra un ritratto e l'altro.
+
+File: `public/img/ritratti-carte/<id>-512.webp` e `-256.webp` (415: i 265 veri e i 150 condivisi di
+`src/dati/volti.json`), sfondo trasparente, testa larga il 40% del lato con la cima al 7%. Vanno usati interi, senza lo
+strato della maglia colorata. Si rifanno con `scripts/ritratti_gemini.py` (ricetta in `docs/RICETTE.md`).
+
+## Ritratti composti da Blender (prima versione, 21-22/11)
+
 Stato (22/11): **Alex ha approvato il terzo foglio di prova** e tutti i volti sono generati (265 giocatori veri + 150
 condivisi); la home li usa dappertutto. Se un ritratto manca o non si carica resta quello vecchio, disegnato al momento
 dal modello 3D della partita. I ritratti sono resi a 800 punti di lato, come il foglio approvato (nel gioco servono a
