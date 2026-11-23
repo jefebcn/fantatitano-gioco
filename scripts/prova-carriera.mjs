@@ -408,7 +408,9 @@ function RARITA_COMUNI(C) { return Object.values(C.allenatori.comune).reduce((a,
   const M = nuovaW(), mar = giorno(1), V = K.vittoria(M);
   K.aggiornaSfide(M, mar); Object.assign(M.sfide.d.c, { gioca: 1, vinte: 1, gol: 3, inviolate: 1, coppa: 1 });
   let st = K.statoSfide(M, mar); assert.deepEqual(st.conti.d, [5, 5]); assert.equal(st.daRiscuotere, 6); assert.deepEqual(st.d.map((x) => x.monete), K.SFIDE.d.map((x) => K.inMonete(M, x.v)));
-  const m0 = M.monete, g0 = M.gemme, r = K.riscuotiTutto(M, mar); assert.equal(r.n, 6); assert.equal(M.monete - m0, K.SFIDE.d.reduce((t, x) => t + K.inMonete(M, x.v), 0)); assert.equal(M.gemme, g0);
+  const m0 = M.monete, g0 = M.gemme, p0 = M.percorso.punti, r = K.riscuotiTutto(M, mar); assert.equal(r.n, 6); assert.equal(M.monete - m0, K.SFIDE.d.reduce((t, x) => t + K.inMonete(M, x.v), 0)); assert.equal(M.gemme, g0);
+  // i punti del percorso premi che la schermata mostra sono quelli dati davvero: cinque sfide del giorno, niente per il premio di gruppo
+  assert.equal(r.punti, M.percorso.punti - p0); assert.equal(r.punti, K.SFIDE.d.length * E.percorso.punti.sfidaD);
   assert.equal(M.allenatori.comune.tecnico + M.allenatori.comune.fisico + M.allenatori.comune.difesa + M.allenatori.comune.portieri, 1, 'tutte le giornaliere: un allenatore comune');
   assert.equal(K.riscuoti(M, 'd', 'd1', mar).ok, false); assert.deepEqual(K.statoSfide(M, giorno(2)).conti.d, [0, 5]);
   // settimana: tutte fatte, quindici diamanti e un allenatore raro; poi riparte il lunedì

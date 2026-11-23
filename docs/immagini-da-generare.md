@@ -14,8 +14,8 @@ Niente è disegnato col codice al posto di un'illustrazione e niente viene da in
 
 1. Genera l'immagine col prompt della tabella. Se il generatore non fa la misura esatta va bene una più grande con lo
    stesso rapporto; fino al 15% di differenza nel rapporto la ritaglio al centro.
-2. Salvala in `assets/arrivo/` col **nome esatto** della tabella (esempio `sfondo-home.png`). PNG o JPG; PNG con sfondo
-   trasparente dove è scritto «trasparente».
+2. Salvala in `assets/arrivo/` col **nome esatto** della tabella (esempio `sfondo-home.png`); va bene anche una
+   sottocartella, come `assets/arrivo/premi/`. PNG o JPG; PNG con sfondo trasparente dove è scritto «trasparente».
 3. `python3 scripts/importa_immagini.py` controlla nome, misure e trasparenza, prepara le tre grandezze (1x, 2x, 3x) in
    WebP dentro `public/img/illustrazioni/` e le collega (scrive l'elenco in `src/casa/illustrazioni.js`): il gioco usa
    l'immagine se c'è, il segnaposto se manca.
@@ -32,7 +32,8 @@ Frase da aggiungere **in fondo a ogni prompt** (stile comune):
 ## 2. Elenco
 
 Priorità: **A** serve alla home, **B** alle sezioni, **C** facoltativa (senza, resta un fondo pulito). Misure in pixel.
-Stato di tutte, oggi: **segnaposto**.
+Stato, oggi: **definitive** le dodici dell'apertura premi (27–38, arrivate il 23/11 in `assets/arrivo/premi/`), e con
+loro la 19 e la 20, che usano `icona-monete` e `icona-diamanti`; tutte le altre **segnaposto**.
 
 | # | File | Dove si usa | Misure | Formato | Pr. |
 |---|---|---|---|---|---|
@@ -54,14 +55,31 @@ Stato di tutte, oggi: **segnaposto**.
 | 16 | `struttura-curva` | struttura Curva dei tifosi | 600 × 600 | JPG o PNG | B |
 | 17 | `evento-scelte` | Mercato, carta evento «Scelte migliori» | 1200 × 360 | JPG o PNG | B |
 | 18 | `evento-occasioni` | Mercato, carta evento «Occasioni della settimana» | 1200 × 360 | JPG o PNG | B |
-| 19 | `premio-monete` | Percorso premi e Sfide: premio in monete | 512 × 512 | PNG trasparente | B |
-| 20 | `premio-diamanti` | Percorso premi e Sfide: premio in diamanti | 512 × 512 | PNG trasparente | B |
+| 19 | `premio-monete` | Percorso premi e Sfide: premio in monete | non si genera: usa `icona-monete` (32) | | B |
+| 20 | `premio-diamanti` | Percorso premi e Sfide: premio in diamanti | non si genera: usa `icona-diamanti` (33) | | B |
 | 21 | `carta-carriera` | fondo della carta CARRIERA | 1800 × 510 | JPG o PNG | C |
 | 22 | `allenamento-tutorial` | Allenamento, carta Tutorial | 600 × 400 | JPG o PNG | C |
 | 23 | `allenamento-libero` | Allenamento, carta Allenamento libero | 600 × 400 | JPG o PNG | C |
 | 24 | `allenamento-rigori` | Allenamento, carta Rigori | 600 × 400 | JPG o PNG | C |
 | 25 | `allenamento-punizioni` | Allenamento, carta Calci di punizione | 600 × 400 | JPG o PNG | C |
 | 26 | `allenamento-angoli` | Allenamento, carta Calci d'angolo | 600 × 400 | JPG o PNG | C |
+| 27 | `busta-giorno` | apertura premi: busta blu, premio del giorno e sfide | 417 × 666 (solo la busta, senza margine) | PNG trasparente | B |
+| 28 | `busta-percorso` | apertura premi: busta argento, percorso premi | 417 × 666 | PNG trasparente | B |
+| 29 | `busta-stagione` | apertura premi: busta oro, fine stagione | 417 × 666 | PNG trasparente | B |
+| 30 | `sfondo-premi` | sfondo dell'apertura premi: stadio di notte sfocato | 1536 × 858 (se è più piccola viene ingrandita) | JPG o PNG | B |
+| 31 | `icona-punti-percorso` | premio: punti del percorso premi | 512 × 512 | PNG trasparente | B |
+| 32 | `icona-monete` | premio in monete (vale anche per la 19) | 512 × 512 | PNG trasparente | B |
+| 33 | `icona-diamanti` | premio in diamanti (vale anche per la 20) | 512 × 512 | PNG trasparente | B |
+| 34 | `icona-allenatore-comune` | premio: allenatore comune | 512 × 512 | PNG trasparente | B |
+| 35 | `icona-allenatore-raro` | premio: allenatore raro | 512 × 512 | PNG trasparente | B |
+| 36 | `icona-allenatore-leggendario` | premio: allenatore leggendario | 512 × 512 | PNG trasparente | B |
+| 37 | `icona-contatto-agente` | premio: contatto dell'agente | 512 × 512 | PNG trasparente | B |
+| 38 | `icona-fisioterapista` | premio: intervento del fisioterapista (pronta: oggi nessun premio lo dà) | 512 × 512 | PNG trasparente | B |
+
+Le immagini dalla 27 alla 38, tranne lo sfondo, sono segnate «rifila» nell'elenco: lo script toglie il margine vuoto
+attorno al soggetto e lo mette, intero e centrato, nella misura scritta. Le buste arrivate erano 687 × 1024 con la busta
+vera di 418 × 669: a 3x si vedono nitide fino a 223 punti d'altezza, e nel gioco sono alte il 56% dello schermo (al
+massimo 241 punti sull'iPhone più grande: un ingrandimento dell'8%, che non si nota).
 
 ### Descrizioni e prompt pronti
 
@@ -141,7 +159,8 @@ semitrasparenti: deve essere scuro e tranquillo, coi punti luminosi al centro.
 > 18: Corridoio degli spogliatoi di uno stadio di notte, con maglie blu e oro senza numeri appese in fila e luce
 > azzurra in fondo. Striscia molto larga, soggetto a destra, sinistra scura e vuota. Formato orizzontale 3,3:1.
 
-**19. `premio-monete`** e **20. `premio-diamanti`** — i due forzieri dei premi.
+**19. `premio-monete`** e **20. `premio-diamanti`** — i due forzieri dei premi. Non servono più: al loro posto valgono
+`icona-monete` e `icona-diamanti` (decisione di Alex del 23/11). I prompt restano qui solo come traccia.
 > 19: Forziere di legno scuro e ferro aperto, pieno di monete d'oro che brillano. Oggetto intero al centro, sfondo
 > trasparente.
 >
@@ -178,7 +197,7 @@ diamante hanno colori fissi e sono identici ovunque.
 | Squadra | modulo, riserve, fisioterapista, allenatore, capitano, rigore, punizione, corner, energia, scarpino, altezza, scambia, vendi, fuori-ruolo |
 | Mercato e strutture | osservatore, mistero, centro-allenamento, infermeria, foresteria, ufficio, osservatori, curva, divisa, stemma, esultanza, pallone |
 | Sfide e meteo | calendario, medaglia, premi, timer, sole, luna, nuvola, pioggia |
-| Cornici delle carte | carta-bronzo (sotto 65), carta-argento (65–74), carta-oro (da 75): la stessa forma a scudo |
+| Cornici delle carte | carta-bronzo (sotto 60), carta-azzurro (60–69), carta-oro (da 70): la stessa forma a scudo |
 | Segnaposto dei ritratti | segnaposto-giocatore, segnaposto-manager |
 
 Icone piccole delle competizioni (campionato, coppa, castelli) sono SVG; le coppe grandi sono le illustrazioni 2, 3 e 4.
