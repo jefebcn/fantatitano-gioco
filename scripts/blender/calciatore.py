@@ -348,6 +348,15 @@ STILI = {
                                   - SU * 0.012 * davanti(p) * (0.4 + 0.6 * punte(p[0], 0.02)),
     'Hair_Lunghi': lambda p, n, k: n * (0.004 + 0.014 * k + 0.005 * k * ciocche(p, 7)) + (np.array([0, 0.018, -0.075]) * dietro(p) * (1 - alto(p)) * (1 - 0.6 * k)),
     'Hair_Riga': lambda p, n, k: n * (0.003 + 0.011 * k + 0.004 * k * alto(p) * ciocche(p, 8)) + SU * 0.018 * k * alto(p) * (1.0 if p[0] > centro[0] + 0.015 else 0.2),
+    # capigliature in più: afro tondo, codino raccolto dietro, spettinati a punte, rasati ai lati con la cima lunga
+    'Hair_Afro': lambda p, n, k: n * (0.008 + 0.075 * k * (0.6 + 0.4 * alto(p)) + 0.006 * k * np.sin(p[0] * 220) * np.sin(p[1] * 200 + p[2] * 180))
+                                 - SU * 0.01 * davanti(p),
+    'Hair_Codino': lambda p, n, k: n * (0.003 + 0.007 * k + 0.002 * k * ciocche(p, 16))
+                                   + (np.array([0, 0.06, 0.02]) * sfuma(0.05, 0.0, np.linalg.norm(p - np.array([centro[0], nuca - 0.015, cima - 0.04]))) * k),
+    'Hair_Spettinati': lambda p, n, k: n * (0.004 + k * (0.012 + 0.016 * alto(p)) + 0.012 * k * alto(p) * max(0.0, ciocche(p, 13)) ** 2)
+                                       + (AVANTI * 0.01 - SU * 0.012 * punte(p[0], 0.014)) * davanti(p),
+    'Hair_Sfumati': lambda p, n, k: n * (0.0015 + k * (0.003 + 0.03 * sfuma(0.35, 0.75, alto(p)) * (1 - 0.7 * lato(p))) + 0.006 * k * sfuma(0.4, 0.8, alto(p)) * ciocche(p, 9))
+                                    + AVANTI * 0.012 * davanti(p) * sfuma(0.4, 0.8, alto(p)),
 }
 ogg = [capelli(n, f) for n, f in STILI.items()]
 print('CAPELLI', {o.name: sum(len(p.vertices) - 2 for p in o.data.polygons) for o in ogg})
