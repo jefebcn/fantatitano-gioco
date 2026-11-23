@@ -7,6 +7,12 @@
 // Misure vere, in metri, niente ingrandimenti: campo 105 × 68 (HL e HW sono le metà), porta 7,32 × 2,44 (GH mezza
 // larghezza, GT altezza), pallone di 22 cm (BR il raggio). GRAV è la gravità del gioco.
 export const HL = 52.5, HW = 34, GH = 3.66, GT = 2.44, BR = 0.11, GRAV = 20;
+// Il pallone si vede male se è disegnato grande come il vero (22 cm visti da 35 metri): il gioco lo muove sempre con BR, ma
+// si disegna fino a `scala` volte più grande quando la telecamera è lontana (a grandezza vera sotto i `vicino` metri, cioè
+// nei primi piani e nei replay). `luce`: quanto è chiaro anche in ombra (0 = solo la luce dei fari). L'ombra sotto è un
+// disco scuro dal bordo netto: `ombra` = [raggio rispetto al pallone disegnato, quanto è scura a terra, quanto si allarga
+// per ogni metro di altezza, quanto schiarisce per ogni metro, scurezza minima]: larga e chiara in aria, dice dove scende.
+export const PALLA_VISTA = { scala: 1.7, vicino: 13, luce: .45, ombra: [1.25, .82, .12, .22, .3] };
 // Giocatori a grandezza vera: alti in media 1,80 m, da 1,70 a 1,95 secondo il giocatore; i portieri da `portiere` in su.
 // `passi`: quante stature diverse ci sono tra min e max (26 = una ogni centimetro)
 export const ALTEZZA = { min: 1.70, max: 1.95, media: 1.80, portiere: 1.84, passi: 26 };
