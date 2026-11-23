@@ -155,7 +155,8 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   Il Centro allenamento ne apre 4, 6, 8, 10, 12, 15 secondo le stelle. La finestra di scelta li mostra su cinque colonne.
 - **Musica della home** (23/11, `src/audio.js`, valori in `AUDIO` di `src/config.js`): «Rise Up (Fantatitano)» al posto
   della musica sintetizzata di prima. Parte al primo tocco, gira in tutte le schermate fuori dalla partita, a fine brano
-  ricomincia incrociandosi in dissolvenza per 2 secondi, sfuma in 1,2 secondi quando parte la partita e riprende da
+  ricomincia da capo (un lettore solo che si ripete da sé, più un controllo ogni secondo che lo rimette in moto se si
+  ferma; la dissolvenza tra fine e inizio è quella del file: 3 secondi in uscita, 0,4 in entrata), sfuma in 1,2 secondi quando parte la partita e riprende da
   dov'era, in 1,5 secondi, tornando alla home. OGG dove il browser lo legge, MP3 altrimenti. Nelle Impostazioni: tasto
   Muto e due cursori (Musica, Effetti), salvati sul telefono. Muta, a volume zero o col gioco in secondo piano la musica
   si ferma e non scarica niente. Non è nel precarico e non passa dal service worker: senza rete il gioco va, senza

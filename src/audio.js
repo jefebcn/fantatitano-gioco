@@ -16,8 +16,6 @@ import { AUDIO } from './config.js';
 const SALVA = 'fantatitano-audio';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-// un suono muto brevissimo: fatto partire dentro un tocco, sblocca un lettore che dovrà suonare da solo più tardi
-const MUTO = 'data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
 // i fischi: durate (secondi) di ogni colpo e pausa tra un colpo e l'altro
 const FISCHI = {
   inizio: [[.8], .2], ripresa: [[.45], .2], fallo: [[.24], .2], fuorigioco: [[.32], .2], rigore: [[.22, .75], .14],
@@ -29,7 +27,7 @@ export function creaAudio(opz = {}) {
   const A = {
     ctx: null, on: true, vol: { musica: .6, effetti: .9 }, sbloccato: false,
     folla: { affluenza: .55, tensione: 0, attiva: false, pausa: false },
-    lettori: null, attivo: 0, brano: 0, suona: false, cambio: false, timer: null, ultimaSpallata: -9,
+    lettore: null, brano: 0, suona: false, timer: null, ultimaSpallata: -9,
   };
   try { const v = JSON.parse(localStorage.getItem(SALVA) || '{}'); if (typeof v.on === 'boolean') A.on = v.on; for (const k of ['musica', 'effetti']) if (typeof v[k] === 'number') A.vol[k] = clamp(v[k], 0, 1); } catch (e) { /* senza memoria valgono i valori di partenza */ }
   const salva = () => { try { localStorage.setItem(SALVA, JSON.stringify({ on: A.on, musica: A.vol.musica, effetti: A.vol.effetti })); } catch (e) { /* niente memoria: pazienza */ } };
@@ -186,59 +184,52 @@ export function creaAudio(opz = {}) {
   };
 
   /* ------------------------------------------------------------ la musica della home */
-  // I brani sono file veri: OGG dove il browser lo sa leggere, MP3 altrimenti. Li suonano due lettori che si danno il
-  // cambio: quando al brano mancano pochi secondi parte il prossimo sull'altro lettore e i due si incrociano in
-  // dissolvenza (con un brano solo, è lui che ricomincia). I lettori passano dal contesto audio, così volume della
-  // musica, muto e dissolvenze valgono anche per loro: su iPhone il volume di un lettore non si cambia in altro modo.
-  // Il file si scarica solo quando la musica deve suonare davvero.
+  // I brani sono file veri: OGG dove il browser lo sa leggere, MP3 altrimenti. Li suona un lettore solo, nel modo più
+  // semplice che c'è, perché deve andare uguale su ogni telefono: con un brano solo è il lettore stesso a farlo
+  // ricominciare quando finisce, e la dissolvenza tra la fine e l'inizio è già nel file. Con più brani, finito uno
+  // parte il successivo. Il lettore passa dal contesto audio, così volume della musica, muto e dissolvenze valgono anche
+  // per lui: su iPhone il volume di un lettore non si cambia in altro modo. Il file si scarica solo quando la musica
+  // deve suonare davvero.
   const MU = AUDIO.musica;
   const estensione = () => { try { return new Audio().canPlayType('audio/ogg; codecs="vorbis"') ? '.ogg' : '.mp3'; } catch (e) { return '.mp3'; } };
   // porta un volume a `v` in circa `sec` secondi, da dovunque sia
   const verso = (g, v, sec) => { const c = ora(); g.cancelScheduledValues(c); g.setTargetAtTime(v, c, sec / 3); };
-  function lettore() {
-    const el = new Audio(), g = A.ctx.createGain(), l = { el, g: g.gain, nome: '' };
-    el.preload = 'auto'; g.gain.value = 0; A.ctx.createMediaElementSource(el).connect(g); g.connect(A.fadeM);
-    // se il cambio non è riuscito e il brano arriva in fondo sul lettore che sta suonando, riparte da capo
-    el.addEventListener('ended', () => { if (A.suona && A.lettori[A.attivo] === l) { el.currentTime = 0; el.play().catch(() => {}); } });
-    return l;
+  // mette nel lettore il brano di turno; se è l'unico, il lettore lo ripete da sé
+  function carica() {
+    const el = A.lettore, nome = MU.cartella + MU.brani[A.brano] + A.estensione;
+    if (A.nomeBrano !== nome) { A.nomeBrano = nome; el.src = nome; }
+    el.loop = MU.brani.length === 1;
   }
-  const carica = (l, i) => { const nome = MU.cartella + MU.brani[i] + A.estensione; if (l.nome !== nome) { l.nome = nome; l.el.src = nome; } };
-  // Prepara i due lettori. Succede dentro un tocco: su iPhone un lettore può partire da solo, più tardi, solo se la
-  // prima volta è partito da un tocco. Il secondo lo sblocca un suono muto brevissimo
+  // il lettore nasce dentro un tocco: su iPhone può ripartire da solo, più tardi, solo se la prima volta è partito così
   function prepara() {
-    if (A.lettori) return;
-    A.estensione = estensione(); A.lettori = [lettore(), lettore()];
-    const b = A.lettori[1].el; b.src = MUTO; b.play().catch(() => {});
+    if (A.lettore) return;
+    const el = A.lettore = new Audio(); el.preload = 'auto'; A.estensione = estensione();
+    A.ctx.createMediaElementSource(el).connect(A.fadeM); el.addEventListener('ended', dopo); carica();
+  }
+  // Finito un brano parte il prossimo dell'elenco, da capo. Con un brano solo di norma non si arriva qui, perché il
+  // lettore lo ripete da sé: se non lo facesse, riparte da qui
+  function dopo() {
+    if (!A.suona) return;
+    A.brano = (A.brano + 1) % MU.brani.length; carica(); A.lettore.currentTime = 0; A.lettore.play().catch(() => {});
+  }
+  // Il guardiano, una volta al secondo: se la musica deve suonare ma il lettore è fermo (arrivato in fondo senza
+  // ripartire, o fermato dal telefono per una chiamata o una notifica), lo rimette in moto
+  function guardiano() {
+    const el = A.lettore; if (!A.suona) return;
+    if (el.ended) dopo(); else if (el.paused) el.play().catch(() => {});
   }
   function avviaMusica() {
-    prepara(); if (A.suona) return; A.suona = true;
-    const c = ora(), l = A.lettori[A.attivo];
-    // riprende da dov'era: il lettore di turno a volume pieno, l'altro zitto (anche se ci si era fermati a metà di un cambio)
-    A.lettori.forEach((x, i) => { x.g.cancelScheduledValues(c); x.g.setValueAtTime(i === A.attivo ? 1 : 0, c); if (i !== A.attivo) x.el.pause(); });
-    A.cambio = false; carica(l, A.brano); A.timer = setInterval(controlla, 250);
-    // se il browser non la lascia partire (nessun tocco ancora valido), ci riprova al prossimo tocco
-    l.el.play().catch(() => { fermaMusica(); document.addEventListener('pointerdown', aggiornaMusica, { once: true, capture: true }); });
+    prepara(); if (A.suona) return; A.suona = true; A.timer = setInterval(guardiano, 1000);
+    // riprende da dov'era. Se il browser non la lascia partire (nessun tocco ancora valido), ci riprova al prossimo tocco
+    A.lettore.play().catch(() => { fermaMusica(); document.addEventListener('pointerdown', aggiornaMusica, { once: true, capture: true }); });
   }
   function fermaMusica() {
     clearTimeout(A.spegni); if (!A.suona) return;
-    A.suona = false; clearInterval(A.timer); A.timer = null; for (const l of A.lettori) l.el.pause();
-  }
-  // quando al brano manca poco prepara il prossimo sull'altro lettore; agli ultimi secondi lo fa partire e li incrocia
-  function controlla() {
-    const l = A.lettori[A.attivo], altro = A.lettori[1 - A.attivo], manca = l.el.duration - l.el.currentTime, prossimo = (A.brano + 1) % MU.brani.length;
-    if (A.cambio || !(manca <= MU.anticipo)) return;
-    carica(altro, prossimo);
-    if (manca > MU.incrocio) return;
-    A.cambio = true; altro.el.currentTime = 0;
-    altro.el.play().then(() => {
-      if (!A.suona) return altro.el.pause();
-      verso(altro.g, 1, MU.incrocio); verso(l.g, 0, MU.incrocio); A.attivo = 1 - A.attivo; A.brano = prossimo;
-      setTimeout(() => { A.cambio = false; if (A.lettori[A.attivo] !== l) l.el.pause(); }, MU.incrocio * 1000 + 300);
-    }).catch(() => { A.cambio = false; });
+    A.suona = false; clearInterval(A.timer); A.timer = null; A.lettore.pause();
   }
   // La musica deve suonare? Solo se la schermata la vuole, l'audio non è muto, il volume della musica non è a zero e
   // il gioco è in primo piano. Tutto quello che cambia una di queste cose passa di qui: sfuma in entrata o in uscita,
-  // e a musica spenta ferma i lettori, che così non scaricano e non consumano
+  // e a musica spenta ferma il lettore, che così non scarica e non consuma
   function aggiornaMusica() {
     if (!A.ctx) return;
     const deve = !!A.voglioMusica && A.on && A.vol.musica > 0 && !document.hidden;
