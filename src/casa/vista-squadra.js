@@ -6,12 +6,13 @@
 // trascinando una carta sull'altra. Il primo tocco sceglie la carta, che si illumina e mostra un piccolo pulsante «Scheda»;
 // toccarla di nuovo, o toccare il vuoto, annulla. La scheda del giocatore si apre da quel pulsante o tenendo il dito
 // fermo sulla carta. Il capitano ha la «C» sulla carta, sotto il ruolo: si trascina su un altro titolare per passargli
-// la fascia. Rigori, punizioni e angoli non stanno sulle carte del campo: si vedono e si danno dalla scheda. Ogni
+// la fascia. Rigori, punizioni e angoli non stanno sulle carte del campo: si vedono tutti insieme, col capitano, nel
+// pannello del pulsante «Incarichi», e lì si danno a un altro titolare (oppure dalla scheda del giocatore). Ogni
 // cambio è salvato subito.
 import * as CAR from '../carriera.js';
 import { FORMS, SQUADRA, CARTA } from '../config.js';
 import { adatto, postiModulo } from '../dati/scala.js';
-import { K, DATI, sel, save, salvaK, applicaMio, avviso, mon, club, moduloMio } from './casa.js';
+import { K, DATI, esc, sel, save, salvaK, applicaMio, avviso, mon, club, moduloMio } from './casa.js';
 import { icona } from './icone.js';
 import { adatta } from './carte.js';
 import { cartaGiocatore, prontaCarte } from './giocatore.js';
@@ -50,6 +51,7 @@ export function disegnaSquadra() {
   radice.innerHTML = TORRI + '<div class="qSx">'
     + `<button class="qB" data-az="modulo">${icona('modulo')}<b>${m}</b></button>`
     + `<button class="qB${riserve ? ' scelta' : ''}" data-az="riserve">${icona('riserve')}<b data-adatta>${t('squadra.riserve', extra)}</b></button>`
+    + `<button class="qB" data-az="incarichi">${icona('capitano')}<b data-adatta>${t('squadra.incarichi')}</b></button>`
     + `<button class="qB" data-az="fisio">${icona('fisioterapista')}<b data-adatta>${t('squadra.fisio')}</b>${fisio.manca ? '<em class="bollino">!</em>' : ''}</button>`
     + `<button class="qB accesa" data-az="allenatore">${icona('allenatore')}<span><b data-adatta>${t('squadra.allenatori')}</b><i data-adatta data-corto="${t('squadra.allenatoriCorto')}">${t('squadra.allenatoriSotto')}</i></span>${allenabili ? `<em class="bollino">${allenabili}</em>` : ''}</button></div>`
     + '<div class="qCampo"></div>'
@@ -125,6 +127,31 @@ function scegliModulo() {
   finestra({ titolo: t('modulo.scegli'), scelte: Object.keys(FORMS).map((n) => ({ testo: n, nota: aperti.includes(n) ? '' : `${icona('lucchetto')} ${t('modulo.chiuso')}`, valore: n, attiva: n === m })),
     fatto: (n) => { if (!aperti.includes(n)) return avviso(t('modulo.serveCentro')); if (FORMS[n]) { sel.form = n; save(); scelto = null; disegnaSquadra(); } } });
 }
+// «Incarichi»: le quattro voci tutte insieme, ognuna con la carta piccola di chi la ha adesso. Toccandone una si
+// sceglie un altro titolare dall'elenco, e si torna qui a vedere com'è cambiato. Se il capitano scelto è in panchina
+// la fascia resta sua: si vede la sua carta, con la nota.
+function pannelloIncarichi() {
+  const c = club(K.club), tutti = rosa(c), inc = incarichi(K, CLUBS, c.xi.map((x) => DATI.scheda(x, c.id))), fuori = (K.mio || {}).capitano;
+  finestra({ titolo: t('inc.titolo'), testo: t('inc.testo'),
+    scelte: CAR.INCARICHI.map((tipo) => {
+      const nome = inc[tipo] || (tipo === 'capitano' ? fuori : null), g = nome && tutti.find((y) => y.x[0] === nome);
+      return { testo: t('inc.' + tipo), nota: !g ? t('inc.nessuno') : inc[tipo] ? esc(nome) : t('inc.inPanchina', esc(nome)), valore: tipo,
+        figura: g ? `<em class="scCarta">${cartaGiocatore(g.sc, { club: c.id, larga: CARTA.larga.incarico, capitano: tipo === 'capitano', ferma: true })}</em>` : '' };
+    }),
+    fatto: scegliIncaricato });
+  prontaCarte(document.getElementById('finestra'));
+}
+// l'elenco dei titolari per un incarico: quello che lo ha adesso è acceso
+function scegliIncaricato(tipo) {
+  const c = club(K.club), schede = c.xi.map((x) => DATI.scheda(x, c.id)), ha = incarichi(K, CLUBS, schede)[tipo];
+  finestra({ titolo: t('inc.chi', t('inc.' + tipo)),
+    scelte: c.xi.map((x, i) => ({ testo: `<span class="scNome" data-adatta>${esc(x[0])}</span>`, nota: `${schede[i].ruolo} · ${schede[i].val}`, valore: i, attiva: x[0] === ha })),
+    fatto: (i) => {
+      const x = club(K.club).xi[+i]; if (!x || !CAR.assegnaIncarico(K, CLUBS, tipo, x[0])) return avviso(t('inc.soloTitolari'));
+      salvaK(); avviso(t('inc.dato', t('inc.' + tipo), x[0])); scelto = null; disegnaSquadra(); pannelloIncarichi();
+    } });
+  adatta(document.getElementById('finestra'));
+}
 // Il fisioterapista: tre interventi a monete (piccolo, medio, completo) e quello completo anche a diamanti
 function fisioterapista() {
   const st = CAR.statoFisio(K, CLUBS);
@@ -192,6 +219,7 @@ radice.addEventListener('click', (e) => {
   if (b && b.dataset.az) {
     const az = b.dataset.az;
     if (az === 'modulo') return scegliModulo();
+    if (az === 'incarichi') return pannelloIncarichi();
     if (az === 'fisio') return fisioterapista();
     if (az === 'allenatore') return apri('club', 'allenatori');
     if (az === 'migliore') return migliore();

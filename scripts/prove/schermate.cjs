@@ -130,6 +130,13 @@ srv.listen(0, async () => {
       if (!(await pg.$('#schedaG .gSegno[data-inc="rigori"]'))) errori.push(`${w}: sulla carta della scheda manca il segno dei rigori`);
       await tocca('#schedaG [data-az="chiudi"]'); const r3 = await rosa(); if (r3.inc.rigori !== r2.xi[9]) errori.push(`${w}: il rigorista non è stato assegnato`);
       await trascina('#squadra .gSegni [data-inc="capitano"]', carta('xi:4')); const r4 = await rosa(); if (r4.cap !== r2.xi[4]) errori.push(`${w}: il capitano non è stato assegnato`);
+      // il pannello «Incarichi»: le quattro voci con la carta di chi le ha; toccandone una si sceglie un altro titolare
+      await tocca('#squadra [data-az="incarichi"]'); await foto('finestra-incarichi');
+      if ((await pg.$$('#finS .scCarta .gC')).length !== 4) errori.push(`${w}: nel pannello degli incarichi non ci sono le quattro carte`);
+      await tocca('#finS [data-scelta="punizioni"]'); await foto('finestra-incaricato'); await tocca('#finS [data-scelta="6"]');
+      const rP = await rosa(); if (rP.inc.punizioni !== rP.xi[6]) errori.push(`${w}: le punizioni non sono passate al titolare scelto nel pannello`);
+      if (!(await pg.$('#finestra:not(.nas) #finS .scCarta'))) errori.push(`${w}: dopo la scelta non si torna al pannello degli incarichi`);
+      await tocca('#finestra .chiudi');
       await tocca('#squadra [data-az="modulo"]'); await foto('finestra-modulo'); await tocca('#finS [data-scelta="4-2-3-1"]'); await foto('squadra-4231');
       if ((await rosa()).form !== '4-2-3-1') errori.push(`${w}: il modulo non è cambiato`);
       await tocca('#squadra [data-az="modulo"]'); await tocca('#finS [data-scelta="4-3-3"]');

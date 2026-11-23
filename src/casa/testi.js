@@ -114,7 +114,7 @@ const IT = {
   'dopo.continua': 'Continua',
   // squadra: pulsanti, panchina, incarichi, scambi
   'squadra.riserve': (n) => `Riserve (${n})`,
-  'squadra.fisio': 'Fisioterapista',
+  'squadra.fisio': 'Fisioterapista', 'squadra.incarichi': 'Incarichi',
   'squadra.allenatori': 'Allenatori', 'squadra.allenatoriSotto': 'Migliora giocatori!', 'squadra.allenatoriCorto': 'Migliora!',
   'squadra.sostituti': (n, tot) => `Sost (${n}/${tot})`,
   'squadra.libero': 'Libero',
@@ -132,6 +132,8 @@ const IT = {
   'inc.trascina': (cosa) => `${cosa}: trascina questo segno su un altro titolare`,
   'inc.dato': (cosa, nome) => `${cosa}: ${nome}`,
   'inc.soloTitolari': 'Gli incarichi vanno ai titolari',
+  'inc.titolo': 'Incarichi', 'inc.testo': 'Tocca un incarico per darlo a un altro titolare.',
+  'inc.chi': (cosa) => `${cosa}: scegli un titolare`, 'inc.inPanchina': (nome) => `${nome}, in panchina`, 'inc.nessuno': 'Nessuno',
   // scheda del giocatore
   'scheda.altezza': 'Altezza', 'scheda.piede': 'Piede', 'scheda.destro': 'Destro', 'scheda.sinistro': 'Sinistro', 'scheda.valore': 'Valore', 'scheda.energia': 'Energia',
   'scheda.eCapitano': 'È il capitano',
