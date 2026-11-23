@@ -10,8 +10,15 @@ Maschio adulto atletico, viso misto e generico (nessuna persona reale).
    Crea tre corpi con gli stessi vertici (normale, snello, robusto), con gli arti nelle direzioni di riposo dello scheletro
    del gioco; tiene corpo e occhi; fa i tre livelli di dettaglio (4.500, 1.500, 600 triangoli: `LOD` in cima allo script) e
    porta su ognuno le due forme e i segni di labbra, cuoio capelluto, occhi e unghie; fa le sette capigliature dal cuoio
-   capelluto. La forma si regola in cima allo script: `BASE` (età, muscoli, peso), `DETTAGLI` (spalle, vita, fianchi, collo,
-   testa, mento) e `CORPI` (le due corporature in più).
+   capelluto. La forma si regola in cima allo script: `BASE` (età, muscoli, peso), `DETTAGLI` (spalle, vita, fianchi, gambe,
+   collo, testa), `VISO` (mascella, zigomi, naso, sopracciglia; `VISO_ALLEGGERISCI` dice quanto la testa resiste
+   all'alleggerimento) e `CORPI` (le due corporature in più).
+   La divisa ha volume nella geometria (`divisa_volume`, numeri in `VOLUME`): maglia staccata dal busto, maniche con l'orlo,
+   pantaloncini ampi, risvolto dei calzettoni, scarpini chiusi con la suola (le dita vengono tolte e la punta chiusa). Gli
+   anelli degli orli non si alleggeriscono sul primo livello. Le capigliature nascono da un guscio infittito, con ciocche e
+   ciuffo irregolare, e si alleggeriscono a `CAPELLI_TRI` triangoli.
+   Proporzioni, divisa e viso dal riferimento di Alex del 23/11/2026 (solo struttura: niente volti veri né grafica di altri giochi).
+   Serve MPFB attivo nelle preferenze salvate di Blender (in background non si accende da solo).
 2. Copiare l'uscita (`lod0.glb`, `lod1.glb`, `lod2.glb`, `capelli.glb`, `punti.json`) in `modelli/mpfb/blender/`.
 3. `npm run modello`:
    - `scripts/calciatore-nuovo.py` mette il corpo sullo scheletro che il gioco usa già (`modelli/quaternius-scheletro.glb`:
