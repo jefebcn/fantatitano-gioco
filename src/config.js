@@ -316,6 +316,10 @@ export const ATTACCO = { sullaLinea: 1.2, massimo: 44 };
 // obiettivi: i quattro obiettivi della stagione, più difficili salendo. posizione: arrivare tra le prime tante in
 // campionato. coppa: quanti turni di Coppa Titano superare (1 = arrivare ai quarti, 2 = in semifinale). castelli: 1 =
 // passare i gironi del Trofeo dei Castelli, 2 = arrivare in semifinale. media: la valutazione media dei titolari.
+// La maglia vera nell'anteprima di Personalizza: il busto del modello 3D ripreso di tre quarti. Distanze in metri per una
+// figura di 2,72 m (come il ritratto): quanto di lato, quanto sotto la testa sta la macchina, quanto lontano, a che
+// altezza sotto la testa guarda; `punti` è il lato dell'immagine.
+export const MAGLIA_VERA = { lato: .6, sotto: .4, lontano: 2.75, centro: .6, punti: 384 };
 export const DIVISIONI = [
   { id: 'sammarinese', nome: 'Campionato Sammarinese', val: [55, 75], vittoria: 250, fine: 50, vere: true, obiettivi: { posizione: 3, coppa: 2, castelli: 2 } },
   { id: 'cadetta', nome: 'Serie Cadetta del Titano', val: [54, 68], vittoria: 180, fine: 40, obiettivi: { posizione: 3, coppa: 2, castelli: 2, media: 67 } },

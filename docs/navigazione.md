@@ -142,7 +142,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 
 | Schermata | Liv. | Si entra da | Indietro | Cosa si tocca |
 |---|---|---|---|---|
-| **Il mio club** | 1 | Home; scorciatoia in Carriera | da dove sei venuto | 4 carte: Stadio e strutture, Personalizza, Allenamento, Amichevole |
+| **Il mio club** | 1 | Home | da dove sei venuto | 4 carte: Stadio e strutture, Personalizza, Allenamento, Amichevole |
 | Stadio e strutture | 2 | Il mio club | Il mio club | 6 strutture → finestra (livello, effetto del successivo, costo, Migliora) |
 | Personalizza | 2 | Il mio club; Profilo | da dove sei venuto | Divisa, Stemma, Nome, Modifica giocatori, Modifica manager, Negozio |
 | Divisa, Stemma, Modifica giocatori, Modifica manager | 3 | Personalizza | Personalizza | — |
@@ -200,6 +200,6 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Squadra | fatta, con la struttura del 23/11: quattro pulsanti a sinistra, campo fino al bordo in basso, sostituti a destra, incarichi trascinabili, squadra migliore, scheda del giocatore |
 | Mercato | esiste a scambio, da rifare |
 | Il mio club, Stadio e strutture | esiste con stadio e allenatore, da rifare con le 6 strutture |
-| Personalizza, Negozio | esistono, da risistemare (anteprima grande, testi chiari) |
+| Personalizza, Negozio | dal 23/11 sono una sezione sola, «Personalizza», con cinque schede: Nome e colori (il modulo del club), Stemma, Divisa, Manager, Squadra (i pezzi che si comprano). Passare da una scheda all'altra non aggiunge livelli: Indietro torna da dove si è venuti. L'anteprima mostra la maglia vera (il busto del modello 3D) |
 | Allenamento (5 modi) | la schermata c'è (da Il mio club), con le cinque carte illustrate; tutti i modi «In arrivo» finché la partita non sa farli partire (`SA_FARE` in docs/ponte-partita.md §5) |
 | Impostazioni, Info, Come guadagnare, Profilo | esistono |

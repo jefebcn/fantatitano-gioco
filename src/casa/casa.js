@@ -7,7 +7,7 @@ import * as T from 'three';
 import { DISEGNI } from '../divisa.js';
 import * as CLOUD from '../cloud.js';
 import * as CAR from '../carriera.js';
-import { ECONOMIA, DIFF, FORMS, PASSAGGIO, DIVISIONI, STAGIONE } from '../config.js';
+import { ECONOMIA, DIFF, FORMS, PASSAGGIO, DIVISIONI, STAGIONE, MAGLIA_VERA } from '../config.js';
 import { aiForm, $, rnd, clamp, hash, IMGX, img, G, renderer, cv, SCARPE_NEGOZIO, stemmi3d, makeSkinned, FIGURE, pickKits, PALLONI, kitsFor, AU, tactics, club as clubVero, chiudiPonte, startMatch, toMenu, CREST, loadImg, MODEL } from '../game.js';
 import HTML_CASA from './casa.html';
 import CSS_CASA from './casa.css';
@@ -15,7 +15,7 @@ import CSS_NUOVO from './stile.css';
 import { creaDati, coloreStat } from '../dati/scala.js';
 import { creaDivisioni } from '../dati/divisioni.js';
 import { GIOCATORI } from '../dati/giocatori.js';
-import { rotta, apri, indietro, ridisegna, tornaSotto, azzera } from './nav.js';
+import { rotta, apri, sostituisci, cima, indietro, ridisegna, tornaSotto, azzera } from './nav.js';
 import { mostraBarra, aggiornaBarra } from './barra.js';
 import { apriPremio, premiDa } from './premio.js';
 import { disegnaHome } from './home.js';
@@ -209,20 +209,20 @@ function candidatiCapitano() { return DATI.candidatiCapitano(POSTO).map((c) => (
 const classeStat = (v) => ({ verde: 'a', giallo: 'b', rosso: 'c' })[coloreStat(v)];
 const cartaGiocatore = (c, scelto) => `<button class="cap${scelto ? ' sel' : ''}" data-cap="${c.c.id}:${c.i}"><div class="cn"><b>${esc(c.x[0])}</b><small ${attrNome(nomiDi(c.c))}>${esc(c.c.name)}</small></div><div class="at">${c.s.stat.map(([k, v]) => `<span${k === c.s.forte ? ' class="forte"' : ''}><i>${k}</i><b class="${classeStat(v)}">${v}</b></span>`).join('')}</div><div class="cartaCap">${cartaCampo(c.s, { club: c.c.id, grande: true, ferma: true, stemma: img(c.c.id + '-mini') })}</div></button>`;
 function mioDaModulo() { const nome = ($('#nvClub').value.trim() || NOMI[0]).slice(0, 22), sg = ($('#nvSigla').value.trim() || sigla(nome)).slice(0, 3).toUpperCase(); return { nome, sigla: sg, c1: COLORI[NV.col][0], c2: COLORI[NV.col][1], stile: NV.stile, colletto: NV.colletto, raglan: NV.raglan }; }
-function anteprimaClub() { const m = mioDaModulo(); $('#nvStemma').src = disegnaStemma(m, 160); $('#nvMaglia').innerHTML = maglia(m.c1, m.c2, m.stile, m.colletto, m.raglan); for (const b of $('#nvCol').children) b.classList.toggle('on', +b.dataset.col === NV.col); for (const b of $('#nvStile').children) b.classList.toggle('on', b.dataset.stile === NV.stile); for (const b of $('#nvColletto').children) b.classList.toggle('on', b.dataset.colletto ? b.dataset.colletto === NV.colletto : NV.raglan); }
+function anteprimaClub() { const m = mioDaModulo(); $('#nvStemma').src = disegnaStemma(m, 160); $('#nvMaglia').innerHTML = anteMaglia(m.c1, m.c2, m.stile, m.colletto, m.raglan); $('#nvMaglia').parentNode.classList.toggle('vera', !!$('#nvMaglia .magliaVera')); for (const b of $('#nvCol').children) b.classList.toggle('on', +b.dataset.col === NV.col); for (const b of $('#nvStile').children) b.classList.toggle('on', b.dataset.stile === NV.stile); for (const b of $('#nvColletto').children) b.classList.toggle('on', b.dataset.colletto ? b.dataset.colletto === NV.colletto : NV.raglan); }
 function drawNuovo() {
   const el = $('#nuovo');
   if (NV.passo === 1) {
     const m = NV.modifica && K && K.mio ? K.mio : null;
-    el.innerHTML = `<button class="indietro" id="nvInd" aria-label="Indietro">${icona('indietro')}</button><h2 class="h">${NV.modifica ? 'Personalizza il club' : 'Il tuo club'}</h2>
+    el.innerHTML = `<button class="indietro" id="nvInd" aria-label="Indietro">${icona('indietro')}</button><h2 class="h">${NV.modifica ? 'Personalizza' : 'Il tuo club'}</h2>${NV.modifica ? schedePersonalizza('club') : ''}
       <div class="nv"><div class="campi">${NV.modifica ? '' : '<label>Il tuo nome<input id="nvNome" maxlength="18" placeholder="Mister" autocomplete="off"></label>'}
         <label>Nome del club<span class="riga"><input id="nvClub" maxlength="22" autocomplete="off" placeholder="${NOMI[0]}"><button id="nvDado" aria-label="Nome a caso">🎲</button></span></label>
         <label>Sigla<input id="nvSigla" maxlength="3" autocomplete="off" placeholder="TIT"></label>
         <div class="lbl">Colori</div><div class="col" id="nvCol">${COLORI.map(([a, b], i) => `<button data-col="${i}" style="background:linear-gradient(135deg,${a} 50%,${b} 50%)"></button>`).join('')}</div>
         <div class="lbl">Disegno</div><div class="seg" id="nvStile">${stiliMiei().map(([k, n]) => `<button data-stile="${k}">${n}</button>`).join('')}</div>
         <div class="lbl">Colletto e maniche</div><div class="seg" id="nvColletto">${COLLETTI.map(([k, n]) => `<button data-colletto="${k}">${n}</button>`).join('')}<button data-raglan="1">Maniche raglan</button></div></div>
-      <div class="ante"><img id="nvStemma" alt=""><div id="nvMaglia"></div></div></div>
-      <button class="btn" id="nvAvanti">${NV.modifica ? 'Salva' : 'Avanti: il capitano'}</button>`;
+      <div class="lato"><div class="ante"><img id="nvStemma" alt=""><div id="nvMaglia"></div></div>${NV.modifica ? '<button class="btn" id="nvAvanti">Salva</button>' : ''}</div></div>
+      ${NV.modifica ? '' : '<button class="btn" id="nvAvanti">Avanti: il capitano</button>'}`;
     if (m) { $('#nvClub').value = m.nome; $('#nvSigla').value = m.sigla; NV.col = Math.max(0, COLORI.findIndex(([a, b]) => a === m.c1 && b === m.c2)); NV.stile = m.stile || ''; NV.colletto = m.colletto || 'giro'; NV.raglan = !!m.raglan; }
     anteprimaClub();
   } else {
@@ -238,6 +238,7 @@ function apriNuovo(modifica = false) { Object.assign(NV, { passo: 1, modifica, c
 function tapNuovo(e) {
   const b = e.target.closest('button'); if (!b) return;
   if (b.id === 'nvInd') { if (NV.passo === 2) { NV.passo = 1; drawNuovo(); return $('#nvClub') && ($('#nvClub').value = NV.club || '', $('#nvSigla').value = NV.sigla || '', $('#nvNome') && ($('#nvNome').value = NV.nome || ''), anteprimaClub()); } return NV.modifica ? indietro() : show('#home'); }
+  if (b.dataset.ntab) return sostituisci('negozio', b.dataset.ntab);
   if (b.id === 'nvDado') { const n = NOMI[(NOMI.indexOf($('#nvClub').value) + 1 + Math.floor(rnd(NOMI.length - 1))) % NOMI.length]; $('#nvClub').value = n; $('#nvSigla').value = sigla(n); return anteprimaClub(); }
   if (b.dataset.col) { NV.col = +b.dataset.col; return anteprimaClub(); }
   if (b.dataset.stile !== undefined) { NV.stile = b.dataset.stile; return anteprimaClub(); }
@@ -258,6 +259,45 @@ function tapNuovo(e) {
 /* --- la dashboard */
 // La Carriera si disegna in src/casa/vista-carriera.js: questo nome resta per chi la ridisegna da fuori
 function drawHub() { disegnaCarriera(); }
+// Fotografa una figura del modello 3D, con le luci del ritratto, in un'immagine quadrata di L punti con lo sfondo
+// trasparente. Il disegnatore della partita torna com'era.
+function scatta(fig, cam, L) {
+  const sc = new T.Scene(), luce = new T.DirectionalLight(0xffffff, 2.6), viso = new T.DirectionalLight(0xffffff, 1.6), taglio = new T.DirectionalLight(0xB9A4FF, 2.2);
+  luce.position.set(1.4, 2.4, 3); viso.position.set(-.6, .4, 3); taglio.position.set(-2, 1.5, -2); sc.add(new T.HemisphereLight(0xdfe6ff, 0x2a2550, 1.8), luce, viso, taglio, fig.root);
+  const rt = new T.WebGLRenderTarget(L, L), prima = renderer.getRenderTarget(), col = renderer.getClearColor(new T.Color()), alfa = renderer.getClearAlpha();
+  rt.texture.colorSpace = T.SRGBColorSpace;
+  renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(sc, cam);
+  const px = new Uint8Array(L * L * 4); renderer.readRenderTargetPixels(rt, 0, 0, L, L, px);
+  renderer.setRenderTarget(prima); renderer.setClearColor(col, alfa); rt.dispose();
+  const [cv2, x] = cv(L, L), dati = x.createImageData(L, L);
+  // le righe arrivano dal basso: si capovolgono
+  for (let r = 0; r < L; r++) dati.data.set(px.subarray((L - 1 - r) * L * 4, (L - r) * L * 4), r * L * 4);
+  x.putImageData(dati, 0, 0); return cv2.toDataURL('image/png');
+}
+/**
+ * La maglia vera: il busto di un giocatore del modello 3D con la divisa data (colori, disegno, colletto, maniche) e lo
+ * stemma del club sul petto, com'è in campo. Si disegna una volta per divisa e resta in memoria. Vuota se il modello
+ * non c'è ancora: chi la chiede tiene allora la maglia disegnata piatta.
+ */
+const MAGLIE_VERE = new Map();
+function magliaVera(c1, c2, st, colletto = 'giro', raglan = false) {
+  const chiave = [K ? K.club : '', c1, c2, st, colletto, raglan].join('|'); if (MAGLIE_VERE.has(chiave)) return MAGLIE_VERE.get(chiave);
+  if (!MODEL || !MODEL.scene) return '';
+  let url = '';
+  try {
+    const base = club(K ? K.club : POSTO), c = { ...base, c1, c2, st: st || undefined, col: colletto || undefined, rag: !!raglan }, ks = pickKits(c, CLUBS.find((x) => x.id !== c.id) || c);
+    const fig = makeSkinned(ks[0], 7, '', c.id, '', {}); FIGURE.delete(fig);
+    const kr = fig.metri / 2.72;
+    fig.mixer.update(0); fig.root.updateMatrixWorld(true);
+    // dal collo ai fianchi, un po' di tre quarti
+    const testa = fig.bones.Head.getWorldPosition(new T.Vector3()), cam = new T.PerspectiveCamera(26, 1, .05, 30), M = MAGLIA_VERA;
+    cam.position.set(testa.x + M.lato * kr, testa.y - M.sotto * kr, testa.z + M.lontano * kr); cam.lookAt(testa.x, testa.y - M.centro * kr, testa.z);
+    url = scatta(fig, cam, M.punti);
+  } catch (e) { url = ''; }
+  MAGLIE_VERE.set(chiave, url); return url;
+}
+// la maglia vera se si riesce a disegnarla, se no quella piatta
+const anteMaglia = (c1, c2, st, colletto, raglan, dove = '') => { const u = magliaVera(c1, c2, st, colletto, raglan); return u ? `<img class="magliaVera" src="${u}" alt="">` : maglia(c1, c2, st, colletto, raglan, dove); };
 /*
  * Ritratto di un giocatore (o del mister) dal modello 3D del gioco: la stessa faccia, capelli e divisa che ha in campo,
  * disegnati una volta in un'immagine piccola e tenuti in memoria. mister: senza numero né nome sulla schiena.
@@ -271,20 +311,10 @@ function ritratto(clubId, nome, num, portiere, mister = false) {
     const c = club(clubId), ks = pickKits(c, CLUBS.find((x) => x.id !== clubId) || c), kit = portiere ? ks[2] : ks[0];
     const fig = makeSkinned(kit, hash(clubId + nome), mister ? '' : num, portiere ? null : clubId, mister ? '' : nome, {}); FIGURE.delete(fig);
     const kr = fig.metri / 2.72; // le distanze della ripresa erano pensate per una figura di 2,72 m
-    const sc = new T.Scene(), luce = new T.DirectionalLight(0xffffff, 2.6), viso = new T.DirectionalLight(0xffffff, 1.6), taglio = new T.DirectionalLight(0xB9A4FF, 2.2);
-    luce.position.set(1.4, 2.4, 3); viso.position.set(-.6, .4, 3); taglio.position.set(-2, 1.5, -2); sc.add(new T.HemisphereLight(0xdfe6ff, 0x2a2550, 1.8), luce, viso, taglio, fig.root);
     fig.mixer.update(0); fig.root.updateMatrixWorld(true);
-    const testa = fig.bones.Head.getWorldPosition(new T.Vector3()), cam = new T.PerspectiveCamera(26, 1, .05, 20), L = 256;
+    const testa = fig.bones.Head.getWorldPosition(new T.Vector3()), cam = new T.PerspectiveCamera(26, 1, .05, 20);
     cam.position.set(testa.x + .28 * kr, testa.y + .1 * kr, testa.z + 1.15 * kr); cam.lookAt(testa.x, testa.y - .02 * kr, testa.z);
-    const rt = new T.WebGLRenderTarget(L, L), prima = renderer.getRenderTarget(), col = renderer.getClearColor(new T.Color()), alfa = renderer.getClearAlpha();
-    rt.texture.colorSpace = T.SRGBColorSpace;
-    renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(sc, cam);
-    const px = new Uint8Array(L * L * 4); renderer.readRenderTargetPixels(rt, 0, 0, L, L, px);
-    renderer.setRenderTarget(prima); renderer.setClearColor(col, alfa); rt.dispose();
-    const [cv2, x] = cv(L, L), dati = x.createImageData(L, L);
-    // le righe arrivano dal basso: si capovolgono
-    for (let r = 0; r < L; r++) dati.data.set(px.subarray((L - 1 - r) * L * 4, (L - r) * L * 4), r * L * 4);
-    x.putImageData(dati, 0, 0); url = cv2.toDataURL('image/png');
+    url = scatta(fig, cam, 256);
   } catch (e) { url = ''; }
   RITRATTI.set(chiave, url); return url;
 }
@@ -376,6 +406,10 @@ const NOMI_NEGOZIO = {
   bordo: { semplice: 'Semplice', doppio: 'Doppio', sottile: 'Sottile', punti: 'A punti', oro: 'Oro' },
 };
 let nTab = 'stemma', nArmato = '';
+// Personalizza è una sezione sola con cinque schede: «Nome e colori» (il modulo del club, gratis) e le quattro del negozio
+// (stemma, divisa, manager, squadra: i pezzi che si comprano). La prima è una schermata a parte, le altre un pannello.
+const SCHEDE_PERSONALIZZA = [['club', 'Nome e colori'], ['stemma', 'Stemma'], ['divisa', 'Divisa'], ['manager', 'Manager'], ['squadra', 'Squadra']];
+const schedePersonalizza = (accesa) => `<div class="seg schedeP">${SCHEDE_PERSONALIZZA.map(([k, n]) => `<button ${k === 'club' ? 'data-club="personalizza"' : `data-ntab="${k}"`} class="${k === accesa ? 'on' : ''}">${n}</button>`).join('')}</div>`;
 function panNegozio(tab, msg) {
   if (tab) { nTab = tab; nArmato = ''; }
   const m = K.mio && K.club === POSTO ? K.mio : null, sc = K.scelte || (K.scelte = {}), me = club(K.club);
@@ -384,7 +418,7 @@ function panNegozio(tab, msg) {
     return `<button class="ogg${scelto ? ' on' : ''}${ho ? '' : ' chiuso'}${arm ? ' arm' : ''}" data-ogg="${id}" ${!ho && caro ? 'disabled' : ''}>${dentro}<b>${nome}</b><u>${ho ? (scelto ? 'In uso' : 'Usa') : arm ? `Conferma ${premioTesto(c.monete, c.gemme)}` : premioTesto(c.monete, c.gemme)}</u></button>`;
   };
   const fila = (titolo, tipo, scelto, dentro) => `<div class="sez">${titolo}</div><div class="oggetti">${CAR.NEGOZIO[tipo].tutti.map((x) => voce(tipo, x, NOMI_NEGOZIO[tipo] ? NOMI_NEGOZIO[tipo][x] : x, x === scelto, dentro ? dentro(x) : '')).join('')}</div>`;
-  const tabs = `<div class="seg">${[['stemma', 'Stemma'], ['divisa', 'Divisa'], ['manager', 'Manager'], ['squadra', 'Squadra']].map(([k, n]) => `<button data-ntab="${k}" class="${k === nTab ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+  const tabs = schedePersonalizza(nTab);
   const soloMio = '<p class="vuoto">Stemma e divisa si personalizzano col club creato da te all\'inizio della carriera.</p>';
   let corpo;
   if (nTab === 'stemma') {
@@ -392,7 +426,7 @@ function panNegozio(tab, msg) {
       + fila('Forma', 'forma', m.forma || 'scudo') + fila('Simbolo in cima', 'simbolo', m.simbolo || 'corona') + fila('Bordo', 'bordo', m.bordo || 'semplice') + '</div></div>' : soloMio;
   } else if (nTab === 'divisa') {
     const terza = CAR.possiede(K, 'terza', 'terza'), t3 = m && m.terza;
-    corpo = m ? `<div class="negozio"><div class="ante">${maglia(me.c1, me.c2, me.st, m.colletto || 'giro', !!m.raglan, 'n')}</div><div>`
+    corpo = m ? `<div class="negozio"><div class="ante">${anteMaglia(me.c1, me.c2, me.st, m.colletto || 'giro', !!m.raglan, 'n')}</div><div>`
       + fila('Disegni speciali della prima maglia', 'disegno', m.stile, (x) => `<i class="mg">${maglia(m.c1, m.c2, x, m.colletto || 'giro', !!m.raglan, 'n')}</i>`).replace(/>(onde|chevron|sfumata|mimetica|pennellata)</g, (_, k) => `>${STILI.find(([s]) => s === k)[1]}<`)
       + `<div class="sez">Terza maglia</div>` + (terza && t3
         ? `<div class="seg"><button data-indossa="prima" class="${m.indossa === 'terza' ? '' : 'on'}">In partita: prima maglia</button><button data-indossa="terza" class="${m.indossa === 'terza' ? 'on' : ''}">In partita: terza maglia</button></div>`
@@ -406,7 +440,7 @@ function panNegozio(tab, msg) {
     corpo = fila('Scarpini della squadra', 'scarpini', CAR.possiede(K, 'scarpini', sc.scarpini) ? sc.scarpini : 'misti', (x) => `<i class="tondo" style="background:${SCARPE_NEGOZIO[x] ? SCARPE_NEGOZIO[x][0] : 'conic-gradient(#16161a,#F3F3F3,#D9F51F,#FF5A1F,#1E6FB5,#16161a)'}"></i>`)
       + fila('Pallone delle partite in casa', 'pallone', CAR.possiede(K, 'pallone', sc.pallone) ? sc.pallone : 'classico', (x) => `<i class="tondo" style="background:radial-gradient(circle at 50% 50%,${PALLONI[x][1][1]} 0 28%,${PALLONI[x][0]} 30%)"></i>`);
   }
-  pan('Negozio', `${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}<p class="nota2">Qui si comprano solo aspetto e comodità: niente di quello che c'è nel negozio rende più forte la squadra.</p>`);
+  pan('Personalizza', `${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}<p class="nota2">Qui si comprano solo aspetto e comodità: niente di quello che c'è nel negozio rende più forte la squadra.</p>`);
 }
 /** Mette in uso un oggetto del negozio che si ha già. */
 function usaOggetto(tipo, cosa) {
@@ -515,7 +549,7 @@ function buildMenu() {
   $('#nuovo').addEventListener('input', (e) => { if (e.target.id === 'nvSigla') e.target.dataset.mano = 1; if (e.target.id === 'nvClub' && !$('#nvSigla').dataset.mano) $('#nvSigla').value = sigla(e.target.value); if (NV.passo === 1) anteprimaClub(); });
   $('#carr').onclick = () => { AU.init(); if (K) casa(); else apriNuovo(); };
   $('#hAcc').onclick = () => panProfilo();
-  const clubAz = (k) => (k === 'personalizza' ? (K.mio && K.club === POSTO ? apri('personalizza') : avviso('Si personalizza il club creato all\'inizio della carriera')) : k === 'amichevole' ? apri('amichevole') : k === 'allenamento' ? apri('allenamento') : apri('club', k));
+  const clubAz = (k) => (k === 'personalizza' ? (K.mio && K.club === POSTO ? (cima() === 'negozio' ? sostituisci('personalizza') : apri('personalizza')) : cima() === 'negozio' ? avviso('Nome e colori si cambiano solo al club creato all\'inizio della carriera') : apri('negozio', 'manager')) : k === 'amichevole' ? apri('amichevole') : k === 'allenamento' ? apri('allenamento') : apri('club', k));
   $('#campoA').addEventListener('click', tapRosa);
   $('#panInd').onclick = () => (K ? indietro() : casa()); $('#continua').onclick = () => { const fine = chiudiPonte(true); toMenu(); if (fine) fine(); };
   // i cursori del volume (impostazioni): musica ed effetti separati, salvati sul dispositivo

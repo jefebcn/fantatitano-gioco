@@ -61,6 +61,12 @@ const TRATTO = {
   vendi: '<path d="M3.5 12.5v-8h8l9 9-8 8z"/><circle cx="8" cy="9" r="1.3"/>',
   // mercato e strutture
   osservatore: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/>',
+  // l'agente: la sua tessera, con la figura e due righe
+  agente: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.8" cy="10.6" r="2.1"/><path d="M5.6 16.2c.5-1.700 1.800-2.500 3.200-2.500s2.700.800 3.200 2.500M14.500 9.800h3.800M14.500 13.200h3.800"/>',
+  // finanze: il giudizio (un grafico a colonne), le entrate (freccia in su) e le uscite (freccia in giù)
+  finanze: '<path d="M4 20h16"/><path d="M7.500 20v-5.500M12 20V9.500M16.500 20V5"/>',
+  entrate: '<path d="M12 19.500V6"/><path d="m6.500 11 5.500-5.500 5.500 5.500"/>',
+  uscite: '<path d="M12 4.500V18"/><path d="m6.500 13 5.500 5.500 5.500-5.500"/>',
   mistero: `<rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.7 2.2c-.8.5-1.3 1-1.3 2"/><circle cx="12" cy="16.8" r="1" ${pieno}/>`,
   foresteria: '<path d="M3 18.5v-11M3 15.5h18v3M21 15.5v-3a3 3 0 0 0-3-3h-7v6"/><circle cx="7" cy="12" r="1.8"/>',
   ufficio: '<rect x="3" y="7.5" width="18" height="12" rx="2"/><path d="M9 7.5v-2A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.500v2M3 13h18"/>',
