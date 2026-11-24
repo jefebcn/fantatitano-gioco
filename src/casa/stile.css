@@ -442,16 +442,21 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 /* ---------- Squadra ---------- */
 /* Misure in parti dello schermo, come le ha date Alex il 23/11: pulsanti a sinistra dall'8% al 21% della larghezza, alti
    il 7,5% dell'altezza; campo dal 21,5% al 74,5%, da sotto la barra fino al bordo in basso; sostituti dal 75% al 93%;
-   carte larghe il 5,5% della larghezza. Sfondo blu profondo con le luci dello stadio che scendono dagli angoli. */
+   carte larghe il 5,5% della larghezza. Lo sfondo è lo stadio di notte dipinto (sfondo-squadra), con un velo scuro sopra
+   perché carte e pulsanti si leggano; se l'immagine manca resta il blu profondo con le luci disegnate che scendono
+   dagli angoli e la sagoma delle Tre Torri. */
 #squadra{--oro:#E8B64C;--azz:#3FC6FF;font-family:Montserrat,Lato,system-ui,sans-serif;color:#fff;overflow:hidden;
   background:radial-gradient(ellipse 46% 60% at 48% 62%,rgba(70,150,255,.34),rgba(0,0,0,0) 72%),
     conic-gradient(from 96deg at 0 0,rgba(150,205,255,0) 0deg,rgba(150,205,255,.16) 7deg,rgba(150,205,255,0) 14deg,rgba(150,205,255,.1) 25deg,rgba(150,205,255,0) 34deg,rgba(150,205,255,.13) 47deg,rgba(150,205,255,0) 58deg,rgba(150,205,255,0) 360deg),
     conic-gradient(from 206deg at 100% 0,rgba(150,205,255,0) 0deg,rgba(150,205,255,.13) 11deg,rgba(150,205,255,0) 22deg,rgba(150,205,255,.1) 33deg,rgba(150,205,255,0) 44deg,rgba(150,205,255,.16) 51deg,rgba(150,205,255,0) 58deg,rgba(150,205,255,0) 360deg),
     radial-gradient(ellipse 120% 90% at 50% 40%,rgba(0,0,0,0) 55%,rgba(1,5,20,.7) 100%),linear-gradient(180deg,#0C2F7C,#0A2466 48%,#051540)}
-/* i quattro pulsanti: quello che si vede è alto il 7,5% dell'altezza; il posto da toccare è alto almeno 44 px, allargato
+#squadra.illustrata{background:linear-gradient(rgba(6,11,28,.3),rgba(6,11,28,.5)),image-set(url(img/illustrazioni/sfondo-squadra@1x.webp) 1x,url(img/illustrazioni/sfondo-squadra@2x.webp) 2x,url(img/illustrazioni/sfondo-squadra@3x.webp) 3x) center/cover}
+/* i pulsanti: quello che si vede è alto il 7,5% dell'altezza; il posto da toccare è alto almeno 44 px, allargato
    nello spazio tra un pulsante e l'altro coi bordi trasparenti sopra e sotto */
 .qSx{position:absolute;left:max(8%,env(safe-area-inset-left));width:13%;top:calc(var(--barra) + var(--vh)*2);display:grid}
 .qB{--alto:max(44px,calc(var(--vh)*9.3));--bordo:calc((var(--alto) - var(--vh)*7.5)/2);position:relative;display:flex;align-items:center;gap:6px;height:var(--alto);padding:0 7px;border:0 solid transparent;border-width:var(--bordo) 0;background-clip:padding-box;border-radius:calc(var(--bordo) + 5px);background-image:linear-gradient(180deg,#20418F,#11255E);box-shadow:inset 0 0 0 1px rgba(143,219,255,.32);color:#fff;text-align:left}
+/* sopra le tribune dello stadio dipinto il fondo dei pulsanti è blu scuro e lascia passare un po' di sfondo */
+#squadra.illustrata .qB:not(.accesa){background-image:linear-gradient(180deg,rgba(22,44,104,.84),rgba(9,20,54,.84))}
 .qB:active{filter:brightness(1.2)}
 .qB .ico{flex:none;width:18px;height:18px}
 .qB b{flex:1 1 0;min-width:0;font:400 15px/1 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden}
@@ -485,7 +490,7 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .qScheda{position:absolute;z-index:6;transform:translateX(-50%);display:flex;align-items:center;gap:4px;height:44px;min-width:44px;padding:0 9px;border:0 solid transparent;border-width:10px 0;background-clip:padding-box;border-radius:22px;background-image:linear-gradient(180deg,#FFFFFF,#D6EEFF);color:#0B1530;box-shadow:inset 0 0 0 1px #7FE0FF}
 .qScheda .ico{width:14px;height:14px}
 .qScheda b{font:800 12px/1 Montserrat,sans-serif;white-space:nowrap}
-/* le Tre Torri del Titano dietro il campo, appena visibili */
+/* le Tre Torri del Titano dietro il campo, appena visibili: solo quando manca lo sfondo dipinto */
 .qTorri{position:absolute;left:-1%;bottom:-3%;width:33%;aspect-ratio:1;fill:#A9D4FF;opacity:.13;pointer-events:none}
 .gC.ombra{filter:drop-shadow(0 6px 8px rgba(0,0,0,.6))}
 /* la «C» del capitano si prende col dito: il posto da toccare è più largo di quello che si vede */
