@@ -495,5 +495,27 @@ function RARI(C) { return Object.values(C.allenatori.raro).reduce((a, b) => a + 
   assert.ok(STAGIONE.servono === 3);
   K.applica(null, W.clubs);
 }
+// lo stadio nella richiesta del ponte (docs/ponte-partita.md §11): conta chi ospita. Per ognuna delle cinque divisioni
+// una partita in casa (la divisione e le stelle dello Stadio dell'utente) e una in trasferta (la divisione e le
+// stelle di forza dell'avversario: le squadre vere sono nel Campionato Sammarinese)
+{
+  const { controllaRichiesta } = await import('../src/ponte.js'), ammesse = DIVISIONI.map((d) => d.id);
+  const accettato = (st) => !controllaRichiesta({ versione: 1, stadio: st }, null, ammesse).some((e) => /stadio/.test(e));
+  assert.deepEqual(ammesse, ['sammarinese', 'cadetta', 'contrade', 'borghi', 'esordienti']);
+  DIVISIONI.forEach((D, k) => {
+    const div = k + 1, M = nuovaW(); M.div = div; M.strutture.stadio = k;
+    // l'avversario: una squadra inventata di quella divisione, o una vera nella più alta
+    const loro = div === 1 ? W.clubs.find((c) => !c.inventata && c.id !== M.club) : W.DIV.inventate.find((c) => c.div === div);
+    const casa = K.stadioDi(M, W.clubs, M.club), fuori = K.stadioDi(M, W.clubs, loro.id);
+    assert.deepEqual(casa, { divisione: D.id, stelle: k }, `in casa in ${D.nome}`); assert.deepEqual(fuori, { divisione: D.id, stelle: loro.str }, `in trasferta in ${D.nome}`);
+    assert.ok(accettato(casa) && accettato(fuori) && fuori.stelle >= 0 && fuori.stelle <= 5);
+    // in coppa e in amichevole l'avversario può essere di un'altra divisione: in trasferta vale la sua, in casa la nostra
+    const altra = W.DIV.inventate.find((c) => c.div !== div && c.div > 1); assert.equal(K.stadioDi(M, W.clubs, altra.id).divisione, DIVISIONI[altra.div - 1].id); assert.equal(K.stadioDi(M, W.clubs, M.club).divisione, D.id);
+  });
+  // senza carriera (amichevole dal benvenuto): le squadre vere giocano nello stadio grande, con le loro stelle
+  const vera = W.clubs.find((c) => !c.inventata); assert.deepEqual(K.stadioDi(null, W.clubs, vera.id), { divisione: 'sammarinese', stelle: vera.str });
+  assert.ok(!accettato({ divisione: 'serie-a' }) && !accettato({ divisione: 'contrade', stelle: 6 }));
+  K.applica(null, W.clubs);
+}
 assert.equal(K.carica({ getItem: () => '{rotto' }), null); assert.equal(K.carica({ getItem: () => null }), null);
 console.log(`Carriera: tutte le prove passate (forte contro debole: ${v} vittorie, ${s} sconfitte su 4000, ${(gol / 4000).toFixed(2)} gol a partita)`);

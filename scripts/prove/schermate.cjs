@@ -205,7 +205,15 @@ srv.listen(0, async () => {
     // partita: si entra dal campionato, si gioca a passi fissi, poi pausa, sostituzioni e fine; «Continua» torna alla Carriera
     await tocca('#carriera .k-prossima'); await tocca('#sfida [data-az="riscaldamento"]'); await tocca('#sfida [data-az="squadra"]'); await foto('squadra-dalla-sfida'); await tocca('#bCasa');
     if (await dove() !== 'sfida') errori.push(`${w}: dalla Squadra aperta nella Sfida Indietro porta a «${await dove()}»`);
-    await tocca('#sfida [data-az="gioca"]'); await pg.waitForTimeout(400); await foto('vs'); await pg.evaluate(() => window.__seme(500)); await pg.waitForTimeout(1900);
+    await tocca('#sfida [data-az="gioca"]'); await pg.waitForTimeout(400);
+    // nella richiesta arriva lo stadio di chi ospita (docs/ponte-partita.md §11): in casa la divisione e lo Stadio
+    // dell'utente, in trasferta la divisione e le stelle dell'avversario
+    { const st = await pg.evaluate(() => { const g = window.__g, K = g.carriera(), r = g.G.ponte && g.G.ponte.r; if (!r) return null; const casa = r.squadre[0].id, mia = casa === K.club; return { stadio: r.stadio, atteso: { divisione: mia ? g.CAR.divisione(K).id : casa.split('-')[0], stelle: mia ? K.strutture.stadio : g.CAR.lega(K, window.CLUBS).find((c) => c.id === casa).str } }; });
+      if (!st || !st.stadio || st.stadio.divisione !== st.atteso.divisione || st.stadio.stelle !== st.atteso.stelle) errori.push(`${w}: nella richiesta lo stadio è ${JSON.stringify(st && st.stadio)} invece di ${JSON.stringify(st && st.atteso)}`); }
+    await foto('vs'); await pg.evaluate(() => window.__seme(500)); await pg.waitForTimeout(1900);
+    // dopo la schermata «VS» la partita alza lo stadio: dev'essere quello della divisione arrivata nella richiesta
+    { const st = await pg.evaluate(() => { const g = window.__g, r = g.G.ponte && g.G.ponte.r; return r && r.stadio ? { stadio: r.stadio, tipo: g.stadio(), atteso: g.STADI.divisioni[r.stadio.divisione] } : null; });
+      if (st && st.tipo !== st.atteso) errori.push(`${w}: si gioca nello stadio «${st.tipo}» invece che «${st.atteso}»`); else if (st && w === MISURE[0][0]) console.log(`stadio nella richiesta: ${JSON.stringify(st.stadio)} → stadio «${st.tipo}»`); }
     const stato = await pg.evaluate(() => { const g = window.__g; window.__seme(501); for (let i = 0; i < 900; i++) g.step(1 / 60); g.pause(true); return [g.G.state, g.G.teams[0].score, g.G.teams[1].score]; });
     await foto('pausa'); if (await tocca('#apriCambi')) { await foto('cambi'); await tocca('#cambiL [data-o]', 3); await foto('cambi-tocco'); await tocca('#cambiOk'); }
     // tre dei miei (in partita la mia squadra è sempre la numero 0, anche fuori casa) restano stanchi fino al fischio finale,

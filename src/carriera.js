@@ -33,6 +33,17 @@ const caso = (s) => { let h = 2166136261; for (const c of String(s)) { h ^= c.ch
 /** La divisione in cui si gioca (una riga di DIVISIONI) e le sue squadre, club dell'utente compreso. */
 export const divisione = (C) => DIVISIONI[(C.div || 1) - 1];
 export const lega = (C, clubs) => (C.squadre ? C.squadre.map((id) => trova(clubs, id)).filter(Boolean) : clubs);
+/**
+ * Lo stadio in cui si gioca una partita, per la richiesta del ponte (docs/ponte-partita.md §11): conta chi ospita.
+ * `casa` è l'id della squadra di casa. Se è il club della carriera: la divisione in cui gioca e le stelle della sua
+ * struttura Stadio. Se è una squadra del computer: la sua divisione (le squadre vere sono nel Campionato Sammarinese)
+ * e le sue stelle di forza. Torna { divisione: id di DIVISIONI, stelle: da 0 a 5 }; senza carriera `C` è nullo.
+ */
+export function stadioDi(C, clubs, casa) {
+  if (C && casa === C.club) return { divisione: divisione(C).id, stelle: Math.min(5, stelle(C, 'stadio')) };
+  const c = trova(clubs, casa), D = DIVISIONI[((c && c.div) || 1) - 1] || DIVISIONI[0];
+  return { divisione: D.id, stelle: clamp(Math.round((c && c.str) || 0), 0, 5) };
+}
 /** Quante monete vale una vittoria nella divisione in cui si gioca. */
 export const vittoria = (C) => divisione(C).vittoria;
 /** Un importo scritto «in vittorie» in monete della divisione in cui si gioca, arrotondato. */
