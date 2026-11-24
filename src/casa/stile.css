@@ -335,8 +335,6 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .gFoto{position:absolute;left:calc(var(--gw)*var(--c-rs));top:calc(var(--gw)*var(--c-ra));width:calc(var(--gw)*var(--c-rl));height:calc(var(--gw)*var(--c-rl));max-width:none}
 .gRit svg.gFoto{color:rgba(11,21,48,.36)}
 .gRit img.gFoto:not([src]),.gRit img.gFoto[src]+.gFoto{display:none}
-/* il ritratto vecchio (modello 3D), quando quello nuovo manca: sta tutto dentro la carta, a destra della valutazione */
-.gRit img.gFoto.vecchio{left:calc(var(--gw)*var(--c-os));top:calc(var(--gh)*var(--c-oa));width:calc(var(--gw)*(1 - var(--c-os)));height:calc(var(--gh)*(var(--c-fd) - var(--c-oa)));object-fit:cover;object-position:50% 0}
 .gVal{position:absolute;left:calc(var(--gw)*var(--c-vx));top:calc(var(--gh)*var(--c-vy));transform:translate(-50%,-50%);font:400 calc(var(--gw)*var(--c-vm))/1 Anton,Impact,sans-serif;font-style:normal;color:var(--c-testo);white-space:nowrap}
 .gRuolo{position:absolute;left:calc(var(--gw)*var(--c-ux));top:calc(var(--gh)*var(--c-uy));transform:translate(-50%,-50%);font:400 max(var(--c-np),calc(var(--gw)*var(--c-um)))/1 "Bebas Neue",Anton,Impact,sans-serif;text-decoration:none;color:var(--c-testo);white-space:nowrap}
 /* chi gioca fuori ruolo ha il ruolo su fondo rosso; sulle carte più strette il ruolo si vede solo in quel caso */
@@ -371,7 +369,6 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .gC.stretta .gRit{clip-path:inset(calc(var(--gh)*var(--c-rp)*-1) 0 calc(var(--gh)*(1 - var(--c-kf))) 0)}
 .gC.stretta .gFoto{left:calc(var(--gw)*var(--c-ks));top:calc(var(--gw)*var(--c-ka));width:calc(var(--gw)*var(--c-kl));height:calc(var(--gw)*var(--c-kl))}
 .gC.ampia .gFoto{left:calc(var(--gw)*var(--c-as));top:calc(var(--gw)*var(--c-aa));width:calc(var(--gw)*var(--c-al));height:calc(var(--gw)*var(--c-al))}
-.gC.stretta .gRit img.gFoto.vecchio{left:calc(var(--gw)*var(--c-os));top:calc(var(--gh)*var(--c-oa));width:calc(var(--gw)*(1 - var(--c-os)));height:calc(var(--gh)*(var(--c-kf) - var(--c-oa)))}
 .gC.stretta .gNome{top:calc(var(--gh)*var(--c-kf));height:auto;bottom:0;border-radius:0 0 var(--gr) var(--gr);font-size:max(var(--c-np),calc(var(--gw)*var(--c-kn)))}
 .gC.stretta.conEnergia .gNome{padding-bottom:calc(var(--gh)*var(--c-ba) + var(--gw)*var(--c-es))}
 .gC.stretta .gStat{display:none}
@@ -383,7 +380,6 @@ body.conBarra #sfida{padding-top:calc(var(--barra) + 5px)}
 .gC.piccola{display:grid;justify-items:center;--gh:calc(var(--gw)*var(--c-pa))}
 .gC.piccola .gRit{clip-path:inset(calc(var(--gh)*var(--c-rp)*-1) 0 0 0 round 0 0 var(--gr) var(--gr))}
 .gC.piccola .gFoto{left:calc(var(--gw)*var(--c-ps));top:calc(var(--gw)*var(--c-pr));width:calc(var(--gw)*var(--c-pl));height:calc(var(--gw)*var(--c-pl))}
-.gC.piccola .gRit img.gFoto.vecchio{left:calc(var(--gw)*var(--c-os));top:calc(var(--gh)*var(--c-oa));width:calc(var(--gw)*(1 - var(--c-os)));height:calc(var(--gh)*(1 - var(--c-oa)))}
 .gC.piccola .gVal{left:5%;top:3%;transform:none;font-size:var(--c-pt);text-shadow:0 0 2px var(--c-su),0 0 2px var(--c-su),0 0 1px var(--c-su)}
 .gC.piccola .gAvviso{position:absolute;right:-7px;bottom:6%;display:grid;width:15px;height:15px;color:#FF5A5A}
 .gC.piccola .gAvviso .ico{width:100%;height:100%}
