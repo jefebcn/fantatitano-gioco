@@ -145,10 +145,16 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   solo maglia contro maglia: ospiti blu con le maniche gialle contro una squadra gialla passavano. Ora nemmeno disegno,
   maniche e calzettoni degli ospiti possono avere il colore della maglia di casa (`DIVISE`, `pickKits`). Prova:
   `scripts/prove/divise.cjs`, nelle prove automatiche (prima 29 coppie su 342 sbagliate, ora 0).
+- Riprese, difetto trovato nel video finale: un avversario col posto appena oltre i 9,15 m si fermava un palmo dentro la
+  distanza e la punizione aspettava a vuoto 8 secondi (`FERMI.arrivo`) prima di dare i comandi. Ora gli avversari stanno
+  mezzo metro oltre la distanza (`postoFermo`). Caso aggiunto a `scripts/prove/riprese.cjs` (limite 5 s).
+  Resta lento il calcio d'angolo (si può battere dopo circa 10 s: si aspettano i saltatori): da decidere con Alex.
 - 13 A METÀ, da confermare con Alex: in difesa il tasto A ora dice «Contrasto» (prima restava «Calcio forte»). L'azione
   non è cambiata: è la scivolata verso il pallone, che c'era già. Chiesto ad Alex se in Dream League il contrasto del
   tasto A è la scivolata o quello in piedi (che oggi fa il Pressing del tasto B).
-- Restano: 15 animazioni (video rallentato dei 5 gesti).
+- 15 MANDATO: video rallentato (3 volte più lento) di corsa, cambio di direzione, passaggio, stop e tiro, più il video
+  finale di 30 s (calcio d'inizio, punizione, rimessa: nessuna parte da sola). Si aspetta il giudizio di Alex. Visto al
+  rallentatore: nel tiro il pallone sembra partire un attimo prima della gamba.
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato
