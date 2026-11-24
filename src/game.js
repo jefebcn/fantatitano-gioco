@@ -852,7 +852,7 @@ function aiSubs() {
 const kitsFor = (mia, loro, fuori) => { if (!fuori) return pickKits(mia, loro); const [a, b, c, d, e] = pickKits(loro, mia); return [b, a, d, c, e]; };
 // Lo stato che appartiene a una sola partita: a ogni partita nuova torna com'era al caricamento. Senza, la seconda partita
 // ereditava tempi e contatori della prima (l'istante dell'ultimo tiro, l'ultimo che ha toccato palla) e non era più la stessa
-const DI_PARTITA = ['lastTouch', 'lastKicker', 'intended', 'poss', 'shotId', 'charge', 'next', 'taker', 'headId', 'wait', 'idle', 'altoT', 'calcioT', 'tiroT', 'occasioneT', 'xAltaT', 'buioT', 'inizioTempo',
+const DI_PARTITA = ['lastTouch', 'lastKicker', 'intended', 'poss', 'shotId', 'charge', 'next', 'taker', 'headId', 'wait', 'idle', 'altoT', 'calcioT', 'tiroT', 'occasioneT', 'xAltaT', 'buio', 'inizioTempo', 'piazza',
   'prossimo', 'prossimoT', 'rimessa', 'scorer', 'segno', 'tipoFermo', 'tocchi', 'land', 'path', 'caricaIdeale', 'caricaTipo', 'cine', 'delusoGol', 'delusoPunto', 'rivede', 'shooter', 'lastPass', 'ctrl', 'goalEnd'];
 function nuovaPartita(home, away) {
   clearMatch(); for (const k of DI_PARTITA) G[k] = G_INIZIO[k]; TIFO.tiro = -1; TIFO.gol = 0;
@@ -1895,6 +1895,7 @@ function passo(dt) {
       if (fk && fk.pos) for (const [o, q] of fk.pos) if (hyp(o.x - q[0], o.z - q[1]) > 1) return false;
       return !k.team.opp.players.some((o) => !(fk && fk.wall && fk.wall.some((w) => w.p === o)) && hyp(o.x - b.x, o.z - b.z) < far); };
     const sposta = (o, x, z) => { if (hyp(o.x - x, o.z - z) < .45) { o.x = x; o.z = z; o.vx = o.vz = 0; } };
+    if (G.piazza >= 0 && G.stateT >= G.piazza) { G.piazza = -1; piazzaFermi(); }
     if (G.stateT > G.wait && (pronti() || (G.stateT > G.wait + (G.fk && G.fk.pen ? FERMI.rigore : FERMI.arrivo) && accanto()) || G.stateT > G.wait + 15)) { // dopo 15 s si batte comunque
       const k = G.taker, fk = G.fk, q = postoBattitore(k, b); k.x = q[0]; k.z = q[1]; k.vx = k.vz = 0; if (G.rimessa) k.dir = Math.atan2(0, -sgn(b.z)); // la rimessa: rivolto verso il campo
       if (fk && fk.pen) { // rigore: tutti fuori dall'area, portiere sulla linea
@@ -2211,11 +2212,22 @@ function restart(team, x, z, tipo, taker) {
   if (team.human) setCtrl(G.taker); else setCtrl(nearestTo(G.teams[0], x, z));
   setState('restart'); G.tipoFermo = tr('partita.fermo')[tipo] || ''; const fi = { punizione: 'fallo', fuorigioco: 'fuorigioco' }[tipo]; if (fi) AU.fischio(fi); // rimesse, angoli e fondo: l'arbitro non fischia
   G.rimessa = tipo === 'laterale' && G.taker ? { chi: G.taker } : null;
-  // rimessa laterale come Dream League: dissolvenza scura, a metà stacco della telecamera sul punto di battuta; i comandi
-  // tornano dopo FERMI.comandi secondi, quando si può battere
   // dopo una grande occasione (parata, tiro deviato, palo, tiro fuori di poco): prima il replay breve, poi la palla ferma
   const replay = G.t - (G.occasioneT ?? -99) < FERMI.occasione && REGIA.rivedi(); G.occasioneT = -99;
-  if (G.rimessa) { G.wait = Math.max(G.wait, FERMI.comandi); if (!G.auto && !replay) { buio(); G.buioT = G.t + FERMI.buio / 2; } }
+  // Rimessa laterale e calcio d'angolo come Dream League: dissolvenza scura e, a metà, stacco della telecamera sul punto
+  // di battuta. Nello stesso istante ognuno viene messo al suo posto (vedi piazzaFermi): non si vede, e non si aspetta
+  // più che ci arrivino camminando. I comandi tornano dopo FERMI.comandi secondi. Dopo un replay lo stacco è il suo.
+  G.piazza = -1;
+  if (tipo === 'laterale' || tipo === 'angolo') { G.wait = FERMI.comandi; G.piazza = replay ? 0 : FERMI.buio / 2; if (!G.auto && !replay) G.buio = { da: G.t, stacco: false }; }
+}
+/** Lo stacco di rimessa laterale e calcio d'angolo: tutti al loro posto di palla ferma (quello di postoFermo), fermi e
+    rivolti al pallone. Succede a schermo scuro, mentre cambia l'inquadratura. */
+function piazzaFermi() {
+  const b = G.ball;
+  for (const p of all()) {
+    postoFermo(p); p.x = p.tx; p.z = p.tz; p.vx = p.vz = 0; p.dir = Math.atan2(b.x - p.x, b.z - p.z);
+    p.st = 'run'; p.stT = 0; p.stun = 0; p.fx = null; p.fxNew = false; p.fallen = false; p.run = p.mark = null;
+  }
 }
 // Punizione per `team`. Se è a tiro dalla porta, tre avversari fanno barriera e chi calcia (se lo guida l'IA) tira in porta
 function freeKick(team, x, z, tipo, skip) {
@@ -2230,7 +2242,7 @@ function freeKick(team, x, z, tipo, skip) {
 }
 // Calcio d'angolo: quattro o cinque attaccanti in area (primo palo, dischetto, secondo palo, limite), ognuno con un marcatore
 function corner(team, x, z) {
-  restart(team, x, z, 'angolo'); G.wait = 2.5; G.stats.corners[team.idx]++;
+  restart(team, x, z, 'angolo'); G.stats.corners[team.idx]++;
   const s = team.side, e = sgn(z), pos = new Map(), slots = [[5.5, 3.2], [10.5, -.5], [7, -5.5], [13, 4], [18.5, -2]];
   const quanti = rnd() < .5 ? AREA_IA.angolo[0] : AREA_IA.angolo[1]; // 4 o 5 attaccanti in area
   const att = team.players.filter((p) => p.i && p !== G.taker).sort((a, c) => team.form[c.i][0] - team.form[a.i][0]).slice(0, quanti);
@@ -2584,7 +2596,7 @@ function disegna(dt) {
     if (BANDIERINE && G.ball) BANDIERINE.muovi(dt, [{ x: G.ball.x, z: G.ball.z, vx: G.ball.vx, vz: G.ball.vz, alto: G.ball.y }, ...all().map((p) => ({ x: p.x, z: p.z, vx: p.vx, vz: p.vz, alto: 0 }))]);
     PART.muovi(dt); if (SPALTI) folla(dt); if (BORDO && G.ball) BORDO.muovi(dt, G.ball.x, G.ball.z); rilievoDivise();
   }
-  if (G.buioT && G.t >= G.buioT) { G.buioT = 0; updateCamera(9); } // a metà della dissolvenza della rimessa: stacco sul punto di battuta
+  buio();
   updateCamera(dt); REGIA.dopo(dt); seguiOmbre(); dettagliFigure(); if (RESA) RESA.disegna(); else renderer.render(scene, cam);
   DBG_IA.disegna();
 }
@@ -2597,7 +2609,15 @@ let bannerT = 0;
 function banner(t, s, ms, c) { const el = $('#banner'); el.dataset.c = c || ''; el.querySelector('.t').textContent = t; el.querySelector('.s').textContent = s || ''; el.classList.add('su'); clearTimeout(bannerT); bannerT = setTimeout(() => el.classList.remove('su'), ms); }
 let lastClock = '', lastChi = null, lastAtt = null, lastTipo = '';
 // dissolvenza scura breve (rimessa laterale)
-function buio() { const el = $('#buio'); el.style.setProperty('--d', `${FERMI.buio}s`); el.classList.remove('va'); void el.offsetWidth; el.classList.add('va'); }
+// La dissolvenza scura dello stacco (rimessa laterale, calcio d'angolo): segue il tempo di gioco, non quello vero, così
+// il momento più scuro è sempre quello in cui i giocatori vengono messi a posto, anche se il telefono rallenta. A metà
+// la telecamera stacca sul punto di battuta.
+let buioAcceso = false;
+function buio() {
+  const a = G.buio; if (!a) { if (buioAcceso) { buioAcceso = false; $('#buio').style.opacity = ''; } return; }
+  const k = (G.t - a.da) / FERMI.buio; if (k >= .5 && !a.stacco) { a.stacco = true; updateCamera(9); }
+  buioAcceso = true; $('#buio').style.opacity = k >= 1 ? '' : FERMI.scuro * clamp(Math.min(k, 1 - k) / .45, 0, 1); if (k >= 1) G.buio = null;
+}
 // La potenza mentre si tiene premuto un tasto di calcio (da 0 a 1), o -1: la barra la disegna la regia sotto il nome
 const potenzaBarra = () => (G.charge >= 0 && G.ctrl && G.ball && G.ball.owner === G.ctrl ? potenza() : -1);
 function hud() {
