@@ -108,13 +108,12 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 #sb::after{content:'';position:absolute;right:0;top:12%;bottom:12%;width:3px;border-radius:2px;background:var(--sq,var(--viola))}
 #sbT{position:absolute;top:var(--su);left:calc(var(--sx) + var(--alto) + 6px + var(--vw)*21 + 4px);height:var(--alto);width:calc(var(--vw)*8 - 4px);box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:Anton;font-style:normal;font-size:calc(var(--alto)*.55);color:var(--lime);background:rgba(10,10,12,.82);border-radius:6px;box-shadow:0 0 0 1px rgba(75,6,252,.7)}
 #chi,#en{display:none!important}
-/* palle ferme come Dream League: tipo sotto il tabellone, comandi nascosti, icone dei calci piazzati, dissolvenza della rimessa */
+/* palle ferme come Dream League: tipo sotto il tabellone, comandi nascosti, icona della maglia per cambi e formazione, dissolvenza della rimessa */
 #tipo{position:absolute;top:calc(var(--su) + var(--alto) + 6px);left:calc(var(--sx) + var(--alto) + 6px);font-family:Anton;font-size:14px;letter-spacing:.08em;text-transform:uppercase;background:var(--lime);color:var(--ink);padding:3px 12px 2px;border-radius:7px;display:none}
-#hud.fermo #tipo:not(:empty){display:block}#hud.fermo #stickZona,#hud.fermo #tasti{visibility:hidden}
-#icone{position:absolute;top:calc(var(--su) + var(--alto) + 6px);right:calc(env(safe-area-inset-right,0px) + 8px);display:none;gap:6px}#hud.piazzato #icone{display:flex}
+#hud.fermo #tipo:not(:empty){display:block}#hud.fermo:not(.batte) #stickZona,#hud.fermo:not(.batte) #tasti{visibility:hidden}
+#icone{position:absolute;top:calc(var(--su) + var(--alto) + 6px);right:calc(env(safe-area-inset-right,0px) + 8px);display:none;gap:6px}#hud.fermo #icone{display:flex}
 #icone button{width:38px;height:38px;border-radius:10px;background:rgba(10,10,12,.6);color:#fff;pointer-events:auto;padding:7px}#icone svg{width:100%;height:100%}
-#buio{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:19}#buio.va{animation:buio var(--d) ease-in-out both}
-@keyframes buio{0%{opacity:0}45%,55%{opacity:.85}100%{opacity:0}}
+#buio{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:19}
 #hud.cine #tipo,#hud.cine #icone{display:none!important}
 #chi{position:absolute;top:56px;left:50%;transform:translateX(-50%);font-family:Anton;font-size:14px;letter-spacing:.06em;
   background:rgba(10,10,12,.6);padding:3px 10px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
@@ -176,7 +175,7 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
   <div id="ment"><button data-d="-1" data-t-aria="hud.piuDifensiva">‹</button><span></span><button data-d="1" data-t-aria="hud.piuOffensiva">›</button></div>
   <div id="rig"></div>
   <div id="tipo"></div>
-  <div id="icone"><button data-t-aria="hud.portiere"><svg viewBox="0 0 24 24"><path d="M7 21v-8L4 9V5l2-1 1 4h1V3h2v5h1V2h2v6h1V3h2v6l1-2 2 1-2 7v6z" fill="currentColor"/></svg></button><button data-t-aria="hud.maglia"><svg viewBox="0 0 24 24"><path d="M8 3l-6 3 2 5 3-1v11h10V10l3 1 2-5-6-3a4 4 0 0 1-8 0z" fill="currentColor"/></svg></button><button data-t-aria="hud.pallone"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7l4 3-1.5 5h-5L8 10z" fill="currentColor"/></svg></button></div>
+  <div id="icone"><button id="icoMaglia" data-t-aria="hud.maglia"><svg viewBox="0 0 24 24"><path d="M8 3l-6 3 2 5 3-1v11h10V10l3 1 2-5-6-3a4 4 0 0 1-8 0z" fill="currentColor"/></svg></button></div>
   <div id="buio"></div>
   <div id="chi"></div>
   <div id="en"><i></i></div>

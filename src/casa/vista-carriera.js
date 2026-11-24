@@ -13,18 +13,21 @@ import { finestra } from './finestra.js';
 import { apriPremio, premiDa } from './premio.js';
 import { t } from './testi.js';
 import { apri, ridisegna } from './nav.js';
+import { quandoCambiaMisura } from './schermo.js';
 
 document.getElementById('vs').insertAdjacentHTML('beforebegin', '<div id="carriera" class="scr nas"></div>');
 const radice = document.getElementById('carriera');
 // quando arriva un'immagine o cambia la misura dello schermo i posti si spostano: i testi si riadattano
 radice.addEventListener('load', () => adatta(radice), true);
-addEventListener('resize', () => { if (!radice.classList.contains('nas')) adatta(radice); });
+quandoCambiaMisura(() => { if (!radice.classList.contains('nas')) adatta(radice); });
 
 // cosa fa ogni carta
 const AZIONI = {
   prossima: () => { const p = CAR.prossima(K); if (p) apri('sfida', 'camp', p.avv, t('sfida.campionato', p.giornata, p.totale, p.inCasa), !p.inCasa); else nuovaStagione(); },
   classifica: () => apri('classifica'), castelli: () => apri('castelli'), coppa: () => apri('coppa'),
 };
+/** Gioca la prossima partita di campionato o, a campionato finito, chiude la stagione: lo usano anche le altre schermate. */
+export const giocaProssima = () => AZIONI.prossima();
 radice.addEventListener('click', (e) => { const b = e.target.closest('[data-vai]'); if (b && AZIONI[b.dataset.vai]) AZIONI[b.dataset.vai](); });
 
 /**
@@ -52,7 +55,7 @@ const trofeo = (nome, ico) => figura(nome, 'trofeo', 56) || icona(ico, 'trofeo')
 export function disegnaCarriera() {
   const p = CAR.prossima(K), tab = CAR.classifica(K, CLUBS), io = tab.findIndex((r) => r.id === K.club);
   // in fondo alla carta: la divisione in cui si gioca e quanti obiettivi della stagione sono fatti
-  const ob = CAR.obiettivi(K, CLUBS), obiettiviT = K.div === 1 ? t('carriera.cima', CAR.divisione(K).nome) : t('carriera.obiettivi', CAR.divisione(K).nome, ob.filter((o) => o.fatto).length, ob.length);
+  const ob = CAR.obiettivi(K, CLUBS), obiettiviT = K.div === 1 ? t('carriera.cima', CAR.divisione(K).nome) : t('carriera.obiettivi', CAR.divisione(K).nome, ob.filter((o) => o.sicuro).length, ob.length);
   // prossima partita di campionato, o la stagione nuova quando il campionato è finito
   const prossima = p
     ? carta({ rotta: 'prossima', titolo: t('carriera.gioca'), nota: t('carriera.campionatoNome'), colore: 'oro', sfondo: 'carta-carriera', classe: 'k-prossima',

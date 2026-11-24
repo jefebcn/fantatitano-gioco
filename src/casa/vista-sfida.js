@@ -11,7 +11,7 @@ import { K, DATI, sel, salvaK, maglia, avviso, esc, mon, club, moduloMio } from 
 import { pronta, figura } from './immagini.js';
 import { icona, stelline } from './icone.js';
 import { adatta, attrNome } from './carte.js';
-import { cartaCampo, riempiRitratti } from './giocatore.js';
+import { cartaGiocatore, prontaCarte } from './giocatore.js';
 import { disponi, erba } from './campo.js';
 import { incarichi } from './rosa.js';
 import { finestra } from './finestra.js';
@@ -19,6 +19,7 @@ import { apriPremio, premiDa } from './premio.js';
 import { ECONOMIA } from '../config.js';
 import { t } from './testi.js';
 import { apri, ridisegna, indietro } from './nav.js';
+import { quandoCambiaMisura } from './schermo.js';
 
 document.getElementById('vs').insertAdjacentHTML('beforebegin', '<div id="sfida" class="scr nas"></div>');
 const radice = document.getElementById('sfida');
@@ -33,10 +34,10 @@ const TIPO_PONTE = { camp: 'campionato', coppa: 'coppa', castelli: 'castelli', a
 function campo(el, c, modulo, mio) {
   const posti = postiModulo(modulo), r = el.getBoundingClientRect(); if (!r.width) return;
   const d = disponi(posti, r.width, r.height), schede = c.xi.map((x) => DATI.scheda(x, c.id)), inc = mio ? incarichi(K, CLUBS, schede) : {};
-  el.style.setProperty('--gw', `${d.gw}px`); el.style.setProperty('--gf', `${d.scritta}px`);
+  el.style.setProperty('--gf', `${d.scritta}px`);
   el.innerHTML = erba() + c.xi.map((x, i) => {
     const sc = schede[i], q = d.dove[i];
-    return cartaCampo(sc, { club: c.id, energia: mio ? CAR.energiaDi(K, x[0]) : 100, capitano: inc.capitano === x[0], fuori: adatto(sc.ruolo, posti[i].ruolo), migliorato: mio && !!(K.crescita || {})[x[0]], stile: `left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px;width:${Math.floor(q.posto - 2)}px` });
+    return cartaGiocatore(sc, { club: c.id, larga: d.gw, piccola: true, energia: mio ? CAR.energiaDi(K, x[0]) : 100, capitano: inc.capitano === x[0], fuori: adatto(sc.ruolo, posti[i].ruolo), migliorato: mio && !!(K.crescita || {})[x[0]], stile: `left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px;width:${Math.floor(q.posto - 2)}px;z-index:${1 + Math.floor(q.y / r.height * 5)}` });
   }).join('');
 }
 // la striscia sotto il campo: stemma, nome, stelle, modulo e la maglia che la squadra userà in questa partita
@@ -73,10 +74,10 @@ export function disegnaSfida(partita) {
     + `<button class="azione gioca" data-az="gioca"><b>${t('sfida.gioca')}</b>${icona('avanti')}</button></div>`;
   // le carte si mettono dopo, quando si sa quanto sono grandi i campi su questo schermo
   campo(radice.querySelector('.sCampo.sx'), H, mioModulo, mio); campo(radice.querySelector('.sCampo.dx'), A, loroModulo, false);
-  adatta(radice); riempiRitratti(radice);
+  adatta(radice); prontaCarte(radice);
 }
 radice.addEventListener('load', () => adatta(radice), true);
-addEventListener('resize', () => { if (S && !radice.classList.contains('nas')) disegnaSfida(); });
+quandoCambiaMisura(() => { if (S && !radice.classList.contains('nas')) disegnaSfida(); });
 
 radice.addEventListener('click', (e) => {
   const b = e.target.closest('button[data-az]'); if (!b) return;

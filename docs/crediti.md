@@ -19,6 +19,21 @@ Le fonti dei modelli e delle animazioni della partita sono nel README; quelle de
   above copyright notice and this permission notice shall be included in all copies or substantial portions of the
   Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND […]». Testo intero nel repository citato.
 
+### GameplayFootball (Unlicense): tre regole dell'IA della partita
+- Di chi: Bastiaan Konings Schuiling, https://github.com/BazkieBumpercar/GameplayFootball (lo stesso motore di Google
+  Research Football). Licenza Unlicense: pubblico dominio, si può copiare e adattare senza condizioni.
+- Cosa, dal 23/11, riscritto nel nostro JavaScript (nessun file copiato):
+  - **inserimento a condizione** (`teamAIcontroller.cpp`, righe 189-222): parte il compagno più vicino al punto 26 m
+    davanti al portatore, se lì c'è spazio; formula del voto e numeri di partenza sono i suoi (`INSERIMENTO` in
+    `src/config.js`, `runs` in `src/game.js`). Nostro: l'arrivo a 9 m dal fondo e il rispetto del fuorigioco;
+  - **mira del tiro a tre bersagli** (`elizacontroller.cpp`, righe 796-960): palo, centro, palo, e vince quello dove gli
+    avversari arrivano più tardi sulla traiettoria (`valoreTiro`, `TIRO_IA.bersagli`). Quando tirare resta deciso dalle
+    nostre regole: la sua soglia, da noi, lasciava quasi solo colpi di testa;
+  - **passaggio e smarcamento con lo stesso voto** (`elizacontroller.cpp`, righe 796-926 e 1008-1060): l'idea che chi è
+    senza palla si muova per alzare il voto che gli dà chi passa (`votoPassaggio`, `puntoVoto`, `SMARCA`). Il voto è il
+    nostro, di suo c'è l'idea e la distanza di 10,5 m tra compagni.
+- Lo studio completo, con cosa è stato provato e scartato: `docs/studio-ia.md`.
+
 ## Musica
 
 ### «Rise Up (Fantatitano)», la musica della home

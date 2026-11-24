@@ -5,22 +5,25 @@
 // Due giocatori si scambiano, tra campo, sostituti e riserve, in due modi: toccandoli uno dopo l'altro, oppure
 // trascinando una carta sull'altra. Il primo tocco sceglie la carta, che si illumina e mostra un piccolo pulsante «Scheda»;
 // toccarla di nuovo, o toccare il vuoto, annulla. La scheda del giocatore si apre da quel pulsante o tenendo il dito
-// fermo sulla carta. Capitano, rigori, punizioni e angoli sono le linguette accanto alla carta di chi li ha: si
-// trascinano su un altro titolare per passargli l'incarico. Ogni cambio è salvato subito.
+// fermo sulla carta. Il capitano ha la «C» sulla carta, sotto il ruolo: si trascina su un altro titolare per passargli
+// la fascia. Rigori, punizioni e angoli non stanno sulle carte del campo: si vedono tutti insieme, col capitano, nel
+// pannello del pulsante «Incarichi», e lì si danno a un altro titolare (oppure dalla scheda del giocatore). Ogni
+// cambio è salvato subito.
 import * as CAR from '../carriera.js';
-import { FORMS, SQUADRA, CARTA_GRANDE } from '../config.js';
-import { img } from '../game.js';
+import { FORMS, SQUADRA, CARTA } from '../config.js';
 import { adatto, postiModulo } from '../dati/scala.js';
-import { K, DATI, sel, save, salvaK, applicaMio, avviso, mon, club, moduloMio } from './casa.js';
+import { K, DATI, esc, sel, save, salvaK, applicaMio, avviso, mon, club, moduloMio } from './casa.js';
 import { icona } from './icone.js';
 import { adatta } from './carte.js';
-import { cartaCampo, riempiRitratti } from './giocatore.js';
-import { disponi, erba } from './campo.js';
+import { cartaGiocatore, prontaCarte } from './giocatore.js';
+import { disponi, erba, linee, SPORGE } from './campo.js';
 import { squadraMigliore, incarichi } from './rosa.js';
 import { apriScheda } from './scheda-giocatore.js';
 import { finestra } from './finestra.js';
 import { t } from './testi.js';
 import { apri } from './nav.js';
+import { pronta } from './immagini.js';
+import { schermo, quandoCambiaMisura } from './schermo.js';
 
 document.getElementById('vs').insertAdjacentHTML('beforebegin', '<div id="squadra" class="scr nas"></div>');
 const radice = document.getElementById('squadra');
@@ -32,10 +35,11 @@ let scelto = null, riserve = false;
 const modulo = () => moduloMio();
 const posto = (g) => { const [dove, i] = g.split(':'); return { dove, i: +i }; };
 const dopoCambio = () => { applicaMio(); salvaK(); };
-// le Tre Torri del Titano, stilizzate e molto trasparenti, in basso a sinistra dietro il campo: il monte e le tre torri coi merli
+// le Tre Torri del Titano, stilizzate e molto trasparenti, in basso a sinistra dietro il campo: il monte e le tre torri coi
+// merli. Servono solo se manca lo sfondo dipinto dello stadio, che le torri le ha già sulla collina
 const TORRI = '<svg class="qTorri" viewBox="0 0 64 64" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path d="M2 60 14 40l8 6 10-20 10 20 8-6 12 20z" opacity=".55"/><path d="M10 40V26h2v-3h2v3h2v-3h2v3h2v14zM27 30V10h2V7h2v3h2V7h2v3h2v20zM44 40V26h2v-3h2v3h2v-3h2v3h2v14z"/></svg>';
 // quanto è larga una carta: una parte fissa della larghezza dello schermo, uguale in campo e tra i sostituti
-const larga = () => Math.round(innerWidth * SQUADRA.carta);
+const larga = () => Math.round(schermo()[0] * SQUADRA.carta);
 
 // tutta la rosa con scheda ed energia: prima i titolari nell'ordine dei posti, poi gli altri
 function rosa(c) { return c.xi.concat(c.pan || []).map((x) => ({ x, sc: DATI.scheda(x, c.id), energia: CAR.energiaDi(K, x[0]) })); }
@@ -46,17 +50,20 @@ export function disegnaSquadra() {
   const allenabili = CAR.quantiAllenatori(K);
   const ottima = !squadraMigliore(rosa(c), postiModulo(m)).cambiata;
   if (!extra) riserve = false;
-  radice.style.setProperty('--gw', `${larga()}px`); radice.style.setProperty('--ga', CARTA_GRANDE.forma);
-  radice.innerHTML = TORRI + '<div class="qSx">'
+  radice.style.setProperty('--gw', `${larga()}px`);
+  const dipinto = pronta('sfondo-squadra');
+  radice.classList.toggle('illustrata', dipinto);
+  radice.innerHTML = (dipinto ? '' : TORRI) + '<div class="qSx">'
     + `<button class="qB" data-az="modulo">${icona('modulo')}<b>${m}</b></button>`
     + `<button class="qB${riserve ? ' scelta' : ''}" data-az="riserve">${icona('riserve')}<b data-adatta>${t('squadra.riserve', extra)}</b></button>`
+    + `<button class="qB" data-az="incarichi">${icona('capitano')}<b data-adatta>${t('squadra.incarichi')}</b></button>`
     + `<button class="qB" data-az="fisio">${icona('fisioterapista')}<b data-adatta>${t('squadra.fisio')}</b>${fisio.manca ? '<em class="bollino">!</em>' : ''}</button>`
     + `<button class="qB accesa" data-az="allenatore">${icona('allenatore')}<span><b data-adatta>${t('squadra.allenatori')}</b><i data-adatta data-corto="${t('squadra.allenatoriCorto')}">${t('squadra.allenatoriSotto')}</i></span>${allenabili ? `<em class="bollino">${allenabili}</em>` : ''}</button></div>`
     + '<div class="qCampo"></div>'
     + `<button class="qMigliore${ottima ? ' ottima' : ''}" data-az="migliore">${icona('modulo')}<b>${t('squadra.migliora')}</b>${ottima ? `<em class="fatto">${icona('spunta')}</em>` : ''}</button>`
     + `<div class="qPan"><h3>${riserve ? t('squadra.riserve', extra) : t('squadra.sostituti', Math.min(pan.length, PANCHINA), PANCHINA)}</h3><div class="qGriglia"></div></div>`;
   campo(c, m); panchina(c);
-  adatta(radice); riempiRitratti(radice); pulsanteScheda();
+  adatta(radice); prontaCarte(radice); pulsanteScheda();
 }
 
 // il pulsante «Scheda» della carta scelta: sopra di lei, o sotto se sopra c'è la barra
@@ -70,15 +77,19 @@ function pulsanteScheda() {
   b.style.left = `${r.left + r.width / 2 - q.left}px`; b.style.top = `${(sopra ? r.top - alto + margine - 1 : r.bottom - margine + 1) - q.top}px`;
 }
 
-// il campo con gli undici titolari: ognuno al suo posto del modulo, con le linguette degli incarichi e il ruolo
+// il campo con gli undici titolari: ognuno al suo posto del modulo, con la «C» del capitano e il ruolo
 // bordato di rosso se gioca fuori ruolo
 function campo(c, m) {
   const el = radice.querySelector('.qCampo'), r = el.getBoundingClientRect(); if (!r.width) return;
-  const posti = postiModulo(m), d = disponi(posti, r.width, r.height, { stretto: SQUADRA.stretto, grande: true, fissa: larga() }), schede = c.xi.map((x) => DATI.scheda(x, c.id)), inc = incarichi(K, CLUBS, schede);
+  // nei moduli con più linee le carte si stringono quel tanto che basta perché la testa, che esce in alto, non copra la
+  // carta della linea sopra
+  const posti = postiModulo(m), stretta = Math.min(larga(), Math.floor((r.height / linee(posti).length - SQUADRA.aria) / (CARTA.alta + SPORGE)));
+  const d = disponi(posti, r.width, r.height, { stretto: SQUADRA.stretto, grande: true, fissa: stretta }), schede = c.xi.map((x) => DATI.scheda(x, c.id)), inc = incarichi(K, CLUBS, schede);
   el.innerHTML = erba(SQUADRA.stretto, true) + c.xi.map((x, i) => {
     const sc = schede[i], q = d.dove[i];
-    return cartaCampo(sc, { club: c.id, energia: CAR.energiaDi(K, x[0]), capitano: inc.capitano === x[0], incarichi: ['rigori', 'punizioni', 'angoli'].filter((k) => inc[k] === x[0]), fuori: adatto(sc.ruolo, posti[i].ruolo),
-      migliorato: !!(K.crescita || {})[x[0]], grande: true, stemma: img(c.id + '-mini'), dati: `data-g="xi:${i}"${scelto === `xi:${i}` ? ' data-scelto' : ''}`, stile: `left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px` });
+    // chi sta più in basso sta davanti: la sua testa, che esce dalla carta, non finisce sotto la carta della riga sopra
+    return cartaGiocatore(sc, { club: c.id, larga: stretta, energia: CAR.energiaDi(K, x[0]), capitano: inc.capitano === x[0], incarichi: ['rigori', 'punizioni', 'angoli'].filter((k) => inc[k] === x[0]), fuori: adatto(sc.ruolo, posti[i].ruolo),
+      migliorato: !!(K.crescita || {})[x[0]], dati: `data-g="xi:${i}"${scelto === `xi:${i}` ? ' data-scelto' : ''}`, stile: `left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px;z-index:${1 + Math.floor(q.y / r.height * 5)}` });
   }).join('');
 }
 
@@ -88,10 +99,10 @@ function panchina(c) {
   el.style.gridTemplateColumns = `repeat(${COLONNE},auto)`;
   el.innerHTML = Array.from({ length: PANCHINA }, (_, k) => {
     const x = lista[k]; if (!x) return `<span class="qVuoto"><i>${t('squadra.libero')}</i></span>`;
-    return cartaCampo(DATI.scheda(x, c.id), { club: c.id, energia: CAR.energiaDi(K, x[0]), migliorato: !!(K.crescita || {})[x[0]], grande: true, ferma: true, stemma: img(c.id + '-mini'), dati: `data-g="pan:${da + k}"${scelto === `pan:${da + k}` ? ' data-scelto' : ''}` });
+    return cartaGiocatore(DATI.scheda(x, c.id), { club: c.id, larga: larga(), energia: CAR.energiaDi(K, x[0]), migliorato: !!(K.crescita || {})[x[0]], ferma: true, dati: `data-g="pan:${da + k}"${scelto === `pan:${da + k}` ? ' data-scelto' : ''}` });
   }).join('');
 }
-addEventListener('resize', () => { if (K && !radice.classList.contains('nas')) disegnaSquadra(); });
+quandoCambiaMisura(() => { if (K && !radice.classList.contains('nas')) disegnaSquadra(); });
 
 // due giocatori si scambiano di posto; in porta va solo un portiere
 function scambia(a, b) {
@@ -121,6 +132,31 @@ function scegliModulo() {
   finestra({ titolo: t('modulo.scegli'), scelte: Object.keys(FORMS).map((n) => ({ testo: n, nota: aperti.includes(n) ? '' : `${icona('lucchetto')} ${t('modulo.chiuso')}`, valore: n, attiva: n === m })),
     fatto: (n) => { if (!aperti.includes(n)) return avviso(t('modulo.serveCentro')); if (FORMS[n]) { sel.form = n; save(); scelto = null; disegnaSquadra(); } } });
 }
+// «Incarichi»: le quattro voci tutte insieme, ognuna con la carta piccola di chi la ha adesso. Toccandone una si
+// sceglie un altro titolare dall'elenco, e si torna qui a vedere com'è cambiato. Se il capitano scelto è in panchina
+// la fascia resta sua: si vede la sua carta, con la nota.
+function pannelloIncarichi() {
+  const c = club(K.club), tutti = rosa(c), inc = incarichi(K, CLUBS, c.xi.map((x) => DATI.scheda(x, c.id))), fuori = (K.mio || {}).capitano;
+  finestra({ titolo: t('inc.titolo'), testo: t('inc.testo'),
+    scelte: CAR.INCARICHI.map((tipo) => {
+      const nome = inc[tipo] || (tipo === 'capitano' ? fuori : null), g = nome && tutti.find((y) => y.x[0] === nome);
+      return { testo: t('inc.' + tipo), nota: !g ? t('inc.nessuno') : inc[tipo] ? esc(nome) : t('inc.inPanchina', esc(nome)), valore: tipo,
+        figura: g ? `<em class="scCarta">${cartaGiocatore(g.sc, { club: c.id, larga: CARTA.larga.incarico, capitano: tipo === 'capitano', ferma: true })}</em>` : '' };
+    }),
+    fatto: scegliIncaricato });
+  prontaCarte(document.getElementById('finestra'));
+}
+// l'elenco dei titolari per un incarico: quello che lo ha adesso è acceso
+function scegliIncaricato(tipo) {
+  const c = club(K.club), schede = c.xi.map((x) => DATI.scheda(x, c.id)), ha = incarichi(K, CLUBS, schede)[tipo];
+  finestra({ titolo: t('inc.chi', t('inc.' + tipo)),
+    scelte: c.xi.map((x, i) => ({ testo: `<span class="scNome" data-adatta>${esc(x[0])}</span>`, nota: `${schede[i].ruolo} · ${schede[i].val}`, valore: i, attiva: x[0] === ha })),
+    fatto: (i) => {
+      const x = club(K.club).xi[+i]; if (!x || !CAR.assegnaIncarico(K, CLUBS, tipo, x[0])) return avviso(t('inc.soloTitolari'));
+      salvaK(); avviso(t('inc.dato', t('inc.' + tipo), x[0])); scelto = null; disegnaSquadra(); pannelloIncarichi();
+    } });
+  adatta(document.getElementById('finestra'));
+}
 // Il fisioterapista: tre interventi a monete (piccolo, medio, completo) e quello completo anche a diamanti
 function fisioterapista() {
   const st = CAR.statoFisio(K, CLUBS);
@@ -139,8 +175,8 @@ function migliore() {
   CAR.schiera(K, CLUBS, r.ordine.map((i) => tutti[i].x), r.fuori.map((i) => tutti[i].x)); dopoCambio(); scelto = null; avviso(t('squadra.schierata')); disegnaSquadra();
 }
 
-// Tocco, pressione lunga e trascinamento. Si prende una carta oppure la linguetta di un incarico: spostando il dito di
-// SQUADRA.trascina punti la cosa presa lo segue. Una carta lasciata sopra un'altra le scambia; una linguetta lasciata
+// Tocco, pressione lunga e trascinamento. Si prende una carta oppure il segno di un incarico: spostando il dito di
+// SQUADRA.trascina punti la cosa presa lo segue. Una carta lasciata sopra un'altra le scambia; un segno lasciato
 // sopra un titolare gli passa l'incarico. Il dito fermo su una carta per SQUADRA.lungo millesimi apre la scheda. Senza
 // spostamento e senza attesa è un tocco: arriva come «click». Dopo una pressione lunga o un trascinamento il «click» che
 // segue subito non conta.
@@ -164,8 +200,8 @@ addEventListener('pointermove', (e) => {
     presa.ombra = presa.el.cloneNode(true); presa.ombra.classList.add('ombra'); presa.dx = presa.x - r.left; presa.dy = presa.y - r.top;
     presa.ombra.style.cssText = `position:fixed;left:0;top:0;width:${r.width}px;margin:0;transform:none;z-index:30;pointer-events:none`;
     // la copia vive fuori dalla schermata: si porta dietro le misure e, se è una linguetta, anche l'aspetto
-    presa.ombra.style.setProperty('--gw', stile.getPropertyValue('--gw')); presa.ombra.style.setProperty('--ga', stile.getPropertyValue('--ga'));
-    if (presa.inc) { presa.ombra.className = 'qSegnoMobile'; presa.ombra.style.height = `${r.height}px`; presa.ombra.style.background = stile.backgroundImage; presa.ombra.style.fontSize = stile.fontSize; }
+    presa.ombra.style.setProperty('--gw', stile.getPropertyValue('--gw'));
+    if (presa.inc) { presa.ombra.className = 'qSegnoMobile'; presa.ombra.style.height = `${r.height}px`; presa.ombra.style.background = stile.backgroundImage; presa.ombra.style.color = stile.color; presa.ombra.style.fontSize = stile.fontSize; }
     document.body.appendChild(presa.ombra); presa.el.classList.add('presa');
   }
   presa.ombra.style.left = `${e.clientX - presa.dx}px`; presa.ombra.style.top = `${e.clientY - presa.dy}px`;
@@ -188,6 +224,7 @@ radice.addEventListener('click', (e) => {
   if (b && b.dataset.az) {
     const az = b.dataset.az;
     if (az === 'modulo') return scegliModulo();
+    if (az === 'incarichi') return pannelloIncarichi();
     if (az === 'fisio') return fisioterapista();
     if (az === 'allenatore') return apri('club', 'allenatori');
     if (az === 'migliore') return migliore();

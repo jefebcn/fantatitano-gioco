@@ -1,12 +1,15 @@
-# A ogni PR (e a ogni unione in main): compila, controlla i commenti, fa le prove di carriera e fisica e gioca tre partite
+# A ogni PR: compila, controlla i commenti, fa le prove di carriera e fisica e gioca tre partite
 # simulate con tutti i controlli (scripts/prove/partita.cjs). Se compare un'anomalia o un errore nella pagina la PR si
 # ferma. Le misure di gioco (angoli, tenuta palla, contrasti…) si leggono nel registro ma non bloccano.
 name: Prove
 
+# Solo sulle PR: su main si entra solo da PR unite con squash, e la PR ha già fatto
+# le stesse prove sul codice unito a main. Rifarle a ogni unione costava metà dei
+# minuti di Actions (24/11: 48 giri su 100, ~400 minuti al giorno). Su main le
+# prove si lanciano a mano da Actions → Prove → Run workflow.
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: prove-${{ github.ref }}
@@ -32,9 +35,17 @@ jobs:
         run: RIPETI=1 node scripts/prove/partita.cjs 3 normale
       - name: Rigori
         run: node scripts/prove/rigori.cjs
+      - name: Riprese (nessuna parte da sola, né con chi gioca né col computer)
+        run: node scripts/prove/riprese.cjs
+      - name: Palla che arriva a chi gioca (levetta tenuta, cambio automatico a palla libera)
+        run: node scripts/prove/vagante.cjs
+      - name: Divise che si distinguono (gli ospiti non hanno addosso il colore della maglia di casa)
+        run: node scripts/prove/divise.cjs
       - name: Ponte tra home e partita (una partita avviata da una richiesta, esito alla fine)
         run: node scripts/prove/ponte.cjs
       - name: Inquadratura al calcio d'inizio (misure di riferimento, margine 2 punti)
         run: node scripts/prove/inquadratura.cjs
+      - name: Telefono che si gira (Home, barra e Squadra riprendono le misure senza l'evento «resize»)
+        run: node scripts/prove/gira.cjs
       - name: Musica della home (primo tocco, muto e volumi, cambio in dissolvenza, partita e ritorno)
         run: node scripts/prove/musica.cjs

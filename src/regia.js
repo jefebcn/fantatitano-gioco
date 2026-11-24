@@ -10,7 +10,7 @@ import { t as tr } from './testi.js';
 import { Vector3, Quaternion, CanvasTexture, Sprite, SpriteMaterial, SRGBColorSpace, Group, Mesh, CylinderGeometry, PlaneGeometry, MeshBasicMaterial, MeshLambertMaterial, DoubleSide } from 'three';
 
 export function creaRegia(X) {
-  const { scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, ring, arrow, camPos, camLook, boards } = X;
+  const { scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, mettiPalla, ring, arrow, camPos, camLook, boards } = X;
   const extra = () => [S.arb, ...S.ass].filter(Boolean); // arbitro e guardalinee
 
   // Numeri da ritoccare
@@ -69,7 +69,7 @@ export function creaRegia(X) {
     REC.data = new Float32Array(REC.n * REC.stride); REC.vivo = new Float32Array(REC.stride);
   }
   function recScrivi(d, o) {
-    d[o] = ballMesh.position.x; d[o + 1] = ballMesh.position.y; d[o + 2] = ballMesh.position.z; d[o + 3] = ballMesh.rotation.x; d[o + 4] = ballMesh.rotation.z; o += 5;
+    d[o] = ballMesh.position.x; d[o + 1] = ballMesh.userData.alto ?? ballMesh.position.y; d[o + 2] = ballMesh.position.z; d[o + 3] = ballMesh.rotation.x; d[o + 4] = ballMesh.rotation.z; o += 5;
     for (const f of REC.figs) {
       d[o] = f.root.position.x; d[o + 1] = f.root.position.z; d[o + 2] = f.root.rotation.y; d[o + 3] = f.body.position.y;
       const pp = f.pel.position; d[o + 4] = pp.x; d[o + 5] = pp.y; d[o + 6] = pp.z;
@@ -79,8 +79,7 @@ export function creaRegia(X) {
   }
   const PB = [0, 0, 0, 0, 0]; // il pallone dell'ultimo fotogramma letto: draw() lo sposta dov'è dal vivo, dopo() lo rimette qui
   function palla() {
-    ballMesh.position.set(PB[0], PB[1], PB[2]); ballMesh.rotation.x = PB[3]; ballMesh.rotation.z = PB[4];
-    ballShadow.position.set(PB[0], .04, PB[2]); ballShadow.scale.setScalar(1 + PB[1] * .18);
+    mettiPalla(PB[0], PB[1], PB[2]); ballMesh.rotation.x = PB[3]; ballMesh.rotation.z = PB[4];
   }
   // Rimette in scena il fotogramma fra a e b (t da 0 a 1) dei due blocchi d[a…] ed e[b…]
   function recLeggi(d, a, e, b, t) {
@@ -105,8 +104,9 @@ export function creaRegia(X) {
 
   /* ---------------------------------------------------------------- segni sopra le teste */
   // Come Dream League: sul giocatore che si comanda nome e segnalino verde, e tra i due la barra della potenza mentre si
-  // tiene premuto un tasto di calcio (bianca, rossa verso il massimo). sull'avversario col pallone solo il nome, bianco,
-  // in difesa un segnalino grigio semitrasparente sul compagno che si prenderebbe con «Cambia giocatore».
+  // tiene premuto un tasto di calcio (bianca, rossa verso il massimo). Sull'avversario col pallone solo il nome, bianco,
+  // e solo se non finisce sopra il nome o il segnalino del giocatore comandato. Il segnalino è uno solo (Alex, 23/11):
+  // quello grigio sul compagno che si prenderebbe con «Cambia giocatore» si accende solo con SEGNI.grigio.
   const tela2 = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; return [c, c.getContext('2d'), t]; };
   const sprite = (t, cy) => { const s = new Sprite(new SpriteMaterial({ map: t, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false })); s.center.set(.5, cy); s.renderOrder = 50; s.visible = false; scene.add(s); return s; };
   const [pc, px, ptex] = tela2(256, 160), pin = sprite(ptex, 4 / 160);
@@ -115,6 +115,8 @@ export function creaRegia(X) {
   const nomeCorto = (p) => { let n = p.name.length <= 13 ? p.name : p.name.split(' ').slice(-1)[0]; if (n.length > 13) n = n.slice(0, 12) + '.'; return n; };
   function scritta(x, n, cx, cy) {
     x.font = '900 34px Lato, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
+    // bordo scuro attorno alle lettere: il nome si legge anche davanti ai cartelloni e alle maglie chiare
+    x.strokeStyle = 'rgba(0,0,0,.7)'; x.lineWidth = 5; x.strokeText(n, cx, cy);
     x.shadowColor = 'rgba(0,0,0,.65)'; x.shadowBlur = 6; x.shadowOffsetY = 1; x.fillStyle = '#fff'; x.fillText(n, cx, cy); x.shadowColor = 'transparent';
   }
   // la goccia: tonda in alto, a punta in basso, col bordo chiaro e un foro bianco: (cx, cy) è il centro della parte tonda
@@ -139,13 +141,22 @@ export function creaRegia(X) {
   function nomeAvv(p) { if (avvDi === p) return; avvDi = p; ax.clearRect(0, 0, 256, 48); scritta(ax, nomeCorto(p), 128, 24); atex.needsUpdate = true; }
   gx.clearRect(0, 0, 64, 80); gx.globalAlpha = .55; goccia(gx, 32, 30, '#9a9aa6', 'rgba(255,255,255,.8)'); gx.globalAlpha = 1; gtex.needsUpdate = true;
   const sopraTesta = (s, p, alzo) => s.position.set(p.x, ((p.fig && p.fig.metri) || 1.8) + alzo * .45, p.z); // sopra la testa, a statura vera
+  // Il nome dell'avversario finirebbe sopra il nome o il segnalino del giocatore comandato? Si confrontano i due riquadri
+  // sullo schermo, in altezze di schermo: `sc` è la grandezza dei segni, SEGNI.largo la parte di larghezza che un nome occupa.
+  const _s1 = new Vector3(), _s2 = new Vector3();
+  function sopraIlNome(sc) {
+    _s1.copy(pin.position).project(cam); _s2.copy(pinAvv.position).project(cam);
+    const dx = Math.abs(_s1.x - _s2.x) * cam.aspect / 2, dy = (_s2.y - _s1.y) / 2;
+    return dx < sc * 2 * SEGNI.largo && dy < sc * 1.25 && dy > -sc * .375;
+  }
   function segni(cine) {
-    const c = G.ctrl, b = G.ball, h = 2 * Math.tan(cam.fov * Math.PI / 360) * (cam.aspect < 1 ? SEGNI.scala * .55 : SEGNI.scala), on = !!G.segno && !cine;
+    const sc = cam.aspect < 1 ? SEGNI.scala * .55 : SEGNI.scala;
+    const c = G.ctrl, b = G.ball, h = 2 * Math.tan(cam.fov * Math.PI / 360) * sc, on = !!G.segno && !cine;
     pin.visible = on && !!c;
     if (pin.visible) { pinNome(c, X.potenza()); pin.scale.set(h * 2, h * 1.25, 1); sopraTesta(pin, c, .3 + Math.sin(G.t * 6) * .05); }
     const o = b && b.owner; pinAvv.visible = on && !!o && o.team !== G.teams[0] && G.state === 'play';
-    if (pinAvv.visible) { nomeAvv(o); pinAvv.scale.set(h * 2, h * .375, 1); sopraTesta(pinAvv, o, .35); }
-    const g = G.prossimo; pinGrigio.visible = on && !!g && g !== c && G.state === 'play';
+    if (pinAvv.visible) { nomeAvv(o); pinAvv.scale.set(h * 2, h * .375, 1); sopraTesta(pinAvv, o, .35); if (pin.visible && sopraIlNome(sc)) pinAvv.visible = false; }
+    const g = G.prossimo; pinGrigio.visible = SEGNI.grigio && on && !!g && g !== c && G.state === 'play';
     if (pinGrigio.visible) { pinGrigio.scale.set(h * .5, h * .625, 1); sopraTesta(pinGrigio, g, .3); }
   }
 
@@ -265,12 +276,15 @@ export function creaRegia(X) {
   /* ---------------------------------------------------------------- tabelloni */
   function tabelloniGol(nome, c1, ink) {
     const x = boards.ctx, c = boards.cv; if (!x) return;
+    // misure di una striscia di 2048 × 64, come in paintBoards: la tela vera può essere più fitta
+    const fitta = c.height / 64; x.setTransform(fitta, 0, 0, fitta, 0, 0);
     for (let i = 0; i < 4; i++) {
       const o = i * 512, pari = i % 2 === 0;
       x.fillStyle = pari ? '#D9F51F' : c1; x.fillRect(o, 0, 512, 64);
       x.fillStyle = pari ? '#0A0A0C' : ink; x.font = '50px Anton'; x.textBaseline = 'middle'; x.textAlign = 'center';
       x.fillText(pari ? 'GOL!   GOL!   GOL!' : nome.toUpperCase().slice(0, 22), o + 256, 35);
     }
+    x.setTransform(1, 0, 0, 1, 0, 0);
     for (const b of boards) b.material.map.needsUpdate = true;
   }
   function tabelloniNormali() {

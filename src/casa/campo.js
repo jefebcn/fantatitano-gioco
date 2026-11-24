@@ -1,6 +1,6 @@
 // Il campo in prospettiva con le carte dei giocatori, per la Sfida e per la Squadra: il disegno dell'erba e il calcolo
 // di dove va ogni carta secondo il modulo, e di quanto può essere grande senza coprirne un'altra.
-import { CARTA_GRANDE } from '../config.js';
+import { CARTA, RITRATTI } from '../config.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 // Le linee di un modulo si staccano dove tra un giocatore e il successivo, dalla difesa all'attacco, ci sono più di
@@ -9,11 +9,13 @@ const STACCO = 5, FASCIA = 25;
 // Carta piccola: è larga al più un LARGO-esimo del campo; lo scudo è alto ALTO volte la sua larghezza, sotto ci sono la
 // barretta dell'energia (BARRA) e il nome, alto NOME[1] se lo scudo resta largo almeno GRANDE, se no NOME[0]. Per il nome
 // ogni carta ha un posto largo POSTO volte lo scudo, e mai meno di NOME_LARGO (ci sta un cognome di undici lettere).
-const PICCOLA = { LARGO: 8.5, ALTO: 1.19, BARRA: 3, NOME: [12, 14], GRANDE: 34, POSTO: 1.7, NOME_LARGO: 58 };
+const PICCOLA = { LARGO: 8.5, ALTO: CARTA.piccola.alta, BARRA: 5, NOME: [12, 14], GRANDE: 34, POSTO: 1.7, NOME_LARGO: 58 };
 // Carta grande, col nome dentro: larga da `minimo`, perché sotto la riga con stemma, energia e ruolo non ci sta, a
 // `massimo`. Il rapporto tra larghezza e altezza è uno solo, quello della foto di riferimento di Alex
-// (CARTA_GRANDE.forma). Tra una linea e l'altra resta `aria`, tra due carte vicine `tra`.
-const GRANDE = { minimo: 50, massimo: 84, forma: [CARTA_GRANDE.forma, CARTA_GRANDE.forma], ideale: CARTA_GRANDE.forma, aria: 4, tra: 8 };
+// (CARTA.alta). Tra una linea e l'altra resta `aria`, tra due carte vicine `tra`.
+const FORMA = 1 / CARTA.alta, GRANDE = { minimo: 50, massimo: 84, forma: [FORMA, FORMA], ideale: FORMA, aria: 4, tra: 8 };
+/** Di quanto la testa esce sopra il bordo della carta, in parti della larghezza (uguale per carta larga, stretta e piccola). */
+export const SPORGE = Math.max(0, -(CARTA.ritratto.alto + RITRATTI.cima * CARTA.ritratto.lato));
 
 /** Le linee di un modulo, dal portiere alle punte: per ognuna i giocatori (i: posto nel modulo, x e z: dove sta). */
 export function linee(posti) {
@@ -42,7 +44,7 @@ export function disponi(posti, W, H, { stretto = 43, grande = false, fissa = 0 }
     gw = Math.floor(Math.min(Math.max(G.minimo, alta * G.ideale), alta * G.forma[1], piuLarga, G.massimo));
     tutta = gw >= G.minimo; if (tutta) forma = clamp(gw / alta, G.forma[0], G.forma[1]);
   }
-  if (fissa) { gw = fissa; tutta = true; forma = CARTA_GRANDE.forma; }
+  if (fissa) { gw = fissa; tutta = true; forma = FORMA; }
   if (!tutta) { scritta = P.NOME[larga(P.NOME[1]) >= P.GRANDE ? 1 : 0]; gw = Math.max(20, larga(scritta)); }
   const dove = [];
   ll.forEach((linea, k) => {

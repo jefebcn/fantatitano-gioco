@@ -15,6 +15,7 @@ import { nomiDi } from '../dati/squadre.js';
 import { t } from './testi.js';
 import { apri, indietro, livello, quandoCambia } from './nav.js';
 import { finestra } from './finestra.js';
+import { quandoCambiaMisura } from './schermo.js';
 import { ECONOMIA } from '../config.js';
 
 document.getElementById('vs').insertAdjacentHTML('beforebegin', `<div id="barraF" class="nas">
@@ -90,4 +91,4 @@ export function aggiornaBarra() {
   barra.classList.remove('misura'); adatta(barra);
 }
 quandoCambia(aggiornaBarra);
-addEventListener('resize', aggiornaBarra);
+quandoCambiaMisura(aggiornaBarra);

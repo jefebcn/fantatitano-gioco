@@ -68,3 +68,53 @@ Lo rimette in gioco solo verso un compagno con 10 m liberi attorno, o dopo 4 sec
 3. **Tiro a tre bersagli**: niente tiri da oltre 22 m, tre bersagli valutati con la gara di tempi (portiere compreso),
    mira al migliore. Si guarda: tiri per distanza e gol ogni quanti tiri.
 Dopo queste, la conduzione in avanti a campo libero (già chiesta da Alex) si può fare col campo di forze del punto 3.
+
+## Com'è andata (23/11): cosa è entrato nel gioco e cosa no
+Obiettivi nuovi di Alex per computer contro computer: 10–14 tiri, 4–6 gol (35–45 tiri in gol su 100), 30–45 passaggi per
+squadra. Ogni riga è una serie di 32 partite (semi 7–38), nessuna anomalia salvo dove detto.
+
+| | Tiri (vicini / lontani) | Gol | In gol | Passaggi per squadra | In avanti riusciti | Oltre trequarti |
+|---|---|---|---|---|---|---|
+| Gioco di prima | 7,2 (4,2 / 3,0) | 1,3 | 19% | 37,8 | 8,8 su 13,0 | 12,3 su 27,6 |
+| 1. Smarcamento col voto unico | 7,1 (3,6 / 3,4) | 1,7 | 23% | 37,8 | 12,5 su 18,5 | 13,5 su 30,3 |
+| 3. Tiro a tre bersagli, come soglia | 4,1 (3,7 / 0,4) | 1,1 | 28% | 38,8 | 9,0 su 14,4 | 12,4 su 28,7 |
+| 1 + 3 | 3,4 (2,9 / 0,5) | 1,0 | 30% | 39,7 | 12,7 su 19,4 | 13,8 su 32,8 |
+| 1 + 3 + 2 (inserimento a condizione) | 5,5 (5,2 / 0,3) | 0,8 | 15% | 37,7 | 11,5 su 16,4 | 12,2 su 26,8 |
+| … più campo di forze in conduzione | 3,7 (3,5 / 0,2) | 0,8 | 22% | 37,1 | 9,9 su 15,0 | 11,3 su 26,2 |
+| … più portiere molto più debole | 5,3 (5,1 / 0,2) | 1,7 | 32% | 37,8 | 10,4 su 15,7 | 11,0 su 26,8 |
+| **Tenuto**: 1 + 2, tre bersagli solo per la mira, portiere un po' più debole | 8,1 (5,5 / 2,7) | 2,8 | 34% | 36,5 | 9,4 su 13,5 | 11,4 su 26,7 |
+
+Su altri 32 semi (39–70) il pacchetto tenuto fa 6,9 tiri e 2,2 gol contro 6,0 e 1,9 del gioco di prima: in tutto, su 64
+partite, 7,5 tiri e 2,45 gol contro 6,4 e 1,75. Gli obiettivi restano lontani (10–14 tiri, 4–6 gol).
+
+Cosa si è capito:
+- **Il totale dei tiri inganna: bisogna separare piede e testa.** Con la soglia dei tre bersagli i tiri di piede erano
+  scesi da 4,1 a 0,6 a partita: restavano quasi solo colpi di testa (3,4 a partita), che vanno fuori 3 volte su 10 e in
+  gol 1–2 volte su 10. La gara di tempi conta ogni avversario, portiere compreso, e in area c'è sempre qualcuno vicino
+  alla traiettoria. Per questo i tre bersagli ora scelgono solo dove mirare; quando tirare lo decidono le regole di prima.
+  Strumento: `scripts/prove/tiri.cjs` (che fine fa ogni tiro).
+- **L'inserimento a condizione è la prova che rende di più**: senza, la stessa combinazione fa 6,3 tiri e 1,4 gol; con,
+  8,3 e 2,3. Chi si inserisce deve arrivare davanti alla porta (9 m dal fondo), non sulla linea: da lì tirava da posizione
+  impossibile.
+- **Il campo di forze in conduzione non ha reso** (meno tiri, più falli), e nemmeno il solo premio «avanti a campo
+  libero» (dentro l'oscillazione). Scartati per ora.
+- **Il portiere pesa poco**: da `save` 0,58 a 0,30 i tiri in gol salgono solo dal 27 al 32 per cento, perché metà dei
+  tiri non gli arriva (fuori o ribattuti). Tenuto un ritocco moderato: `save` 0,42 per il computer, 0,44 per il portiere
+  di chi gioca.
+- **Difetto trovato per strada**: un gol da posizione molto angolata attraversava la rete laterale e il pallone usciva
+  di quasi 50 metri («palla lontanissima»). Corretto in `src/grafica/stadio.js` (`urta`, `trattieni`).
+
+Piede e testa separati, 16 partite (semi 7–22, `scripts/prove/tiri.cjs`):
+
+| | Tiri di piede | in gol | Colpi di testa | in gol |
+|---|---|---|---|---|
+| Gioco di prima | 4,6 a partita | 23% | 1,4 a partita | 17% |
+| Pacchetto tenuto | 4,3 a partita | 38% | 4,6 a partita | 26% |
+
+Quindi i tiri in più sono tutti colpi di testa (chi si inserisce riceve palloni alti in area: 3 su 10 vanno fuori), mentre
+i tiri di piede sono rimasti gli stessi ma entrano di più (mira e portiere). Di piede, 1 su 4 è ribattuto da un difensore
+e 1 su 4 parato, quasi tutti da 20 metri.
+
+Da dove ripartire per avvicinarsi agli obiettivi: più tiri di piede da dentro l'area (a chi si inserisce il pallone deve
+arrivare rasoterra, non alto) e meno tiri da 20 metri ribattuti. I possessi oltre la trequarti restano 11–12 su 27: la
+metà non diventa un tiro.

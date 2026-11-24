@@ -77,6 +77,7 @@ usano `icona-monete` e `icona-diamanti`. Dove si vede ognuna nel gioco è scritt
 | 36 | `icona-allenatore-leggendario` | premio: allenatore leggendario | 512 × 512 | PNG trasparente | B |
 | 37 | `icona-contatto-agente` | premio: contatto dell'agente | 512 × 512 | PNG trasparente | B |
 | 38 | `icona-fisioterapista` | premio: intervento del fisioterapista (pronta: oggi nessun premio lo dà) | 512 × 512 | PNG trasparente | B |
+| 39 | `sfondo-squadra` | sfondo della schermata Squadra (formazione e panchina) | 2796 × 1290 | JPG o PNG | B |
 
 Le immagini dalla 27 alla 38, tranne lo sfondo, sono segnate «rifila» nell'elenco: lo script toglie il margine vuoto
 attorno al soggetto e lo mette, intero e centrato, nella misura scritta. Le buste arrivate erano 687 × 1024 con la busta
@@ -125,6 +126,15 @@ semitrasparenti: deve essere scuro e tranquillo, coi punti luminosi al centro.
 > Interno di uno stadio di calcio di notte visto dall'alto della tribuna centrale: tribune piene sfocate, torri faro
 > accese con aloni, campo appena visibile in basso. Immagine scura, sfocata e poco contrastata, senza dettagli nitidi al
 > centro. Formato orizzontale 2,17:1.
+
+**39. `sfondo-squadra`** — lo stadio di notte dietro la schermata della formazione (scelto da Alex il 24/11 tra stadio,
+spogliatoio e tunnel). Sopra ci vanno il campo con le carte, i pulsanti a sinistra e la panchina a destra.
+> Genera un'immagine orizzontale molto larga (formato 21:9): una sola scena fotografica continua, senza riquadri,
+> pannelli, cornici, rettangoli o elementi grafici sovrapposti (se si nominano i pulsanti, Gemini li disegna). Tutta
+> l'immagine leggermente sfocata come un fondale, scura e poco contrastata, centro più scuro e dettagli verso i bordi.
+> Soggetto: l'interno di uno stadio di calcio di notte visto da bordo campo, tribune piene di pubblico sfocato su tutta
+> la larghezza, quattro torri faro accese negli angoli in alto con fasci di luce in diagonale, e dietro lo stadio, sulle
+> colline, le tre torri medievali del Monte Titano in silhouette contro il cielo blu notte. Il campo in basso è in ombra.
 
 **9. `tre-torri`** — le tre torri sul crinale, come sagoma decorativa.
 > Le tre torri medievali sul crinale roccioso del Monte Titano viste di lato, illuminate da luce calda dal basso,
@@ -303,7 +313,6 @@ diamante hanno colori fissi e sono identici ovunque.
 | Squadra | modulo, riserve, fisioterapista, allenatore, capitano, rigore, punizione, corner, energia, scarpino, altezza, scambia, vendi, fuori-ruolo |
 | Mercato e strutture | osservatore, mistero, centro-allenamento, infermeria, foresteria, ufficio, osservatori, curva, divisa, stemma, esultanza, pallone |
 | Sfide e meteo | calendario, medaglia, premi, timer, sole, luna, nuvola, pioggia |
-| Cornici delle carte | carta-bronzo (sotto 60), carta-azzurro (60–69), carta-oro (da 70): la stessa forma a scudo |
 | Segnaposto dei ritratti | segnaposto-giocatore, segnaposto-manager |
 
 Icone piccole delle competizioni (campionato, coppa, castelli) sono SVG; le coppe grandi sono le illustrazioni 2, 3 e 4.

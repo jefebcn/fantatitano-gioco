@@ -1,6 +1,6 @@
 // Il set di icone del gioco: uno stile solo (tratto 1,8 su una griglia di 24, estremi tondi, colore del testo).
 // Moneta e diamante hanno i loro colori e sono identici in tutte le schermate. Le cornici delle carte dei giocatori
-// hanno una forma sola (scudo) in tre colori: bronzo, azzurro, oro.
+// hanno una forma sola (stendardo) in tre metalli: bronzo, argento, oro.
 // Scrive un file per icona in public/img/icone/, il foglio unico public/img/icone.svg (un <symbol> per icona, col nome
 // preceduto da «i-» perché nella pagina non si confonda con gli id delle schermate) e, con
 // «prova» come argomento, la pagina di controllo docs/icone.html.
@@ -93,23 +93,6 @@ const COLORI = {
     + '<path d="M2 9.500h20M6.5 3.5 9 9.500l3 12M17.5 3.5 15 9.500l-3 12M9 9.500l3-6 3 6" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width=".8" stroke-linejoin="round"/>',
 };
 
-// Cornice della carta del giocatore. La forma ha le proporzioni della foto di riferimento di Alex (docs/carte-giocatori.md):
-// scudo con il lato alto appena ad arco, le spalle tonde al 9% dell'altezza, i fianchi dritti e in basso una punta che
-// prende l'ultimo 16%. Il disegno è nostro: bordo scuro, corpo sfumato con una trama di piccoli rombi e due riflessi
-// in diagonale, una riga chiara dentro. Tre colori: bronzo, azzurro (chi è stato migliorato da un allenatore) e oro. Disegno 100 × 136 che si adatta alla forma del suo posto (la carta piccola dei campi
-// è più bassa). Per ogni fascia: chiaro, medio, scuro, bordo, riga interna. `sagomaCarta(d)` è il contorno rientrato di d.
-const FASCE = { bronzo: ['#D9995F', '#B06E38', '#7E4520', '#4E2A12', '#F0C9A0'], azzurro: ['#8FD3FF', '#3E9FEA', '#1D69BE', '#0D3F80', '#D6EEFF'], oro: ['#FCE99C', '#EBC552', '#CFA02C', '#94701A', '#FFF7CC'] };
-const sagomaCarta = (d) => {
-  const n = (v) => +v.toFixed(2), sx = n(2 + d), dx = n(98 - d), spalla = n(12.5 + d * .7), fianco = n(111 - d * .4), gomito = n(115.5 - d * .6), piega = n(117.2 - d * .7);
-  return `M${sx} 21Q${sx} ${spalla} ${n(9.5 + d)} ${n(10.8 + d)}Q30 ${n(3.6 + d)} 50 ${n(2 + d)}Q70 ${n(3.6 + d)} ${n(90.5 - d)} ${n(10.8 + d)}Q${dx} ${spalla} ${dx} 21V${fianco}Q${dx} ${gomito} ${n(94 - d)} ${piega}L50 ${n(134 - d * 1.2)}L${n(6 + d)} ${piega}Q${sx} ${gomito} ${sx} ${fianco}Z`;
-};
-const carta = ([chiaro, medio, scuro, bordo, riga], id) => `<defs><linearGradient id="c${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${chiaro}"/><stop offset=".55" stop-color="${medio}"/><stop offset="1" stop-color="${scuro}"/></linearGradient>`
-  + `<clipPath id="k${id}"><path d="${sagomaCarta(2.3)}"/></clipPath><pattern id="r${id}" width="10" height="13" patternUnits="userSpaceOnUse"><path d="M5 0l5 6.500-5 6.500-5-6.500z" fill="#fff" fill-opacity=".1"/><path d="M0 0l5 6.500M10 0 5 6.500M0 13l5-6.500M10 13 5 6.500" fill="none" stroke="#000" stroke-opacity=".1" stroke-width=".5"/></pattern></defs>`
-  + `<path d="${sagomaCarta(0)}" fill="${bordo}"/>`
-  + `<path d="${sagomaCarta(2.3)}" fill="url(#c${id})"/>`
-  + `<g clip-path="url(#k${id})"><rect width="100" height="136" fill="url(#r${id})"/><path d="M44 0h56v70z" fill="#fff" fill-opacity=".16"/><path d="M0 60 60 0H30L0 30z" fill="#fff" fill-opacity=".1"/><path d="M0 90l50 24 50-24v46H0z" fill="#000" fill-opacity=".12"/></g>`
-  + `<path d="${sagomaCarta(4.6)}" fill="none" stroke="${riga}" stroke-opacity=".6" stroke-width="1"/>`;
-
 // segnaposto puliti per i ritratti che ancora non ci sono (giocatore e manager): busto di tre quarti, senza volto
 const busto = (extra) => `<rect width="120" height="120" rx="14" fill="#0E1C3D"/><circle cx="60" cy="44" r="20" fill="#27407A"/><path d="M18 120c2-28 18-42 42-42s40 14 42 42z" fill="#27407A"/>${extra}`;
 const GRANDI = {
@@ -118,7 +101,6 @@ const GRANDI = {
   sagoma: ['0 0 120 120', '<circle cx="60" cy="46" r="22" fill="currentColor"/><path d="M14 120c2-30 20-44 46-44s44 14 46 44z" fill="currentColor"/>'],
   'segnaposto-manager': ['0 0 120 120', busto('<path d="M52 80l8 12 8-12M60 92v28" fill="none" stroke="#E8B64C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>')],
 };
-for (const [n, col] of Object.entries(FASCE)) GRANDI[`carta-${n}`] = ['0 0 100 136', carta(col, n[0]), ' preserveAspectRatio="none"'];
 
 const TR = 'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
 const icone = {};

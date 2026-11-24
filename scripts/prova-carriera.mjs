@@ -30,7 +30,7 @@ assert.equal(tab[0].id, 'academy'); assert.equal(tab[0].pt, 45); assert.equal(ta
 assert.ok(tab.every((r) => r.g === 15 && r.v + r.n + r.p === 15));
 assert.equal(tab.reduce((s, r) => s + r.gf, 0), tab.reduce((s, r) => s + r.gs, 0));
 assert.equal(K.prossima(C), null); assert.equal(C.campione, 'academy'); assert.deepEqual(C.trofei, [{ stagione: 1, tipo: 'Campionato', div: 5 }]);
-assert.deepEqual(K.capocannoniere(C), { nome: 'Rossi', gol: 30 });
+assert.deepEqual(K.capocannoniere(C), { nome: 'Rossi', gol: 30 }); assert.deepEqual(K.marcatori(C, 1), [{ nome: 'Rossi', gol: 30 }]); assert.ok(K.marcatori(C).length <= 3 && K.marcatori(C).every((m, i, l) => !i || l[i - 1].gol >= m.gol));
 // chi vince il campionato ha il premio del trofeo e non quello del piazzamento
 assert.ok(C.storico.some((m) => m.c === 'trofeo')); assert.ok(!C.storico.some((m) => m.c === 'piazzamento'));
 // premio di fine campionato per piazzamento: chi non vince ha le vittorie del suo posto, dal secondo fin dove arriva
@@ -91,6 +91,12 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
   // una vittoria per 3-0 batte una per 1-0, e a pari differenza reti chi ha segnato di più sta davanti
   Z.ris[0] = Z.cal[0].map((_, k) => (k === 0 ? [3, 0] : k === 1 ? [1, 0] : k === 2 ? [4, 1] : [0, 0])); const t1 = K.classifica(Z, cl);
   assert.equal(t1[0].id, Z.cal[0][2][0]); assert.equal(t1[1].id, Z.cal[0][0][0]); assert.equal(t1[2].id, Z.cal[0][1][0]);
+  // la forma: gli ultimi risultati di ogni squadra, dal più vecchio al più recente; chi non ha giocato non c'è
+  const f1 = K.forma(Z); assert.deepEqual(f1[Z.cal[0][0][0]], ['v']); assert.deepEqual(f1[Z.cal[0][0][1]], ['p']); assert.deepEqual(f1[Z.cal[0][3][0]], ['n']); assert.deepEqual(K.forma(K.nuova(cl, 'z', 'academy', rnd)), {});
+  // con più giornate restano solo le ultime richieste, e l'ultima giocata è in fondo
+  for (let g = 1; g < 7; g++) Z.ris[g] = Z.cal[g].map(([a]) => (a === 'academy' ? [0, 2] : [1, 1]));
+  Z.ris[7] = Z.cal[7].map((m) => (m.includes('academy') ? (m[0] === 'academy' ? [5, 0] : [0, 5]) : [1, 1]));
+  const f8 = K.forma(Z), f3 = K.forma(Z, 3); assert.ok(Object.values(f8).every((x) => x.length === 5)); assert.equal(f8.academy[4], 'v'); assert.deepEqual(f3.academy, f8.academy.slice(-3));
 }
 // panchina: i dati hanno le riserve; titolare e riserva dello stesso ruolo si scambiano, e lo scambio resta salvato
 {
@@ -439,9 +445,29 @@ function RARI(C) { return Object.values(C.allenatori.raro).reduce((a, b) => a + 
   };
   const M = nuovaW(); let ob = K.obiettivi(M, W.clubs), O = DIVISIONI[4].obiettivi;
   assert.deepEqual(ob.map((o) => o.id), ['posizione', 'coppa', 'castelli', 'rosa']); assert.deepEqual(ob.map((o) => o.n), [O.posizione, O.coppa, O.castelli, O.media]); assert.ok(ob.every((o) => !o.fatto || o.id === 'posizione'));
+  // a stagione appena cominciata niente è sicuro e niente è mancato
+  assert.ok(ob.every((o) => !o.sicuro && !o.mancato));
+  {
+    // sicuro e mancato in campionato: con tutte le altre ferme a zero punti, dopo abbastanza vittorie il posto non si
+    // può più perdere; se invece le altre vincono sempre e noi mai, a un certo punto non si può più raggiungere
+    const S = nuovaW(), giornate = S.cal.length, pos = () => K.obiettivi(S, W.clubs)[0];
+    const gioca = (io, altre) => { const g = S.giornata; S.ris[g] = S.cal[g].map((m) => (m.includes(S.club) ? (m[0] === S.club ? io : [io[1], io[0]]) : altre)); S.giornata++; };
+    gioca([1, 0], [0, 0]); assert.ok(pos().fatto && !pos().sicuro && !pos().mancato);
+    while (!pos().sicuro && S.giornata < giornate) gioca([1, 0], [0, 0]);
+    assert.ok(pos().sicuro && S.giornata < giornate, 'il posto è sicuro prima della fine'); assert.ok(!pos().mancato);
+    const P = nuovaW(), posP = () => K.obiettivi(P, W.clubs)[0];
+    const perde = () => { const g = P.giornata; P.ris[g] = P.cal[g].map((m) => (m.includes(P.club) ? (m[0] === P.club ? [0, 1] : [1, 0]) : [1, 1])); P.giornata++; };
+    perde(); assert.ok(!posP().mancato);
+    while (!posP().mancato && P.giornata < P.cal.length) perde();
+    assert.ok(posP().mancato && !posP().sicuro && !posP().fatto);
+    // in coppa: chi esce prima del turno che serve ha mancato l'obiettivo; chi lo ha superato lo ha al sicuro
+    const Q = nuovaW(); Q.coppa.fuori = 0; let q = K.obiettivi(Q, W.clubs)[1]; assert.ok(q.mancato && !q.sicuro);
+    Q.coppa.fuori = O.coppa; q = K.obiettivi(Q, W.clubs)[1]; assert.ok(q.sicuro && !q.mancato);
+    Q.castelli.fuori = 'gironi'; q = K.obiettivi(Q, W.clubs)[2]; assert.ok(q.mancato && !q.sicuro);
+  }
   assert.ok(Math.abs(K.mediaTitolari(M, W.clubs) - mioW.xi.reduce((s, x) => s + valW(x), 0) / 11) < 1e-9);
   // vince tutto: tre obiettivi su quattro (la rosa no), sale in Lega dei Borghi coi premi di fine stagione e di promozione
-  stagione(M, 3, 0); ob = K.obiettivi(M, W.clubs); assert.deepEqual(ob.map((o) => o.fatto), [true, true, true, false]);
+  stagione(M, 3, 0); ob = K.obiettivi(M, W.clubs); assert.deepEqual(ob.map((o) => o.fatto), [true, true, true, false]); assert.deepEqual(ob.map((o) => o.sicuro), [true, true, true, false]); assert.ok(ob.every((o) => !o.mancato));
   let e = K.esitoStagione(M, W.clubs); assert.ok(e.sale && !e.scende && e.fatti === 3 && e.pos === 1 && e.div === 4);
   const g0 = M.gemme, c0 = M.contatti, leg = () => Object.values(M.allenatori.leggendario).reduce((a, b) => a + b, 0), l0 = leg();
   e = K.nuovaStagione(M, W.clubs, rnd); assert.equal(M.div, 4); assert.equal(M.stagione, 2); assert.equal(M.gemme - g0, DIVISIONI[4].fine + E.diamanti.promozione); assert.equal(leg() - l0, 2); assert.equal(M.contatti - c0, 1);

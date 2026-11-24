@@ -7,6 +7,12 @@
 // Misure vere, in metri, niente ingrandimenti: campo 105 × 68 (HL e HW sono le metà), porta 7,32 × 2,44 (GH mezza
 // larghezza, GT altezza), pallone di 22 cm (BR il raggio). GRAV è la gravità del gioco.
 export const HL = 52.5, HW = 34, GH = 3.66, GT = 2.44, BR = 0.11, GRAV = 20;
+// Il pallone si vede male se è disegnato grande come il vero (22 cm visti da 35 metri): il gioco lo muove sempre con BR, ma
+// si disegna fino a `scala` volte più grande quando la telecamera è lontana (a grandezza vera sotto i `vicino` metri, cioè
+// nei primi piani e nei replay). `luce`: quanto è chiaro anche in ombra (0 = solo la luce dei fari). L'ombra sotto è un
+// disco scuro dal bordo netto: `ombra` = [raggio rispetto al pallone disegnato, quanto è scura a terra, quanto si allarga
+// per ogni metro di altezza, quanto schiarisce per ogni metro, scurezza minima]: larga e chiara in aria, dice dove scende.
+export const PALLA_VISTA = { scala: 1.7, vicino: 13, luce: .45, ombra: [1.25, .82, .12, .22, .3] };
 // Giocatori a grandezza vera: alti in media 1,80 m, da 1,70 a 1,95 secondo il giocatore; i portieri da `portiere` in su.
 // `passi`: quante stature diverse ci sono tra min e max (26 = una ogni centimetro)
 export const ALTEZZA = { min: 1.70, max: 1.95, media: 1.80, portiere: 1.84, passi: 26 };
@@ -25,15 +31,19 @@ export const VELOCITA = { corsa: 5, scatto: 7, scattoPalla: 6, qualita: .5, squa
 export const HALF_SECS = 45 * 60 / RITMO.gioco;
 export const DIFF = {
   facile:    { spd: .88, steal: .7,  save: .48, err: 1.7, think: .6, wait: 1.2, slide: 1.5 },
-  normale:   { spd: .97, steal: 1.25, save: .58, err: 1.0, think: .4, wait: 1.0, slide: 4 },
+  normale:   { spd: .97, steal: 1.25, save: .42, err: 1.0, think: .4, wait: 1.0, slide: 4 },
   difficile: { spd: 1.04, steal: 1.9, save: .8, err: .6, think: .26, wait: .6, slide: 6 },
 };
-export const MATE = { spd: 1, steal: .95, save: .6, err: 1, think: .4, wait: .9, slide: 4 };
+export const MATE = { spd: 1, steal: .95, save: .44, err: 1, think: .4, wait: .9, slide: 4 };
 // `save`: quanto para il portiere (da 0 a 1). Quello di MATE è il portiere della squadra di chi gioca.
 // `wait`: secondi in cui chi difende temporeggia prima di andare sul pallone; `slide`: scivolate al secondo quando ce n'è l'occasione
-// Inserimenti senza palla: ogni quanti secondi si valuta, quanti insieme, quanto durano, punteggio minimo per partire, profondità in metri,
-// probabilità del dai e vai dopo un passaggio e di cercare chi si inserisce
-export const RUN = { every: 1.55, max: 2, life: 2.8, min: 8.5, depth: 13, oneTwo: .35, thru: .3 };
+// Inserimento a condizione (idea di GameplayFootball, docs/crediti.md): ogni `ogni` secondi si guarda il punto `avanti`
+// metri davanti al portatore. Parte il compagno più vicino a quel punto se il voto supera `soglia`: il voto scende con la
+// distanza (zero a `raggio` metri) e con gli avversari attorno al punto (`ingombro`: peso di ognuno, entro quanti metri,
+// quanti contarne). Dura `dura` secondi e va verso la porta, fino a `fondo` metri dalla linea, stringendo al centro (`centro`).
+export const INSERIMENTO = { ogni: .5, avanti: 26, raggio: 40, ingombro: [.3, 15, 4], soglia: .5, dura: 4, centro: .5, fondo: 9 };
+// `oneTwo`: probabilità del dai e vai dopo un passaggio
+export const RUN = { oneTwo: .35 };
 // Difesa a tre distanze dal portatore: oltre `far` ci si avvicina, fino a `near` si temporeggia, sotto si va sul pallone.
 // `danger` è la distanza dalla propria porta sotto cui non si aspetta più; `slide` l'intervallo utile per la scivolata
 export const DEF = { far: 8.5, near: 2.4, hold: 2.3, danger: 24, slide: [1.6, 3.4] };
@@ -107,10 +117,20 @@ export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['I
 // linea di fondo a cui si ferma, zMax fin dove arriva verso la tribuna vicina (oltre ci entrerebbe)
 // fascia: il pallone resta sempre tra queste due altezze dello schermo (0 in alto, 1 in basso). Se seguendolo al 45% ne
 // uscirebbe (verso la linea laterale lontana finiva sotto il tabellone), la telecamera lo segue per intero in profondità.
-export const CAMERA = { alto: 12.5, dietro: 36.8, inclina: 21.75, fovOriz: 58.7, seguiX: 1, seguiZ: .45, molla: 6, bordoX: 16, zMax: 56, fascia: [.3, .7] };
+// cielo: un pallone in volo non sale oltre questa altezza dello schermo (0 in alto): la telecamera si alza con lui, al
+// massimo di `sale` metri. Prima, sui lanci lunghi, usciva dallo schermo in alto.
+// spalle: oltre questi metri dalla linea laterale vicina la telecamera è sopra la tribuna, che allora non si disegna (le
+// prime file spuntavano in basso e coprivano gioco e comandi). A 16 m la tribuna è ancora tutta fuori dallo schermo.
+export const CAMERA = { alto: 12.5, dietro: 36.8, inclina: 21.75, fovOriz: 58.7, seguiX: 1, seguiZ: .45, molla: 6, bordoX: 16, zMax: 56, fascia: [.3, .7], spalle: 16, cielo: .16, sale: 10 };
 // Vista dall'alto di tutto lo stadio, solo per controlli: si accende con ?alto nell'indirizzo. [x, y, z della telecamera,
 // x, y, z del punto guardato, FOV verticale]
 export const CAMERA_ALTO = [0, 95, 40, 0, 0, 0, 55];
+// Calcio d'angolo: la telecamera sta dietro chi batte, bassa, e guarda l'area: si vedono lui, il pallone e la porta, e la
+// levetta segue lo schermo, in su è verso l'area. dietro e alto: metri dietro il pallone e da terra. avanti: quanti
+// metri oltre il pallone guarda a terra, cioè quanto è inclinata. mira: il punto dell'area verso cui è girata, come
+// [metri dalla linea di fondo, metri dal centro della porta verso il lato dell'angolo]; fov in gradi. Prima stava a 12 m
+// d'altezza di fianco alla bandierina, e chi batte restava fuori dallo schermo, in basso.
+export const ANGOLO_CAM = { dietro: 11, alto: 6, avanti: 5, mira: [9, 2], fov: 38 };
 
 /* ---------------------------------------------------------------- comandi dell'utente (come Dream League, docs/dls-gameplay.md) */
 // La levetta: base fissa (un cerchio di `raggio` px), la levetta si muove dentro. Poco inclinata si cammina, poi si corre;
@@ -131,7 +151,14 @@ export const PRESSIONE = { anticipo: .25, vicino: 1.6 };
 // `inCorsa`: al compagno che corre il rasoterra arriva più morbido, al massimo a questa velocità (m/s): più svelto di
 // così lui non lo prende, gli corre accanto finché il pallone rallenta. Vale per intero dai 16 metri in su, per niente
 // sotto gli 8 (il corto resta teso, se no lo intercettano), a metà strada in mezzo: [velocità, da metri, a metri].
-export const PASSAGGIO = { assistito: true, dosa: .15, arrivo: [6, .15, 6.5, 10.5], inCorsa: [5.5, 8, 16] };
+// `incontro`: chi riceve va da solo sul pallone. La levetta sposta il punto d'incontro solo di questi metri, per ricevere
+// già girato dove si vuole andare. Deve restare sotto la distanza a cui si prende il pallone (1,05 m): a 1,4 m chi
+// teneva la levetta gli correva accanto senza toccarlo.
+export const PASSAGGIO = { assistito: true, dosa: .15, arrivo: [6, .15, 6.5, 10.5], inCorsa: [5.5, 8, 16], incontro: .5 };
+// Cambio automatico del giocatore comandato a palla libera (un passaggio nostro, un rimpallo, una respinta: non il passaggio
+// degli avversari in viaggio): il comando passa al compagno che arriva sul pallone prima, se ci arriva almeno `margine`
+// secondi prima di chi è comandato adesso. Dopo un cambio, automatico o col tasto, per `pausa` secondi non si ricambia.
+export const CAMBIO = { margine: .35, pausa: .8 };
 // Passa, Cross e Tira si tengono premuti: la barra sotto il giocatore si riempie (in 0,8 s) e al rilascio parte il colpo
 // con quella potenza. Un tocco veloce su Passa o Cross fa il passaggio dosato da solo, come prima.
 export const CARICA = { piena: .8, tocco: .12, max: .95 };
@@ -140,8 +167,10 @@ export const DIST = { pass: [5, 45], cross: [12, 30], lancio: [15, 40] };
 // Segni in campo: X gialla dove scende un pallone alto (lanci, cross, rimesse), larga `x` metri: il pallone è «alto» se
 // sale oltre `alto` metri. Il segnalino grigio sul compagno che si prenderebbe con «Cambia giocatore» si ricalcola ogni
 // `cambio` secondi. La barra della potenza diventa rossa da `rosso` (parte della carica piena). `scala`: grandezza dei segni
-// sopra le teste (parte dell'altezza dello schermo)
-export const SEGNI = { x: 1.1, alto: 1.6, cambio: .2, rosso: .8, scala: .12 };
+// sopra le teste (parte dell'altezza dello schermo). `grigio`: il segnalino grigio si disegna o no (Alex, 23/11: un solo
+// segnalino, sul giocatore comandato). `largo`: la parte della larghezza del suo riquadro che un nome occupa: il nome
+// dell'avversario col pallone si nasconde quando finirebbe sopra quello del giocatore comandato.
+export const SEGNI = { x: 1.1, alto: 1.6, cambio: .2, rosso: .8, scala: .12, grigio: false, largo: .8 };
 // Secondi tra l'inizio del gesto e il momento in cui il piede colpisce il pallone (passaggio, tiro, lancio).
 // In conduzione il pallone sta fino a un metro e mezzo davanti: il calcio aspetta che il piede ci arrivi. Dove il piede
 // lo colpisce lo dice la clip del gesto. Per i gesti che non lo dicono: `portata` metri davanti al corpo e `lato` metri
@@ -150,12 +179,23 @@ export const SEGNI = { x: 1.1, alto: 1.6, cambio: .2, rosso: .8, scala: .12 };
 export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: .15, chiude: 6, attesa: .18 };
 
 /* ---------------------------------------------------------------- palle ferme e sequenza del gol (come Dream League) */
-// Palle ferme: i comandi tornano `comandi` secondi dopo il fischio della rimessa laterale; la dissolvenza scura della rimessa
-// dura `buio` secondi (a metà la telecamera stacca sul punto di battuta). Una palla ferma che arriva entro `occasione` secondi
+// Palle ferme: su rimessa laterale e calcio d'angolo i comandi tornano `comandi` secondi dopo che il pallone è uscito; la
+// dissolvenza scura dello stacco dura `buio` secondi e a metà è scura `scuro` (1 = nero): in quell'istante la telecamera
+// stacca sul punto di battuta e ognuno viene messo al suo posto. Una palla ferma che arriva entro `occasione` secondi
 // da una grande occasione (parata, tiro deviato, palo, tiro fuori di poco: entro `fuori` metri dal palo) è preceduta dal
 // replay (RIVEDI). Sull'angolo un compagno si offre per batterlo corto, a `corto` = [metri dalla linea di fondo, metri dalla
-// linea laterale]
-export const FERMI = { comandi: 2, buio: .5, occasione: 4, fuori: 2.5, corto: [7, 7] };
+// linea laterale].
+// Il pallone uscito dal campo si vede ancora per `uscita` secondi mentre va fuori (su rimessa e angolo fino al nero dello
+// stacco), e rimbalza sui `cartelloni`: [metri oltre la linea di fondo, metri oltre la linea laterale, quanto rimbalza].
+// Il replay della grande occasione parte quando ha finito di uscire.
+// Nessuna ripresa parte da sola: quando chi batte è sul pallone il gioco aspetta. Se batte chi gioca, finché non passa o
+// tira, senza limite di tempo. Se batte il computer, `cpu` secondi: così si vede che è fermo. Intanto ognuno va al suo
+// posto senza scattare e poi si ferma: `passo` = [velocità al passo in m/s, velocità in più per ogni metro che manca al
+// posto, velocità di corsetta]: chi è lontano corre, avvicinandosi rallenta e gli ultimi metri li fa camminando (di corsetta
+// chi è aspettato: chi batte, la barriera, chi ha un posto in area, gli avversari troppo vicini al pallone; chi batte scatta se è a più di `scatto` metri dal pallone); arrivato a `fermo` metri dal posto
+// resta dov'è. Chi ha un posto (barriera, area) viene aspettato al massimo `arrivo` secondi,
+// `rigore` sul rigore, poi si batte lo stesso. Il calcio d'inizio aspetta `inizio` secondi dal fischio prima dei comandi.
+export const FERMI = { comandi: 2, buio: .5, scuro: 1, uscita: .9, cartelloni: [5, 4, .3], occasione: 4, fuori: 2.5, corto: [7, 7], cpu: 1, passo: [1.9, .6, 3.6], scatto: 12, fermo: .35, arrivo: 8, rigore: 10, inizio: 1.2 };
 // Gol, in secondi veri dal pallone in rete: da `lento` per `durataLento` secondi un leggero rallentatore (a velocità `vel`),
 // con gli avversari fermi a disperarsi per `fermi` secondi e l'arbitro che indica il centro; a `stacco` la telecamera passa
 // al primo piano del marcatore: alta `camAlt` metri, a `camDist` metri da lui, con un difensore deluso in primo piano
@@ -167,14 +207,31 @@ export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco
 // Livelli di dettaglio del calciatore: sotto `vicino` metri dalla telecamera il corpo pieno (circa 4.300 triangoli: primi
 // piani, replay, esultanze), fino a `lontano` quello medio (1.500: la telecamera di gioco), oltre quello leggero (600)
 // Il prato (Alex, 21/11): `tinta` moltiplica rosso, verde e blu dell'erba (meno rosso e meno blu: verde più pieno e meno
-// giallo). `strisce`: quanto sono scure e chiare le strisce di taglio. `anelli`: lo stesso per gli anelli concentrici e
-// gli scacchi del cerchio, più leggeri delle strisce. `rilievo`: quanto risalta la grana dell'erba. `piastrella`: ogni
+// giallo). `strisce`: quanto sono scure e chiare le strisce di taglio, dritte e uguali su tutto il campo (Alex, 23/11:
+// niente anelli attorno al centrocampo). `rilievo`: quanto risalta la grana dell'erba. `piastrella`: ogni
 // quanti metri si ripete la texture (più piccola, più nitida). `maglia`: il lato in metri dei riquadri di cui è fatto il
 // prato (triangoli piccoli: nessuno sparisce quando la telecamera è vicina a un angolo).
-export const PRATO = { tinta: [.8, 1.04, .7], strisce: [.74, 1.18], anelli: [.9, 1.05], rilievo: .8, piastrella: 3, maglia: 6 };
+export const PRATO = { tinta: [.8, 1.04, .7], strisce: [.74, 1.18], rilievo: .8, piastrella: 3, maglia: 6 };
+// La notturna (Alex, 23/11: alone biancastro e cunei chiari sul campo). `fasci`: quanto si vedono i fasci di luce dei
+// fari e che parte della strada verso il campo percorrono prima di spegnersi (restano in aria, vicino al tetto: sopra il
+// prato niente). `hemi`: la luce diffusa che schiarisce giocatori e prato anche dove i fari arrivano meno.
+// `faretti`: la forza dei quattro faretti d'angolo, che danno i riflessi su erba e linee. A 1 lasciavano grandi chiazze
+// biancastre sul prato, e anche a 0,35 restava un alone ai bordi dello schermo: ora sono spenti (0) e la luce la dà
+// quella dall'alto, uguale su tutto il campo (`sole`). `croce`: le
+// quattro ombre leggere che ogni persona ha sotto i fari, una per torre: quanto sono scure, larghe (m) e lunghe (da, a).
+// `cartelloni`: quanto sono accesi i cartelloni LED di notte. Con 1 sono come di giorno, sotto 0,78 non fanno alone.
+export const NOTTURNA = { fasci: [.1, .3], hemi: .45, sole: 1.25, faretti: 0, croce: { forza: .24, largo: .7, lungo: [1.3, 2.8] }, cartelloni: .72 };
 export const LOD = { vicino: 22, lontano: 62 };
-// Cartelloni LED a bordo campo: scorrono piano di continuo (frazione di tutta la striscia al secondo: 4 pannelli)
-export const LED = { scorre: .02 };
+// Le divise in campo (pickKits in src/game.js). `soglia`: quanto devono essere lontane le due maglie perché gli ospiti
+// tengano quella divisa (se no provano la seconda, poi bianca, scura e le terze). `simile`: sotto questa distanza due
+// colori si confondono: nessuna parte della divisa degli ospiti può stare così vicina alla maglia di casa.
+// `chiaro`: di quanto devono differire in chiarezza le due maglie, da 0 a 1 (bianco contro nero fa 0,9): una chiara e una
+// scura, come chiesto da Alex. Senza, due maglie di colore diverso ma chiare uguale (rosso e blu) di notte si confondono.
+export const DIVISE = { soglia: .42, simile: .25, chiaro: .4 };
+// Cartelloni LED a bordo campo: scorrono piano di continuo (frazione di tutta la striscia al secondo: 4 pannelli).
+// `tela`: i punti della striscia disegnata, larghezza e altezza (potenze di due: servono le versioni rimpicciolite, che
+// tolgono lo sfarfallio delle scritte lontane)
+export const LED = { scorre: .02, tela: [4096, 128] };
 
 /* ---------------------------------------------------------------- replay e stacchi */
 // Replay automatico e breve (da confermare con DLS): dopo un gol e alla prima palla ferma dopo una grande occasione rivede gli
@@ -226,10 +283,11 @@ export const RINVIO = { attesa: [1.3, 2.1], braccio: .63, piede: .3, corto: 30, 
 export const MANO = { peso: 9 };
 
 /* ---------------------------------------------------------------- riprese, panchina, a terra */
-// Rimessa laterale con le mani. linea: dove sta chi batte; max: fin dove può lanciare; lunga: da quanti metri il lancio è
+// Rimessa laterale con le mani. linea: dove sta chi batte, fuori dal campo coi piedi dietro la riga bianca come da
+// regolamento. Prima stava 25 cm dentro. max: fin dove può lanciare; lunga: da quanti metri il lancio è
 // lungo e alto; fermo: il secondo della clip in cui si tiene il pallone dietro la testa; pensa: quanto aspetta dopo il fischio
 // mani e manoMin: a che altezza sta il pallone sopra la testa, se la posa non si può leggere, e il minimo
-export const RIMESSA = { linea: HW - .25, max: 28, lunga: 14, fermo: .08, pensa: [.4, .9], mani: 1.95, manoMin: .9 };
+export const RIMESSA = { linea: HW + .4, max: 28, lunga: 14, fermo: .08, mani: 1.95, manoMin: .9 };
 // Panchina: quante sostituzioni a partita, quante ne fa l'IA, da che punto della partita comincia e ogni quanto ne fa un'altra
 export const SUB = { max: 5, ai: 3, from: .55, every: .12 };
 /** Quanto si resta a terra dopo una scivolata, un tuffo o un contrasto subito: si allunga se ci sono le clip registrate. */
@@ -303,15 +361,23 @@ export const DUELLO = { vicini: 0.63, corsa: 3, paralleli: 0.35, spinta: 14, sbi
 // `piede` metri davanti al bacino, con uno spessore `raggio`. Tempi e misure vengono dall'animazione del modello.
 export const SCIVOLATA = { v0: 8.5, spinta: 1.1, attrito: 2.2, durata: 0.75, attiva: 0.16, fine: 0.62, anca: 0.13, piede: 0.83, raggio: 0.25, giuPalla: 0.5, uomo: 0.33, dopo: 0.12 };
 
-// Quando il computer tira. La bontà dell'occasione va da 0 a 1 e la calcola valoreTiro in game.js.
-// Tira sempre sopra `buona`. Tira sopra il primo numero di `pressato` se l'avversario arriva entro il secondo (in secondi).
-// Con un'occasione almeno `minima` tira sempre entro `vicino` metri dalla porta e, entro il primo numero di `daFuori`
-// (metri), con la probabilità del secondo a ogni decisione.
-export const TIRO_IA = { buona: .12, pressato: [.06, .9], minima: .03, vicino: 20, daFuori: [30, .8] };
+// Quando il computer tira: con una buona occasione (`buona`), prima se pressato (`pressato`: occasione minima, secondi
+// all'arrivo dell'avversario), sempre da vicino (`minima` entro `vicino` metri) e ogni tanto da fuori (`daFuori`: entro
+// quanti metri, con che probabilità). Dove mira (idea di GameplayFootball, docs/studio-ia.md e docs/crediti.md): prova tre
+// bersagli, i due pali a `bersagli` della mezza porta e il centro, e sceglie quello dove gli avversari, portiere compreso,
+// arrivano più tardi sulla traiettoria. `velocita`: la velocità del tiro usata nel conto, in m/s.
+export const TIRO_IA = { buona: .12, pressato: [.06, .9], minima: .03, vicino: 20, daFuori: [30, .8], bersagli: .8, velocita: 27 };
 
 // Le punte quando la squadra ha palla: aspettano `sullaLinea` metri dietro la linea del fuorigioco (l'ultimo difensore),
 // mai oltre `massimo` metri dal centro del campo verso la porta avversaria.
 export const ATTACCO = { sullaLinea: 1.2, massimo: 44 };
+// Smarcamento (squadra in possesso, chi non è difensore): ogni `ogni` secondi chi è senza palla prova il punto dov'è
+// diretto e otto punti a `raggio` metri attorno, e sceglie quello col voto più alto. Il voto è lo stesso che dà chi passa
+// (votoPassaggio in game.js: avanzare, spazio attorno, pallone che arriva prima degli avversari), meno: `casa` per ogni
+// metro oltre `liberta` dal posto nel modulo (centrocampisti e punte), `compagni` per ogni compagno entro `spazio` metri
+// (pieno quando gli si è addosso), `vicino[1]` per ogni metro sotto `vicino[0]` dal portatore, `strada` per ogni metro
+// da fare. L'idea delle spinte viene da GameplayFootball (docs/studio-ia.md).
+export const SMARCA = { ogni: .2, raggio: 5, liberta: { C: 10, A: 12 }, casa: 1.5, compagni: 6, spazio: 10.5, vicino: [8, 2], strada: .15 };
 
 // Le cinque divisioni della carriera, dalla più alta (docs/home-spec.md, §3). Si parte dall'ultima.
 // val: tra quali valutazioni stanno i giocatori della divisione. vittoria: monete per una vittoria. fine: diamanti a
@@ -413,31 +479,77 @@ export const ECONOMIA = {
 
 
 // ---------- Ritratti dei giocatori (home) ----------
-// I ritratti sono resi una volta sola con Blender (docs/ritratti.md) e composti dal gioco: la testa del giocatore, sopra
-// la maglia coi colori della sua squadra, in cima i capelli che cadono davanti alla maglia. Questi numeri devono
-// restare uguali a quelli di scripts/blender/render_ritratti.py e scripts/ritratti_webp.py.
-// cartella: dove stanno i file. lato: le due misure dei file.
-// taglio: la parte del ritratto che entra nella carta (da dove parte, di lato e dall'alto, quanto è larga e quanto è
-//   alta, in parti dell'immagine) e da quale misura di file si prende. `piccolo` è per le carte piccole dei campi
-//   stretti, dove il viso riempie lo scudo. `carta` e `scheda` sono lo stesso ritaglio, alto e stretto, della carta
-//   grande (misure prese dalla foto di riferimento di Alex): la testa larga il 63% del ritaglio, i capelli in cima, il
-//   mento all'82% dell'altezza, sotto collo e maglia. `scheda` lo prende dal file grande.
-// mappa: i metri coperti dalla mappa della maglia, di lato e in altezza rispetto agli occhi. occhi: a che altezza stanno
-//   gli occhi sul calciatore della partita, per usare gli stessi disegni delle sue maglie (src/divisa.js).
-// bianco: la luce della stoffa bianca più chiara (vale come bianco pieno). ombre: quanto si approfondiscono le pieghe.
-// filo: quanta luce tengono i colori scuri, perché le pieghe si vedano anche sul nero.
-// scolli: quale maglia per ogni colletto della partita (il colletto piccolo non c'è ancora: per ora è un girocollo).
-// insieme: quanti ritratti si compongono per volta, per non fermare la schermata.
-export const RITRATTI = {
-  cartella: 'img/ritratti/', lato: { piccolo: 256, grande: 512 }, taglio: { piccolo: { x: .18, y: .055, largo: .64, alto: .64, lato: 'piccolo' }, carta: { x: .24, y: .025, largo: .6, alto: .726, lato: 'piccolo' }, scheda: { x: .24, y: .025, largo: .6, alto: .726, lato: 'grande' } },
-  mappa: { x: [-.6, .6], z: [-.5, .1] }, occhi: 1.65,
-  bianco: .86, ombre: 2.2, filo: .07,
-  scolli: { giro: 'girocollo', v: 'v', polo: 'girocollo' },
-  insieme: 4,
+// I ritratti delle carte (docs/ritratti.md, sezione del 23/11): un'immagine intera per volto, col viso e la maglia già
+// dentro, su fondo trasparente. Tutti hanno la stessa inquadratura: la testa è larga il 40% del lato e sta al centro,
+// con la cima al 7% dall'alto, e la maglia arriva almeno all'86%. La carta li usa interi, senza ritagliarli.
+// cartella: dove stanno i file (<volto>-512.webp e <volto>-256.webp). lato: le due misure dei file.
+// cima: dove sta la cima della testa, in parti del lato dall'alto.
+// grandeDa: da quanti punti di larghezza della carta si prende il file grande.
+// insieme: quanti ritratti si preparano per volta, per non fermare la schermata.
+export const RITRATTI = { cartella: 'img/ritratti-carte/', lato: { piccolo: 256, grande: 512 }, cima: .07, grandeDa: 80, insieme: 4 };
+
+// ---------- La carta del giocatore (proposta «A» approvata da Alex il 23/11: docs/carte-giocatori.md) ----------
+// Tutte le misure sono in parti della larghezza W della carta. Quelle segnate «di H» sono in parti dell'altezza.
+// src/casa/giocatore.js le passa allo stile (src/casa/stile.css) come variabili: nello stile non ci sono numeri.
+// alta: H diviso W. raggio: degli angoli.
+// bordo: il filo chiaro dentro la carta. lato: rientro ai lati. alto: rientro sopra e sotto, di H. Poi raggio,
+//   spessore e colore.
+// rarita: dalla più preziosa. `da`: la valutazione da cui vale. `alto` e `basso`: i colori della sfumatura, dall'alto
+//   in basso. `testo`: il colore di valutazione e ruolo.
+// ritratto: il quadrato del ritratto. lato. sinistra: distanza dal bordo sinistro. alto: distanza dal bordo alto, che
+//   è negativa perché la testa esce sopra la carta, di 0,05 H. sporge: quanto spazio lasciare sopra la carta alla testa.
+//   Sono le misure esatte della guida: la testa è larga 0,42 W e la maglia finisce un po' sopra la fascia del nome,
+//   come nel disegno. Se il file del ritratto manca resta la sagoma neutra, nello stesso quadrato.
+// valutazione, ruolo: grandezza del carattere e centro: x in parti di W, y di H. Il ruolo fuori posto ha fondo `fuori`.
+// fascia: la fascia del nome. da: dove comincia, di H. alta: di H. Poi il colore. nome: grandezza del cognome.
+//   margine: lo spazio libero ai lati del cognome.
+// nome: un cognome lungo si rimpicciolisce fino a `minimo`, mai sotto `punti` punti sullo schermo, poi si stringe in
+//   larghezza fino a `stretto` volte. Se non basta ancora scende sotto il minimo, fino a `fondo` punti, finché entra
+//   tutto: niente puntini, il cognome non si taglia mai.
+// energia: la barretta sul bordo basso della fascia. lato: rientro ai lati. spessa. Poi i colori del pieno: alta, media
+//   sotto il 70%, bassa sotto il 40%. vuota: il colore del vuoto.
+// statistiche: la zona in fondo. da: dove comincia, di H. numero e sigla: grandezza dei caratteri. opaco: quanto è
+//   opaca la sigla. per: le tre statistiche di ogni reparto: P portieri, D difensori, C centrocampisti, A attaccanti.
+// stretta: la carta larga meno di `sotto` punti: campo, sostituti, scelta del capitano, riquadri della Home. Niente
+//   statistiche: la fascia comincia a `fascia`, di H, e arriva in fondo, e il cognome è grande `nome`. Il ritratto ha
+//   le stesse misure della carta intera. ruoloDa: sotto questa larghezza il ruolo non si mostra. ampia: la carta
+//   stretta larga almeno `da` punti, quella dei riquadri della Home: nel posto lasciato dalle statistiche il ritratto
+//   è più grande e arriva alla fascia, con la stessa cima e lo stesso centro della testa.
+// piccola: la carta dei campi stretti della Sfida, col nome sotto e senza ruolo, che non ci sta. alta: H diviso W.
+//   scritta: i punti della valutazione, perché lì vale la regola dei 12 punti. ritratto: più grande, per arrivare in
+//   fondo alla carta, e un po' più a destra, per lasciare posto alla valutazione.
+// segno: la «C» del capitano e gli incarichi, tondi in colonna a sinistra, sotto il ruolo, dove non coprono il viso.
+//   largo: diametro della «C». piccolo: diametro degli incarichi, che si vedono solo sulla carta intera, cioè nella
+//   scheda: sulle carte strette non ci stanno. x: il centro della colonna. y: dove comincia, di H. aria: lo spazio tra
+//   uno e l'altro.
+// freccia: la freccia verde di chi è stato allenato, in fondo alla stessa colonna. larga.
+// larga: quanto è larga la carta dove non lo decide il campo. scheda: in parti dell'altezza dello schermo, in parti
+//   della sua larghezza, e il massimo in punti: vale la più piccola delle tre. mercato,
+//   incarico, che è la carta piccola nel pannello degli incarichi della Squadra, e
+//   capitano: in punti. home: la più stretta e la più larga, tra cui prende quella che entra nel riquadro. accanto:
+//   quanti punti devono restare, di fianco, per titolo e testo perché la carta possa essere alta quanto tutto il
+//   riquadro. Se non restano, sta solo nella parte sotto il titolo.
+export const CARTA = {
+  alta: 1.38, raggio: .12,
+  bordo: { lato: .05, alto: .04, raggio: .09, spesso: 1 / 60, colore: 'rgba(255,255,255,.47)' },
+  rarita: {
+    oro: { da: 70, alto: '#ECC85C', basso: '#96691E', testo: '#3C2808' },
+    argento: { da: 55, alto: '#DEE4EC', basso: '#828C9B', testo: '#282D37' },
+    bronzo: { da: 0, alto: '#D69660', basso: '#824B28', testo: '#321C0C' },
+  },
+  ritratto: { lato: 1.05, sinistra: .065, alto: -.1425, sporge: .2 },
+  valutazione: { misura: .24, x: .17, y: .12 },
+  ruolo: { misura: .15, x: .17, y: .25, fuori: '#E0262D' },
+  fascia: { da: .70, alta: .13, colore: 'rgba(15,25,55,.92)', nome: .11, margine: .05 },
+  nome: { minimo: .085, punti: 5, stretto: .72, fondo: 3 },
+  energia: { lato: .1, spessa: .035, alta: '#50DC78', media: '#F2A93B', bassa: '#FF5A5A', vuota: '#060A17' },
+  statistiche: { da: .83, numero: .12, sigla: .085, opaco: .8, per: { P: ['RIF', 'POS', 'PAS'], D: ['DIF', 'VEL', 'PAS'], C: ['PAS', 'CON', 'RES'], A: ['TIR', 'VEL', 'CON'] } },
+  stretta: { sotto: 100, fascia: .78, nome: .135, ritratto: { lato: 1.05, sinistra: .065, alto: -.1425 }, ruoloDa: 36, ampia: { da: 64, ritratto: { lato: 1.232, sinistra: -.026, alto: -.155 } } },
+  piccola: { alta: 1.19, scritta: 12, ritratto: { lato: 1.354, sinistra: -.047, alto: -.164 } },
+  segno: { largo: .17, piccolo: .09, x: .17, y: .305, aria: .008 },
+  freccia: { larga: .13 },
+  larga: { scheda: [.5, .23, 200], mercato: 100, capitano: 54, incarico: 40, home: [40, 96], accanto: 110 },
 };
-// Carta grande del giocatore: larghezza diviso altezza della cornice, misurata sulla foto di riferimento di Alex
-// (docs/carte-giocatori.md). Le altre proporzioni della carta sono nello stile (src/casa/stile.css).
-export const CARTA_GRANDE = { forma: .737 };
 // L'apertura di un premio (src/casa/premio.js). Tempi in millesimi, rotazioni in gradi.
 // breve (busta blu del giorno e delle sfide, busta argento del percorso premi) e lunga (busta oro di fine stagione)
 // hanno gli stessi passi, con tempi diversi:
@@ -473,12 +585,43 @@ export const PREMIO = {
 export const AUDIO = {
   musica: { cartella: 'audio/', brani: ['musica-home-rise-up'], livello: 1, entra: 1.5, esce: 1.2 },
 };
+// Le schermate a pannelli (src/casa/quadri.js), sulle bozze di Alex del 24/11: Monete e diamanti, Profilo, Stagione.
+// Misure in punti, colori come li legge lo stile: diventano le variabili --q-* della pagina.
+// sfondo: di quanto è sfocata l'illustrazione della home e il velo scuro che le sta sopra.
+// margine: lo spazio dai lati dello schermo; alto: sotto la barra; basso: dal bordo in basso; tra: lo spazio tra un
+//   pannello e l'altro; dentro: il bordo interno di un pannello. minimo: sotto questa altezza la schermata non si
+//   schiaccia più e scorre (capita con la tastiera aperta).
+// pannello e tessera (i riquadri dentro i pannelli): fondo, raggio degli angoli, bordo.
+// titolo: i titoli dei pannelli. testo: il testo principale e quello secondario. oro, azzurro, verde, rosso: gli accenti.
+// monete: la colonna di sinistra, l'icona e il numero dei due saldi, quante tessere per riga, quanto è alta l'illustrazione
+//   di una tessera e quanto l'icona di un premio.
+// profilo: la colonna di sinistra (e quanta parte della larghezza può prendere al massimo), l'avatar grande, il nome,
+//   gli avatar tra cui scegliere, i campi dell'accesso (altezza e raggio).
+// stagione: la fascia in alto, la colonna degli obiettivi (e quanta parte della larghezza al massimo), l'anello della
+//   percentuale, la riga della classifica, quanti risultati mostra la forma e quanto è largo un suo pallino.
+// bacheca: la colonna dei trofei (e quanta parte della larghezza al massimo), quanto è alta l'illustrazione di un
+//   trofeo, i numeri della carriera, quanto è larga la carta del capocannoniere, il numero dei suoi gol e quanti
+//   altri marcatori si mostrano accanto.
+export const PANNELLI = {
+  sfondo: { sfoca: 3, velo: 'rgba(5,10,26,.8)' },
+  margine: 16, alto: 8, basso: 12, tra: 10, dentro: 14, minimo: 300,
+  pannello: { fondo: 'rgba(16,30,72,.92)', raggio: 14, bordo: 'rgba(63,198,255,.27)' },
+  tessera: { fondo: 'rgba(40,70,140,.67)', raggio: 12, bordo: 'rgba(63,198,255,.27)' },
+  titolo: { misura: 19, colore: '#E8B64C' },
+  testo: { misura: 12.5, colore: '#FFFFFF', piccolo: 11, secondario: '#AFC0DA' },
+  oro: '#E8B64C', azzurro: '#3FC6FF', verde: '#5BE37A', rosso: '#FF5A5A',
+  monete: { colonna: 216, icona: 48, numero: 30, perRiga: 3, figura: 46, premio: 20 },
+  profilo: { colonna: 254, parte: .35, avatar: 96, nome: 30, scelta: 44, campo: 36, raggioCampo: 10 },
+  stagione: { fascia: 58, colonna: 296, parte: .4, anello: 34, riga: 27, forma: 5, pallino: 15 },
+  bacheca: { colonna: 250, parte: .36, trofeo: 58, numero: 28, carta: 58, gol: 36, altri: 2 },
+};
 // La schermata Squadra (docs/navigazione.md §3.3), con le misure date da Alex il 23/11.
 // carta: quanto è larga una carta, in parti della larghezza dello schermo (uguale in campo e tra i sostituti).
+// aria: i punti che restano tra la testa di una carta e la carta della linea sopra, nei moduli con più linee.
 // stretto: la mezza larghezza del campo in alto, in percento (in basso è 50): il lato alto è il 55% di quello basso.
 // trascina: di quanti punti deve muoversi il dito perché una carta o un incarico cominci a seguirlo.
 // lungo: dopo quanti millesimi un dito fermo su una carta apre la scheda del giocatore.
-export const SQUADRA = { carta: .055, stretto: 27.5, trascina: 10, lungo: 520 };
+export const SQUADRA = { carta: .055, aria: 2, stretto: 27.5, trascina: 10, lungo: 520 };
 // ---------- Valutazioni mostrate (home, carte dei giocatori, mercato) ----------
 // La forza usata in partita non cambia: qui si decide solo che numero si vede. Funzioni in src/dati/scala.js.
 // interno: la scala di lavoro, dal giocatore più debole al più forte del suo reparto (portieri, difensori,
@@ -488,9 +631,6 @@ export const SQUADRA = { carta: .055, stretto: 27.5, trascina: 10, lungo: 520 };
 //   55 e 75, i migliori tra 76 e 82, oltre 85 solo chi si allena molto.
 // stat: il minimo e il massimo di una statistica mostrata. rumore: di quanto una statistica si scosta, giocatore per
 //   giocatore, dal profilo del suo ruolo.
-// fasce: il colore della carta dice la rarità. Da che valutazione la carta è azzurra (i rari) e da quale è oro (i
-//   più forti: tutti i capitani che si possono ingaggiare); sotto è bronzo. Si parte con una rosa di bronzi e il capitano
-//   d'oro, e con le stagioni si sale. cerchio: da che valutazione il cerchio della carta è verde (sotto è rosso).
 // colori: da che valore una statistica è gialla e da quale è verde (sotto è rossa).
 // capitani: tra quali valutazioni stanno i candidati di «Ingaggia il tuo capitano» e quanti sono.
 // basso: il valore interno di chi ha quotazione 1. Serve ai giocatori inventati delle divisioni sotto il Campionato
@@ -500,8 +640,6 @@ export const SCALA = {
   punti: [[30, 42], [55, 55], [65, 60], [72, 64], [78, 68], [82, 71], [85, 75], [88, 82], [100, 90]],
   stat: [30, 99],
   rumore: 5,
-  fasce: { azzurro: 60, oro: 70 },
-  cerchio: 60,
   colori: [60, 72],
   capitani: { min: 70, max: 78, quanti: 9 },
   basso: 20,

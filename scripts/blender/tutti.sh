@@ -1,4 +1,9 @@
 #!/bin/bash
+# NON SERVE PIÙ PER LE CARTE (24/11). I ritratti delle carte sono quelli fatti con Gemini, in public/img/ritratti-carte
+# (scripts/ritratti_gemini.py, docs/ritratti.md). La cartella public/img/ritratti in cui questo script scrive è stata
+# tolta e il gioco non la legge più: lanciarlo la ricrea senza che serva a niente. Blender ora serve solo per i
+# giocatori 3D della partita. Lo script resta com'era, come storia della prima versione dei ritratti.
+#
 # Rende tutti i ritratti che mancano, a blocchi, e li mette nel gioco. Si può fermare e rilanciare: riparte da dove era.
 # Per ogni blocco: Blender rende le teste (scripts/blender/render_ritratti.py), poi scripts/ritratti_webp.py scrive i
 # WebP nella cartella del gioco e i PNG grandi delle teste si buttano (le maglie restano nella cartella di lavoro).

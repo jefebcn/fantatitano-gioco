@@ -48,7 +48,7 @@ HOME (livello 0)
 ├── CARRIERA (il pulsante «GIOCA» sulla carta salta la Carriera: Sfida → Partita → Fine partita → Home)
 │   ├── GIOCA ADESSO → Sfida → Partita → Fine partita → Carriera
 │   │                  └── Squadra (e ritorno alla Sfida)
-│   ├── Classifica completa (schede: Classifica, Calendario, Risultati)
+│   ├── Stagione (lega, prossima partita, obiettivi, classifica con la forma; sotto risultati e calendario)
 │   ├── Trofeo dei Castelli (gironi, poi tabellone) → Sfida
 │   └── Coppa Titano (tabellone) → Sfida
 ├── SCENARIO → Sfida già impostata → Partita → Fine partita → Scenario
@@ -80,8 +80,8 @@ HOME (livello 0)
 DALLA BARRA (da qualsiasi schermata)
 ├── Impostazioni (audio, comandi, grafica, lingua, account Fantatitano)
 ├── Info (regole, crediti, licenze)
-├── Come guadagnare (fonti di monete e diamanti, storico)
-└── Profilo (manager, statistiche, trofei)
+├── Monete e diamanti (saldi, il premio più vicino, da dove arrivano)
+└── Profilo (avatar, livello, il tuo club, account Fantatitano)
 ```
 
 ## 3. Ogni schermata: da dove si entra, dove porta Indietro
@@ -102,7 +102,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 |---|---|---|---|---|
 | **Home** | 0 | avvio; Indietro dal livello 1 | — | le 8 carte (§2) |
 | **Carriera** | 1 | Home, carta CARRIERA | Home | Prossima partita → Sfida; Classifica → Classifica completa; Trofeo dei Castelli → gironi; Coppa Titano → tabellone (le quattro scorciatoie in basso sono state tolte il 23/11: Sfide, Squadra, Mercato e Il mio club si aprono dalla Home) |
-| Classifica completa | 2 | Carriera, carta Classifica | Carriera | schede Classifica, Calendario, Risultati |
+| Stagione (prima «Classifica completa») | 2 | Carriera, carta Classifica | Carriera | fascia con la lega e «Prossima» → Sfida; i quattro obiettivi; la classifica con la forma delle squadre, e sotto, scorrendo, risultati dell'ultima giornata e calendario |
 | Trofeo dei Castelli | 2 | Carriera | Carriera | gironi (poi tabellone); «Gioca» → Sfida |
 | Coppa Titano | 2 | Carriera | Carriera | tabellone; «Gioca» → Sfida |
 | **Sfida** | 2 | Carriera (GIOCA ADESSO), coppe («Gioca»), Scenario, Amichevole | da dove sei venuto | SQUADRA → Squadra (poi Indietro riporta qui); Riscaldamento (finestra di conferma); GIOCA → Partita |
@@ -123,7 +123,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 
 | Schermata | Liv. | Si entra da | Indietro | Cosa si tocca |
 |---|---|---|---|---|
-| **Squadra** | 1 (2 dalla Sfida) | Home; scorciatoia in Carriera; Sfida | da dove sei venuto | scambio (campo, sostituti, riserve) con due tocchi o trascinando una carta sull'altra; il primo tocco sceglie la carta e mostra il pulsante «Scheda», ritoccarla o toccare il vuoto annulla; pressione lunga → scheda; le linguette C, rigori, punizioni e corner si trascinano su un altro titolare; tessera Squadra migliore |
+| **Squadra** | 1 (2 dalla Sfida) | Home; scorciatoia in Carriera; Sfida | da dove sei venuto | scambio (campo, sostituti, riserve) con due tocchi o trascinando una carta sull'altra; il primo tocco sceglie la carta e mostra il pulsante «Scheda», ritoccarla o toccare il vuoto annulla; pressione lunga → scheda; la «C» del capitano si trascina su un altro titolare; il pulsante «Incarichi» apre il pannello di capitano, rigori, punizioni e angoli, dove si tocca una voce e si sceglie un titolare; tessera Squadra migliore |
 | Modulo | finestra | Squadra | chiude | 15 moduli su cinque colonne; quelli chiusi hanno il lucchetto |
 | Riserve | 2 | Squadra | Squadra | i giocatori fuori dai 19 convocati; scambio con la panchina |
 | Fisioterapista | 2 | Squadra | Squadra | recupero dell'energia per monete (uno o tutti) |
@@ -148,6 +148,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Divisa, Stemma, Modifica giocatori, Modifica manager | 3 | Personalizza | Personalizza | — |
 | Negozio | 3 | Personalizza; «Sblocca» dentro Divisa, Stemma, Modifica manager | da dove sei venuto | categorie, griglia, anteprima, «Usa» o «Sblocca per ◆ 10» → conferma; se i diamanti non bastano «Come guadagnare» |
 | Allenamento | 2 | Il mio club | Il mio club | 5 modi → Partita in allenamento → Fine → Allenamento |
+| Bacheca | 2 | Il mio club, pulsante «Bacheca» | Il mio club | niente da toccare: trofei vinti (gli altri in grigio), numeri della carriera, capocannoniere con la sua carta e i due marcatori dopo di lui |
 
 ### 3.7 Dalla barra
 
@@ -155,8 +156,8 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 |---|---|---|---|
 | Impostazioni | barra | da dove sei venuto | audio, comandi, grafica, lingua, account Fantatitano |
 | Info | barra | da dove sei venuto | regole, crediti, licenze |
-| Come guadagnare | «+» della barra; negozio, mercato e strutture quando il saldo non basta | da dove sei venuto | elenco delle fonti; scheda Storico |
-| Profilo | barra, a destra | da dove sei venuto | nome del manager, statistiche, trofei; «Personalizza» → Personalizza |
+| Monete e diamanti (prima «Come guadagnare») | i due saldi della barra; negozio, mercato e strutture quando il saldo non basta | da dove sei venuto | i due saldi; «Il premio più vicino» col suo pulsante (Gioca, Ritira, Riscuoti…); quattro schede di tessere: Partite, Competizioni, Sfide, Bonus (resta l'ultima scelta). Lo storico dei movimenti è in Il mio club → Finanze |
+| Profilo | barra, a destra | da dove sei venuto | avatar (si cambia qui), nome, club, livello; tre tessere: «Nome, colori e disegno» → Personalizza, «Avatar e cornici» e «Pezzi dello stemma» → Negozio; account Fantatitano. Senza carriera (dal benvenuto): solo l'account |
 
 ## 4. Cosa cambia rispetto a oggi
 
@@ -197,7 +198,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Scenario | da fare (serve l'aggancio nella partita) |
 | Percorso premi, Sfide | esistono, da risistemare (schede, giorni di fila) |
 | Amichevole | esiste |
-| Squadra | fatta, con la struttura del 23/11: quattro pulsanti a sinistra, campo fino al bordo in basso, sostituti a destra, incarichi trascinabili, squadra migliore, scheda del giocatore |
+| Squadra | fatta, con la struttura del 23/11: cinque pulsanti a sinistra, campo fino al bordo in basso, sostituti a destra, «C» del capitano trascinabile, pannello «Incarichi» con le quattro voci, rigori, punizioni e angoli anche dalla scheda del giocatore, squadra migliore |
 | Mercato | esiste a scambio, da rifare |
 | Il mio club, Stadio e strutture | esiste con stadio e allenatore, da rifare con le 6 strutture |
 | Personalizza, Negozio | dal 23/11 sono una sezione sola, «Personalizza», con cinque schede: Nome e colori (il modulo del club), Stemma, Divisa, Manager, Squadra (i pezzi che si comprano). Passare da una scheda all'altra non aggiunge livelli: Indietro torna da dove si è venuti. L'anteprima mostra la maglia vera (il busto del modello 3D) |

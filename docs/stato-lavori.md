@@ -116,7 +116,7 @@ Un'altra sessione lavora sulla partita: questa non tocca i suoi file senza averl
 | 6 | Carriera (`vista-carriera.js`): prossima partita con «Gioca adesso», classifica a cinque righe con le medaglie, Trofeo dei Castelli, Coppa Titano, quattro scorciatoie. Stagione nuova con finestra di conferma (`finestra.js`). Classifica a pari punti: differenza reti, gol fatti, nome. Tolta la schermata di prima e 200 regole di stile rimaste senza uso | fatto |
 | 7 | Sfida (`vista-sfida.js`): due campi in prospettiva con le carte a scudo dei giocatori secondo il modulo (`giocatore.js`: valutazione, ritratto, ruolo, energia, nome, fascia «C», avviso di fuori ruolo), competizione, fase, ora e tempo al centro, sotto ogni campo stemma, nome, stelle, modulo e maglia della partita; in basso Squadra, Riscaldamento e Gioca. La partita parte dal ponte e alla fine la home registra il risultato, salva l'energia e mostra il premio in una finestra. Energia tra le partite, riscaldamento e orario in `src/carriera.js`, coi numeri in `ECONOMIA.energia` e `METEO` | fatto |
 | carte | Carta del giocatore rifatta il 22/11 sulle misure della foto di riferimento di Alex (`docs/carte-giocatori.md`): cornice a scudo con lato alto ad arco e punta, cerchio della valutazione colorato in alto a sinistra, ritratto a destra, fascia chiara col nome, riga con stemma, energia e ruolo colorato per reparto, stellina nella punta. Tre misure in `giocatore.js`: grande (tutto dentro), piccola (per i campi stretti, nome sotto) e mini (Home). Usata in Home, Sfida, Squadra, scheda del giocatore e scelta del capitano | fatto; dentro la carta grande le scritte seguono le proporzioni della carta (sola eccezione ai 12 px) |
-| 8 | Squadra (`vista-squadra.js`), rifatta il 23/11 con la struttura e le misure date da Alex (`SQUADRA` in `src/config.js`, percentuali nello stile): niente titolo; a sinistra quattro pulsanti bassi (modulo, Riserve, Fisioterapista, Allenatori); campo in prospettiva da sotto la barra al bordo in basso, con le frecce verso l'attacco (`campo.js`); carte larghe il 5,5% dello schermo; a destra la tessera «Squadra migliore» (`rosa.js`) e il riquadro azzurro «Sost (8/8)». Due carte si scambiano con due tocchi o trascinandone una sull'altra; la carta scelta ha il pulsante «Scheda», e la scheda si apre anche con la pressione lunga (`scheda-giocatore.js`: statistiche, altezza, piede, valore, capitano, allena, vendi); capitano, rigori, punizioni e angoli si passano trascinando la linguetta accanto alla carta. I pulsanti di sinistra si vedono bassi ma si toccano su 44 px. Dietro il campo, in basso a sinistra, le Tre Torri del Titano appena visibili. Chi è fuori ruolo ha il ruolo bordato di rosso. Barra in alto nuova (`barra.js`). In `src/carriera.js`: `schiera`, `spostaGiocatori`, incarichi, fisioterapista | fatto |
+| 8 | Squadra (`vista-squadra.js`), rifatta il 23/11 con la struttura e le misure date da Alex (`SQUADRA` in `src/config.js`, percentuali nello stile): niente titolo; a sinistra cinque pulsanti bassi (modulo, Riserve, Incarichi, Fisioterapista, Allenatori); campo in prospettiva da sotto la barra al bordo in basso, con le frecce verso l'attacco (`campo.js`); carte larghe il 5,5% dello schermo; a destra la tessera «Squadra migliore» (`rosa.js`) e il riquadro azzurro «Sost (8/8)». Due carte si scambiano con due tocchi o trascinandone una sull'altra; la carta scelta ha il pulsante «Scheda», e la scheda si apre anche con la pressione lunga (`scheda-giocatore.js`: statistiche, altezza, piede, valore, capitano, allena, vendi); la «C» del capitano si passa trascinandola su un altro titolare; capitano, rigori, punizioni e angoli si danno dal pannello «Incarichi». I pulsanti di sinistra si vedono bassi ma si toccano su 44 px. Dietro tutto lo stadio di notte dipinto (`sfondo-squadra`, dal 24/11) con un velo scuro; le luci e le Tre Torri disegnate restano solo se l'immagine manca. Chi è fuori ruolo ha il ruolo bordato di rosso. Barra in alto nuova (`barra.js`). In `src/carriera.js`: `schiera`, `spostaGiocatori`, incarichi, fisioterapista | fatto |
 | economia | Carriera a cinque divisioni, economia, diamanti e strutture approvate da Alex (`docs/home-spec.md` §5): sessanta squadre inventate (`src/dati/divisioni.js`), obiettivi, promozione e retrocessione, valore dei giocatori, vendita e svincolo, allenatori in inventario, lista trasferimenti, osservatore, agente, offerte a tempo, sette strutture, fisioterapista a tre interventi, riscaldamento, serie di sette giorni (`src/carriera.js`, numeri in `DIVISIONI`, `STAGIONE`, `ECONOMIA` di `src/config.js`). Collegata a Home, Carriera, Sfida, Squadra e scheda del giocatore; pannelli semplici per Mercato, Il mio club e «Come guadagnare» (`vista-economia.js`). Simulazione: `node scripts/simula-carriera.mjs` | fatto; l'aspetto di Mercato e Club arriva coi passi 9 e 10 |
 | 9–11 | Mercato, Il mio club, Sfide | da ridisegnare: funzionano già con le regole nuove, ma con l'aspetto di prima sotto la barra nuova |
 | 12 | Database dell'economia | fermo per decisione di Alex (21/11): saldo e storico restano sul telefono. Il file SQL è da riscrivere coi numeri nuovi; la proposta della «cassa» è in `docs/ponte-partita.md` §9 |
@@ -174,7 +174,7 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   tutti i pannelli; `carta-carriera`, `carta-percorso`, `carta-amichevole`, `carta-scenario` come fondo delle carte della
   Home (la prima anche della carta «Gioca adesso»); i tre trofei nelle righe della carta Carriera, accanto alla prossima
   partita, nel titolo della classifica, nelle carte delle coppe, nel titolo dei pannelli Classifica, Coppa Titano e
-  Trofeo dei Castelli e al centro della Sfida; `sfondo-sfida` dietro la Sfida; `tre-torri` nel benvenuto, nella carta
+  Trofeo dei Castelli e al centro della Sfida; `sfondo-sfida` dietro la Sfida; `sfondo-squadra` dietro la Squadra; `tre-torri` nel benvenuto, nella carta
   «Nuova stagione» e nella finestra di fine stagione; `stadio-alto` in cima a Strutture (è la carta dello Stadio) e le
   sei `struttura-…` sulle carte delle strutture; `evento-occasioni` e `evento-scelte` come striscioni di «Offerte a
   tempo» e «Lista trasferimenti» nel Mercato; le cinque `allenamento-…` nella schermata Allenamento. Regola per il
@@ -232,6 +232,39 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   colore. Nel testo, davanti ai numeri piccoli, restano la moneta e il diamante a tratto (`MO`, `DI`).
 - **Deciso da Alex (23/11)**: in alto a destra il nome del club resta intero quando ci sta; se la barra è stretta va
   bene il nome breve o la sigla. È un'eccezione voluta alla regola «niente sigle»: non va «corretta».
+- **Carta del giocatore, proposta «A» (23/11 sera)**: oro da 70, argento da 55 a 69, bronzo sotto; valutazione e ruolo
+  in alto a sinistra, giocatore davanti con la testa che esce dal bordo, fascia col cognome, tre statistiche del
+  reparto. Una carta sola per Squadra, scheda, Mercato, Home, scelta del capitano; sotto i 64 punti di larghezza non
+  ha le statistiche. Tutte le misure in `CARTA` (`src/config.js`). Dettagli e scelte in `docs/carte-giocatori.md`,
+  riferimento in `docs/riferimenti/carta-proposta-A.jpg`. Tolte le cornici disegnate (`carta-*` nel foglio delle icone)
+  e i ritagli dei ritratti. Nella prova delle schermate i tre giocatori tenuti stanchi sono della squadra 0, che in
+  partita è sempre la mia anche fuori casa.
+- **Carta, ritocchi sulla guida (23/11 notte)**: ritratto alle misure esatte della guida (1,05 W, anche nella carta
+  stretta); «C» e incarichi dentro l'angolo; cognomi lunghi mai tagliati (niente puntini); scheda più grande (fino a
+  200 punti), Mercato a 100; nei riquadri della Home «ruolo · valutazione» e «ruolo · prezzo» come testo semplice.
+- **Carta, risposte di Alex (23/11 notte)**: sotto i 100 punti niente statistiche, quindi la carta dei riquadri della
+  Home non le ha più e ha il volto più grande; «C» e incarichi in colonna a sinistra sotto il ruolo; sulle carte del
+  campo solo la «C» (si trascina ancora), rigori, punizioni e angoli si vedono e si danno dalla scheda col pulsante
+  «Incarichi».
+- **Pannello «Incarichi» (23/11 notte, chiesto da Alex)**: nella colonna di sinistra della Squadra c'è il pulsante
+  «Incarichi», tra Riserve e Fisioterapista. Apre un pannello con Capitano, Rigori, Punizioni e Angoli, ognuno con la
+  carta piccola di chi ce l'ha; toccando una voce si sceglie un altro titolare dall'elenco degli undici (quello di adesso
+  è dorato) e si torna al pannello. Il trascinamento della «C» in campo resta.
+- **Sfondo della Squadra (24/11, scelto da Alex)**: lo stadio di notte con tribune, fari e le tre torri sulla collina
+  (`sfondo-squadra`, PR #144), messo come per la Sfida: classe «illustrata», tre misure, al centro e a tutto schermo, con
+  un velo scuro sopra (30% in alto, 50% in basso). Con l'immagine non si disegnano più i due fasci di luce né la sagoma
+  delle torri; i pulsanti scuri di sinistra hanno il fondo blu scuro semitrasparente. Nell'immagine le torri sono al
+  centro in alto, quindi restano coperte dal campo.
+- **Telefono che si gira (24/11, screenshot di Alex)**: nella Home le carte del capitano e del mercato uscivano dal
+  riquadro, enormi, e la barra restava stretta. Su iPhone l'evento «resize» arriva con le misure vecchie e non ne segue
+  un altro: la Home prendeva le misure in quel momento e restava così. Ora le schermate della home (Home, barra,
+  Carriera, Sfida, Squadra, scheda) non ascoltano più «resize»: `src/casa/schermo.js` osserva la grandezza vera della
+  pagina e le avvisa quando cambia. Prova: `node scripts/prove/gira.cjs` (anche nel controllo automatico), coi margini
+  della tacca dell'iPhone.
+- **Ritratti vecchi tolti (24/11, deciso da Alex)**: cancellata `public/img/ritratti/` (908 file, 12,5 MB). Le carte
+  usano solo `public/img/ritratti-carte/`. `scripts/volti.mjs` legge quella cartella e `src/dati/volti.json` non ha più
+  la voce «sopra» (265 veri e 150 condivisi, uguali a prima). Tolto il ritratto di ripiego del modello 3D: se un file
+  manca la carta mostra la sagoma neutra. `npm run prova` controlla che ogni volto abbia i suoi due file.
 - **Resta da fare**: aspetto nuovo di Mercato (passo 9), Il mio club (10) e Sfide (11); «sotto il 60% di energia cala
   prima la velocità» (sessione della partita); il limite dei moduli nella pausa della partita; l'esultanza del capitano
   (servono animazioni); il listino del database.
@@ -244,6 +277,8 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
 Come sono fatti, chi ha quale volto e come si rifanno: `docs/ritratti.md`. Strumenti: `scripts/aspetti.mjs`,
 `scripts/blender/render_ritratti.py`, `scripts/blender/tutti.sh`, `scripts/ritratti_webp.py`, `scripts/volti.mjs`.
 
+- **Dal 24/11 questa sezione è storia**: i ritratti di Blender e la cartella `public/img/ritratti/` non ci sono più,
+  le carte usano quelli di Gemini (`docs/ritratti.md`).
 - **Stato (22/11)**: Alex ha approvato il terzo foglio di prova e ha chiesto tutti i ritratti. **Tutti generati**: 415
   volti (265 giocatori veri + 150 condivisi), in `public/img/ritratti/`; l'elenco per il gioco è `src/dati/volti.json`
   (da rifare con `node scripts/volti.mjs` se cambiano i volti). I fogli completi sono stati mandati ad Alex.
@@ -264,3 +299,33 @@ Come sono fatti, chi ha quale volto e come si rifanno: `docs/ritratti.md`. Strum
   80 contando preparazione e passaggio a WebP; ogni maglia 26 secondi, una volta sola. 415 volti: poco più di 9 ore.
 - **Peso**: testa a 512 e 256 punti insieme circa 27 KB a volto (415 volti, coi 35 strati «sopra» e le maglie: 12,5 MB in tutto); le due maglie 345 KB.
   I ritratti non si precaricano: ogni telefono prende solo quelli che guarda.
+
+## Schermate a pannelli (24/11)
+Tre schermate rifatte sulle bozze di Alex: **Monete e diamanti** (`src/casa/vista-monete.js`), **Profilo**
+(`src/casa/vista-profilo.js`) e **Stagione** (`src/casa/vista-stagione.js`). I pezzi comuni sono in `src/casa/quadri.js`;
+misure e colori in `PANNELLI` di `src/config.js`, che arrivano allo stile come variabili `--q-*`.
+
+- **Regole comuni**: sfondo della home sfocato con un velo scuro; tutto il contenuto dentro pannelli, mai scritto sulla
+  foto; premi sempre a icone (`premi` in `quadri.js`); la schermata non scorre, scorre solo la parte che non ci sta
+  dentro il suo pannello. Testo: minimo 11 px per tutto ciò che si deve leggere, 10 solo per le note secondarie
+  (classe `kNota`, per ora nessuna); nelle altre schermate il minimo resta 12.
+- **Monete e diamanti**: i due saldi, «Il premio più vicino» (`premioVicino`: prima ciò che è da ritirare, poi tra
+  percorso premi, sfide e sette giorni di fila quello con la parte fatta più grande) e quattro schede di tessere con
+  gli importi della divisione in cui si gioca. L'ultima scheda scelta resta salvata sul dispositivo (`sel.monete`).
+  Gli «Ultimi movimenti» sono passati in Il mio club → Finanze.
+- **Profilo**: «chi sei» con l'avatar e la scelta degli avatar, tre tessere che aprono Personalizza e il Negozio,
+  l'account Fantatitano. Senza carriera resta solo il pannello dell'account. «Mister del / dell' / dello» segue la
+  regola di Alex (`profilo.mister` in `testi.js`, provata in `scripts/prova-dati.mjs`). Statistiche, capocannoniere
+  e trofei sono nella Bacheca; i movimenti di mercato restano in Il mio club → Finanze.
+- **Bacheca** (`src/casa/vista-bacheca.js`, da Il mio club): a sinistra i tre trofei (vinti a colori col numero di
+  volte, gli altri grigi e trasparenti); a destra i sei numeri della carriera e il capocannoniere con la carta del
+  campo, grande quanto lascia il pannello, più il secondo e il terzo dove ci stanno (`marcatori` in `src/carriera.js`).
+- **Stagione**: fascia con lega, partita e «Prossima»; quattro obiettivi con l'anello della percentuale (verde con la
+  spunta quando l'obiettivo è sicuro, grigio con «mancato» quando non si può più raggiungere: `sicuro` e `mancato` in
+  `obiettivi` di `src/carriera.js`; il conto «n di 4» conta quelli sicuri, anche nella carta della Carriera); classifica con
+  la nostra riga in oro, la striscia verde sui posti dell'obiettivo e la forma (ultimi cinque risultati, `forma` in
+  `src/carriera.js`: si ricava dai risultati salvati, niente di nuovo nel salvataggio). Sotto la classifica, scorrendo,
+  risultati dell'ultima giornata e calendario.
+- **Prove**: `scripts/prove/schermate.cjs` controlla anche `#pan.quadri` (le quattro schede di Monete, le tessere e
+  l'avatar del Profilo, la scheda ricordata, la Bacheca vuota e piena, la Stagione a campionato finito);
+  `scripts/prova-carriera.mjs` prova `forma`, `marcatori` e gli obiettivi sicuri o mancati.

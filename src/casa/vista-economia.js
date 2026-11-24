@@ -1,11 +1,11 @@
 // I pannelli dell'economia nuova, in forma semplice finché Mercato e Il mio club non vengono ridisegnati (passi 9 e 10):
-// il club (strutture, allenatori, finanze), il mercato (offerte a tempo, lista trasferimenti, osservatore, agente) e
-// «Come guadagnare». Tutta la logica sta in src/carriera.js: qui ci sono solo l'elenco e i pulsanti.
+// il club (strutture, allenatori, finanze coi movimenti) e il mercato (offerte a tempo, lista trasferimenti, osservatore,
+// agente). Tutta la logica sta in src/carriera.js: qui ci sono solo l'elenco e i pulsanti. «Monete e diamanti» è in vista-monete.js.
 import * as CAR from '../carriera.js';
-import { ECONOMIA, DIVISIONI, FORMS } from '../config.js';
+import { ECONOMIA, DIVISIONI, FORMS, CARTA } from '../config.js';
 import { K, DATI, club, pan, mini, mon, esc, fmtTempo, salvaK, applicaMio, premioTesto } from './casa.js';
 import { figura, stileFondo } from './immagini.js';
-import { miniCarta, chiRitratto, riempiRitratti } from './giocatore.js';
+import { cartaGiocatore, prontaCarte } from './giocatore.js';
 import { adatta } from './carte.js';
 import { icona, stelline, MO, DI } from './icone.js';
 import { t } from './testi.js';
@@ -31,12 +31,18 @@ function effetto(q, n) {
   return `${mon(S.stadio.posti[n])} posti · +${mon(CAR.inMonete(K, S.stadio.incasso[n]))} monete a ogni partita in casa`;
 }
 
+// Gli ultimi movimenti di monete e diamanti, dal più recente: giorno, causale e importo col suo segno
+function movimenti() {
+  const giorno = (quando) => new Date(quando).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+  const righe = (K.storico || []).slice(0, 40).map((x) => `<div class="${x.m + x.g * 100 < 0 ? 'meno' : 'piu'}"><span>${giorno(x.t)} · ${esc(x.d || x.c)}</span><b>${[x.m ? `${conSegno(x.m)} ${MO}` : '', x.g ? `${conSegno(x.g)} ${DI}` : ''].filter(Boolean).join(' ')}</b></div>`).join('');
+  return righe ? `<div class="ris2 mov">${righe}</div>` : '';
+}
 let cTab = 'strutture';
 /** Il mio club: le sette strutture, gli allenatori in inventario, le finanze. */
 export function panClubMio(tab, msg) {
   if (['strutture', 'allenatori', 'finanze'].includes(tab)) cTab = tab;
   const me = club(K.club), voci = [['strutture', 'Strutture'], ['allenatori', `Allenatori (${CAR.quantiAllenatori(K)})`], ['finanze', 'Finanze']];
-  const tabs = `<div class="seg">${voci.map(([k, n]) => `<button data-ctab="${k}" class="${k === cTab ? 'on' : ''}">${n}</button>`).join('')}<button data-club="personalizza">Personalizza</button><button data-club="allenamento">${t('allenamento.titolo')}</button><button data-club="amichevole">Amichevole</button></div>`;
+  const tabs = `<div class="seg">${voci.map(([k, n]) => `<button data-ctab="${k}" class="${k === cTab ? 'on' : ''}">${n}</button>`).join('')}<button data-vai="bacheca">${t('bacheca.titolo')}</button><button data-club="personalizza">Personalizza</button><button data-club="allenamento">${t('allenamento.titolo')}</button><button data-club="amichevole">Amichevole</button></div>`;
   let corpo;
   if (cTab === 'strutture') {
     // una struttura è una carta: il suo disegno, il nome, le stelle, cosa dà adesso, cosa darà con una stella in più e il
@@ -60,14 +66,15 @@ export function panClubMio(tab, msg) {
       + '<p class="nota2">I comuni arrivano dalle sfide di ogni giorno e dal Centro allenamento, i rari dalle sfide della settimana e dal percorso premi, i leggendari a fine stagione, con la promozione e arrivando in finale di coppa. Anche svincolando un giocatore se ne ottiene uno.</p>';
   } else {
     const st = K.storico || [], entrate = st.reduce((t, x) => t + Math.max(0, x.m), 0), uscite = st.reduce((t, x) => t - Math.min(0, x.m), 0), d = (ico, v, e) => `<div>${icona(ico)}<b>${v}</b><span>${e}</span></div>`;
-    corpo = `<div class="dati finanze">${d('finanze', CAR.finanze(K), 'Finanze')}${d('moneta', mon(K.monete), 'Monete')}${d('diamante', K.gemme, 'Diamanti')}${d('entrate', conSegno(entrate), 'Entrate recenti')}${d('uscite', conSegno(-uscite), 'Uscite recenti')}</div><p class="nota2">Il giudizio dipende da quante vittorie vale il saldo in monete. Entrate e uscite contano gli ultimi ${ECONOMIA.storico} movimenti.</p><div class="seg"><button data-az="guadagna">Vedi i movimenti e come guadagnare</button></div>`;
+    corpo = `<div class="dati finanze">${d('finanze', CAR.finanze(K), 'Finanze')}${d('moneta', mon(K.monete), 'Monete')}${d('diamante', K.gemme, 'Diamanti')}${d('entrate', conSegno(entrate), 'Entrate recenti')}${d('uscite', conSegno(-uscite), 'Uscite recenti')}</div><p class="nota2">Il giudizio dipende da quante vittorie vale il saldo in monete. Entrate e uscite contano gli ultimi ${ECONOMIA.storico} movimenti.</p><div class="seg"><button data-az="guadagna">Come si guadagnano monete e diamanti</button></div>`
+      + `<div class="sez">Ultimi movimenti</div>${movimenti() || '<p class="vuoto">Ancora nessun movimento: gioca una partita.</p>'}`;
   }
   pan(me.name, `${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}`);
 }
 
 // un prezzo con le icone: le monete e, se servono, i diamanti
 const prezzoHtml = (m, g) => (m ? `<span>${icona('moneta')}<b>${mon(m)}</b></span>` : '') + (g ? `<span>${icona('diamante')}<b>${g}</b></span>` : '');
-// Una carta del mercato: a sinistra la carta mini del giocatore (cornice della rarità, ritratto, valutazione), a destra
+// Una carta del mercato: a sinistra la carta del giocatore (rarità, ritratto, valutazione, ruolo, cognome, statistiche), a destra
 // il nome, il ruolo preciso con piede e altezza (e lo stemma, se arriva da una squadra vera) e sotto il prezzo.
 // Chi costa troppo resta leggibile come gli altri: cambia solo il prezzo, con scritto quanto manca.
 // attr: l'attributo del pulsante (senza, la carta è ferma); gemme: i diamanti del prezzo; preso: già comprato;
@@ -78,7 +85,7 @@ function cartaMercato(g, { attr = '', gemme = 0, preso = false, piena = false, p
   const manca = piena ? '<i class="mManca">Rosa piena</i>' : caro ? `<i class="mManca">${mancaM + mancaG === 1 ? 'Ti manca' : 'Ti mancano'} ${prezzoHtml(mancaM, mancaG)}</i>` : '';
   const sotto = preso ? `<span class="mStato">${icona('spunta')}Preso</span>` : `<span class="mPrezzo">${prezzoHtml(g.prezzo, gemme)}${pieno ? `<del>${mon(pieno)}</del>` : ''}</span>${manca}`;
   return `<${tag} class="mG${preso ? ' preso' : caro || piena ? ' caro' : ''}" ${attr} ${attr && (preso || piena || caro) ? 'disabled' : ''}>`
-    + `<span class="mCarta">${miniCarta({ val: sc.val, fascia: sc.fascia, ritr: chiRitratto(da, sc, 'carta') })}</span>`
+    + `<span class="mCarta">${cartaGiocatore(sc, { club: da, larga: CARTA.larga.mercato, ferma: true })}</span>`
     + `<span class="mTesto"><b data-adatta data-due-righe>${esc(g.x[0])}</b><span class="mDati"><u class="mRuolo r-${sc.reparto}">${sc.ruolo}</u><i>${sc.piede === 'S' ? 'sinistro' : 'destro'} · ${sc.altezza} cm</i>${g.da ? mini(g.da) : ''}</span>${sotto}</span></${tag}>`;
 }
 let mReparto = '';
@@ -106,7 +113,7 @@ export function panMercato(msg) {
     + `${striscione('evento-scelte', 'Lista trasferimenti', D.nome)}<div class="lista carteM">${lista}</div><div class="seg"><button data-rinnova="1" class="${K.gemme < ECONOMIA.mercato.lista.rinnovo ? 'no' : ''}">Cambia subito la lista · ${DI} ${ECONOMIA.mercato.lista.rinnovo}</button></div><p class="nota2">La lista cambia da sola dopo ogni partita.</p>`
     + `${osservatore}${agente}`);
   // i nomi lunghi si stringono, i ritratti arrivano pochi alla volta
-  const dentro = document.querySelector('#panC'); adatta(dentro); riempiRitratti(dentro);
+  const dentro = document.querySelector('#panC'); adatta(dentro); prontaCarte(dentro);
 }
 // i cinque modi di allenamento, nell'ordine della schermata: nome dell'illustrazione e chiave dei testi
 const MODI_ALLENAMENTO = ['tutorial', 'libero', 'rigori', 'punizioni', 'angoli'];
@@ -126,22 +133,6 @@ export function consigliato() {
   const posso = [...lista, ...a_tempo].filter((g) => g.prezzo <= K.monete && (g.gemme || 0) <= K.gemme).sort((x, y) => y.val - x.val || x.prezzo - y.prezzo);
   const g = posso[0] || lista.sort((x, y) => x.prezzo - y.prezzo)[0];
   return g ? { c: { id: g.da || K.club }, x: g.x, da: g.da, v: g.val, costo: g.prezzo, gemme: g.gemme || 0, posso: posso.length > 0 } : null;
-}
-
-/** «Come guadagnare»: da dove arrivano monete e diamanti (importi veri, nella divisione in cui si gioca) e gli ultimi movimenti. */
-export function panGuadagna() {
-  const P = ECONOMIA.premi, D = CAR.divisione(K), G = ECONOMIA.diamanti, v = (n) => `${MO} ${mon(CAR.inMonete(K, n))}`, vinta = Math.round(CAR.premioVittoria(K)), rigaF = (t, x) => `<div><span>${t}</span><b>${x}</b></div>`;
-  const somma = (g, k) => CAR.statoSfide(K)[g].reduce((t, x) => t + (x[k] || 0), 0), perc = CAR.statoPercorso(K).premi;
-  const fonti = [['Vittoria', `${MO} ${mon(vinta)}`], ['Pareggio', `${MO} ${mon(Math.round(vinta * P.pareggio))}`], ['Sconfitta', `${MO} ${mon(Math.round(vinta * P.sconfitta))}`], ['Partita in casa (dallo Stadio)', v(ECONOMIA.strutture.stadio.incasso[CAR.stelle(K, 'stadio')]) || `${MO} 0`],
-    ['Turno di coppa superato', v(P.turno)], [`${D.nome} vinto`, v(P.campionato)], [`${D.nome}: dal 2° ${[8, 11].includes(P.piazzamento.length + 1) ? 'all\'' : 'al '}${P.piazzamento.length + 1}° posto`, `da ${v(P.piazzamento[0])} a ${v(P.piazzamento[P.piazzamento.length - 1])}`], ['Coppa Titano vinta', `${v(P.coppa)} ${DI} ${G.coppa}`], ['Trofeo dei Castelli vinto', `${v(P.castelli)} ${DI} ${G.coppa}`],
-    ['Sette giorni di fila con una partita', `${DI} ${G.serie.reduce((a, b) => a + b, 0)} e un contatto dell'agente`], ['Sfide di oggi (tutte)', `${premioTesto(somma('d', 'monete'), 0)} e un allenatore comune`],
-    ['Sfide della settimana (tutte)', `${premioTesto(somma('w', 'monete'), G.settimana)} e un allenatore raro`], ['Sfide di stagione (tutte)', premioTesto(somma('s', 'monete'), somma('s', 'gemme'))], ['Sfide di carriera (tutte)', premioTesto(0, somma('c', 'gemme'))],
-    ['Percorso premi (tutti i livelli)', `${premioTesto(perc.reduce((t, x) => t + x.monete, 0), perc.reduce((t, x) => t + x.gemme, 0))} e ${perc.filter((x) => x.allenatore).length} allenatori rari`],
-    ['Fine stagione', `${DI} ${D.fine} e un allenatore leggendario`], ['Promozione', `${DI} ${G.promozione}, un allenatore leggendario e un contatto dell'agente`], ['Finale di coppa raggiunta', 'un allenatore leggendario e un contatto dell\'agente']];
-  const giorno = (t) => new Date(t).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }), segno = conSegno;
-  const mov = (K.storico || []).slice(0, 40).map((x) => `<div class="${x.m + x.g * 100 < 0 ? 'meno' : 'piu'}"><span>${giorno(x.t)} · ${esc(x.d || x.c)}</span><b>${[x.m ? `${segno(x.m)} ${MO}` : '', x.g ? `${segno(x.g)} ${DI}` : ''].filter(Boolean).join(' ')}</b></div>`).join('');
-  pan('Monete e diamanti', `<div class="info guadagna"><div><div class="sez">Come si guadagnano · ${D.nome}</div><div class="ris2">${fonti.map(([t, x]) => rigaF(t, x)).join('')}</div><p class="nota2">Monete e diamanti non si comprano: si guadagnano solo giocando. Salendo di divisione i premi in monete crescono.</p><div class="seg"><button data-club="personalizza">Personalizza il club</button><button data-ctab="strutture">Strutture del club</button></div></div>`
-    + `<div><div class="sez">Ultimi movimenti</div>${mov ? `<div class="ris2 mov">${mov}</div>` : '<p class="vuoto">Ancora nessun movimento: gioca una partita.</p>'}</div></div>`);
 }
 
 const MOTIVI = { soldi: 'Servono più monete o diamanti', rosa: 'La rosa è piena: vendi un giocatore o fai crescere la Foresteria', massimo: 'È già al massimo', aperta: 'C\'è già un giocatore in attesa', contatto: 'Serve un contatto dell\'agente', nessuno: 'Nessun giocatore trovato', giocatore: 'Questo giocatore non c\'è più' };

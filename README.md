@@ -23,7 +23,7 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 |---|---|
 | `src/game.js` | La partita: scena, motore, IA, comandi, pausa, sostituzioni, fine partita, audio |
 | `src/casa/casa.js`, `casa.html`, `casa.css` | La home, i menu e le schermate fuori dalla partita (ingresso, club, carriera, pannelli, scelta squadre, prima della partita). `casa.js` aggiunge alla pagina schermate e stili all'avvio; con `src/game.js` si scambia solo i nomi elencati nei due `import` |
-| `src/casa/nav.js`, `barra.js`, `carte.js`, `home.js`, `vista-carriera.js`, `vista-sfida.js`, `vista-squadra.js`, `vista-economia.js`, `scheda-giocatore.js`, `giocatore.js`, `campo.js`, `rosa.js`, `finestra.js`, `icone.js`, `testi.js`, `stile.css` | Le schermate nuove della home: navigazione a livelli con Indietro, barra in alto, carte di navigazione, Home a otto carte, Carriera, Sfida, Squadra, pannelli di club e mercato, finestre di conferma, icone, testi in un file solo, stili |
+| `src/casa/nav.js`, `barra.js`, `carte.js`, `home.js`, `vista-carriera.js`, `vista-sfida.js`, `vista-squadra.js`, `vista-economia.js`, `quadri.js`, `vista-monete.js`, `vista-profilo.js`, `vista-stagione.js`, `vista-bacheca.js`, `scheda-giocatore.js`, `giocatore.js`, `campo.js`, `rosa.js`, `finestra.js`, `icone.js`, `testi.js`, `stile.css` | Le schermate nuove della home: navigazione a livelli con Indietro, barra in alto, carte di navigazione, Home a otto carte, Carriera, Sfida, Squadra, pannelli di club e mercato, schermate a pannelli (Monete e diamanti, Profilo, Stagione, Bacheca: misure in `PANNELLI` di `src/config.js`), finestre di conferma, icone, testi in un file solo, stili |
 | `src/dati/scala.js`, `giocatori.js`, `squadre.js`, `divisioni.js` | Valutazioni e statistiche mostrate (una sola conversione), ruoli precisi, piede e altezza dei giocatori; i tre nomi di ogni squadra (completo, breve, sigla); le sessanta squadre inventate delle divisioni basse coi loro giocatori |
 | `src/pagina.html` | Pagina, stili comuni e schermate della partita (comandi, VS, pausa, sostituzioni, fine partita). La build la copia in `public/index.html` con la versione negli indirizzi degli script |
 | `src/audio.js` | L'audio, uno solo per home e partita: effetti e pubblico generati al momento, musica della home da file (`public/audio/`), volumi di musica ed effetti e tasto muto salvati sul telefono |
@@ -54,6 +54,11 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
 | `scripts/simula.cjs` | Gioca partite simulate e stampa gol, tiri, possesso, inserimenti e scivolate: serve per tarare l'IA (richiede Playwright). Stampa anche falli, fuorigioco, rigori, cartellini, angoli, cross e colpi di testa |
 | `scripts/prove/partita.cjs` | Rete di sicurezza: partite intere computer contro computer con tutti i controlli (giocatori che saltano, gesti bloccati, corpi nell'erba, palla abbandonata, errori nella pagina) e le misure di gioco confrontate con gli obiettivi. `npm run partite` dopo `npm run build`; `RAPPORTO=prima.json` salva tutto per confrontare prima e dopo una modifica |
 | `scripts/prove/testi.cjs` | Testi della partita: `chiavi` controlla che ogni chiave esista e sia usata (è in `npm run prova`); `salva` e `confronta` salvano le scritte di una partita intera sempre uguale e le confrontano con un salvataggio precedente |
+| `scripts/prove/riprese.cjs` | Le otto riprese (calcio d'inizio, punizioni, fuorigioco, angolo, rimesse, rigore), battute da chi gioca e dal computer: il pallone resta fermo finché non si batte, con chi gioca non parte mai da sola, il computer aspetta `FERMI.cpu`, nessuno scatta verso il suo posto |
+| `scripts/prove/gira.cjs` | Il telefono che si gira senza un evento «resize» utile, come su iPhone: Home, barra e Squadra riprendono le misure da sole (`src/casa/schermo.js`) e vengono uguali a quando il gioco si apre già in orizzontale |
+| `scripts/prove/vagante.cjs` | Passaggio al giocatore comandato con la levetta tenuta in otto direzioni: il pallone viene preso. Palla libera vicino a un compagno: il comando passa a lui entro un secondo |
+| `scripts/prove/passaggi.cjs` | Misura il peso del passaggio rasoterra a 6–30 m, al compagno fermo o in corsa: velocità alla partenza e all'arrivo, tempo, se è corto o lungo. Non è nelle prove automatiche: serve per confrontare con Dream League |
+| `scripts/prove/divise.cjs` | Per ogni coppia di squadre: le due maglie sono lontane e nessuna parte della divisa degli ospiti (disegno, maniche, pantaloncini, calzettoni) ha il colore della maglia di casa |
 | `scripts/prove/rigori.cjs` | Sei rigori fischiati con i giocatori sparsi: tutti arrivano al loro posto correndo (nessun salto oltre 60 cm), il tiro parte e il gioco riprende |
 | `scripts/prove/fluidita.cjs` | Fluidità dei movimenti: quanto scivola il piede in appoggio e quanti scatti ha la posa (`PIEDI=0` per confrontare senza i piedi piantati) |
 | `.github/workflows/prove.yml` | A ogni PR: compilazione, `npm run controlla`, `npm run prova`, tre partite simulate e i rigori. Un'anomalia ferma la PR; le misure di gioco si leggono nel registro |
@@ -142,10 +147,15 @@ npm run build    # produce public/app.js, public/index.html e public/sw.js (lo f
   (`HOLD`, `LANCIO`): il pallone parte nel momento in cui il braccio lo lascia.
   Le fa partire `azione(p, nome)`; velocità e sfumature stanno nella tabella `FX`.
 - IA di squadra:
-  - **Inserimenti senza palla** (`runs`, `runScore`): chi attacca valuta tre corse (dritto, taglio
-    dentro, taglio fuori) con un punteggio fatto di distanza dalla porta, spazio libero, distanza dai
-    compagni e dal pallone, linea dei difensori; parte solo sopra una soglia. Dopo un passaggio in
-    avanti può scattare il dai e vai. Chi ha palla cerca chi si inserisce e gli passa sulla corsa.
+  - **Inserimento a condizione** (`runs`, `INSERIMENTO`; idea di GameplayFootball): ogni mezzo secondo si
+    guarda il punto 26 m davanti al portatore; se lì c'è spazio parte il compagno più vicino, per 4
+    secondi, verso la porta. Uno alla volta. Dopo un passaggio in avanti può scattare il dai e vai. Chi
+    ha palla cerca chi si inserisce e gli passa sulla corsa.
+  - **Smarcamento col voto di chi passa** (`puntoVoto`, `votoPassaggio`, `SMARCA`): chi è senza palla
+    prova otto punti attorno a dove sta andando e sceglie quello a cui il portatore darebbe il voto più
+    alto per un passaggio, senza allontanarsi troppo dal posto nel modulo né ammucchiarsi.
+  - **Tiro** (`valoreTiro`, `TIRO_IA`): quando tirare dipende da angolo, distanza e avversari nel cono;
+    dove mirare si sceglie tra palo, centro e palo, guardando dove gli avversari arrivano più tardi.
   - **Difesa a tre distanze** (`chase`): il più vicino al portatore si avvicina, poi temporeggia
     tenendosi tra lui e la porta, poi va sul pallone; aspetta di meno se la porta è vicina o se è
     arrivato il raddoppio. In scivolata va solo se è stato saltato o vicino all'area.

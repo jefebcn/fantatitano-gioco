@@ -3,7 +3,7 @@
 
 ## Dove siamo
 - Produzione: https://fantatitano-gioco.vercel.app (non pubblico, noindex).
-- Rete di sicurezza: `npm run partite` (partite riproducibili + obiettivi), `scripts/prove/rigori.cjs`,
+- Rete di sicurezza: `npm run partite` (partite riproducibili + obiettivi), `scripts/prove/rigori.cjs`, `riprese.cjs`,
   `scripts/prove/fluidita.cjs`, CI `.github/workflows/prove.yml` a ogni PR.
 - IA: TENUTA (regola GameplayFootball), PRESSING a due, CALCI (angoli dal gioco, fuorigioco), PASSA.
 - Animazioni GameplayFootball: esultanze, rimessa con le mani, testa, scivolata/caduta + rialzarsi, cartellino,
@@ -89,23 +89,112 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   avversaria. Ora aspettano sulla linea dell'ultimo difensore (`ATTACCO` in `src/config.js`, `homeOf` in `src/game.js`):
   stesse 16 partite, fuorigioco 0,44, gol 1,00, tiri 7,00, 0 anomalie, tutte le 11 misure dentro gli obiettivi.
 
-## Gol, tiri e difetti della partita (stato al 22/11)
-- Obiettivo di Alex: 2–3 gol e 10–12 tiri per squadra, da rivedere quando manda le statistiche di una partita di Dream
-  League (tiri per squadra). Fino ad allora NIENTE varianti di gioco. Oggi, 32 partite (semi 7–38): 1,3–1,8 gol e 7,2 tiri
-  in tutto, 28 possessi di cui 13 oltre la trequarti, un gol ogni 5 tiri.
-- Storia, misure e le venti varianti scartate: `docs/dls-gameplay.md` («Gol e tiri», «Dove si ferma l'azione»).
-- FATTO il 21/11: passaggio morbido a chi corre (#96), calci a vuoto e rinvio con le mani del portiere (#102).
+## Gol, tiri e difetti della partita (stato al 23/11)
+- Obiettivi di Alex (23/11, dalle sue statistiche di Dream League, abbassati per computer contro computer): 10–14 tiri,
+  4–6 gol (35–45 tiri in gol su 100), 30–45 passaggi per squadra. Sono in `scripts/prove/partita.cjs` e `diagnosi.cjs`.
+- Oggi, su 64 partite (semi 7–70): 7,5 tiri (5 da vicino), 2,45 gol, 32 tiri in gol su 100, 36 passaggi per squadra,
+  11–12 possessi su 27 oltre la trequarti. Prima del 23/11: 6,4 tiri e 1,75 gol.
+- FATTO il 23/11 (giro sull'IA, tabella e lezioni in `docs/studio-ia.md`, crediti in `docs/crediti.md`): smarcamento col
+  voto di chi passa (`votoPassaggio`, `puntoVoto`, `SMARCA`), inserimento a condizione (`INSERIMENTO`), mira a tre
+  bersagli (`TIRO_IA.bersagli`), portiere un po' più debole (`save` 0,42 e 0,44), rete che non lascia più uscire il
+  pallone di lato, schermo giusto dopo la rotazione su iPhone (#109).
+- Scartati dopo la misura: tre bersagli come soglia del tiro (restavano solo colpi di testa), campo di forze in
+  conduzione, premio «avanti a campo libero», portiere molto più debole. Le venti varianti di prima: `docs/dls-gameplay.md`.
+- Regola imparata: guardare i tiri di piede e di testa separati (`scripts/prove/tiri.cjs`), non solo il totale.
+- Da dove ripartire: i tiri in più sono tutti colpi di testa (da 1,4 a 4,6 a partita), quelli di piede sono rimasti 4,3:
+  servono palloni rasoterra a chi si inserisce e meno tiri da 20 metri ribattuti; poi difesa meno perfetta (ritardo 0,2–0,3 s sui
+  passaggi, linea meno compatta, anticipi sul corto tra 9 e 12 su 100).
 - Difetti ancora aperti, nell'ordine deciso: 1) giravolta di scatto (corpo che gira di oltre 120° in un fotogramma,
   `poseSkinned`: «oltre i 150° si gira subito»); 2) parate a distanza (pallone fermato a più di un metro dai guanti);
   3) chi riceve si lascia sfilare il pallone a 1,2–1,4 m (gesto di stop laterale, ma la presa arriva a 1,05 m);
   4) piedi che strisciano nel passo laterale e nei cambi di direzione, portieri che arretrano di corsa.
-- Alla ripartenza delle varianti: conduzione in avanti a campo libero, poi difesa meno perfetta (ritardo 0,2–0,3 s sui
-  passaggi, linea meno compatta, anticipi sul corto tra 9 e 12 su 100), portiere per ultimo (un gol ogni 4–5 tiri).
 - In sospeso da Alex: riprese rapide sì o no (tolgono 11 s di attesa, non danno tiri); tiro lontano o di spalle (segue
   la levetta o va sempre in porta?); cambio automatico del giocatore in difesa; calcio d'inizio che aspetta il passaggio.
-- Studio di GameplayFootball, Google Research Football e due giochi più piccoli: `docs/studio-ia.md`, con tre prove
-  proposte (smarcamento fuori dall'ombra, inserimento a condizione, tiro a tre bersagli). Aspettano il via di Alex.
-- Strumenti: `scripts/prove/diagnosi.cjs`, `registra.cjs`, `rivedi.cjs`, `analisi-partita.py` (righe in `docs/RICETTE.md`).
+- Strumenti: `scripts/prove/diagnosi.cjs`, `tiri.cjs`, `registra.cjs`, `rivedi.cjs`, `analisi-partita.py` (righe in
+  `docs/RICETTE.md`).
+
+## Video di Alex del 23/11 sera: quindici punti, una PR per punto
+- Elenco completo nel messaggio di Alex (priorità 1 riprese, 2 palla e passaggi, 3 luci e campo, 4 telecamera,
+  interfaccia, animazioni). Alla fine: video di 30 s con calcio d'inizio, punizione e rimessa.
+- 1, 2, 3 FATTI insieme (stessa regola, stesso meccanismo): nessuna ripresa parte da sola. `G.attesa`, `aspetta`,
+  `attesaPasso`, `postoFermo` in `src/game.js`; valori in `FERMI`; prova `scripts/prove/riprese.cjs` (anche in CI).
+  32 partite, semi 7–38: 0 anomalie, tiri e gol dentro il rumore. Dettagli in `docs/dls-gameplay.md` §7.
+- Da chiedere ad Alex: se sulla rimessa dal fondo il pallone va a terra.
+- 4 FATTO: pallone disegnato fino a 1,7 volte più grande quando la telecamera è lontana (vero nei primi piani), più
+  chiaro, ombra a disco scuro dal bordo netto (`PALLA_VISTA`, `mettiPalla` in `src/game.js`, usata anche dal replay).
+  Solo grafica: partite identiche.
+- 5 FATTO: la causa era la levetta. Chi riceve va da solo sul pallone, ma con la levetta tenuta mirava a un punto
+  spostato di 1,4 m, oltre la distanza di presa (1,05 m): gli correva accanto senza toccarlo. Ora 0,5 m
+  (`PASSAGGIO.incontro`). In più, a palla libera il comando passa a chi la può prendere prima (`CAMBIO`). Prova:
+  `scripts/prove/vagante.cjs` (prima 4 direzioni su 8 fallivano). Partite tra computer identiche.
+- 6 MISURATO, da decidere con Alex: `scripts/prove/passaggi.cjs` dice che a campo libero nessun passaggio è corto o lungo
+  (10 m: parte a 11,7 m/s, arriva a 8,9 in 0,67 s; 30 m: parte a 23,2, arriva a 13,5 in 1,30 s). I valori di Dream
+  League non li sappiamo: chiesto ad Alex se li vuole più forti o più lenti. Non si tocca finché non risponde.
+- 9 FATTO: il prato ha solo strisce dritte, uguali su tutto il campo; tolti gli anelli attorno al centrocampo e gli
+  scacchi nel cerchio (`src/grafica/campo.js`, `PRATO` in `src/config.js`).
+- 7 FATTO: l'alone biancastro e i cunei chiari erano i fasci di luce dei fari, disegnati fino a terra: la telecamera ci
+  guardava attraverso. Ora si spengono in aria vicino al tetto e sono più leggeri; un po' più di luce diffusa sui
+  giocatori. Le chiazze biancastre erano i riflessi dei quattro faretti d'angolo sull'erba: ora sono deboli e la luce
+  viene dall'alto, uguale su tutto il campo (`NOTTURNA` in `src/config.js`, `src/grafica/luce.js`).
+- 8 FATTO: in notturna ogni giocatore ha l'ombra corta e morbida sotto i piedi più quattro ombre leggere a croce, una
+  per faro (`NOTTURNA.croce`, `dettagliFigure` in `src/game.js`: una sola chiamata di disegno). I cunei erano i fasci
+  di luce del punto 7, non ombre dello stadio.
+- 10 FATTO: i cartelloni si disegnano su una tela doppia (`LED.tela`), filtrata al massimo, e di notte sono un po' meno
+  accesi (`NOTTURNA.cartelloni`): senza l'alone luminoso le scritte piccole che scorrono non sfarfallano più.
+  Da confermare sull'iPhone di Alex: qui si vede solo la foto ferma.
+- 11 FATTO: la telecamera non scende (resta a 12,5 m): sulla linea laterale vicina sale sopra la tribuna e le prime file
+  spuntavano in basso. Ora quella tribuna non si disegna quando la telecamera le è sopra (`CAMERA.spalle`,
+  `spalle` in `src/grafica/spalti.js`); il cambio avviene quando è ancora fuori dallo schermo.
+- 12 FATTO: un solo segnalino, sul giocatore comandato (quello grigio sul compagno è spento: `SEGNI.grigio`); il nome
+  dell'avversario col pallone si nasconde quando finirebbe sopra nome o segnalino del comandato (`SEGNI.largo`,
+  `sopraIlNome` in `src/regia.js`); lettere col bordo scuro, leggibili anche davanti ai cartelloni.
+- 14 FATTO: il controllo delle divise c'era già (gli ospiti cambiano maglia se è vicina a quella di casa), ma guardava
+  solo maglia contro maglia: ospiti blu con le maniche gialle contro una squadra gialla passavano. Ora nemmeno disegno,
+  maniche e calzettoni degli ospiti possono avere il colore della maglia di casa (`DIVISE`, `pickKits`). Prova:
+  `scripts/prove/divise.cjs`, nelle prove automatiche (prima 29 coppie su 342 sbagliate, ora 0).
+- Riprese, difetto trovato nel video finale: un avversario col posto appena oltre i 9,15 m si fermava un palmo dentro la
+  distanza e la punizione aspettava a vuoto 8 secondi (`FERMI.arrivo`) prima di dare i comandi. Ora gli avversari stanno
+  mezzo metro oltre la distanza (`postoFermo`). Caso aggiunto a `scripts/prove/riprese.cjs` (limite 5 s).
+  Resta lento il calcio d'angolo (si può battere dopo circa 10 s: si aspettano i saltatori): da decidere con Alex.
+- 13 FATTO (risposta di Alex del 24/11): in difesa A = «Scivolata», come in Dream League; B = pressing col contrasto
+  in piedi (c'era già); C = cambia giocatore.
+- 15 MANDATO: video rallentato (3 volte più lento) di corsa, cambio di direzione, passaggio, stop e tiro, più il video
+  finale di 30 s (calcio d'inizio, punizione, rimessa: nessuna parte da sola). Si aspetta il giudizio di Alex. Visto al
+  rallentatore: nel tiro il pallone sembra partire un attimo prima della gamba.
+
+## Risposte di Alex del 24/11 e nuovo video (riprese-30s)
+- Tasti in difesa: A «Scivolata», B pressing e contrasto in piedi, C cambia giocatore. FATTO (vedi punto 13 qui sopra).
+- Passaggi: restano così, se ne riparla dopo averci giocato.
+- Cronometro: FATTO per il calcio d'inizio dei due tempi (fermo a 00:00 e a 45:00 finché non si batte:
+  `G.inizioTempo` in `src/game.js`, controllato da `scripts/prove/riprese.cjs`). Sulle altre riprese va ancora, più
+  piano (`RITMO.fermo`): chiesto ad Alex se fermarlo anche lì.
+- Calcio d'angolo e rimessa laterale: FATTO. Dissolvenza scura e stacco sul punto di battuta; a metà, a schermo nero,
+  ognuno viene messo al suo posto (`piazzaFermi` in `src/game.js`), poi si batte: comandi dopo 2 s (prima 10,5 s
+  sull'angolo e 5,2 s sulla rimessa), il computer dopo 3. La dissolvenza ora segue il tempo di gioco (`buio`), così il
+  nero coincide con lo spostamento anche se il telefono rallenta. `scripts/prove/riprese.cjs` controlla i 3 s e che
+  dopo lo stacco nessuno salti da un punto all'altro.
+  Da chiedere ad Alex: com'è inquadrato l'angolo in Dream League (oggi dal lato lontano la telecamera guarda al
+  contrario di quella di gioco, e la levetta risulta girata).
+- Lanci lunghi: FATTO. La telecamera sale col pallone in volo, che resta sotto `CAMERA.cielo` (altezza dello schermo).
+- Alone bianco sul bordo sinistro: FATTO. Erano ancora i riflessi dei quattro faretti d'angolo sull'erba: ora sono
+  spenti (`NOTTURNA.faretti` a 0); la luce dall'alto resta uguale.
+- Icone in alto a destra: FATTO. Resta solo la maglia, a ogni palla ferma: mette in pausa e apre le sostituzioni; «Fatto»
+  porta alla pausa, dove si cambia il modulo. Mano e mirino tolti finché Alex non dice cosa devono fare.
+
+## Seconda risposta di Alex del 24/11 (dopo il video «angolo-rimessa-30s»)
+- Rimessa laterale coi piedi in campo: FATTO. Chi batte sta 40 cm fuori (`RIMESSA.linea`), col pallone in mano dietro la
+  riga; rientra in campo quando lo lancia. `scripts/prove/riprese.cjs` lo controlla.
+- «Fanno gol e danno il rinvio dal fondo»: in 10 partite simulate nessun gol vero non assegnato; trovati invece molti
+  tiri a 10-60 cm dal palo o appena sopra la traversa. Il pallone spariva sulla linea, la rete si muoveva lo stesso e
+  partiva il replay della grande occasione: sembrava gol. FATTO: il pallone uscito si vede andare fuori per
+  `FERMI.uscita` secondi (`G.fantasma`, solo disegno), la rete da fuori si muove solo se toccata (`Porta.urtaFuori`), il
+  replay parte dopo e lo mostra uscire. Da chiedere ad Alex se era questo, o se il tabellone aveva segnato il gol.
+- Calcio d'angolo: FATTO. Telecamera bassa dietro chi batte (`ANGOLO_CAM`), si vedono lui, bandierina, area e porta; la
+  levetta segue lo schermo (in su è verso l'area), anche dall'angolo sul lato lontano. Da chiedere se in Dream League
+  rigore e punizione hanno la levetta allo stesso modo (oggi no).
+- Divise troppo simili: FATTO. Oltre alla distanza di colore, le due maglie devono differire in chiarezza di almeno
+  `DIVISE.chiaro` (una chiara e una scura): gli ospiti passano alla seconda maglia, poi bianca o nera. Prima 147 coppie
+  su 240 avevano maglie chiare quasi uguale (rosso contro blu, verde contro blu). `scripts/prove/divise.cjs` lo controlla.
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato

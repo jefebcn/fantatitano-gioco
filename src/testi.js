@@ -55,15 +55,14 @@ export const TESTI = {
     /* ---------- in partita: tabellone, tasti, striscioni */
     'hud.piuDifensiva': 'Più difensiva',
     'hud.piuOffensiva': 'Più offensiva',
-    'hud.portiere': 'Portiere',
-    'hud.maglia': 'Maglia',
-    'hud.pallone': 'Pallone',
+    'hud.maglia': 'Cambi e formazione',
     'hud.audio': 'Audio',
     'hud.replay': 'Replay',
     'hud.pausa': 'Pausa',
     'tasti.calcioAlto': 'Calcio alto',
     'tasti.calcioBasso': 'Calcio basso',
     'tasti.calcioForte': 'Calcio forte',
+    'tasti.scivolata': 'Scivolata',
     'tasti.pressing': 'Pressing',
     'tasti.cambia': 'Cambia giocatore',
     'partita.calcioInizio': "Calcio d'inizio",
@@ -96,7 +95,7 @@ export const TESTI = {
 
     /* ---------- pausa e sostituzioni */
     'pausa.titolo': 'Pausa',
-    'pausa.istruzioni': 'Levetta: muovi il giocatore, spinta fino al bordo <b>scatta</b><br>Con la palla: <b>Calcio forte</b> tiro · <b>Calcio basso</b> passaggio · <b>Calcio alto</b> lancio o cross<br>(tieni premuto: più a lungo, più forte)<br>Senza palla: <b>Calcio forte</b> scivolata · <b>Pressing</b> (tieni premuto) · <b>Cambia giocatore</b><br>Tastiera: frecce (Maiusc per non scattare), Spazio calcio forte, X calcio basso, C calcio alto<br>In campo: le frecce della mentalità sotto la mappa la cambiano',
+    'pausa.istruzioni': 'Levetta: muovi il giocatore, spinta fino al bordo <b>scatta</b><br>Con la palla: <b>Calcio forte</b> tiro · <b>Calcio basso</b> passaggio · <b>Calcio alto</b> lancio o cross<br>(tieni premuto: più a lungo, più forte)<br>Senza palla: <b>Scivolata</b> · <b>Pressing</b> (tieni premuto: va addosso e contrasta in piedi) · <b>Cambia giocatore</b><br>Tastiera: frecce (Maiusc per non scattare), Spazio calcio forte, X calcio basso, C calcio alto<br>In campo: le frecce della mentalità sotto la mappa la cambiano',
     'pausa.sostituzioni': 'Sostituzioni',
     'pausa.riprendi': 'Riprendi',
     'pausa.esci': 'Esci dalla partita',
