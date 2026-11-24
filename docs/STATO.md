@@ -246,7 +246,8 @@ con `&alto` per la vista dall'alto e `&fps` per il contatore dei fotogrammi al s
   `PRESENTA` e in `STADI.tipi.*.giro` (`src/config.js`), codice in `iniziaPresenta`, `cameraPresenta`, `finePresenta`
   (`src/game.js`). Parte solo dalla partita avviata dall'interfaccia: con un seme fisso (`prova`) e con `&alto` non
   c'è, così le prove restano uguali. Scelte provvisorie, da confermare con Alex: a ogni partita, senza scritte, non
-  alla ripresa del secondo tempo.
+  alla ripresa del secondo tempo (Alex il 24/11: «scegli tu»). Nel grande il primo sguardo è dall'alto, dentro la
+  conca, come ha chiesto Alex: da più lontano la foschia lo sbiadisce (la nebbia di giorno parte a 130 m).
 - **Stadio nei replay dei gol**: il replay basso di lato lo mostrava già; quello da dietro la porta è stato abbassato e
   allargato (`RIVEDI.porta`), così sopra la porta resta la tribuna di fronte invece della sola erba.
 - I riflessi dell'ambiente di notte (`src/grafica/resa.js`) usano ancora i fari dello stadio costruito all'avvio.
