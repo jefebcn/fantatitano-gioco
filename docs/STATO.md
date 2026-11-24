@@ -185,6 +185,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Calcio d'angolo: FATTO. Telecamera bassa dietro chi batte (`ANGOLO_CAM`), si vedono lui, bandierina, area e porta; la
   levetta segue lo schermo (in su è verso l'area), anche dall'angolo sul lato lontano. Da chiedere se in Dream League
   rigore e punizione hanno la levetta allo stesso modo (oggi no).
+- Divise troppo simili: FATTO. Oltre alla distanza di colore, le due maglie devono differire in chiarezza di almeno
+  `DIVISE.chiaro` (una chiara e una scura): gli ospiti passano alla seconda maglia, poi bianca o nera. Prima 147 coppie
+  su 240 avevano maglie chiare quasi uguale (rosso contro blu, verde contro blu). `scripts/prove/divise.cjs` lo controlla.
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato
