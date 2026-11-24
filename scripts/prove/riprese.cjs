@@ -6,7 +6,8 @@
    - nessuno scatta mentre va al suo posto (andatura di FERMI.passo, con un metro al secondo di margine);
    - prima del calcio d'inizio di un tempo il cronometro resta fermo;
    - calcio d'angolo e rimessa laterale si possono battere entro 3 secondi (i giocatori vengono messi a posto durante lo
-     stacco), e dopo lo stacco nessuno viene più spostato di colpo.
+     stacco), e dopo lo stacco nessuno viene più spostato di colpo;
+   - chi batte la rimessa laterale sta fuori dal campo, coi piedi dietro la riga.
    Uso: npm run build && node scripts/prove/riprese.cjs (serve Playwright, come partita.cjs). */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
@@ -61,7 +62,10 @@ srv.listen(0, async () => {
         g.step(dt); g.draw(dt); n++;
         // dopo lo stacco (o da subito, dove non c'è) nessuno salta da un punto all'altro: al massimo mezzo metro per passo
         if (battuto === null && n * dt > g.FERMI.buio) tutti().forEach((p, i) => { const d = hyp(p.x - prima[i][0], p.z - prima[i][1]); if (d > .5 && !e.salto) { e.salto = true; e.male.push(`${p.name} spostato di colpo di ${d.toFixed(1)} m dopo ${(n * dt).toFixed(1)} s`); } });
-        if (pronto === null && G.attesa) { pronto = n * dt; punto = [b.x, b.z]; }
+        if (pronto === null && G.attesa) {
+          pronto = n * dt; punto = [b.x, b.z];
+          if (nome === 'rimessa laterale' && Math.abs(G.attesa.chi.z) < HW + .2) e.male.push(`chi batte la rimessa ha i piedi in campo (a ${(HW - Math.abs(G.attesa.chi.z)).toFixed(2)} m dalla riga)`);
+        }
         // battuto: il pallone ha lasciato chi batte
         if (pronto !== null && battuto === null && !G.attesa) battuto = n * dt;
         if (battuto === null) {

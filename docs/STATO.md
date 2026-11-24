@@ -174,6 +174,10 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Icone in alto a destra: FATTO. Resta solo la maglia, a ogni palla ferma: mette in pausa e apre le sostituzioni; «Fatto»
   porta alla pausa, dove si cambia il modulo. Mano e mirino tolti finché Alex non dice cosa devono fare.
 
+## Seconda risposta di Alex del 24/11 (dopo il video «angolo-rimessa-30s»)
+- Rimessa laterale coi piedi in campo: FATTO. Chi batte sta 40 cm fuori (`RIMESSA.linea`), col pallone in mano dietro la
+  riga; rientra in campo quando lo lancia. `scripts/prove/riprese.cjs` lo controlla.
+
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato
   nascosta (l'app va tolta e rimessa nella Home), levetta che non resta incastrata.
