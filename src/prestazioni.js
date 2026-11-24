@@ -9,11 +9,13 @@
 
    Indicatore (?debug nell'indirizzo): fotogrammi al secondo, il fotogramma peggiore, quanto lavora il processore
    (logica + preparazione del disegno), quanto lavora la scheda grafica dove il browser lo dice, chiamate di disegno,
-   triangoli, risoluzione e livello di qualità. */
+   triangoli, risoluzione e livello di qualità.
+   Contatore (?fps nell'indirizzo): solo i fotogrammi al secondo, scritti in grande, col minimo degli ultimi dieci
+   secondi, la risoluzione e il livello di qualità a cui il gioco è sceso per tenerli: da leggere sul telefono. */
 
 export const RIS = { giu: 1 / 50, su: 1 / 57, passoGiu: 0.85, passoSu: 1.08, minimo: 0.55, attesaGiu: 1.5, attesaSu: 6, tettoPer: 25 };
 
-export function creaPrestazioni({ renderer, debug = false, livello = () => 0, rinuncia = () => false, extra = () => '' }) {
+export function creaPrestazioni({ renderer, debug = false, fps = false, nota = () => '', livello = () => 0, rinuncia = () => false, extra = () => '' }) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const S = {
     max: dpr, min: Math.max(0.7, dpr * RIS.minimo), ora: dpr, media: 1 / 60, scarto: 0, cpu: 0, attesa: 3, stabile: 0, tetto: dpr, tettoT: 0,
@@ -61,7 +63,7 @@ export function creaPrestazioni({ renderer, debug = false, livello = () => 0, ri
 
   // tempo della scheda grafica, dove il browser lo misura (Chrome su Android e desktop, non Safari)
   const G2 = debug ? tempoGpu(renderer.getContext()) : null;
-  const HUD = debug ? indicatore(renderer, S, livello, G2, extra) : null;
+  const HUD = debug ? indicatore(renderer, S, livello, G2, extra) : fps ? contatore(S, livello, nota) : null;
 
   return { aggiorna, inizio, fine, scala, stato: S };
 }
@@ -96,6 +98,25 @@ function indicatore(renderer, S, livello, G2, extra) {
         + `geometrie ${i.memory.geometries} · texture ${i.memory.textures}\n`
         + `risoluzione ${S.ora.toFixed(2)}x (${renderer.domElement.width}×${renderer.domElement.height}) · qualità ${livello()}${extra() ? `\n${extra()}` : ''}`;
       n = 0; somma = 0; peggiore = 0; t = 0;
+    },
+  };
+}
+
+/** Il contatore di ?fps: una riga sola, grande, in alto al centro. Il minimo è il secondo peggiore degli ultimi dieci. */
+function contatore(S, livello, nota) {
+  const el = document.createElement('div');
+  el.id = 'fps';
+  el.style.cssText = 'position:fixed;left:50%;top:30px;transform:translateX(-50%);z-index:99;pointer-events:none;font:700 15px/1.3 ui-monospace,Menlo,monospace;color:#cfff6a;background:rgba(0,0,0,.7);padding:4px 10px;border-radius:6px;white-space:pre;text-align:center';
+  document.body.appendChild(el);
+  let n = 0, somma = 0;
+  const secondi = [];
+  return {
+    conta(dt) {
+      if (!(dt > 0)) return; n++; somma += dt;
+      if (somma < 1) return;
+      const ora = n / somma; secondi.push(ora); if (secondi.length > 10) secondi.shift();
+      el.textContent = `${ora.toFixed(0)} fps · minimo ${Math.min(...secondi).toFixed(0)}\nrisoluzione ${S.ora.toFixed(2)}x · qualità ${livello()}${nota() ? ` · ${nota()}` : ''}`;
+      n = 0; somma = 0;
     },
   };
 }

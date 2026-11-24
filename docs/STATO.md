@@ -197,6 +197,36 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   `DIVISE.chiaro` (una chiara e una scura): gli ospiti passano alla seconda maglia, poi bianca o nera. Prima 147 coppie
   su 240 avevano maglie chiare quasi uguale (rosso contro blu, verde contro blu). `scripts/prove/divise.cjs` lo controlla.
 
+## Stadi per divisione (richiesta di Alex del 24/11): fatto il grande, mancano medio e paese
+
+Tre stadi secondo la divisione di chi gioca in casa: **paese** (Esordienti, Borghi), **medio** (Contrade, Cadetta),
+**grande** (Sammarinese). Numeri in `STADI` (`src/config.js`); `src/grafica/spalti.js` costruisce i tre dagli stessi
+pezzi (quattro lati, anelli di gradoni, tetto), `src/grafica/dintorni.js` quello che c'è fuori, e `alzaStadio` in
+`src/game.js` cambia stadio sotto la schermata delle due squadre. Prova: `?stadio=paese|medio|grande` nell'indirizzo,
+con `&alto` per la vista dall'alto e `&fps` per il contatore dei fotogrammi al secondo.
+
+- **La divisione non arriva ancora dalla home**: chiesta in `docs/ponte-partita.md` §11 (campo `stadio` nella
+  richiesta). Finché manca si gioca nel medio.
+- **Telecamera**: il muretto sta alla stessa distanza dalle linee in tutti e tre (`STADI.dist`) e il primo anello non è
+  mai più ripido di prima, quindi le regole di `CAMERA.spalle` e `zMax` valgono uguali. Le tribune non sono state
+  avvicinate: per farlo vanno spostati cartelloni e panchine e rifatta la misura dell'inquadratura.
+- **Dalla telecamera di gioco gli stadi si somigliano**: guarda in giù, e della tribuna di fronte entrano solo le
+  prime file (2-5 m). Alex ha chiesto, dopo i tre stadi e in una PR a parte, una presentazione dello stadio prima del
+  calcio d'inizio (giro di 5-6 s, saltabile con un tocco) e lo stadio visibile nei replay dei gol.
+- **Grande, dettagli fatti** (risposte di Alex del 24/11): conca con gli angoli curvi (`chiuso.raggio`, `spicchi`);
+  tetto ad anello che copre tutte le tribune fino al bordo del primo anello, con costole sopra e lame sulla parete;
+  fascia LED continua che scorre piano con FANTATITANO, CALCIO SAMMARINESE e i nomi delle due squadre nei loro
+  colori; palchi con le vetrate accese; fuori piazzale, strada ad anello, parcheggi, lampioni e palazzi con le
+  finestre accese di notte. 58.852 tifosi disegnati su 75 mila dichiarati; in vista di gioco 166 chiamate di disegno
+  e 421 mila triangoli, contro 140 e 348 mila del medio.
+- **Fotogrammi al secondo su iPhone: da leggere**. Da qui non si misurano; Alex li legge con `?stadio=grande&fps`
+  sul telefono più vecchio e li confronta con `?stadio=medio&fps`. Se scendono: spezzare le sagome a tratti perché
+  quelle fuori schermo non si disegnino, o abbassare `folla`.
+- **Notte**: in paese e medio la luce è stata alzata (`STADI.tipi.*.luce`) finché l'erba resta verde.
+- **Da fare, una PR per stadio**: medio (tetti, tabellone, tribune) e paese (cartelloni fissi dipinti al posto dei
+  LED, che restano solo da medio in su). I riflessi dell'ambiente di notte (`src/grafica/resa.js`) usano ancora i fari
+  dello stadio costruito all'avvio.
+
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato
   nascosta (l'app va tolta e rimessa nella Home), levetta che non resta incastrata.

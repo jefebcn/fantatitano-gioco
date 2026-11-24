@@ -125,6 +125,76 @@ export const CAMERA = { alto: 12.5, dietro: 36.8, inclina: 21.75, fovOriz: 58.7,
 // Vista dall'alto di tutto lo stadio, solo per controlli: si accende con ?alto nell'indirizzo. [x, y, z della telecamera,
 // x, y, z del punto guardato, FOV verticale]
 export const CAMERA_ALTO = [0, 95, 40, 0, 0, 0, 55];
+/* ---------------------------------------------------------------- stadi */
+// Tre stadi, secondo la divisione della squadra di casa: lo dice `divisioni`, e `senza` è quello usato finché la home
+// non manda la divisione (docs/ponte-partita.md §11). Il campo e la telecamera di gioco sono gli stessi in tutti e tre:
+// cambiano spalti, tetti, luci e dintorni (src/grafica/spalti.js).
+// Uguali per tutti: `dist`, i metri del muretto dalla linea laterale e dalla linea di fondo, così cartelloni, panchine e
+// regole della telecamera sulla tribuna vicina restano valide. `posto` è la larghezza di un posto, `scale` ogni quanti
+// metri c'è una scala, `muro` l'altezza del muretto, `vicine` quante file hanno i tifosi in 3D: dietro sono sagome.
+// Ogni tipo: `posti` è la capienza che si dichiara, `folla` il massimo di tifosi disegnati. Ogni lato (lontano è quello
+// di fronte alla telecamera, col tunnel; destra è la curva degli ospiti) ha `lungo` in metri e i suoi `anelli`: file,
+// alzata e pedata di ogni fila, e per gli anelli sopra il primo la quota `y` e quanti metri sta `dietro` al muretto
+// (`posto`, se c'è, è la larghezza dei posti di quell'anello: più stretti dove ci sono solo sagome).
+// `tetto`: quota, dove arriva il bordo (metri dal muretto, negativo = più indietro), spessore, una trave ogni tot metri.
+// Con `chiuso` i quattro lati hanno gli stessi anelli e sono uniti da angoli curvi, senza buchi: `raggio` è quello della
+// curva del muretto, `spicchi` in quanti pezzi è diviso ogni angolo. Il tetto allora è un anello intero.
+// Con `lama` ha una costola sopra e una lama sulla parete di fuori a ogni trave: larghezza, altezza, quanto sporge.
+// `led`: la fascia luminosa tra un anello e l'altro, alta `alto` metri; la tela con le scritte fa `giri` giri attorno
+// allo stadio e scorre di `scorre` giri al secondo. `palchi` e `schermi`: dove stanno e quanto sono grandi.
+// Nei palchi `vetrate` sono i metri occupati da otto vetrate.
+// `fari`: pali bassi agli angoli, torri agli angoli oppure file di proiettori sul bordo del tetto. `y` è l'altezza, `fuori`
+// i metri oltre la bandierina (in diagonale), `bordo` i metri del bordo del tetto dalla linea laterale.
+// `luce`, solo di notte: quanto valgono la luce diffusa e quella dei fari rispetto a NOTTURNA, il colore dei fari, quanto
+// restano in penombra le tribune e quanto brilla il tetto. `alto`: la telecamera di ?alto, come CAMERA_ALTO.
+// `fuori` sono i dintorni, vedi src/grafica/dintorni.js. Terreno a prato o di città, `margine` è il piazzale attorno allo stadio,
+// in metri; quante `strade` partono dalla strada ad anello e quanti `parcheggi` ci sono, grandi `parcheggio` metri e
+// pieni per la parte `pieno`; un lampione ogni `lampioni` metri, alto `palo`; quante `colline`; in città quanti
+// `palazzi` e quante `finestre` accese ogni venti metri d'altezza.
+const GRADONE = { alt: .5, prof: .85 };
+export const STADI = {
+  dist: [6.5, 8.5], posto: .78, scale: 16, muro: 1.6, vicine: 2, senza: 'medio',
+  divisioni: { esordienti: 'paese', borghi: 'paese', contrade: 'medio', cadetta: 'medio', sammarinese: 'grande' },
+  tipi: {
+    paese: {
+      posti: 1500, folla: 1500, muro: 1.1,
+      lati: {
+        lontano: { lungo: 64, anelli: [{ file: 9, alt: .45, prof: .85 }], tetto: { y: 8.4, sporge: 1, spessore: .3, trave: 8 } },
+        vicino: { lungo: 88, anelli: [{ file: 4, alt: .4, prof: .85 }] },
+        destra: { lungo: 56, anelli: [{ file: 3, alt: .4, prof: .85 }] },
+        sinistra: { lungo: 56, anelli: [{ file: 3, alt: .4, prof: .85 }] },
+      },
+      fari: { tipo: 'pali', y: 15, fuori: 5, largo: 3.2 },
+      luce: { hemi: 1.5, fari: 1.05, colore: 0xffe9c8, tribune: 0x55534d, tetto: 0 },
+      alberi: { quanti: 90, alti: [6, 11] },
+      fuori: { terreno: 'prato', margine: 10, strade: 1, parcheggi: 1, parcheggio: [40, 26], pieno: .45, lampioni: 46, palo: 7, colline: 3 },
+      alto: [0, 62, 78, 0, 0, -4, 55],
+    },
+    medio: {
+      posti: 10000, folla: 10000,
+      lati: {
+        lontano: { lungo: 2 * HL + 10, anelli: [{ file: 20, ...GRADONE }], tetto: { y: 15, sporge: -2.5, spessore: .5, trave: 12 } },
+        vicino: { lungo: 2 * HL + 10, anelli: [{ file: 20, ...GRADONE }], tetto: { y: 15, sporge: -2.5, spessore: .5, trave: 12 } },
+        destra: { lungo: 2 * HW + 6, anelli: [{ file: 18, ...GRADONE }] },
+        sinistra: { lungo: 2 * HW + 6, anelli: [{ file: 18, ...GRADONE }], tabellone: { largo: 16, alto: 7, y: 15 } },
+      },
+      fari: { tipo: 'torri', y: 38, fuori: 22, largo: 9 },
+      luce: { hemi: 1.7, fari: 1.2, colore: 0xf3f6ff, tribune: 0x666d82, tetto: 0 },
+      fuori: { terreno: 'prato', margine: 20, strade: 2, parcheggi: 4, parcheggio: [70, 40], pieno: .7, lampioni: 34, palo: 9, colline: 2 },
+      alto: [0, 100, 92, 0, 0, -4, 55],
+    },
+    grande: {
+      posti: 75000, folla: 75000, chiuso: { raggio: 7, spicchi: 8 },
+      anelli: [{ file: 24, alt: .45, prof: .85 }, { file: 26, alt: .52, prof: .8, y: 14, dietro: 16, posto: .62 }, { file: 28, alt: .6, prof: .78, y: 28.5, dietro: 30, posto: .62 }],
+      tetto: { y: 49.5, sporge: 0, spessore: 1.4, trave: 14, lama: [.7, .9, 2.4] },
+      led: { alto: 2.4, giri: 6, scorre: .004 }, palchi: { y: 11.2, alto: 2.6, dietro: 15.6, lungo: 70, vetrate: 20 }, schermi: { largo: 22, alto: 9, y: 43.5, dietro: 31 },
+      fari: { tipo: 'tetto', y: 49.5, bordo: 6.5 },
+      luce: { hemi: 2, fari: 1.45, colore: 0xffffff, tribune: 0x8d93a6, tetto: .5 },
+      fuori: { terreno: 'città', margine: 30, strade: 4, parcheggi: 6, parcheggio: [90, 48], pieno: .9, lampioni: 30, palo: 10, palazzi: 90, finestre: 14, colline: 0 },
+      alto: [0, 175, 135, 0, 0, -8, 60],
+    },
+  },
+};
 // Calcio d'angolo: la telecamera sta dietro chi batte, bassa, e guarda l'area: si vedono lui, il pallone e la porta, e la
 // levetta segue lo schermo, in su è verso l'area. dietro e alto: metri dietro il pallone e da terra. avanti: quanti
 // metri oltre il pallone guarda a terra, cioè quanto è inclinata. mira: il punto dell'area verso cui è girata, come

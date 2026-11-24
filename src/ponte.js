@@ -24,13 +24,23 @@ function controllaGiocatore(g, dove, errori) {
 }
 
 /**
- * Controlla la richiesta (docs/ponte-partita.md, §3). moduli: le chiavi di FORMS che la partita conosce.
+ * Controlla la richiesta (docs/ponte-partita.md, §3). moduli: le chiavi di FORMS che la partita conosce; divisioni: gli
+ * id delle divisioni che hanno uno stadio.
  * Ritorna l'elenco degli errori: vuoto se la richiesta si può giocare. I campi che la partita non conosce vengono ignorati.
  */
-export function controllaRichiesta(r, moduli = null) {
+export function controllaRichiesta(r, moduli = null, divisioni = null) {
   const errori = [];
   if (!r || typeof r !== 'object') return ['manca la richiesta'];
   if (r.versione !== 1) errori.push('versione deve essere 1');
+  // lo stadio (§11): facoltativo. La divisione di chi gioca in casa decide il tipo di stadio, le stelle quanto è pieno
+  if (r.stadio !== undefined && r.stadio !== null) {
+    const st = r.stadio;
+    if (typeof st !== 'object') errori.push('stadio: { divisione, stelle }');
+    else {
+      if (st.divisione !== undefined && divisioni && !divisioni.includes(st.divisione)) errori.push(`stadio.divisione «${st.divisione}» non è una divisione (${divisioni.join(', ')})`);
+      if (st.stelle !== undefined && !numero(st.stelle, 0, 5)) errori.push('stadio.stelle tra 0 e 5');
+    }
+  }
   if (!SA_FARE.tipi.includes(r.tipo)) errori.push(`tipo «${r.tipo}» non ancora giocabile (la partita sa fare: ${SA_FARE.tipi.join(', ')})`);
   if (r.tipo === 'scenario') {
     const sc = r.scenario;

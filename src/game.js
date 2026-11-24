@@ -15,7 +15,8 @@ import * as URTO from './fisica/contatti.js';
 import { creaCampo, texturaOmbra } from './grafica/campo.js';
 import { Porta, Bandierine, panchine, torriFaro, Particelle } from './grafica/stadio.js';
 import { creaAtmosfera } from './grafica/luce.js';
-import { creaSpalti, CONCA } from './grafica/spalti.js';
+import { creaSpalti } from './grafica/spalti.js';
+import { creaDintorni } from './grafica/dintorni.js';
 import { creaBordoCampo } from './grafica/bordocampo.js';
 import { creaAudio } from './audio.js';
 import { creaPrestazioni } from './prestazioni.js';
@@ -23,7 +24,7 @@ import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { PRATO, NOTTURNA, DIVISE, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { PRATO, NOTTURNA, STADI, DIVISE, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -68,7 +69,7 @@ const G_INIZIO = { ...G }; // i valori al caricamento, per azzerare lo stato a o
 const canvas = $('#c');
 const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 // risoluzione che si adatta ai fotogrammi e indicatore ?debug (src/prestazioni.js)
-const PERF = creaPrestazioni({ renderer, debug: /[?&]debug\b/.test(location.search), extra: () => (G.ctrl && G.state !== 'menu' ? `giocatore ${hyp(G.ctrl.vx, G.ctrl.vz).toFixed(1)} m/s${G.ball && G.ball.owner === G.ctrl ? ' (con palla)' : ''}${G.ctrl.sprint ? ' · scatto' : ''}` : ''), livello: () => QUAL.livello + (RESA && RESA.effetti() ? ' · alone' : ''), rinuncia: () => !!RESA && RESA.rinuncia() });
+const PERF = creaPrestazioni({ renderer, debug: /[?&]debug\b/.test(location.search), fps: /[?&]fps\b/.test(location.search), nota: () => `stadio ${STADIO}`, extra: () => (G.ctrl && G.state !== 'menu' ? `giocatore ${hyp(G.ctrl.vx, G.ctrl.vz).toFixed(1)} m/s${G.ball && G.ball.owner === G.ctrl ? ' (con palla)' : ''}${G.ctrl.sprint ? ' · scatto' : ''}` : ''), livello: () => QUAL.livello + (RESA && RESA.effetti() ? ' · alone' : ''), rinuncia: () => !!RESA && RESA.rinuncia() });
 const scene = new T.Scene();
 scene.background = new T.Color(0x86b9ea);
 scene.fog = new T.Fog(0xa9cdee, 130, 330);
@@ -99,18 +100,43 @@ function ctex(c, repX = 1, repY = 1) {
 function cv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
 
 async function buildPitch() {
-  const { campo, fuori } = await creaCampo(T, { HL, HW, linee: LINEE, anisotropia: renderer.capabilities.getMaxAnisotropy(), passo: PRATO.piastrella, prato: PRATO }); scene.add(campo, fuori); CAMPO = campo; // prato PBR, strisce, usura e linee: src/grafica/campo.js
+  const { campo, fuori } = await creaCampo(T, { HL, HW, linee: LINEE, anisotropia: renderer.capabilities.getMaxAnisotropy(), passo: PRATO.piastrella, prato: PRATO }); scene.add(campo, fuori); CAMPO = campo; TERRENO = fuori; // prato PBR, strisce, usura e linee: src/grafica/campo.js
   // porte con la rete che si deforma e bandierine che si flettono (src/grafica/stadio.js)
   PORTE = [-1, 1].map((d) => new Porta(T, scene, { d, gx: d * HL, GH, GT }));
   BANDIERINE = new Bandierine(T, scene, { HL, HW });
 }
-let RESA = null, PORTE = [], BANDIERINE = null, FARI = null, CAMPO = null, SFONDO = null, ATMO = null, SPALTI = null, BORDO = null;
+let RESA = null, PORTE = [], BANDIERINE = null, FARI = null, DINTORNI = null, TERRENO = null, CAMPO = null, SFONDO = null, ATMO = null, SPALTI = null, BORDO = null;
 const PART = new Particelle(T, scene); // ciuffi d'erba e polvere: scivolate, frenate, tiri forti
 
 let boards = [], standMat = null, titoSprite = null;
+/* Lo stadio della partita. Sono tre (STADI in src/config.js): quello della divisione di chi gioca in casa, se la home la
+   dice nella richiesta (docs/ponte-partita.md §11), altrimenti STADI.senza. Per le prove, ?stadio=grande nell'indirizzo
+   lo forza. Campo, porte, cartelloni e panchine restano gli stessi: cambiano spalti, tetti, fari, luce e dintorni. */
+const STADIO_CHIESTO = (/[?&]stadio=(\w+)/.exec(location.search) || [])[1];
+let STADIO = '';
+function tipoStadio() {
+  const st = G.comp && G.comp.tipo === 'ponte' && G.ponte && G.ponte.r.stadio, tipo = STADIO_CHIESTO || (st && STADI.divisioni[st.divisione]);
+  return STADI.tipi[tipo] ? tipo : STADI.senza;
+}
+/** Costruisce lo stadio del tipo chiesto al posto di quello che c'è (niente da fare se è già quello). */
+function alzaStadio(tipo) {
+  if (!STADI.tipi[tipo]) tipo = STADI.senza; if (tipo === STADIO) return;
+  if (SPALTI) SPALTI.togli(); if (FARI) FARI.togli(); if (DINTORNI) DINTORNI.togli();
+  STADIO = tipo; const ST = STADI.tipi[tipo];
+  FARI = torriFaro(T, scene, { HL, HW, fari: ST.fari });
+  SPALTI = creaSpalti(T, scene, { HL, HW, stadi: STADI, tipo, renderer, luce: FARI.materiale });
+  // fuori dallo stadio: terreno, strade, parcheggi, lampioni, città (src/grafica/dintorni.js), con numeri sempre uguali
+  let seme = 20261124; const casuale = () => ((seme = (seme * 1664525 + 1013904223) >>> 0) / 4294967296);
+  DINTORNI = creaDintorni(T, scene, { terreno: TERRENO, fuori: ST.fuori, ingombro: SPALTI.ingombro, casuale });
+  // luci, penombra delle tribune e colori del pubblico vanno rifatti sullo stadio nuovo
+  if (ATMO) ATMO.cambia({ fari: FARI, tribune: SPALTI.materiali, stadio: LUCI_STADIO, luce: ST.luce });
+  TIFO.partita = ''; SPALTI.dettaglio(QUAL.livello < 1);
+}
+// di notte: il tetto illuminato da sotto, i lampioni e le finestre della città
+const LUCI_STADIO = { illumina(notte) { SPALTI.illumina(notte); DINTORNI.illumina(notte); } };
 function buildStadium() {
-  // spalti in cemento con scale, ringhiere, tunnel, striscioni, bandiere e la folla (src/grafica/spalti.js)
-  SPALTI = creaSpalti(T, scene, { HL, HW, renderer }); BORDO = creaBordoCampo(T, scene, { HL, HW }); // e steward e fotografi a bordo campo (src/grafica/bordocampo.js)
+  // spalti, tetti, fari e dintorni del tipo di stadio (vedi alzaStadio), poi steward e fotografi a bordo campo (src/grafica/bordocampo.js)
+  alzaStadio(tipoStadio()); BORDO = creaBordoCampo(T, scene, { HL, HW });
   // cartelloni
   // la striscia si disegna su una tela più fitta di quanto serve da vicino (LED.tela) e si filtra al massimo che la
   // scheda grafica concede: da lontano, in alto sullo schermo, le scritte che scorrono restano ferme e leggibili
@@ -124,7 +150,7 @@ function buildStadium() {
   };
   board(HL * 2 + 8, 0, -(HW + 4.2), 0); board(HL * 2 + 8, 0, HW + 4.2, Math.PI);
   board(HW * 2 + 8, HL + 5.2, 0, -Math.PI / 2); board(HW * 2 + 8, -(HL + 5.2), 0, Math.PI / 2);
-  panchine(T, scene, { HW }); FARI = torriFaro(T, scene, { HL, HW, tetto: { y: CONCA.tetto.y, bordo: 6.5 - CONCA.tetto.sporge } }); // panchine tecniche e fari sul bordo del tetto
+  panchine(T, scene, { HW }); // panchine tecniche
   // Monte Titano con le tre torri, sullo sfondo
   const sh = new T.Shape(); const pts = [[-130, 0], [-110, 8], [-84, 20], [-62, 34], [-52, 44], [-47, 44], [-47, 52], [-41, 52], [-41, 45], [-24, 40], [-8, 48], [-3, 56], [-3, 66], [3, 66], [3, 57], [12, 50], [30, 38], [44, 41], [50, 46], [50, 53], [55, 53], [55, 45], [70, 30], [92, 16], [112, 7], [130, 0]];
   sh.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) sh.lineTo(p[0], p[1]);
@@ -2558,13 +2584,15 @@ function inquadratura() {
   if (fk.wall || fk.direct) { const t = G.next, gx = t ? t.side * HL : sgn(b.x) * HL, dx = b.x - gx, dz = b.z, d = hyp(dx, dz) || 1; return { p: [b.x + dx / d * 10, 5, b.z + dz / d * 10], l: [gx, 0, 0], fov: 34 }; }
   return null;
 }
+const VISTA_ALTO = /[?&]alto\b/.test(location.search);
 const _qCam = new T.Quaternion(), _mCam = new T.Matrix4(), _vCam = new T.Vector3(), _asseX = new T.Vector3(1, 0, 0);
 function updateCamera(dt) {
   const b = G.ball; let fx = 0, fz = 0;
   if (b) { fx = b.x; fz = b.z; if (G.state === 'goal' && G.scorer && G.stateT > .9) { fx = G.scorer.x; fz = G.scorer.z; } }
   let px, py, pz, lx, lz, fov, gioco = false;
-  if (!G.dbgCam && /[?&]alto\b/.test(location.search) && G.state !== 'menu') G.dbgCam = CAMERA_ALTO; // vista dall'alto, solo per controlli
-  if (G.dbgCam) { cam.position.set(G.dbgCam[0], G.dbgCam[1], G.dbgCam[2]); cam.lookAt(G.dbgCam[3], G.dbgCam[4], G.dbgCam[5]); cam.fov = G.dbgCam[6] || 30; cam.updateProjectionMatrix(); return; }
+  // vista dall'alto, solo per controlli: ogni stadio ha la sua, abbastanza lontana da vederlo tutto
+  const dbg = G.dbgCam || (VISTA_ALTO && G.state !== 'menu' ? STADI.tipi[STADIO].alto || CAMERA_ALTO : null);
+  if (dbg) { cam.position.set(dbg[0], dbg[1], dbg[2]); cam.lookAt(dbg[3], dbg[4], dbg[5]); cam.fov = dbg[6] || 30; cam.updateProjectionMatrix(); return; }
   if (G.state === 'menu') { const a = G.t * .07; px = Math.sin(a) * 74; pz = Math.cos(a) * 62; py = 30; lx = 0; lz = 0; fov = 40; }
   else if ((G.inquadra = inquadratura())) { const q = G.inquadra; [px, py, pz] = q.p; [lx, , lz] = q.l; fov = q.fov; } // piazzati: inquadratura dedicata
   else if (G.state === 'goal' && G.scorer && G.stateT > .9 && !REGIA.S.on) { lx = fx; lz = fz; px = lx; pz = lz + 24; py = 12; fov = 36; } // dopo il gol, senza la regia (pupazzi a blocchi): più vicini al marcatore
@@ -2608,14 +2636,14 @@ function folla(dt) {
   const [h, a] = G.teams;
   if (h && TIFO.partita !== h.club.id + a.club.id) {
     TIFO.partita = h.club.id + a.club.id; SPALTI.colora(h.club, a.club); TIFO.tiro = G.shotId; TIFO.gol = G.goals.length;
-    const c = G.comp, liv = K ? K.stadio || 1 : 1, ko = c && (c.tipo === 'coppa' || (c.tipo === 'castelli' && /final|semi|quart/i.test(c.titolo || '')));
+    const c = G.comp, st = c && c.tipo === 'ponte' && G.ponte && G.ponte.r.stadio, liv = st && st.stelle !== undefined ? Math.max(1, st.stelle) : K ? K.stadio || 1 : 1, ko = c && (c.tipo === 'coppa' || (c.tipo === 'castelli' && /final|semi|quart/i.test(c.titolo || '')));
     TIFO.base = !c ? .85 : ko ? (/finale/i.test(c.titolo || '') ? 1 : .95) : .82 + .04 * (liv - 1); pienone(); // stadio quasi pieno, come in Dream League
   }
   if (h && G.shotId !== TIFO.tiro) { TIFO.tiro = G.shotId; if (G.shooter && G.state === 'play') SPALTI.esulta(G.shooter.team.idx, .55, 1); } // tiro: un sussulto
   if (h && G.goals.length !== TIFO.gol) { TIFO.gol = G.goals.length; if (G.scorer) SPALTI.esulta(G.scorer.team.idx, 1, 6); } // gol: salti e braccia al cielo
   // il brusio: quanta gente c'è e quanto è vicina la palla alla porta (ultimi 25 metri)
   if (h && G.ball) AU.pubblico(TIFO.base, G.state === 'play' ? clamp((Math.abs(G.ball.x) - (HL - 25)) / 12, 0, 1) : G.state === 'goal' ? 1 : 0);
-  SPALTI.spalle(cam.position.z > HW + CAMERA.spalle); SPALTI.muovi(dt, G.t);
+  SPALTI.spalle(!G.dbgCam && !VISTA_ALTO && cam.position.z > HW + CAMERA.spalle); SPALTI.muovi(dt, G.t);
 }
 function disegna(dt) {
   const b = G.ball;
@@ -2786,7 +2814,7 @@ function datiDaRichiesta(t, s) {
 }
 /** Fa partire la partita dalla richiesta. Ritorna { ok: true } oppure { ok: false, errori } senza cambiare niente. */
 function avviaPartita(r) {
-  const errori = controllaRichiesta(r, Object.keys(FORMS)); if (errori.length) return { ok: false, errori };
+  const errori = controllaRichiesta(r, Object.keys(FORMS), Object.keys(STADI.divisioni)); if (errori.length) return { ok: false, errori };
   const iu = r.squadre.findIndex((s) => s.utente), mia = clubDaRichiesta(r.squadre[iu]), loro = clubDaRichiesta(r.squadre[1 - iu]);
   sel.form = mia.modulo; sel.ment = r.squadre[iu].mentalita || 0;
   if (r.ora === 'giorno' || r.ora === 'notte') { sel.ora = r.ora; if (ATMO) ATMO.applica(sel.ora); }
@@ -2827,7 +2855,8 @@ function startMatch(h, a, d) {
   const H = typeof h === 'string' ? club(h) : h, A = typeof a === 'string' ? club(a) : a;
   $('#vsH').src = img(H.id); $('#vsA').src = img(A.id); $('#vsHn').textContent = H.name; $('#vsAn').textContent = A.name;
   show('#vs'); $('#hud').classList.add('nas'); G.state = 'menu';
-  setTimeout(() => { show(null); $('#hud').classList.remove('nas'); newMatch(H, A); AU.amb(1); }, 1900);
+  // lo stadio di questa partita si costruisce qui, mentre si vede ancora la schermata delle due squadre
+  setTimeout(() => { alzaStadio(tipoStadio()); show(null); $('#hud').classList.remove('nas'); newMatch(H, A); AU.amb(1); }, 1900);
 }
 // Schermata delle sostituzioni: si tocca chi esce e chi entra
 let cOut = null, cIn = -1;
@@ -2972,7 +3001,7 @@ async function boot() {
   try { await Promise.race([document.fonts.load('40px Anton'), new Promise((r) => setTimeout(r, 2500))]); } catch (e) { /* si disegna col font di sistema */ }
   buildStadium(); paintBoards(CLUBS[0], CLUBS[1], null);
   RESA = creaResa(T, { renderer, scene, cam, torri: FARI.luci.map((l) => l.pos) }); // riflessi, tonalità e alone (src/grafica/resa.js)
-  ATMO = creaAtmosfera(T, { scene, hemi, sun, sole: SOLE, fari: FARI, sfondo: SFONDO, campo: CAMPO, tribune: SPALTI.materiali, cartelloni: boards, resa: RESA, notturna: NOTTURNA }); ATMO.applica(sel.ora); // giorno o notte, scelto prima della partita
+  ATMO = creaAtmosfera(T, { scene, hemi, sun, sole: SOLE, fari: FARI, sfondo: SFONDO, campo: CAMPO, tribune: SPALTI.materiali, stadio: LUCI_STADIO, luce: STADI.tipi[STADIO].luce, cartelloni: boards, resa: RESA, notturna: NOTTURNA }); ATMO.applica(sel.ora); // giorno o notte, scelto prima della partita
   { const m = /[?&]seme=(\d+)/.exec(location.search); if (m) prova(+m[1]); } // modalità di prova: partita ripetibile, audio spento
   buildMenu(); comandiPartita(); bindInput();
   caricaCarriera(); // la carriera salvata, le rose cambiate col mercato e il club dell'utente, prima di caricare gli stemmi
@@ -2982,5 +3011,5 @@ async function boot() {
 }
 // quello che la home (src/casa/casa.js) prende da qui
 export { aiForm, $, rnd, clamp, hash, IMGX, img, G, renderer, cv, SCARPE_NEGOZIO, stemmi3d, makeSkinned, FIGURE, formaMaglia, pickKits, PALLONI, kitsFor, AU, tactics, club, chiudiPonte, startMatch, toMenu, CREST, loadImg, MODEL };
-window.__g = { prova, avviaPartita, hud, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, chiarezza, DIVISE, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, INSERIMENTO, SMARCA, TIRO_IA, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, restart, kickoff, FERMI, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { prova, avviaPartita, hud, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, chiarezza, DIVISE, apriNuovo, spalti: () => SPALTI, STADI, alzaStadio, stadio: () => STADIO, fari: () => FARI, dintorni: () => DINTORNI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, INSERIMENTO, SMARCA, TIRO_IA, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, restart, kickoff, FERMI, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
