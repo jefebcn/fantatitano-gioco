@@ -146,6 +146,10 @@ export const CAMERA_ALTO = [0, 95, 40, 0, 0, 0, 55];
 // `led`: la fascia luminosa tra un anello e l'altro, alta `alto` metri; la tela con le scritte fa `giri` giri attorno
 // allo stadio e scorre di `scorre` giri al secondo. `palchi` e `schermi`: dove stanno e quanto sono grandi.
 // Nei palchi `vetrate` sono i metri occupati da otto vetrate.
+// `cartelloni`, solo dove non sono LED: tavole dipinte e ferme, tante `tavole` ogni 64 metri, chiare `giorno` e `notte`
+// rispetto ai LED (non fanno luce da sole). `panchine` semplici: una panca sotto una tettoia, senza la cupola di vetro.
+// `casetta`: gli spogliatoi di un campo di paese, dietro la linea laterale lontana; `dietro` sono i metri dalla linea,
+// `colmo` quanto sale il tetto a due falde.
 // `fari`: pali bassi agli angoli, torri agli angoli oppure file di proiettori sul bordo del tetto. `y` è l'altezza, `fuori`
 // i metri oltre la bandierina (in diagonale), `bordo` i metri del bordo del tetto dalla linea laterale. `griglia`: in
 // quante colonne e righe le sbarre dividono il pannello dei proiettori. `traliccio`: lato della torre a terra e in cima,
@@ -164,13 +168,16 @@ export const STADI = {
     paese: {
       posti: 1500, folla: 1500, muro: 1.1,
       lati: {
-        lontano: { lungo: 64, anelli: [{ file: 9, alt: .45, prof: .85 }], tetto: { y: 8.4, sporge: 1, spessore: .3, trave: 8 } },
+        lontano: { lungo: 64, anelli: [{ file: 9, alt: .45, prof: .85 }], tetto: { y: 8.4, sporge: 1, spessore: .3, trave: 8, sale: .9, luci: 1 } },
         vicino: { lungo: 88, anelli: [{ file: 4, alt: .4, prof: .85 }] },
         destra: { lungo: 56, anelli: [{ file: 3, alt: .4, prof: .85 }] },
         sinistra: { lungo: 56, anelli: [{ file: 3, alt: .4, prof: .85 }] },
       },
       fari: { tipo: 'pali', y: 15, fuori: 5, largo: 3.2 },
-      luce: { hemi: 1.5, fari: 1.05, colore: 0xffe9c8, tribune: 0x55534d, tetto: 0 },
+      esterno: { fascia: .8, porte: 32, porta: [2.2, 2.3] },
+      cartelloni: { tavole: 8, giorno: .92, notte: .5 }, panchine: 'semplici',
+      casetta: { x: -47, dietro: 12, largo: 13, prof: 7, alto: 3.2, colmo: 1.8 },
+      luce: { hemi: 1.5, fari: 1.05, colore: 0xffe9c8, tribune: 0x77736a, tetto: .2 },
       alberi: { quanti: 90, alti: [6, 11] },
       fuori: { terreno: 'prato', margine: 10, strade: 1, parcheggi: 1, parcheggio: [40, 26], pieno: .45, lampioni: 46, palo: 7, colline: 3 },
       alto: [0, 62, 78, 0, 0, -4, 55],

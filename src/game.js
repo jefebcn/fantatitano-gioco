@@ -105,7 +105,7 @@ async function buildPitch() {
   PORTE = [-1, 1].map((d) => new Porta(T, scene, { d, gx: d * HL, GH, GT }));
   BANDIERINE = new Bandierine(T, scene, { HL, HW });
 }
-let RESA = null, PORTE = [], BANDIERINE = null, FARI = null, DINTORNI = null, TERRENO = null, CAMPO = null, SFONDO = null, ATMO = null, SPALTI = null, BORDO = null;
+let RESA = null, PORTE = [], BANDIERINE = null, FARI = null, PANCHINE = null, DINTORNI = null, TERRENO = null, CAMPO = null, SFONDO = null, ATMO = null, SPALTI = null, BORDO = null;
 const PART = new Particelle(T, scene); // ciuffi d'erba e polvere: scivolate, frenate, tiri forti
 
 let boards = [], standMat = null, titoSprite = null;
@@ -121,10 +121,12 @@ function tipoStadio() {
 /** Costruisce lo stadio del tipo chiesto al posto di quello che c'è (niente da fare se è già quello). */
 function alzaStadio(tipo) {
   if (!STADI.tipi[tipo]) tipo = STADI.senza; if (tipo === STADIO) return;
-  if (SPALTI) SPALTI.togli(); if (FARI) FARI.togli(); if (DINTORNI) DINTORNI.togli();
+  if (SPALTI) SPALTI.togli(); if (FARI) FARI.togli(); if (DINTORNI) DINTORNI.togli(); if (PANCHINE) PANCHINE.togli();
   STADIO = tipo; const ST = STADI.tipi[tipo];
   FARI = torriFaro(T, scene, { HL, HW, fari: ST.fari });
   SPALTI = creaSpalti(T, scene, { HL, HW, stadi: STADI, tipo, renderer, luce: FARI.materiale });
+  // panchine tecniche: con la cupola di vetro, o una panca sotto una tettoia nel campo di paese
+  PANCHINE = panchine(T, scene, { HW, semplici: ST.panchine === 'semplici' });
   // fuori dallo stadio: terreno, strade, parcheggi, lampioni, città (src/grafica/dintorni.js), con numeri sempre uguali
   let seme = 20261124; const casuale = () => ((seme = (seme * 1664525 + 1013904223) >>> 0) / 4294967296);
   DINTORNI = creaDintorni(T, scene, { terreno: TERRENO, fuori: ST.fuori, ingombro: SPALTI.ingombro, casuale });
@@ -133,7 +135,13 @@ function alzaStadio(tipo) {
   TIFO.partita = ''; SPALTI.dettaglio(QUAL.livello < 1);
 }
 // di notte: il tetto illuminato da sotto, i lampioni e le finestre della città
-const LUCI_STADIO = { illumina(notte) { SPALTI.illumina(notte); DINTORNI.illumina(notte); } };
+const LUCI_STADIO = {
+  illumina(notte) {
+    SPALTI.illumina(notte); DINTORNI.illumina(notte);
+    // i cartelloni dipinti non fanno luce: di giorno un po' meno vivi dei LED, di notte in penombra
+    const C = STADI.tipi[STADIO].cartelloni; if (C) for (const b of boards) b.material.color.setScalar(notte ? C.notte : C.giorno);
+  },
+};
 function buildStadium() {
   // spalti, tetti, fari e dintorni del tipo di stadio (vedi alzaStadio), poi steward e fotografi a bordo campo (src/grafica/bordocampo.js)
   alzaStadio(tipoStadio()); BORDO = creaBordoCampo(T, scene, { HL, HW });
@@ -150,7 +158,6 @@ function buildStadium() {
   };
   board(HL * 2 + 8, 0, -(HW + 4.2), 0); board(HL * 2 + 8, 0, HW + 4.2, Math.PI);
   board(HW * 2 + 8, HL + 5.2, 0, -Math.PI / 2); board(HW * 2 + 8, -(HL + 5.2), 0, Math.PI / 2);
-  panchine(T, scene, { HW }); // panchine tecniche
   // Monte Titano con le tre torri, sullo sfondo
   const sh = new T.Shape(); const pts = [[-130, 0], [-110, 8], [-84, 20], [-62, 34], [-52, 44], [-47, 44], [-47, 52], [-41, 52], [-41, 45], [-24, 40], [-8, 48], [-3, 56], [-3, 66], [3, 66], [3, 57], [12, 50], [30, 38], [44, 41], [50, 46], [50, 53], [55, 53], [55, 45], [70, 30], [92, 16], [112, 7], [130, 0]];
   sh.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) sh.lineTo(p[0], p[1]);
@@ -169,8 +176,33 @@ function buildStadium() {
   const orizzonte = new T.Mesh(new T.CylinderGeometry(330, 330, 46, 48, 1, true), om); orizzonte.position.y = 18; orizzonte.renderOrder = -1;
   orizzonte.onBeforeRender = () => om.color.copy(SFONDO.color); scene.add(orizzonte);
 }
+// Cartelloni dipinti di un campo di paese (STADI.tipi.*.cartelloni): tavole ferme una accanto all'altra, ognuna col suo
+// fondo e la sua scritta a pennello, un po' segnate dal tempo. Niente LED: non scorrono e al gol non cambiano
+function dipingiCartelloni(home, away, imgs, C) {
+  const x = boards.ctx, c = boards.cv, fitta = c.height / 64, larga = 2048 / C.tavole; x.setTransform(fitta, 0, 0, fitta, 0, 0);
+  const fondi = ['#f3efe2', '#e9c93a', '#f3efe2', '#2c5596', '#f3efe2', '#b8382e', '#f3efe2', '#2e7a4c'], chiaro = (f) => f === '#f3efe2' || f === '#e9c93a';
+  const scritte = ['FANTATITANO', (home.name || '').toUpperCase(), 'CALCIO SAMMARINESE', 'FANTATITANO.SITE', 'SAN MARINO', (away.name || '').toUpperCase(), 'MONTE TITANO', `FORZA ${(home.short || home.name || '').toUpperCase()}`];
+  x.fillStyle = '#15171a'; x.fillRect(0, 0, 2048, 64);
+  for (let i = 0; i < C.tavole; i++) {
+    const o = i * larga, f = fondi[i % fondi.length], msg = scritte[i % scritte.length];
+    x.fillStyle = f; x.fillRect(o + 3, 3, larga - 6, 58);
+    x.strokeStyle = chiaro(f) ? '#23262b' : '#f3efe2'; x.lineWidth = 2; x.strokeRect(o + 8, 8, larga - 16, 48);
+    // lo stemma solo sulle tavole delle due squadre, a sinistra della scritta
+    const cr = imgs && (i % scritte.length === 1 ? imgs[home.id] : i % scritte.length === 5 ? imgs[away.id] : null), posto = cr ? 44 : 0;
+    if (cr) x.drawImage(cr, o + 16, 13, 38 * cr.width / cr.height, 38);
+    x.fillStyle = chiaro(f) ? '#1b1e23' : '#f3efe2'; x.textBaseline = 'middle'; x.textAlign = 'center';
+    let fs = 34; do { x.font = `${fs}px Anton`; fs -= 2; } while (x.measureText(msg).width > larga - 40 - posto && fs > 14);
+    x.fillText(msg, o + larga / 2 + posto / 2, 34);
+    // colature e sporco: righe chiare e scure appena visibili, sempre le stesse
+    for (let k = 0; k < 5; k++) { x.fillStyle = k % 2 ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.08)'; x.fillRect(o + 10 + (i * 53 + k * 47) % (larga - 24), 4, 2 + (k * 3) % 4, 56); }
+  }
+  x.setTransform(1, 0, 0, 1, 0, 0);
+  for (const b of boards) { b.material.map.offset.x = 0; b.material.map.needsUpdate = true; }
+}
 function paintBoards(home, away, imgs) {
   const x = boards.ctx, c = boards.cv; if (!x) return;
+  const dipinti = STADIO && STADI.tipi[STADIO].cartelloni; boards.fissi = !!dipinti;
+  if (dipinti) { dipingiCartelloni(home, away, imgs, dipinti); return; }
   // le misure qui sotto sono quelle di una striscia di 2048 × 64: la tela vera può essere più fitta
   const fitta = c.height / 64; x.setTransform(fitta, 0, 0, fitta, 0, 0);
   x.fillStyle = '#0A0A0C'; x.fillRect(0, 0, 2048, 64);
@@ -2681,7 +2713,7 @@ function disegna(dt) {
   }
   if (dt > 0) { // rete, bandierine e particelle
     for (const p of PORTE) p.muovi(dt, G.ball);
-    if (G.state !== 'goal' && G.state !== 'menu' && !REGIA.figure()) { const k = G.t * LED.scorre; for (const bo of boards) bo.material.map.offset.x = k; } // cartelloni LED: scorrono piano di continuo (Fantatitano, Tito, sponsor)
+    if (G.state !== 'goal' && G.state !== 'menu' && !REGIA.figure() && !boards.fissi) { const k = G.t * LED.scorre; for (const bo of boards) bo.material.map.offset.x = k; } // cartelloni LED: scorrono piano di continuo (Fantatitano, Tito, sponsor)
     if (BANDIERINE && G.ball) BANDIERINE.muovi(dt, [{ x: G.ball.x, z: G.ball.z, vx: G.ball.vx, vz: G.ball.vz, alto: G.ball.y }, ...all().map((p) => ({ x: p.x, z: p.z, vx: p.vx, vz: p.vz, alto: 0 }))]);
     PART.muovi(dt); if (SPALTI) folla(dt); if (BORDO && G.ball) BORDO.muovi(dt, G.ball.x, G.ball.z); rilievoDivise();
   }
