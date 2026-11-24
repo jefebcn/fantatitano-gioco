@@ -158,6 +158,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 ## Risposte di Alex del 24/11 e nuovo video (riprese-30s)
 - Tasti in difesa: A «Scivolata», B pressing e contrasto in piedi, C cambia giocatore. FATTO (vedi punto 13 qui sopra).
 - Passaggi: restano così, se ne riparla dopo averci giocato.
+- Lanci lunghi: FATTO. La telecamera sale col pallone in volo, che resta sotto `CAMERA.cielo` (altezza dello schermo).
+- Alone bianco sul bordo sinistro: FATTO. Erano ancora i riflessi dei quattro faretti d'angolo sull'erba: ora sono
+  spenti (`NOTTURNA.faretti` a 0); la luce dall'alto resta uguale.
 - Icone in alto a destra: FATTO. Resta solo la maglia, a ogni palla ferma: mette in pausa e apre le sostituzioni; «Fatto»
   porta alla pausa, dove si cambia il modulo. Mano e mirino tolti finché Alex non dice cosa devono fare.
 
