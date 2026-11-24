@@ -196,6 +196,12 @@ export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco
 // quanti metri si ripete la texture (più piccola, più nitida). `maglia`: il lato in metri dei riquadri di cui è fatto il
 // prato (triangoli piccoli: nessuno sparisce quando la telecamera è vicina a un angolo).
 export const PRATO = { tinta: [.8, 1.04, .7], strisce: [.74, 1.18], rilievo: .8, piastrella: 3, maglia: 6 };
+// La notturna (Alex, 23/11: alone biancastro e cunei chiari sul campo). `fasci`: quanto si vedono i fasci di luce dei
+// fari e che parte della strada verso il campo percorrono prima di spegnersi (restano in aria, vicino al tetto: sopra il
+// prato niente). `hemi`: la luce diffusa che schiarisce giocatori e prato anche dove i fari arrivano meno.
+// `faretti`: la forza dei quattro faretti d'angolo, che danno i riflessi su erba e linee. A 1 lasciavano grandi chiazze
+// biancastre sul prato: ora sono deboli e la luce la dà quella dall'alto, uguale su tutto il campo (`sole`).
+export const NOTTURNA = { fasci: [.1, .3], hemi: .45, sole: 1.25, faretti: .35 };
 export const LOD = { vicino: 22, lontano: 62 };
 // Cartelloni LED a bordo campo: scorrono piano di continuo (frazione di tutta la striscia al secondo: 4 pannelli)
 export const LED = { scorre: .02 };
