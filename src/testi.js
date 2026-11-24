@@ -55,9 +55,7 @@ export const TESTI = {
     /* ---------- in partita: tabellone, tasti, striscioni */
     'hud.piuDifensiva': 'Più difensiva',
     'hud.piuOffensiva': 'Più offensiva',
-    'hud.portiere': 'Portiere',
-    'hud.maglia': 'Maglia',
-    'hud.pallone': 'Pallone',
+    'hud.maglia': 'Cambi e formazione',
     'hud.audio': 'Audio',
     'hud.replay': 'Replay',
     'hud.pausa': 'Pausa',
