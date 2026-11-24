@@ -161,6 +161,13 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Cronometro: FATTO per il calcio d'inizio dei due tempi (fermo a 00:00 e a 45:00 finché non si batte:
   `G.inizioTempo` in `src/game.js`, controllato da `scripts/prove/riprese.cjs`). Sulle altre riprese va ancora, più
   piano (`RITMO.fermo`): chiesto ad Alex se fermarlo anche lì.
+- Calcio d'angolo e rimessa laterale: FATTO. Dissolvenza scura e stacco sul punto di battuta; a metà, a schermo nero,
+  ognuno viene messo al suo posto (`piazzaFermi` in `src/game.js`), poi si batte: comandi dopo 2 s (prima 10,5 s
+  sull'angolo e 5,2 s sulla rimessa), il computer dopo 3. La dissolvenza ora segue il tempo di gioco (`buio`), così il
+  nero coincide con lo spostamento anche se il telefono rallenta. `scripts/prove/riprese.cjs` controlla i 3 s e che
+  dopo lo stacco nessuno salti da un punto all'altro.
+  Da chiedere ad Alex: com'è inquadrato l'angolo in Dream League (oggi dal lato lontano la telecamera guarda al
+  contrario di quella di gioco, e la levetta risulta girata).
 - Lanci lunghi: FATTO. La telecamera sale col pallone in volo, che resta sotto `CAMERA.cielo` (altezza dello schermo).
 - Alone bianco sul bordo sinistro: FATTO. Erano ancora i riflessi dei quattro faretti d'angolo sull'erba: ora sono
   spenti (`NOTTURNA.faretti` a 0); la luce dall'alto resta uguale.

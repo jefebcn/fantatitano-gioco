@@ -173,8 +173,9 @@ export const SEGNI = { x: 1.1, alto: 1.6, cambio: .2, rosso: .8, scala: .12, gri
 export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: .15, chiude: 6, attesa: .18 };
 
 /* ---------------------------------------------------------------- palle ferme e sequenza del gol (come Dream League) */
-// Palle ferme: i comandi tornano `comandi` secondi dopo il fischio della rimessa laterale; la dissolvenza scura della rimessa
-// dura `buio` secondi (a metà la telecamera stacca sul punto di battuta). Una palla ferma che arriva entro `occasione` secondi
+// Palle ferme: su rimessa laterale e calcio d'angolo i comandi tornano `comandi` secondi dopo che il pallone è uscito; la
+// dissolvenza scura dello stacco dura `buio` secondi e a metà è scura `scuro` (1 = nero): in quell'istante la telecamera
+// stacca sul punto di battuta e ognuno viene messo al suo posto. Una palla ferma che arriva entro `occasione` secondi
 // da una grande occasione (parata, tiro deviato, palo, tiro fuori di poco: entro `fuori` metri dal palo) è preceduta dal
 // replay (RIVEDI). Sull'angolo un compagno si offre per batterlo corto, a `corto` = [metri dalla linea di fondo, metri dalla
 // linea laterale].
@@ -185,7 +186,7 @@ export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: 
 // chi è aspettato: chi batte, la barriera, chi ha un posto in area, gli avversari troppo vicini al pallone; chi batte scatta se è a più di `scatto` metri dal pallone); arrivato a `fermo` metri dal posto
 // resta dov'è. Chi ha un posto (barriera, area) viene aspettato al massimo `arrivo` secondi,
 // `rigore` sul rigore, poi si batte lo stesso. Il calcio d'inizio aspetta `inizio` secondi dal fischio prima dei comandi.
-export const FERMI = { comandi: 2, buio: .5, occasione: 4, fuori: 2.5, corto: [7, 7], cpu: 1, passo: [1.9, .6, 3.6], scatto: 12, fermo: .35, arrivo: 8, rigore: 10, inizio: 1.2 };
+export const FERMI = { comandi: 2, buio: .5, scuro: 1, occasione: 4, fuori: 2.5, corto: [7, 7], cpu: 1, passo: [1.9, .6, 3.6], scatto: 12, fermo: .35, arrivo: 8, rigore: 10, inizio: 1.2 };
 // Gol, in secondi veri dal pallone in rete: da `lento` per `durataLento` secondi un leggero rallentatore (a velocità `vel`),
 // con gli avversari fermi a disperarsi per `fermi` secondi e l'arbitro che indica il centro; a `stacco` la telecamera passa
 // al primo piano del marcatore: alta `camAlt` metri, a `camDist` metri da lui, con un difensore deluso in primo piano

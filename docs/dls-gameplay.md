@@ -229,14 +229,17 @@ dentro il bersaglio del portiere (uno ogni 4–5).
 
 ## 7. Palle ferme
 - Scritta sotto il tabellone col tipo («CALCIO D'ANGOLO», «RIMESSA LATERALE»…). Comandi nascosti, cronometro lento.
-- **Rimessa laterale**: breve dissolvenza scura, stacco della telecamera sul punto di battuta, comandi di nuovo visibili
-  dopo ~2 s.
+- **Rimessa laterale e calcio d'angolo**: breve dissolvenza scura, stacco della telecamera sul punto di battuta, comandi
+  di nuovo visibili dopo ~2 s (`FERMI.comandi`). A metà dello stacco, a schermo nero, ognuno viene messo al suo posto
+  (`piazzaFermi`): chi batte è già sul pallone, i saltatori in area. Richiesta di Alex del 24/11: prima sull'angolo si
+  aspettavano 10 s che i saltatori arrivassero camminando, sulla rimessa 5 s. Il computer batte dopo un altro secondo.
+  La dissolvenza segue il tempo di gioco (`buio()`): il nero coincide sempre con lo spostamento.
 - **Angolo dopo una grande occasione** (es. una parata): stacco col logo (~0,3 s: una fascia diagonale viola col logo
   Fantatitano attraversa lo schermo, e a metà corsa lo copre tutto), breve replay con il pulsante «REPLAY»
   in basso a destra per saltarlo, stacco col logo, poi l'inquadratura dell'angolo. Logo degli stacchi: Fantatitano.
   Vale per ogni palla ferma dopo una grande occasione (vedi «Replay automatico»).
-- Durante il calcio piazzato: tre icone in alto a destra (guanti, maglia, pallone): **segnaposto senza funzione**
-  (scelta provvisoria di Alex).
+- A palla ferma, in alto a destra, l'icona della **maglia**: pausa e sostituzioni, poi il modulo (risposta di Alex del
+  24/11; guanti e pallone tolti finché non dice cosa devono fare).
 - L'angolo si può battere corto con un passaggio rasoterra: un compagno si offre vicino alla bandierina (`FERMI.corto`).
 - **Nessuna ripresa parte da sola** (richiesta di Alex del 23/11, dal suo video): calcio d'inizio, punizione, fuorigioco,
   angolo, rimessa laterale, rimessa dal fondo, rigore. Il gioco si ferma, il pallone resta sul punto, ognuno va al suo posto
@@ -245,8 +248,11 @@ dentro il bersaglio del portiere (uno ogni 4–5).
   dal fondo il portiere aspetta Passa o Cross); se è del computer aspetta `FERMI.cpu` secondi (uno) e batte.
   Scelte provvisorie, da far vedere ad Alex: andatura verso il posto (`FERMI.passo`: al passo gli ultimi metri, di corsetta
   chi è aspettato, di corsa solo chi è lontano; chi batte scatta se è a più di 12 m); la rimessa dal fondo resta col
-  pallone in mano al portiere; le tre icone restano segnaposto (non sappiamo cosa fanno in Dream League).
-- Nel codice: `restart()` (scritta, dissolvenza, comandi), `corner()` (replay dopo la grande occasione), `hud()`,
+  pallone in mano al portiere.
+- **Cronometro**: fermo prima del calcio d'inizio di ogni tempo (00:00 e 45:00); sulle altre riprese va piano
+  (`RITMO.fermo`), da decidere con Alex se fermarlo.
+- Nel codice: `restart()` (scritta, dissolvenza, comandi), `piazzaFermi()` e `buio()` (lo stacco di rimessa e angolo),
+  `corner()` (replay dopo la grande occasione), `hud()`,
   `aspetta()` e `attesaPasso()` (l'attesa), `postoFermo()` (dove va ciascuno), `batti…()` (come batte il computer).
   Prova: `scripts/prove/riprese.cjs`.
 

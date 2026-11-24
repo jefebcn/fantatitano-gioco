@@ -4,7 +4,9 @@
    - se batte chi gioca, dopo 12 secondi senza toccare niente è ancora lì e gli altri sono fermi; col tasto parte subito;
    - se batte il computer, parte dopo l'attesa (FERMI.cpu) e non prima;
    - nessuno scatta mentre va al suo posto (andatura di FERMI.passo, con un metro al secondo di margine);
-   - prima del calcio d'inizio di un tempo il cronometro resta fermo.
+   - prima del calcio d'inizio di un tempo il cronometro resta fermo;
+   - calcio d'angolo e rimessa laterale si possono battere entro 3 secondi (i giocatori vengono messi a posto durante lo
+     stacco), e dopo lo stacco nessuno viene più spostato di colpo.
    Uso: npm run build && node scripts/prove/riprese.cjs (serve Playwright, come partita.cjs). */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
@@ -41,7 +43,7 @@ srv.listen(0, async () => {
       rigore: (t) => g.penalty(t),
     };
     // entro quanti secondi si deve poter battere (solo dove nessuno ha strada da fare)
-    const entro = { 'punizione, avversario sul limite della distanza': 5 };
+    const entro = { 'punizione, avversario sul limite della distanza': 5, 'calcio d\'angolo': 3, 'rimessa laterale': 3 };
     let k = 0;
     for (const nome of Object.keys(riprese)) for (const chi of ['utente', 'computer']) {
       let sd = 31 + k++; Math.random = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
@@ -55,7 +57,10 @@ srv.listen(0, async () => {
       const orologio = G.clock, b = G.ball, mani = nome === 'rimessa laterale' || nome === 'rimessa dal fondo';
       let pronto = null, battuto = null, punto = null, scatto = 0, mosso = 0, n = 0;
       const passo = () => {
+        const prima = tutti().map((p) => [p.x, p.z]);
         g.step(dt); g.draw(dt); n++;
+        // dopo lo stacco (o da subito, dove non c'è) nessuno salta da un punto all'altro: al massimo mezzo metro per passo
+        if (battuto === null && n * dt > g.FERMI.buio) tutti().forEach((p, i) => { const d = hyp(p.x - prima[i][0], p.z - prima[i][1]); if (d > .5 && !e.salto) { e.salto = true; e.male.push(`${p.name} spostato di colpo di ${d.toFixed(1)} m dopo ${(n * dt).toFixed(1)} s`); } });
         if (pronto === null && G.attesa) { pronto = n * dt; punto = [b.x, b.z]; }
         // battuto: il pallone ha lasciato chi batte
         if (pronto !== null && battuto === null && !G.attesa) battuto = n * dt;
