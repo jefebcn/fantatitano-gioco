@@ -31,7 +31,7 @@ export function creaAtmosfera(T, { scene, hemi, sun, sole, fari, sfondo, campo, 
     hemi.color.set(o.hemi[0]); hemi.groundColor.set(o.hemi[1]); hemi.intensity = o.hemi[2];
     sun.color.set(o.sole[0]); sun.intensity = o.sole[1]; sole.set(o.dir[0], o.dir[1], o.dir[2]); sun.shadow.radius = o.morbide;
     fari.materiale.emissiveIntensity = o.fari;
-    const n = ora === 'notte'; for (const f of notte.fasci) f.visible = n; for (const s of notte.aloni) s.visible = n; for (const sp of notte.faretti) { sp.intensity = o.faretti; sp.visible = n; } // di giorno i faretti sono spenti del tutto: non costano niente
+    const n = ora === 'notte'; for (const f of notte.fasci) f.visible = n; for (const s of notte.aloni) s.visible = n; for (const sp of notte.faretti) { sp.intensity = o.faretti; sp.visible = n && o.faretti > 0; } // spenti (di giorno, o a forza zero) non costano niente
     if (sfondo) sfondo.color.set(o.sfondo);
     for (const m of tribune) m.color.set(o.tribune); // di notte il pubblico resta in penombra, il campo sotto i fari
     // di notte i cartelloni LED sono un po' meno accesi: sotto la soglia dell'alone, che sulle scritte piccole sfarfalla

@@ -112,7 +112,7 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - 1, 2, 3 FATTI insieme (stessa regola, stesso meccanismo): nessuna ripresa parte da sola. `G.attesa`, `aspetta`,
   `attesaPasso`, `postoFermo` in `src/game.js`; valori in `FERMI`; prova `scripts/prove/riprese.cjs` (anche in CI).
   32 partite, semi 7–38: 0 anomalie, tiri e gol dentro il rumore. Dettagli in `docs/dls-gameplay.md` §7.
-- Da chiedere ad Alex: cosa fanno le tre icone in alto a destra; se sulla rimessa dal fondo il pallone va a terra.
+- Da chiedere ad Alex: se sulla rimessa dal fondo il pallone va a terra.
 - 4 FATTO: pallone disegnato fino a 1,7 volte più grande quando la telecamera è lontana (vero nei primi piani), più
   chiaro, ombra a disco scuro dal bordo netto (`PALLA_VISTA`, `mettiPalla` in `src/game.js`, usata anche dal replay).
   Solo grafica: partite identiche.
@@ -158,6 +158,11 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 ## Risposte di Alex del 24/11 e nuovo video (riprese-30s)
 - Tasti in difesa: A «Scivolata», B pressing e contrasto in piedi, C cambia giocatore. FATTO (vedi punto 13 qui sopra).
 - Passaggi: restano così, se ne riparla dopo averci giocato.
+- Lanci lunghi: FATTO. La telecamera sale col pallone in volo, che resta sotto `CAMERA.cielo` (altezza dello schermo).
+- Alone bianco sul bordo sinistro: FATTO. Erano ancora i riflessi dei quattro faretti d'angolo sull'erba: ora sono
+  spenti (`NOTTURNA.faretti` a 0); la luce dall'alto resta uguale.
+- Icone in alto a destra: FATTO. Resta solo la maglia, a ogni palla ferma: mette in pausa e apre le sostituzioni; «Fatto»
+  porta alla pausa, dove si cambia il modulo. Mano e mirino tolti finché Alex non dice cosa devono fare.
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato

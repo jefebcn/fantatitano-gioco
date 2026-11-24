@@ -2522,6 +2522,9 @@ function updateCamera(dt) {
     const lontano = (f) => C.alto / Math.tan(C.inclina * Math.PI / 180 - Math.atan((1 - 2 * f) * Math.tan(fov * Math.PI / 360))), fzc = clamp(fz, -HW, HW);
     pz = Math.min(clamp(tz + C.dietro, fzc + lontano(C.fascia[1]), fzc + lontano(C.fascia[0])), C.zMax);
     px = tx; py = C.alto; lx = tx; lz = pz - C.dietro;
+    // Pallone in volo (lanci lunghi, rinvii, campanili): la telecamera sale quanto basta perché non superi l'altezza
+    // dello schermo CAMERA.cielo. Inclinazione e distanza non cambiano, quindi il campo scende appena nello schermo.
+    if (b && b.y > BR) py = clamp(b.y + (pz - fzc) * Math.tan(C.inclina * Math.PI / 180 - Math.atan((1 - 2 * C.cielo) * Math.tan(fov * Math.PI / 360))), C.alto, C.alto + C.sale);
   }
   // movimento morbido: una molla smorzata al punto giusto, senza scatti né oscillazioni, più lenta nel menu. In gioco è il
   // leggero ritardo con cui l'inquadratura segue il pallone
@@ -2603,12 +2606,12 @@ function hud() {
   const att = modoAttacco();
   if (att !== lastAtt) { lastAtt = att; $('#bA textPath').textContent = tr(att ? 'tasti.calcioBasso' : 'tasti.pressing'); $('#bB textPath').textContent = tr(att ? 'tasti.calcioForte' : 'tasti.scivolata'); $('#bD textPath').textContent = tr(att ? 'tasti.calcioAlto' : 'tasti.cambia'); $('#bD .nome').style.fontSize = att ? '' : '9.5px'; $('#hud').classList.toggle('difesa', !att); }
   if (G.ctrl) $('#en').firstElementChild.style.width = `${G.ctrl.en * 100}%`;
-  // palle ferme: la scritta col tipo sotto il tabellone, comandi nascosti (tornano quando si può battere). Sui calci piazzati le
-  // tre icone in alto a destra (per ora solo lo spazio)
+  // palle ferme: la scritta col tipo sotto il tabellone, comandi nascosti (tornano quando si può battere) e, in alto a
+  // destra, l'icona della maglia: apre cambi e formazione
   // `batte`: tocca a chi gioca battere, e i comandi tornano (la scritta e le icone restano finché non calcia)
   const a = G.attesa, fermo = (G.state === 'restart' || (!!a && !a.fermi)) && !G.so, tipo = fermo ? G.tipoFermo || '' : '', batte = !!a && a.chi.team.human && !G.auto;
   if (tipo !== lastTipo) { lastTipo = tipo; $('#tipo').textContent = tipo; }
-  const hh = $('#hud'); hh.classList.toggle('fermo', fermo); hh.classList.toggle('batte', fermo && batte); hh.classList.toggle('piazzato', fermo && !!G.fk);
+  const hh = $('#hud'); hh.classList.toggle('fermo', fermo); hh.classList.toggle('batte', fermo && batte);
 }
 const radar = $('#radar'), rx = radar.getContext('2d');
 // Minimappa come Dream League: sfondo semitrasparente, i giocatori come piccole maglie nei colori della propria divisa
@@ -2690,6 +2693,8 @@ function comandiPartita() {
   // in campo: le frecce ai lati del riquadro sotto la minimappa cambiano mentalità
   for (const f of document.querySelectorAll('#ment button')) f.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); sel.ment = clamp(sel.ment + +f.dataset.d, -1, 1); tactics(); });
   $('#replay').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); }); // pulsante replay in alto a destra: per ora solo segnaposto
+  // l'icona della maglia a palla ferma: pausa e subito le sostituzioni; da lì «Fatto» porta alla pausa, dove c'è il modulo
+  $('#icoMaglia').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); pause(true); if (G.paused && !$('#apriCambi').classList.contains('nas')) $('#apriCambi').onclick(); });
   $('#apriCambi').onclick = () => { cOut = null; cIn = -1; drawCambi(); show('#cambi'); }; $('#cambiOk').onclick = () => show('#stop'); $('#cambiL').addEventListener('click', tapCambi);
   $('#pausa').onclick = () => pause(true); $('#riprendi').onclick = () => pause(false);
   $('#esci').onclick = () => { G.paused = false; const fine = chiudiPonte(false); toMenu(); if (fine) fine(); };

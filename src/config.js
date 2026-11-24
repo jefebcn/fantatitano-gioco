@@ -117,9 +117,11 @@ export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['I
 // linea di fondo a cui si ferma, zMax fin dove arriva verso la tribuna vicina (oltre ci entrerebbe)
 // fascia: il pallone resta sempre tra queste due altezze dello schermo (0 in alto, 1 in basso). Se seguendolo al 45% ne
 // uscirebbe (verso la linea laterale lontana finiva sotto il tabellone), la telecamera lo segue per intero in profondità.
+// cielo: un pallone in volo non sale oltre questa altezza dello schermo (0 in alto): la telecamera si alza con lui, al
+// massimo di `sale` metri. Prima, sui lanci lunghi, usciva dallo schermo in alto.
 // spalle: oltre questi metri dalla linea laterale vicina la telecamera è sopra la tribuna, che allora non si disegna (le
 // prime file spuntavano in basso e coprivano gioco e comandi). A 16 m la tribuna è ancora tutta fuori dallo schermo.
-export const CAMERA = { alto: 12.5, dietro: 36.8, inclina: 21.75, fovOriz: 58.7, seguiX: 1, seguiZ: .45, molla: 6, bordoX: 16, zMax: 56, fascia: [.3, .7], spalle: 16 };
+export const CAMERA = { alto: 12.5, dietro: 36.8, inclina: 21.75, fovOriz: 58.7, seguiX: 1, seguiZ: .45, molla: 6, bordoX: 16, zMax: 56, fascia: [.3, .7], spalle: 16, cielo: .16, sale: 10 };
 // Vista dall'alto di tutto lo stadio, solo per controlli: si accende con ?alto nell'indirizzo. [x, y, z della telecamera,
 // x, y, z del punto guardato, FOV verticale]
 export const CAMERA_ALTO = [0, 95, 40, 0, 0, 0, 55];
@@ -204,10 +206,11 @@ export const PRATO = { tinta: [.8, 1.04, .7], strisce: [.74, 1.18], rilievo: .8,
 // fari e che parte della strada verso il campo percorrono prima di spegnersi (restano in aria, vicino al tetto: sopra il
 // prato niente). `hemi`: la luce diffusa che schiarisce giocatori e prato anche dove i fari arrivano meno.
 // `faretti`: la forza dei quattro faretti d'angolo, che danno i riflessi su erba e linee. A 1 lasciavano grandi chiazze
-// biancastre sul prato: ora sono deboli e la luce la dà quella dall'alto, uguale su tutto il campo (`sole`). `croce`: le
+// biancastre sul prato, e anche a 0,35 restava un alone ai bordi dello schermo: ora sono spenti (0) e la luce la dà
+// quella dall'alto, uguale su tutto il campo (`sole`). `croce`: le
 // quattro ombre leggere che ogni persona ha sotto i fari, una per torre: quanto sono scure, larghe (m) e lunghe (da, a).
 // `cartelloni`: quanto sono accesi i cartelloni LED di notte. Con 1 sono come di giorno, sotto 0,78 non fanno alone.
-export const NOTTURNA = { fasci: [.1, .3], hemi: .45, sole: 1.25, faretti: .35, croce: { forza: .24, largo: .7, lungo: [1.3, 2.8] }, cartelloni: .72 };
+export const NOTTURNA = { fasci: [.1, .3], hemi: .45, sole: 1.25, faretti: 0, croce: { forza: .24, largo: .7, lungo: [1.3, 2.8] }, cartelloni: .72 };
 export const LOD = { vicino: 22, lontano: 62 };
 // Le divise in campo (pickKits in src/game.js). `soglia`: quanto devono essere lontane le due maglie perché gli ospiti
 // tengano quella divisa (se no provano la seconda, poi bianca, scura e le terze). `simile`: sotto questa distanza due
