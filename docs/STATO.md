@@ -53,7 +53,8 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   22 m: in partita in media 2,15 giocatori per fotogramma, al massimo 18 nelle inquadrature strette), capelli a 1.500,
   parastinchi sotto il calzettone (`VOLUME.parastinchi`), due nastri sui calzettoni (`MISURE.nastri`). Texture sempre 1024.
   Partite (semi 7 e 15, 8+8): 0 anomalie, gol e tiri uguali come media; non più identiche perché il modello nuovo ha il punto
-  più basso diverso e il gioco lo riscala dello 0,1%. Foto: `docs/calciatore/19-21`. Ancora da fare: capelli ricci
+  più basso diverso e il gioco lo riscala dello 0,1%. Rifatte sopra main dopo il merge (seme 7, 8): gol 2,75 → 2,38, tiri
+  8,12 → 8,50, 0 anomalie prima e dopo. Foto: `docs/calciatore/19-21`. Ancora da fare: capelli ricci
   sfaccettati da vicino, parastinchi poco visibili di fronte, fps su iPhone con `?debug`.
 
 ## Fase 4 (verifica delle sezioni 2-6 del prompt del 21/11) — FATTO
