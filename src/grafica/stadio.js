@@ -171,17 +171,30 @@ export class Bandierine {
 /* ---------------------------------------------------------------- bordo campo */
 
 /** Panchine tecniche (due, sul lato lontano dalla telecamera), con tettoia trasparente e sedute. */
-export function panchine(T, scene, { HW, colore = 0x4B06FC }) {
+export function panchine(T, scene, { HW, colore = 0x4B06FC, semplici = false }) {
   const vetro = new T.MeshStandardMaterial({ color: 0xcfe3ff, transparent: true, opacity: 0.32, roughness: 0.1, metalness: 0.1, side: T.DoubleSide });
   const telaio = new T.MeshStandardMaterial({ color: 0x1b1f2e, roughness: 0.5, metalness: 0.4 }), sedile = new T.MeshStandardMaterial({ color: colore, roughness: 0.6 });
+  const gruppi = [];
   for (const x of [-9, 9]) {
-    const g = new T.Group(); g.position.set(x, 0, -(HW + 2.4)); scene.add(g);
-    const tetto = new T.Mesh(new T.CylinderGeometry(1.25, 1.25, 7, 18, 1, true, -Math.PI / 2, Math.PI), vetro); tetto.rotation.z = Math.PI / 2; tetto.position.y = 1.1; tetto.scale.set(1, 1, 1); g.add(tetto);
+    const g = new T.Group(); g.position.set(x, 0, -(HW + 2.4)); scene.add(g); gruppi.push(g);
     const base = new T.Mesh(new T.BoxGeometry(7, 0.12, 2.4), telaio); base.position.y = 0.06; g.add(base);
-    for (let i = 0; i < 7; i++) { const s = new T.Mesh(new T.BoxGeometry(0.75, 0.5, 0.55), sedile); s.position.set(-3 + i, 0.37, -0.45); s.castShadow = true; g.add(s); }
-    for (const e of [-1, 1]) { const f = new T.Mesh(new T.BoxGeometry(0.08, 2.3, 2.4), telaio); f.position.set(e * 3.5, 1.15, 0); g.add(f); }
+    if (semplici) {
+      // campo di paese: una panca lunga con lo schienale, sotto una tettoia di lamiera su quattro paletti
+      const panca = new T.Mesh(new T.BoxGeometry(6.4, 0.1, 0.5), sedile); panca.position.set(0, 0.5, -0.45); panca.castShadow = true; g.add(panca);
+      const schiena = new T.Mesh(new T.BoxGeometry(6.4, 0.5, 0.08), sedile); schiena.position.set(0, 0.9, -0.72); g.add(schiena);
+      const tettoia = new T.Mesh(new T.BoxGeometry(7.2, 0.08, 2.2), telaio); tettoia.position.set(0, 2.15, -0.2); tettoia.rotation.x = 0.12; g.add(tettoia);
+      const dietro = new T.Mesh(new T.BoxGeometry(7, 2, 0.06), telaio); dietro.position.set(0, 1.1, -1.15); g.add(dietro);
+      for (const e of [-1, 1]) for (const d of [-1, 1]) { const pal = new T.Mesh(new T.BoxGeometry(0.08, 2.1, 0.08), telaio); pal.position.set(e * 3.45, 1.05, d * 0.95 - 0.15); g.add(pal); }
+    } else {
+      const tetto = new T.Mesh(new T.CylinderGeometry(1.25, 1.25, 7, 18, 1, true, -Math.PI / 2, Math.PI), vetro); tetto.rotation.z = Math.PI / 2; tetto.position.y = 1.1; tetto.scale.set(1, 1, 1); g.add(tetto);
+      for (let i = 0; i < 7; i++) { const s = new T.Mesh(new T.BoxGeometry(0.75, 0.5, 0.55), sedile); s.position.set(-3 + i, 0.37, -0.45); s.castShadow = true; g.add(s); }
+      for (const e of [-1, 1]) { const f = new T.Mesh(new T.BoxGeometry(0.08, 2.3, 2.4), telaio); f.position.set(e * 3.5, 1.15, 0); g.add(f); }
+    }
     unisci(T, g, [telaio, sedile]);
   }
+  /** Toglie le panchine dalla scena: lo stadio della partita dopo può averle diverse. */
+  const togli = () => { for (const g of gruppi) { scene.remove(g); g.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); } vetro.dispose(); telaio.dispose(); sedile.dispose(); };
+  return { togli };
 }
 
 /**

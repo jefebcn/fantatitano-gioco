@@ -275,7 +275,8 @@ export function creaRegia(X) {
 
   /* ---------------------------------------------------------------- tabelloni */
   function tabelloniGol(nome, c1, ink) {
-    const x = boards.ctx, c = boards.cv; if (!x) return;
+    // i cartelloni dipinti di un campo di paese restano quelli che sono: niente scritta del gol
+    const x = boards.ctx, c = boards.cv; if (!x || boards.fissi) return;
     // misure di una striscia di 2048 × 64, come in paintBoards: la tela vera può essere più fitta
     const fitta = c.height / 64; x.setTransform(fitta, 0, 0, fitta, 0, 0);
     for (let i = 0; i < 4; i++) {
@@ -424,7 +425,7 @@ export function creaRegia(X) {
       }
 
       // --- sequenza del gol
-      for (const b of boards) b.material.map.offset.x += dt * .22;
+      if (!boards.fissi) for (const b of boards) b.material.map.offset.x += dt * .22;
       if (t >= S.c0) { hud.classList.add('cine'); $('#banner').classList.remove('su'); }
       golc.classList.toggle('su', inFesta() && t > S.c0 + .25 && t < Math.min(S.c1 - .2, S.c0 + .25 + GOLSEQ.riquadro));
       // «tocca per saltare» sta nello stesso punto della striscia del marcatore: compare quando quella se n'è andata

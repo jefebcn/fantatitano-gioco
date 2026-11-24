@@ -197,7 +197,7 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   `DIVISE.chiaro` (una chiara e una scura): gli ospiti passano alla seconda maglia, poi bianca o nera. Prima 147 coppie
   su 240 avevano maglie chiare quasi uguale (rosso contro blu, verde contro blu). `scripts/prove/divise.cjs` lo controlla.
 
-## Stadi per divisione (richiesta di Alex del 24/11): fatti grande e medio, manca il paese
+## Stadi per divisione (richiesta di Alex del 24/11): fatti tutti e tre; resta la presentazione dello stadio
 
 Tre stadi secondo la divisione di chi gioca in casa: **paese** (Esordienti, Borghi), **medio** (Contrade, Cadetta),
 **grande** (Sammarinese). Numeri in `STADI` (`src/config.js`); `src/grafica/spalti.js` costruisce i tre dagli stessi
@@ -205,8 +205,8 @@ pezzi (quattro lati, anelli di gradoni, tetto), `src/grafica/dintorni.js` quello
 `src/game.js` cambia stadio sotto la schermata delle due squadre. Prova: `?stadio=paese|medio|grande` nell'indirizzo,
 con `&alto` per la vista dall'alto e `&fps` per il contatore dei fotogrammi al secondo.
 
-- **La divisione non arriva ancora dalla home**: chiesta in `docs/ponte-partita.md` §11 (campo `stadio` nella
-  richiesta). Finché manca si gioca nel medio.
+- **La divisione arriva dalla home** (`docs/ponte-partita.md` §11.1, campo `stadio` nella richiesta): le squadre vere
+  giocano nel grande, le altre nello stadio della loro divisione. Senza il campo si gioca nel medio.
 - **Telecamera**: il muretto sta alla stessa distanza dalle linee in tutti e tre (`STADI.dist`) e il primo anello non è
   mai più ripido di prima, quindi le regole di `CAMERA.spalle` e `zMax` valgono uguali. Le tribune non sono state
   avvicinate: per farlo vanno spostati cartelloni e panchine e rifatta la misura dell'inquadratura.
@@ -235,7 +235,13 @@ con `&alto` per la vista dall'alto e `&fps` per il contatore dei fotogrammi al s
   chiamate e 265 mila triangoli, grande 169 e 345 mila, paese 139 e 157 mila; lo stadio unico di prima ne faceva 148
   e 432 mila.
 - **Notte**: in paese e medio la luce è stata alzata (`STADI.tipi.*.luce`) finché l'erba resta verde.
-- **Da fare**: il paese (cartelloni fissi dipinti al posto dei LED, che restano solo da medio in su). I riflessi dell'ambiente di notte (`src/grafica/resa.js`) usano ancora i fari
+- **Paese, dettagli fatti**: cartelloni dipinti e fermi (`cartelloni` in `STADI.tipi.paese`: tavole da otto metri con
+  fondo e scritta a pennello; non scorrono, al gol non cambiano, di notte restano in penombra), i LED solo da medio in
+  su; panchine semplici (panca sotto una tettoia); casetta degli spogliatoi col tetto di tegole; tetto della tribuna che
+  sale verso il campo coi colori di casa; tribune meno buie di notte. In vista di gioco 141 chiamate e 157 mila
+  triangoli.
+- **Da fare, in una PR a parte** (richiesta di Alex): presentazione dello stadio prima del calcio d'inizio, come in
+  Dream League (giro della telecamera di 5-6 s, saltabile con un tocco), e lo stadio visibile nei replay dei gol. I riflessi dell'ambiente di notte (`src/grafica/resa.js`) usano ancora i fari
   dello stadio costruito all'avvio.
 
 ## Prova di Alex su iPhone (21/11): punti in ordine

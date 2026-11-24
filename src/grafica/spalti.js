@@ -332,6 +332,21 @@ export function creaSpalti(T, scene, { HL, HW, stadi, tipo, renderer = null, luc
   }
   // dintorni di un campo di paese: alberi dietro le gradinate (mai dalla parte della telecamera di gioco, dove le
   // starebbero davanti) e qualche collina lontana
+  // la casetta degli spogliatoi: muri chiari, tetto a due falde di tegole, porta e due finestre verso il campo
+  if (ST.casetta) {
+    const C = ST.casetta, g = new T.Group(), L = C.largo / 2, P = C.prof / 2, su = C.alto + C.colmo; g.position.set(C.x, 0, -(HW + C.dietro + P)); radice.add(g);
+    const intonaco = new T.MeshLambertMaterial({ color: 0xe9e0c9 }), tegole = new T.MeshLambertMaterial({ color: 0x9a4b35 }), muri = facce(T), falde = facce(T);
+    const corpo = new T.Mesh(new T.BoxGeometry(C.largo, C.alto, C.prof), intonaco); corpo.position.y = C.alto / 2; g.add(corpo);
+    for (const e of [-1, 1]) {
+      // una falda per parte, che sporge di mezzo metro, e il triangolo di muro sotto il colmo ai due capi
+      falde.quad([-L - 0.5, C.alto - 0.15, e * (P + 0.5)], [L + 0.5, C.alto - 0.15, e * (P + 0.5)], [L + 0.5, su, 0], [-L - 0.5, su, 0], [0, 0.8, e * 0.6]);
+      muri.quad([e * L, C.alto, -P], [e * L, C.alto, P], [e * L, su - 0.15, 0], [e * L, su - 0.15, 0], [e, 0, 0]);
+    }
+    const tetto = new T.Mesh(falde.geo(), tegole); tetto.material.side = T.DoubleSide; g.add(tetto, new T.Mesh(muri.geo(), intonaco));
+    const porta = new T.Mesh(new T.BoxGeometry(1.2, 2.1, 0.1), fascia); porta.position.set(0, 1.05, P + 0.03); g.add(porta);
+    for (const e of [-1, 1]) { const fin = new T.Mesh(new T.BoxGeometry(1.4, 0.9, 0.1), fascia); fin.position.set(e * L * 0.55, C.alto * 0.62, P + 0.03); g.add(fin); }
+    unisci(T, g, [intonaco, fascia]);
+  }
   if (ST.alberi) {
     const Al = ST.alberi, verde = new T.MeshLambertMaterial({ color: 0x2f5a2a }), legno = new T.MeshLambertMaterial({ color: 0x5a4330 });
     const chiome = new T.InstancedMesh(new T.ConeGeometry(1, 1, 7), verde, Al.quanti), tronchi = new T.InstancedMesh(new T.CylinderGeometry(0.6, 0.8, 1, 6), legno, Al.quanti);
@@ -341,7 +356,8 @@ export function creaSpalti(T, scene, { HL, HW, stadi, tipo, renderer = null, luc
       for (let prova = 0; prova < 40; prova++) {
         x = (rand() * 2 - 1) * (HL + 60); z = -(HW + 70) + rand() * (2 * HW + 140);
         const aiLati = Math.abs(x) > HL + S.dist[1] + 9, oltre = z < -(HW + (Math.abs(x) < lontana.len / 2 + 4 ? dietroLontana : 11)), spalle = z > HW + 30;
-        if (aiLati || oltre || spalle) break;
+        const C = ST.casetta, sullaCasetta = C && Math.abs(x - C.x) < C.largo / 2 + 3 && Math.abs(z + HW + C.dietro + C.prof / 2) < C.prof / 2 + 3;
+        if ((aiLati || oltre || spalle) && !sullaCasetta) break;
       }
       const h = Al.alti[0] + rand() * (Al.alti[1] - Al.alti[0]);
       p.set(x, h * 0.6, z); sc.set(h * 0.32, h * 0.8, h * 0.32); m4.compose(p, q, sc); chiome.setMatrixAt(i, m4);
