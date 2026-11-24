@@ -354,3 +354,36 @@ ancora `SA_FARE` (§5) né un modo per far partire una richiesta con `tipo: 'all
 `SA_FARE.allenamenti`, la home accende le carte dei modi che trova lì e le fa partire con `ponte.avviaPartita` e
 `allenamento: { modo }`; a fine allenamento si torna alla schermata Allenamento, senza premi e senza toccare l'energia
 (§6, punto 5). Nessun file della partita è stato toccato.
+
+## 11. Nota per la sessione della home: lo stadio dipende dalla divisione di chi gioca in casa (24/11)
+
+Alex ha chiesto tre stadi diversi (`STADI` in `src/config.js`, in arrivo): **paese** per Lega Esordienti e Lega dei
+Borghi, **medio** per Lega delle Contrade e Serie Cadetta del Titano, **grande** per il Campionato Sammarinese. Lo
+stadio è quello della **squadra di casa**, cioè della prima di `squadre`: in trasferta si gioca nello stadio
+dell'avversario, quindi della sua divisione.
+
+Oggi nella richiesta la divisione non c'è (ho controllato `richiesta()` in `src/casa/vista-sfida.js`): la partita non
+può saperla, perché non legge la carriera e il club dell'utente non ha la divisione nell'`id`. Serve un campo nuovo
+nella richiesta, accanto a `ora` e `meteo`:
+
+```js
+stadio: {
+  divisione: 'contrade',   // l'id di DIVISIONI (src/config.js) della squadra di casa, cioè di squadre[0]
+  stelle: 3,               // da 0 a 5: le stelle dello Stadio della squadra di casa (facoltativo)
+},
+```
+
+- **`divisione`**: `'sammarinese'`, `'cadetta'`, `'contrade'`, `'borghi'` o `'esordienti'`. Se l'utente gioca in casa è
+  la divisione in cui gioca (`divisione(K).id`); se gioca in trasferta è quella dell'avversario (`div` delle squadre
+  inventate; le squadre vere sono `'sammarinese'`). Vale per tutti i tipi di partita: in coppa, nel Trofeo dei Castelli
+  e in amichevole è sempre la divisione di chi ospita.
+- **`stelle`**: quanto è curato e pieno lo stadio di casa. Se l'utente gioca in casa sono le stelle della sua struttura
+  Stadio (`K.strutture.stadio`); per una squadra del computer la sceglie la home (per esempio dalle sue stelle di
+  forza). Se manca, la partita fa come oggi: legge `K.stadio`. Le stelle non cambiano il tipo di stadio.
+- Finché `stadio.divisione` non arriva, la partita usa lo stadio **medio** per tutte le partite.
+- Un valore che non è un id di `DIVISIONI` farà rifiutare la richiesta con `{ ok: false, errori }`, come gli altri
+  campi (il controllo arriva in `src/ponte.js` insieme al primo stadio).
+- I posti dei tre stadi (circa 1.500, 10.000 e 75.000) sono solo grafica: l'incasso resta quello di
+  `ECONOMIA.strutture.stadio`, che è della home.
+
+Nessun file della home è stato toccato.
