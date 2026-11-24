@@ -145,7 +145,10 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   solo maglia contro maglia: ospiti blu con le maniche gialle contro una squadra gialla passavano. Ora nemmeno disegno,
   maniche e calzettoni degli ospiti possono avere il colore della maglia di casa (`DIVISE`, `pickKits`). Prova:
   `scripts/prove/divise.cjs`, nelle prove automatiche (prima 29 coppie su 342 sbagliate, ora 0).
-- Restano: 13 tasto A in difesa (chiedere), 15 animazioni (video rallentato dei 5 gesti).
+- 13 A METÀ, da confermare con Alex: in difesa il tasto A ora dice «Contrasto» (prima restava «Calcio forte»). L'azione
+  non è cambiata: è la scivolata verso il pallone, che c'era già. Chiesto ad Alex se in Dream League il contrasto del
+  tasto A è la scivolata o quello in piedi (che oggi fa il Pressing del tasto B).
+- Restano: 15 animazioni (video rallentato dei 5 gesti).
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato
