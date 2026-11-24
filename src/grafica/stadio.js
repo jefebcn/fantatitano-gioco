@@ -8,7 +8,9 @@ import { unisci } from './unisci.js';
 // La rete è fatta di pannelli (fondo, tetto, due lati), ognuno una griglia di punti che si possono spostare solo lungo la
 // normale del pannello. I bordi sono fissati al telaio. Si muove come una membrana smorzata: il pallone la spinge,
 // l'onda si allarga e si smorza. Si calcola solo quando serve (pallone vicino o rete ancora in movimento).
-export const RETE = { maglia: 0.24, onda: 5, molla: 26, smorza: 7, sacca: 0.6, raggio: 0.95, passo: 1 / 120 };
+// fuori e oltre valgono per il pallone che la colpisce da fuori: quanto rimbalza, e fin dove conta come toccata se in un
+// passo l'ha già attraversata (metri)
+export const RETE = { maglia: 0.24, onda: 5, molla: 26, smorza: 7, sacca: 0.6, raggio: 0.95, passo: 1 / 120, fuori: 0.2, oltre: 0.3 };
 
 class Pannello {
   // o: origine, a e b: vettori dei due lati (lunghezze comprese), n: normale verso l'esterno della porta
@@ -108,13 +110,22 @@ export class Porta {
     if (Math.abs(b.z) > this.GH + m) { const e = Math.sign(b.z); b.z = e * (this.GH + m); if (b.vz * e > 0) b.vz = 0; }
     if (b.y > this.GT + m) { b.y = this.GT + m; if (b.vy > 0) b.vy = 0; }
   }
-  /** Un pallone che colpisce la rete da fuori (per esempio sul lato, uscendo sul fondo): la fa rientrare un po'. */
-  colpoFuori(b) {
+  /**
+   * Il pallone uscito dal campo contro la rete, da fuori: a lato del palo, sopra la traversa, dietro. Solo se la tocca la
+   * fa rientrare un po', rimbalza piano e le scivola addosso. Prima la rete si muoveva anche col pallone a un metro, e un
+   * tiro fuori di poco sembrava un gol.
+   */
+  urtaFuori(b, br) {
+    let tocco = false;
     for (const p of this.pannelli) {
-      const l = p.locale(b); if (l.u < -0.05 || l.u > 1.05 || l.v < -0.05 || l.v > 1.05 || Math.abs(l.s) > 1.2) continue;
-      const vn = Math.abs(b.vx * p.n.x + b.vy * p.n.y + b.vz * p.n.z); p.sacca(Math.min(1, Math.max(0, l.u)), Math.min(1, Math.max(0, l.v)), -Math.min(0.35, vn * 0.03), -vn * 0.4); this.attiva = 1.5; return true;
+      const l = p.locale(b); if (l.u < 0 || l.u > 1 || l.v < 0 || l.v > 1 || l.s > br || l.s < -RETE.oltre) continue;
+      const vn = b.vx * p.n.x + b.vy * p.n.y + b.vz * p.n.z, f = br - l.s;
+      b.x += p.n.x * f; b.y += p.n.y * f; b.z += p.n.z * f; tocco = true;
+      if (vn >= 0) continue;
+      p.sacca(l.u, l.v, -Math.min(0.35, -vn * 0.03), vn * 0.4); this.attiva = 1.5;
+      const k = -vn * (1 + RETE.fuori); b.vx += p.n.x * k; b.vy += p.n.y * k; b.vz += p.n.z * k; b.vx *= 0.9; b.vz *= 0.9;
     }
-    return false;
+    return tocco;
   }
   /** Avanza la rete di dt secondi (a passi fissi) e aggiorna il disegno, solo se serve. */
   muovi(dt, b) {

@@ -179,6 +179,9 @@ export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: 
 // da una grande occasione (parata, tiro deviato, palo, tiro fuori di poco: entro `fuori` metri dal palo) è preceduta dal
 // replay (RIVEDI). Sull'angolo un compagno si offre per batterlo corto, a `corto` = [metri dalla linea di fondo, metri dalla
 // linea laterale].
+// Il pallone uscito dal campo si vede ancora per `uscita` secondi mentre va fuori (su rimessa e angolo fino al nero dello
+// stacco), e rimbalza sui `cartelloni`: [metri oltre la linea di fondo, metri oltre la linea laterale, quanto rimbalza].
+// Il replay della grande occasione parte quando ha finito di uscire.
 // Nessuna ripresa parte da sola: quando chi batte è sul pallone il gioco aspetta. Se batte chi gioca, finché non passa o
 // tira, senza limite di tempo. Se batte il computer, `cpu` secondi: così si vede che è fermo. Intanto ognuno va al suo
 // posto senza scattare e poi si ferma: `passo` = [velocità al passo in m/s, velocità in più per ogni metro che manca al
@@ -186,7 +189,7 @@ export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: 
 // chi è aspettato: chi batte, la barriera, chi ha un posto in area, gli avversari troppo vicini al pallone; chi batte scatta se è a più di `scatto` metri dal pallone); arrivato a `fermo` metri dal posto
 // resta dov'è. Chi ha un posto (barriera, area) viene aspettato al massimo `arrivo` secondi,
 // `rigore` sul rigore, poi si batte lo stesso. Il calcio d'inizio aspetta `inizio` secondi dal fischio prima dei comandi.
-export const FERMI = { comandi: 2, buio: .5, scuro: 1, occasione: 4, fuori: 2.5, corto: [7, 7], cpu: 1, passo: [1.9, .6, 3.6], scatto: 12, fermo: .35, arrivo: 8, rigore: 10, inizio: 1.2 };
+export const FERMI = { comandi: 2, buio: .5, scuro: 1, uscita: .9, cartelloni: [5, 4, .3], occasione: 4, fuori: 2.5, corto: [7, 7], cpu: 1, passo: [1.9, .6, 3.6], scatto: 12, fermo: .35, arrivo: 8, rigore: 10, inizio: 1.2 };
 // Gol, in secondi veri dal pallone in rete: da `lento` per `durataLento` secondi un leggero rallentatore (a velocità `vel`),
 // con gli avversari fermi a disperarsi per `fermi` secondi e l'arbitro che indica il centro; a `stacco` la telecamera passa
 // al primo piano del marcatore: alta `camAlt` metri, a `camDist` metri da lui, con un difensore deluso in primo piano
