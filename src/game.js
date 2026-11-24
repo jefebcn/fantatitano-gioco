@@ -2632,18 +2632,35 @@ function updateCamera(dt) {
 const TIFO = { partita: null, tiro: -1, gol: 0, base: .85 };
 // quanta gente si disegna: l'importanza della partita per la qualità grafica (meno tifosi se il dispositivo arranca)
 function pienone() { if (SPALTI) SPALTI.densita(TIFO.base * [1, .8, .6, .4][QUAL.livello || 0]); }
-function folla(dt) {
+function coloriTifo() {
   const [h, a] = G.teams;
   if (h && TIFO.partita !== h.club.id + a.club.id) {
     TIFO.partita = h.club.id + a.club.id; SPALTI.colora(h.club, a.club); TIFO.tiro = G.shotId; TIFO.gol = G.goals.length;
     const c = G.comp, st = c && c.tipo === 'ponte' && G.ponte && G.ponte.r.stadio, liv = st && st.stelle !== undefined ? Math.max(1, st.stelle) : K ? K.stadio || 1 : 1, ko = c && (c.tipo === 'coppa' || (c.tipo === 'castelli' && /final|semi|quart/i.test(c.titolo || '')));
     TIFO.base = !c ? .85 : ko ? (/finale/i.test(c.titolo || '') ? 1 : .95) : .82 + .04 * (liv - 1); pienone(); // stadio quasi pieno, come in Dream League
   }
+}
+function folla(dt) {
+  const [h] = G.teams; coloriTifo();
   if (h && G.shotId !== TIFO.tiro) { TIFO.tiro = G.shotId; if (G.shooter && G.state === 'play') SPALTI.esulta(G.shooter.team.idx, .55, 1); } // tiro: un sussulto
   if (h && G.goals.length !== TIFO.gol) { TIFO.gol = G.goals.length; if (G.scorer) SPALTI.esulta(G.scorer.team.idx, 1, 6); } // gol: salti e braccia al cielo
   // il brusio: quanta gente c'è e quanto è vicina la palla alla porta (ultimi 25 metri)
   if (h && G.ball) AU.pubblico(TIFO.base, G.state === 'play' ? clamp((Math.abs(G.ball.x) - (HL - 25)) / 12, 0, 1) : G.state === 'goal' ? 1 : 0);
   SPALTI.spalle(!G.dbgCam && !VISTA_ALTO && cam.position.z > HW + CAMERA.spalle); SPALTI.muovi(dt, G.t);
+}
+// Prima del calcio d'inizio, sotto la schermata delle due squadre, lo stadio e i giocatori si disegnano una volta tutti
+// interi: dall'alto, con ogni tribuna in vista e ogni figura coi dettagli dei primi piani. La scheda grafica prepara
+// così materiali e immagini adesso, e non al primo gol, quando la telecamera gira verso le tribune e stringe sul
+// marcatore: sul telefono di Alex erano tre scatti in fila, più di mezzo secondo fermo.
+function scalda() {
+  const [px, py, pz, tx, ty, tz, fov] = STADI.tipi[STADIO].alto, prima = { p: cam.position.clone(), q: cam.quaternion.clone(), fov: cam.fov }, accesi = [];
+  coloriTifo();
+  for (const f of FIGURE) if (f.root.parent) for (const o of [...f.vicini, ...(f.lod || [])]) if (!o.visible) { o.visible = true; accesi.push(o); }
+  cam.position.set(px, py, pz); cam.lookAt(tx, ty, tz); cam.fov = fov; cam.updateProjectionMatrix();
+  SPALTI.spalle(false); SPALTI.inquadra(cam);
+  if (RESA) RESA.disegna(); else renderer.render(scene, cam);
+  for (const o of accesi) o.visible = false;
+  cam.position.copy(prima.p); cam.quaternion.copy(prima.q); cam.fov = prima.fov; cam.updateProjectionMatrix();
 }
 function disegna(dt) {
   const b = G.ball;
@@ -2857,7 +2874,7 @@ function startMatch(h, a, d) {
   $('#vsH').src = img(H.id); $('#vsA').src = img(A.id); $('#vsHn').textContent = H.name; $('#vsAn').textContent = A.name;
   show('#vs'); $('#hud').classList.add('nas'); G.state = 'menu';
   // lo stadio di questa partita si costruisce qui, mentre si vede ancora la schermata delle due squadre
-  setTimeout(() => { alzaStadio(tipoStadio()); show(null); $('#hud').classList.remove('nas'); newMatch(H, A); AU.amb(1); }, 1900);
+  setTimeout(() => { alzaStadio(tipoStadio()); newMatch(H, A); scalda(); show(null); $('#hud').classList.remove('nas'); AU.amb(1); }, 1900);
 }
 // Schermata delle sostituzioni: si tocca chi esce e chi entra
 let cOut = null, cIn = -1;

@@ -219,9 +219,12 @@ con `&alto` per la vista dall'alto e `&fps` per il contatore dei fotogrammi al s
   colori; palchi con le vetrate accese; fuori piazzale, strada ad anello, parcheggi, lampioni e palazzi con le
   finestre accese di notte. 58.852 tifosi disegnati su 75 mila dichiarati; in vista di gioco 166 chiamate di disegno
   e 421 mila triangoli, contro 140 e 348 mila del medio.
-- **Fotogrammi al secondo su iPhone: da leggere**. Da qui non si misurano; Alex li legge con `?stadio=grande&fps`
-  sul telefono più vecchio e li confronta con `?stadio=medio&fps`. Se scendono: spezzare le sagome a tratti perché
-  quelle fuori schermo non si disegnino, o abbassare `folla`.
+- **Fotogrammi al secondo sul telefono di Alex** (video del 24/11, stadio grande, risoluzione 2.00x, qualità 0, con
+  la vista `?ia` accesa): 56-61 in gioco. Un solo calo a 22 per un secondo subito dopo il gol: tre fermi in fila
+  (0,32 + 0,10 + 0,23 s) mentre la scheda grafica preparava per la prima volta una cinquantina di immagini e due
+  materiali (tribune, striscioni, gente a bordo campo, numeri e stemmi dei primi piani). Ora `scalda` in `src/game.js`
+  disegna tutto una volta prima del calcio d'inizio, sotto la schermata delle due squadre: al gol restano solo i
+  cartelloni e il tabellone che cambiano scritta. Da far riprovare ad Alex; manca il numero del medio.
 - **Medio, dettagli fatti**: tetti che salgono verso il campo (`tetto.sale`) con la fronte nei colori di casa, il sotto
   illuminato di notte e una fila di luci sotto il bordo; tabellone col risultato vero (`SPALTI.punteggio`, vale anche
   per i maxischermi del grande); torri faro a traliccio con la griglia dei proiettori; da fuori una fascia coi colori di
