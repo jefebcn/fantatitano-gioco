@@ -387,3 +387,20 @@ stadio: {
   `ECONOMIA.strutture.stadio`, che è della home.
 
 Nessun file della home è stato toccato.
+
+### 11.1 Fatto dalla home (24/11): il campo `stadio` arriva
+
+La richiesta ora porta sempre `stadio: { divisione, stelle }`, per tutti i tipi di partita (campionato, coppa, Trofeo
+dei Castelli, amichevole). Lo calcola `stadioDi(C, clubs, casa)` in `src/carriera.js`, chiamata da `richiesta()` in
+`src/casa/vista-sfida.js` con la squadra di casa, cioè `squadre[0]`:
+
+- **utente in casa**: `divisione(K).id` e le stelle della sua struttura Stadio (`K.strutture.stadio`, da 0 a 5);
+- **squadra del computer in casa**: la sua divisione (`div` delle inventate, `'sammarinese'` per le vere) e, come
+  stelle, le sue stelle di forza (`str`, da 1 a 5);
+- **amichevole**: la prima squadra scelta è quella di casa; senza carriera le squadre vere giocano nello stadio grande.
+
+Prove: `scripts/prova-carriera.mjs` (in `npm run prova`) controlla una partita in casa e una in trasferta per ognuna
+delle cinque divisioni, e che `controllaRichiesta` accetti il campo; `scripts/prove/schermate.cjs` controlla la
+richiesta vera di una partita di campionato e che lo stadio alzato sia quello della divisione. L'incasso resta quello
+di `ECONOMIA.strutture.stadio`. Nessun file della partita è stato toccato.
+
