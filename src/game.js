@@ -714,11 +714,15 @@ const PESO_DISEGNO = { righe: .5, righine: .15, fasce: .5, meta: .5, banda: .12,
 const misto = (k) => '#' + new T.Color(k.shirt).lerp(new T.Color(k.c2 || k.shirt), PESO_DISEGNO[k.stile] || 0).getHexString();
 /** Quanto si distinguono due divise in campo: soprattutto la maglia (com'è vista da lontano), poi pantaloncini e calzettoni. */
 const kitDist = (p, q) => Math.min(cdist(misto(p), misto(q)), cdist(p.shirt, q.shirt) + .1) * .65 + cdist(p.shorts, q.shorts) * .2 + cdist(p.socks, q.socks) * .15;
+/** Quanto è chiara una maglia vista da lontano, da 0 (nera) a 1 (bianca): col disegno conta il colore mescolato. */
+const chiarezza = (k) => lab(misto(k))[0] / 100;
 const hashStr = (s) => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
 /**
  * Le divise della partita: [casa, ospiti, portiere di casa, portiere ospite, arbitro]. Gli ospiti provano la prima maglia,
  * poi la seconda (secondo colore), poi bianca, scura e alcune terze maglie: tengono la prima che si distingue bene da
- * quella di casa (o la più lontana). Poi l'arbitro, lontano da tutte e due, e i portieri, lontani da tutti.
+ * quella di casa, cioè lontana di colore e in più una chiara e una scura (DIVISE.chiaro): rosso contro blu, lontani di
+ * colore ma chiari uguale, in campo e di notte si confondevano. Se nessuna va bene, la più lontana.
+ * Poi l'arbitro, lontano da tutte e due, e i portieri, lontani da tutti.
  */
 /** Colletto e maniche di un club: quelli scelti, altrimenti sempre gli stessi per club (dal nome). */
 function formaMaglia(c) { return { colletto: c.col || ['giro', 'v', 'polo', 'giro', 'v'][hashStr(c.id || c.name) % 5], raglan: c.rag ?? hashStr((c.id || c.name) + 'r') % 4 === 0 }; }
@@ -730,6 +734,9 @@ function pickKits(h, a) {
   const kh0 = prima(h), da = prima(a), sa = ['fianchi', 'v', 'spalle', 'chevron', 'maniche', 'petto', 'pennellata', null][hashStr(a.id || a.name) % 8]; // disegno della seconda maglia, sempre lo stesso per club
   const seconde = [da, { ...da, shirt: da.c2, sleeve: da.c2, socks: da.c2, shorts: a.c1, c2: a.c1, stile: sa, colletto: da.colletto === 'polo' ? 'v' : 'polo' }];
   for (const [col, c2] of [[BIANCO, a.c1], [NERO, a.c1], ['#8A1538', BIANCO], ['#F2C230', NERO], ['#0E7C66', BIANCO], ['#1D2A5C', BIANCO]]) seconde.push({ shirt: col, sleeve: col, socks: col, shorts: cdist(c2, col) > .3 ? c2 : col, c2: cdist(c2, col) > .3 ? c2 : (lum(col) > .5 ? NERO : BIANCO), stile: col === BIANCO || col === NERO ? sa : null });
+  // in fondo bianca e nera in tinta unita: col disegno del club una maglia bianca si scurisce, e contro una squadra né
+  // chiara né scura (verde, azzurro) non staccava abbastanza. Così una divisa che va bene c'è sempre
+  for (const col of [BIANCO, NERO]) seconde.push({ shirt: col, sleeve: col, socks: col, shorts: col, c2: col === BIANCO ? NERO : BIANCO, stile: null });
   for (const k of seconde) k.ink = ink(k.shirt);
   // ogni prova con i pantaloncini già sistemati (quelli dell'una non devono sembrare la maglia dell'altra), poi la distanza
   // Nemmeno il disegno della maglia, le maniche e i calzettoni degli ospiti possono avere il colore della maglia di casa
@@ -742,7 +749,8 @@ function pickKits(h, a) {
     if (a2.stile && casa(a2.c2)) { const neutro = lum(a2.shirt) > .5 ? NERO : BIANCO; if (casa(neutro)) a2.stile = null; else a2.c2 = neutro; }
     return [h2, a2, kitDist(h2, a2)];
   };
-  const prove = seconde.map(prova), [kh, ka] = prove.find((x) => x[2] >= SOGLIA) || prove.sort((x, y) => y[2] - x[2])[0];
+  const stacco = (x) => Math.abs(chiarezza(x[0]) - chiarezza(x[1]));
+  const prove = seconde.map(prova), [kh, ka] = prove.find((x) => x[2] >= SOGLIA && stacco(x) >= DIVISE.chiaro) || prove.sort((x, y) => y[2] + stacco(y) - x[2] - stacco(x))[0];
   // l'arbitro: maglia lontana dalle due squadre, pantaloncini e calzettoni neri
   const vicino = (c, ks) => Math.min(...ks.map((k) => Math.min(cdist(c, k.shirt), cdist(c, misto(k)))));
   // arbitro in rosso e nero (come in Dream League). Se una squadra veste di rosso, maglia nera con le maniche rosse
@@ -2974,5 +2982,5 @@ async function boot() {
 }
 // quello che la home (src/casa/casa.js) prende da qui
 export { aiForm, $, rnd, clamp, hash, IMGX, img, G, renderer, cv, SCARPE_NEGOZIO, stemmi3d, makeSkinned, FIGURE, formaMaglia, pickKits, PALLONI, kitsFor, AU, tactics, club, chiudiPonte, startMatch, toMenu, CREST, loadImg, MODEL };
-window.__g = { prova, avviaPartita, hud, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, DIVISE, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, INSERIMENTO, SMARCA, TIRO_IA, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, restart, kickoff, FERMI, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { prova, avviaPartita, hud, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, chiarezza, DIVISE, apriNuovo, spalti: () => SPALTI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, INSERIMENTO, SMARCA, TIRO_IA, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, restart, kickoff, FERMI, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();

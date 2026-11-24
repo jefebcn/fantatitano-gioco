@@ -225,7 +225,9 @@ export const LOD = { vicino: 22, lontano: 62 };
 // Le divise in campo (pickKits in src/game.js). `soglia`: quanto devono essere lontane le due maglie perché gli ospiti
 // tengano quella divisa (se no provano la seconda, poi bianca, scura e le terze). `simile`: sotto questa distanza due
 // colori si confondono: nessuna parte della divisa degli ospiti può stare così vicina alla maglia di casa.
-export const DIVISE = { soglia: .42, simile: .25 };
+// `chiaro`: di quanto devono differire in chiarezza le due maglie, da 0 a 1 (bianco contro nero fa 0,9): una chiara e una
+// scura, come chiesto da Alex. Senza, due maglie di colore diverso ma chiare uguale (rosso e blu) di notte si confondono.
+export const DIVISE = { soglia: .42, simile: .25, chiaro: .4 };
 // Cartelloni LED a bordo campo: scorrono piano di continuo (frazione di tutta la striscia al secondo: 4 pannelli).
 // `tela`: i punti della striscia disegnata, larghezza e altezza (potenze di due: servono le versioni rimpicciolite, che
 // tolgono lo sfarfallio delle scritte lontane)
