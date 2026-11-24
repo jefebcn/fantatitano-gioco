@@ -23,7 +23,7 @@ import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { PRATO, NOTTURNA, DIVISE, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { PRATO, NOTTURNA, DIVISE, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -1340,7 +1340,14 @@ function migliorDifensore(team, salta) {
 function switchCtrl() { const m = migliorDifensore(G.teams[0], G.ctrl); if (m) { setCtrl(m.p); G.cambioT = CAMBIO.pausa; } }
 
 /* comandi dell'utente */
-function inputWorld() { return [G.in.jx, G.in.jy]; }
+/** La levetta nel verso del campo. In gioco la telecamera guarda sempre dalla stessa parte e levetta e campo coincidono;
+    con un'inquadratura girata che lo chiede (`gira`: il calcio d'angolo, da dietro chi batte) la levetta segue lo schermo:
+    in su è dove guarda la telecamera, cioè verso l'area. */
+function inputWorld() {
+  const q = G.inquadra, jx = G.in.jx, jy = G.in.jy; if (!q || !q.gira) return [jx, jy];
+  const fx = q.l[0] - q.p[0], fz = q.l[2] - q.p[2], d = hyp(fx, fz) || 1, ux = fx / d, uz = fz / d;
+  return [-jx * uz - jy * ux, jx * ux - jy * uz];
+}
 const potenza = () => clamp(G.charge / CARICA.piena, 0, 1);
 function caricaInizio(tipo) { G.charge = 0; G.caricaTipo = tipo; G.caricaIdeale = -1; }
 function direzioneUtente(c) { const [jx, jz] = inputWorld(), l = hyp(jx, jz); return l > .3 ? [jx / l, jz / l] : [Math.sin(c.dir), Math.cos(c.dir)]; }
@@ -2534,7 +2541,11 @@ function mettiPalla(x, y, z) {
 // dietro il pallone verso la porta, rigore alle spalle di chi tira. null quando si gioca.
 function inquadratura() {
   const b = G.ball, fk = G.fk; if (!b || !fk || !(G.state === 'restart' || G.attesa) || REGIA.figure()) return null;
-  if (fk.corner) { const sx = sgn(b.x), sz = sgn(b.z); return { p: [b.x + sx * 5, 12, b.z + sz * 8], l: [sx * (HL - 9), 0, sz * 2], fov: 44 }; }
+  // calcio d'angolo: dietro chi batte, sulla linea che va dal punto dell'area al pallone. `gira`: la levetta segue lo schermo
+  if (fk.corner) {
+    const A = ANGOLO_CAM, sx = sgn(b.x), sz = sgn(b.z), dx = b.x - sx * (HL - A.mira[0]), dz = b.z - sz * A.mira[1], d = hyp(dx, dz) || 1, ux = dx / d, uz = dz / d;
+    return { p: [b.x + ux * A.dietro, A.alto, b.z + uz * A.dietro], l: [b.x - ux * A.avanti, 0, b.z - uz * A.avanti], fov: A.fov, gira: true };
+  }
   if (fk.pen) { const s = sgn(b.x); return { p: [b.x - s * 10, 4.2, b.z * .3], l: [s * HL, 0, 0], fov: 30 }; }
   if (fk.wall || fk.direct) { const t = G.next, gx = t ? t.side * HL : sgn(b.x) * HL, dx = b.x - gx, dz = b.z, d = hyp(dx, dz) || 1; return { p: [b.x + dx / d * 10, 5, b.z + dz / d * 10], l: [gx, 0, 0], fov: 34 }; }
   return null;
