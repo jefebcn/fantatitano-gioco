@@ -30,12 +30,17 @@ srv.listen(0, async () => {
       'calcio d\'inizio': (t) => g.kickoff(t),
       'punizione lontana': (t) => g.freeKick(t, -t.side * 8, 9, 'punizione'),
       'punizione con la barriera': (t) => g.freeKick(t, t.side * (HL - 24), 4, 'punizione'),
+      // un avversario col posto appena oltre la distanza (9,3 m) che parte da dentro: non deve fermarsi un palmo prima,
+      // se no la ripresa aspetta a vuoto il tempo massimo (vedi `entro`)
+      'punizione, avversario sul limite della distanza': (t) => { g.freeKick(t, -t.side * 8, -9, 'punizione'); const o = t.opp.players[8], b = G.ball; o.posto = { n: G.fermoN, h: [b.x - t.side * 9.3, b.z] }; o.x = b.x - t.side * 8; o.z = b.z; o.vx = o.vz = 0; },
       fuorigioco: (t) => g.freeKick(t, -t.side * 20, -12, 'fuorigioco'),
       'calcio d\'angolo': (t) => g.corner(t, t.side * (HL - .6), HW - .6),
       'rimessa laterale': (t) => g.restart(t, 6, HW - .5, 'laterale'),
       'rimessa dal fondo': (t) => g.restart(t, -t.side * (HL - 6), 0, 'fondo', t.players[0]),
       rigore: (t) => g.penalty(t),
     };
+    // entro quanti secondi si deve poter battere (solo dove nessuno ha strada da fare)
+    const entro = { 'punizione, avversario sul limite della distanza': 5 };
     let k = 0;
     for (const nome of Object.keys(riprese)) for (const chi of ['utente', 'computer']) {
       let sd = 31 + k++; Math.random = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
@@ -64,6 +69,7 @@ srv.listen(0, async () => {
       // fino a quando si può battere (al massimo 20 secondi), poi 12 secondi senza toccare niente
       while (pronto === null && n < 20 * 60) passo();
       if (pronto === null) e.male.push('dopo 20 secondi non si può ancora battere');
+      else if (entro[nome] && pronto > entro[nome]) e.male.push(`si può battere solo dopo ${pronto.toFixed(1)} s (limite ${entro[nome]})`);
       else if (chi === 'utente') {
         for (let i = 0; i < 12 * 60 && battuto === null; i++) passo();
         if (battuto !== null) e.male.push(`è partita da sola dopo ${(battuto - pronto).toFixed(1)} s`);

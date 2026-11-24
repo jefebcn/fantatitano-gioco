@@ -1539,7 +1539,10 @@ function postoFermo(p) {
     // il posto di formazione si sceglie una volta per ripresa: seguirebbe la linea dei compagni, che intanto si muove
     if (!p.posto || p.posto.n !== G.fermoN) p.posto = { n: G.fermoN, h: homeOf(p) };
     const h = p.posto.h, far = fk ? FOUL.wall + .5 : 7.5; p.tx = h[0]; p.tz = h[1]; const d = hyp(p.tx - b.x, p.tz - b.z); p.atteso = t !== G.next && hyp(p.x - b.x, p.z - b.z) < far;
-    if (d < far - .5 && t !== G.next) { p.tx = b.x + (p.tx - b.x) / (d || 1) * far; p.tz = b.z + (p.tz - b.z) / (d || 1) * far; }
+    // gli avversari stanno a `far` dal pallone, mezzo metro oltre la distanza: chi si ferma a pochi centimetri dal suo
+    // posto resta comunque fuori. Col posto proprio sulla distanza qualcuno si fermava un palmo dentro, e la ripresa
+    // aspettava a vuoto fino al tempo massimo (FERMI.arrivo) prima di dare i comandi.
+    if (d < far && t !== G.next) { p.tx = b.x + (p.tx - b.x) / (d || 1) * far; p.tz = b.z + (p.tz - b.z) / (d || 1) * far; }
   }
   // arrivato: fermo, senza aggiustamenti di pochi centimetri
   if (hyp(p.tx - p.x, p.tz - p.z) < FERMI.fermo) { p.tx = p.x; p.tz = p.z; }
