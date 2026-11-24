@@ -159,8 +159,10 @@ export const DIST = { pass: [5, 45], cross: [12, 30], lancio: [15, 40] };
 // Segni in campo: X gialla dove scende un pallone alto (lanci, cross, rimesse), larga `x` metri: il pallone è «alto» se
 // sale oltre `alto` metri. Il segnalino grigio sul compagno che si prenderebbe con «Cambia giocatore» si ricalcola ogni
 // `cambio` secondi. La barra della potenza diventa rossa da `rosso` (parte della carica piena). `scala`: grandezza dei segni
-// sopra le teste (parte dell'altezza dello schermo)
-export const SEGNI = { x: 1.1, alto: 1.6, cambio: .2, rosso: .8, scala: .12 };
+// sopra le teste (parte dell'altezza dello schermo). `grigio`: il segnalino grigio si disegna o no (Alex, 23/11: un solo
+// segnalino, sul giocatore comandato). `largo`: la parte della larghezza del suo riquadro che un nome occupa: il nome
+// dell'avversario col pallone si nasconde quando finirebbe sopra quello del giocatore comandato.
+export const SEGNI = { x: 1.1, alto: 1.6, cambio: .2, rosso: .8, scala: .12, grigio: false, largo: .8 };
 // Secondi tra l'inizio del gesto e il momento in cui il piede colpisce il pallone (passaggio, tiro, lancio).
 // In conduzione il pallone sta fino a un metro e mezzo davanti: il calcio aspetta che il piede ci arrivi. Dove il piede
 // lo colpisce lo dice la clip del gesto. Per i gesti che non lo dicono: `portata` metri davanti al corpo e `lato` metri
