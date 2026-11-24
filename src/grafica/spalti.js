@@ -255,7 +255,7 @@ diffuseColor = vec4((vMaglia * masc.r + vPelle * masc.g + vScuro * masc.b) / max
   const QUAD = (() => { const g = new T.PlaneGeometry(CELLA.w, CELLA.h); g.translate(0, CELLA.h / 2 - 0.05, 0); return g; })();
 
   const m4 = new T.Matrix4(), q = new T.Quaternion(), sc = new T.Vector3(), asse = new T.Vector3(0, 1, 0), pelle = [0xf1c9a5, 0xe0ac7e, 0xc68642, 0x8d5524, 0x5c3a1e, 0xf6d7bd].map((c) => new T.Color(c));
-  const folle = []; let N = 0;
+  const folle = []; let N = 0, dove = scene;
   const gruppo = (suoi, geo, mat, visibile) => { // una InstancedMesh per un gruppo di posti, con i suoi attributi
     const n = suoi.length; if (!n) return null;
     const info = new Float32Array(n * 4), cute = new Float32Array(n * 3), capo = new Float32Array(n * 3), sciarpa = new Float32Array(n * 3), m = new T.InstancedMesh(geo.clone(), mat, n);
@@ -268,9 +268,11 @@ diffuseColor = vec4((vMaglia * masc.r + vPelle * masc.g + vScuro * masc.b) / max
     m.computeBoundingSphere(); m.boundingSphere.radius += 2;
     const A = { aInfo: new T.InstancedBufferAttribute(info, 4), aPelle: new T.InstancedBufferAttribute(cute, 3), aCapo: new T.InstancedBufferAttribute(capo, 3), aSciarpa: new T.InstancedBufferAttribute(sciarpa, 3) };
     for (const k in A) m.geometry.setAttribute(k, A[k]);
-    m.visible = visibile; scene.add(m); const f = { m, info, A, n, capo, sciarpa }; folle.push(f); return f;
+    m.visible = visibile; dove.add(m); const f = { m, info, A, n, capo, sciarpa }; folle.push(f); return f;
   };
   for (const tr of tribune) {
+    // la folla di ogni tribuna sta in un gruppo suo: quella sotto la telecamera si può togliere tutta insieme (vedi spalle)
+    tr.folla = new T.Group(); scene.add(tr.folla); dove = tr.folla;
     const tutti = posti.filter((s) => s.tr === tr);
     for (let i = tutti.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [tutti[i], tutti[j]] = [tutti[j], tutti[i]]; }
     const presi = tutti.slice(0, Math.min(tutti.length, Math.round(totale * tutti.length / posti.length)));
@@ -320,6 +322,9 @@ diffuseColor = vec4((vMaglia * masc.r + vPelle * masc.g + vScuro * masc.b) / max
   function densita(d) { const k = Math.max(0.1, Math.min(1, d)); for (const f of folle) f.m.count = Math.round(f.n * k); }
   /** Dettagli della folla sì o no (lo scaler della qualità li toglie per primi): anche le prime file diventano sagome. */
   function dettaglio(on) { for (const tr of tribune) if (tr.folla3d && tr.sagomeVicine) { tr.folla3d.m.visible = on; tr.sagomeVicine.m.visible = !on; } }
+  /** La tribuna sotto la telecamera di gioco (gradoni, ringhiere e folla) si vede o no. Quando la telecamera le sale sopra
+   *  per seguire il pallone sulla linea laterale vicina, le prime file spuntano in basso e coprono gioco e comandi. */
+  function spalle(nascosta) { const tr = tribune[1]; if (tr.g.visible === nascosta) tr.g.visible = tr.folla.visible = !nascosta; }
   function muovi(dt, t) {
     U.uT.value = t;
     for (let k = 0; k < 2; k++) { fino[k] -= dt; if (fino[k] <= 0) es[k] = Math.max(0, es[k] - dt * 1.5); }
@@ -329,6 +334,6 @@ diffuseColor = vec4((vMaglia * masc.r + vPelle * masc.g + vScuro * masc.b) / max
     U.uEsulta.value.set(es[0], es[1]); U.uCoro.value.set(coro[0], coro[1]); U.uMossa.value = 0.5 + Math.max(es[0], es[1]);
     for (const b of bandiere) { b.fase += dt * (2 + es[b.settore] * 4); const p = b.pg.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setZ(i, Math.sin(b.fase + x * 2.2) * 0.16 * (x + 1.1) / 2.2); } p.needsUpdate = true; }
   }
-  return { colora, esulta, canta, densita, dettaglio, muovi, materiali, get squadre() { return squadre; }, N };
+  return { colora, esulta, canta, densita, dettaglio, spalle, muovi, materiali, get squadre() { return squadre; }, N };
 }
 function hashStr(s) { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }

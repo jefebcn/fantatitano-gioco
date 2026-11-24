@@ -2541,7 +2541,7 @@ function folla(dt) {
   if (h && G.goals.length !== TIFO.gol) { TIFO.gol = G.goals.length; if (G.scorer) SPALTI.esulta(G.scorer.team.idx, 1, 6); } // gol: salti e braccia al cielo
   // il brusio: quanta gente c'è e quanto è vicina la palla alla porta (ultimi 25 metri)
   if (h && G.ball) AU.pubblico(TIFO.base, G.state === 'play' ? clamp((Math.abs(G.ball.x) - (HL - 25)) / 12, 0, 1) : G.state === 'goal' ? 1 : 0);
-  SPALTI.muovi(dt, G.t);
+  SPALTI.spalle(cam.position.z > HW + CAMERA.spalle); SPALTI.muovi(dt, G.t);
 }
 function disegna(dt) {
   const b = G.ball;
