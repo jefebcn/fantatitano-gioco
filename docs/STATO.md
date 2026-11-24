@@ -197,7 +197,7 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   `DIVISE.chiaro` (una chiara e una scura): gli ospiti passano alla seconda maglia, poi bianca o nera. Prima 147 coppie
   su 240 avevano maglie chiare quasi uguale (rosso contro blu, verde contro blu). `scripts/prove/divise.cjs` lo controlla.
 
-## Stadi per divisione (richiesta di Alex del 24/11): fatti tutti e tre; resta la presentazione dello stadio
+## Stadi per divisione (richiesta di Alex del 24/11): fatti tutti e tre, con la presentazione prima del calcio d'inizio
 
 Tre stadi secondo la divisione di chi gioca in casa: **paese** (Esordienti, Borghi), **medio** (Contrade, Cadetta),
 **grande** (Sammarinese). Numeri in `STADI` (`src/config.js`); `src/grafica/spalti.js` costruisce i tre dagli stessi
@@ -240,9 +240,16 @@ con `&alto` per la vista dall'alto e `&fps` per il contatore dei fotogrammi al s
   su; panchine semplici (panca sotto una tettoia); casetta degli spogliatoi col tetto di tegole; tetto della tribuna che
   sale verso il campo coi colori di casa; tribune meno buie di notte. In vista di gioco 141 chiamate e 157 mila
   triangoli.
-- **Da fare, in una PR a parte** (richiesta di Alex): presentazione dello stadio prima del calcio d'inizio, come in
-  Dream League (giro della telecamera di 5-6 s, saltabile con un tocco), e lo stadio visibile nei replay dei gol. I riflessi dell'ambiente di notte (`src/grafica/resa.js`) usano ancora i fari
-  dello stadio costruito all'avvio.
+- **Presentazione dello stadio, fatta** (richiesta di Alex): prima del calcio d'inizio la telecamera fa un giro di 6
+  secondi, da fuori (2 s), dentro lungo la tribuna (2,4 s), poi scende al suo posto di gioco (1,6 s); solo allora
+  arrivano «Calcio d'inizio» e il fischio. Si salta toccando lo schermo o con un tasto, dopo mezzo secondo. Valori in
+  `PRESENTA` e in `STADI.tipi.*.giro` (`src/config.js`), codice in `iniziaPresenta`, `cameraPresenta`, `finePresenta`
+  (`src/game.js`). Parte solo dalla partita avviata dall'interfaccia: con un seme fisso (`prova`) e con `&alto` non
+  c'è, così le prove restano uguali. Scelte provvisorie, da confermare con Alex: a ogni partita, senza scritte, non
+  alla ripresa del secondo tempo.
+- **Stadio nei replay dei gol**: il replay basso di lato lo mostrava già; quello da dietro la porta è stato abbassato e
+  allargato (`RIVEDI.porta`), così sopra la porta resta la tribuna di fronte invece della sola erba.
+- I riflessi dell'ambiente di notte (`src/grafica/resa.js`) usano ancora i fari dello stadio costruito all'avvio.
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato
