@@ -132,19 +132,27 @@ export function mediaTitolari(C, clubs) {
 }
 /**
  * I quattro obiettivi della stagione (DIVISIONI in src/config.js): posizione finale, turni di Coppa Titano, Trofeo dei
- * Castelli, valutazione media dei titolari. Per ognuno: n (quanto serve), ora (a che punto si è), fatto. La posizione
- * vale quella di adesso finché il campionato non è finito. Nella divisione più alta l'obiettivo «rosa» non c'è.
+ * Castelli, valutazione media dei titolari. Per ognuno: n (quanto serve), ora (a che punto si è), fatto (vale adesso),
+ * sicuro (non si può più perdere) e mancato (non si può più raggiungere). La posizione vale quella di adesso finché il
+ * campionato non è finito. Nella divisione più alta l'obiettivo «rosa» non c'è.
  */
 export function obiettivi(C, clubs) {
-  const O = divisione(C).obiettivi, pos = classifica(C, clubs).findIndex((r) => r.id === C.club) + 1, k = C.coppa, t = C.castelli;
+  const O = divisione(C).obiettivi, tab = classifica(C, clubs), pos = tab.findIndex((r) => r.id === C.club) + 1, k = C.coppa, t = C.castelli;
   // turni superati in Coppa Titano; nel Trofeo dei Castelli un punto per i gironi e uno per ogni turno dopo
   const coppa = k.fuori === null ? k.turno : k.fuori, castelli = !t.ko || t.fuori === 'gironi' ? 0 : 1 + (t.ko.fuori === null ? t.ko.turno : t.ko.fuori);
+  // il posto in campionato: a campionato finito conta dove si è arrivati; prima è sicuro se, anche perdendole tutte,
+  // troppo poche squadre possono raggiungerci, ed è mancato se, anche vincendole tutte, troppe restano davanti
+  const giornate = C.cal.length, finito = C.giornata >= giornate, mia = tab[pos - 1], massimo = (r) => r.pt + 3 * (giornate - r.g);
+  const possonoArrivare = tab.filter((r) => r.id !== C.club && massimo(r) >= mia.pt).length, giaLontane = tab.filter((r) => r.id !== C.club && r.pt > massimo(mia)).length;
+  const dentro = pos > 0 && pos <= O.posizione;
+  // nelle coppe un turno superato resta; chi è uscito prima del turno che serve non ci arriva più
   const out = [
-    { id: 'posizione', n: O.posizione, ora: pos, fatto: pos > 0 && pos <= O.posizione },
-    { id: 'coppa', n: O.coppa, ora: coppa, fatto: coppa >= O.coppa },
-    { id: 'castelli', n: O.castelli, ora: castelli, fatto: castelli >= O.castelli },
+    { id: 'posizione', n: O.posizione, ora: pos, fatto: dentro, sicuro: finito ? dentro : possonoArrivare < O.posizione, mancato: finito ? !dentro : giaLontane >= O.posizione },
+    { id: 'coppa', n: O.coppa, ora: coppa, fatto: coppa >= O.coppa, sicuro: coppa >= O.coppa, mancato: k.fuori !== null && coppa < O.coppa },
+    { id: 'castelli', n: O.castelli, ora: castelli, fatto: castelli >= O.castelli, sicuro: castelli >= O.castelli, mancato: castelli < O.castelli && (t.fuori === 'gironi' || !!(t.ko && t.ko.fuori !== null)) },
   ];
-  if (O.media) { const media = mediaTitolari(C, clubs); out.push({ id: 'rosa', n: O.media, ora: Math.floor(media * 10) / 10, fatto: media >= O.media }); }
+  // la media dei titolari dipende da chi si schiera: vale com'è adesso, e si può sempre sistemare
+  if (O.media) { const media = mediaTitolari(C, clubs); out.push({ id: 'rosa', n: O.media, ora: Math.floor(media * 10) / 10, fatto: media >= O.media, sicuro: media >= O.media, mancato: false }); }
   return out;
 }
 /**
@@ -809,7 +817,9 @@ export function giocaCastelli(C, clubs, gf, gs, marcatori, rnd = Math.random, ri
 /** Chi ha vinto il Trofeo dei Castelli, se è finito. */
 export const castelliCampione = (C) => C.castelli.campione || (C.castelli.ko && C.castelli.ko.campione) || null;
 
-export function capocannoniere(C) { const e = Object.entries(C.stat.marc).sort((a, b) => b[1] - a[1])[0]; return e ? { nome: e[0], gol: e[1] } : null; }
+export function capocannoniere(C) { return marcatori(C, 1)[0] || null; }
+/** I migliori marcatori del club in tutta la carriera, dal primo: [{ nome, gol }]. */
+export function marcatori(C, quanti = 3) { return Object.entries(C.stat.marc).sort((a, b) => b[1] - a[1]).slice(0, quanti).map(([nome, gol]) => ({ nome, gol })); }
 
 /* ---------- per la home ---------- */
 /** Di quanti posti è salita (o scesa, se negativo) ogni squadra con l'ultima giornata giocata. */

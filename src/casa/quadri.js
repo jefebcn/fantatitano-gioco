@@ -1,5 +1,5 @@
 // I pezzi comuni delle schermate a pannelli, sulle bozze di Alex del 24/11: Monete e diamanti (vista-monete.js), Profilo
-// (vista-profilo.js) e Stagione (vista-stagione.js). Tutto il contenuto sta dentro pannelli, mai scritto sulla foto di
+// (vista-profilo.js), Stagione (vista-stagione.js) e Bacheca (vista-bacheca.js). Tutto il contenuto sta dentro pannelli, mai scritto sulla foto di
 // sfondo; i premi si mostrano con le icone del gioco, mai a parole. Misure e colori sono in PANNELLI (src/config.js) e
 // arrivano allo stile come variabili --q-*.
 import { PANNELLI as P } from '../config.js';
@@ -17,6 +17,7 @@ const VARIABILI = {
   'mon-colonna': px(P.monete.colonna), 'mon-icona': px(P.monete.icona), 'mon-numero': px(P.monete.numero), 'mon-riga': P.monete.perRiga, 'mon-figura': px(P.monete.figura), 'mon-premio': px(P.monete.premio),
   'pro-colonna': px(P.profilo.colonna), 'pro-parte': `${P.profilo.parte * 100}%`, 'pro-avatar': px(P.profilo.avatar), 'pro-nome': px(P.profilo.nome), 'pro-scelta': px(P.profilo.scelta), 'pro-campo': px(P.profilo.campo), 'pro-raggio': px(P.profilo.raggioCampo),
   'sta-fascia': px(P.stagione.fascia), 'sta-colonna': px(P.stagione.colonna), 'sta-parte': `${P.stagione.parte * 100}%`, 'sta-anello': px(P.stagione.anello), 'sta-riga': px(P.stagione.riga), 'sta-forma': P.stagione.forma, 'sta-pallino': px(P.stagione.pallino),
+  'bac-colonna': px(P.bacheca.colonna), 'bac-parte': `${P.bacheca.parte * 100}%`, 'bac-trofeo': px(P.bacheca.trofeo), 'bac-numero': px(P.bacheca.numero), 'bac-gol': px(P.bacheca.gol),
 };
 document.head.insertAdjacentHTML('beforeend', `<style id="misureQuadri">#pan.quadri{${Object.entries(VARIABILI).map(([k, v]) => `--q-${k}:${v}`).join(';')}}</style>`);
 

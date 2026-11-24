@@ -16,9 +16,10 @@ import { pannello, barra } from './quadri.js';
 import { t } from './testi.js';
 
 const dr = (n) => (n > 0 ? `+${n}` : String(n).replace('-', '−'));
-// l'anello della percentuale: azzurro mentre si sale, verde pieno con la spunta a obiettivo raggiunto
-const anello = (parte, fatto) => { const pc = fatto ? 100 : Math.max(0, Math.min(99, Math.round(parte * 100)));
-  return `<span class="lAnello${fatto ? ' fatto' : ''}"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" pathLength="100"/><circle class="pieno" cx="18" cy="18" r="15" pathLength="100" stroke-dasharray="${pc} 100"/></svg>${fatto ? icona('spunta') : `<b>${pc}%</b>`}</span>`; };
+// l'anello della percentuale: azzurro mentre si sale, verde pieno con la spunta quando l'obiettivo è sicuro, grigio e
+// vuoto quando non si può più raggiungere (sotto, al posto di «ora…», c'è scritto «mancato»)
+const anello = (parte, o) => { const pc = o.sicuro ? 100 : o.mancato ? 0 : Math.max(0, Math.min(99, Math.round(parte * 100)));
+  return `<span class="lAnello${o.sicuro ? ' fatto' : o.mancato ? ' mancato' : ''}"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" pathLength="100"/><circle class="pieno" cx="18" cy="18" r="15" pathLength="100" stroke-dasharray="${pc} 100"/></svg>${o.sicuro ? icona('spunta') : o.mancato ? icona('chiudi') : `<b>${pc}%</b>`}</span>`; };
 
 // Le quattro tessere degli obiettivi: illustrazione, nome corto, dove si è adesso, parte fatta (0-1)
 function obiettivi() {
@@ -32,7 +33,8 @@ function obiettivi() {
     castelli: (o) => ['trofeo-castelli', o.n === 1 ? t('lega.obGironi') : t('lega.obCastelli', t('lega.turno.' + o.n)), c.fuori === 'gironi' ? t('lega.fuori', t('lega.turno.gironi')) : c.ko ? turno(c.ko, 1) : t('lega.gironi'), (o.ora + (c.ko ? 0 : c.giornata / (c.gironi[0].length - 1) * .9)) / o.n],
     rosa: (o) => ['icona-categoria-tecnico', t('lega.obRosa', o.n), t('lega.ora', o.ora.toFixed(1).replace('.', ',')), (o.ora - D.val[0]) / (o.n - D.val[0])],
   };
-  return CAR.obiettivi(K, CLUBS).map((o) => { const [fig, nome, stato, parte] = cosa[o.id](o); return `<div class="kTess lOb${o.fatto ? ' fatto' : ''}">${figura(fig, 'lFig', 34)}${anello(parte, o.fatto)}<b>${nome}</b><i>${stato}</i></div>`; });
+  return CAR.obiettivi(K, CLUBS).map((o) => { const [fig, nome, stato, parte] = cosa[o.id](o);
+    return `<div class="kTess lOb${o.sicuro ? ' fatto' : o.mancato ? ' mancato' : ''}">${figura(fig, 'lFig', 34)}${anello(parte, o)}<b>${nome}</b><i>${o.mancato ? t('lega.mancato') : stato}</i></div>`; });
 }
 
 /** Disegna la Stagione. */
@@ -43,11 +45,11 @@ export function panStagione() {
   const avv = p ? club(p.avv) : null;
   const prossima = p ? `<img src="${img(avv.id + '-mini')}" alt=""><span class="lChi"><i>${t('lega.prossima')}</i><span class="lAvv"><b ${attrNome(nomiDi(avv), 11)}>${esc(avv.name)}</b><u>· ${t(p.inCasa ? 'lega.inCasa' : 'lega.inTrasferta')}</u></span></span><button class="kOro" data-az="prossima">${t('home.gioca')}</button>`
     : `<span class="lChi"><i>${t('lega.finito')}</i><span class="lAvv"><b>${t('lega.arrivato', io + 1)}</b></span></span><button class="kOro" data-az="prossima">${t('lega.avanti')}</button>`;
-  const fascia = `<section class="kPan lFascia"><span class="lLega">${figura('trofeo-campionato', 'lTrofeo', 44)}<span><b class="lNome" data-adatta data-min="16">${D.nome}</b><i data-adatta data-min="10" data-corto="${t('lega.rigaCorta', io + 1, mia.pt)}">${t('lega.riga', K.stagione, io + 1, mia.pt)}</i></span></span>`
+  const fascia = `<section class="kPan lFascia"><span class="lLega">${figura('trofeo-campionato', 'lTrofeo', 44)}<span><b class="lNome" data-adatta data-min="16">${D.nome}</b><i data-adatta data-min="11" data-corto="${t('lega.rigaCorta', io + 1, mia.pt)}">${t('lega.riga', K.stagione, io + 1, mia.pt)}</i></span></span>`
     + `<span class="lPartita"><b>${p ? t('barra.partita', p.giornata, p.totale) : t('lega.finito')}</b>${barra(p ? (p.giornata - 1) / p.totale : 1)}</span><span class="lProssima">${prossima}</span></section>`;
   // gli obiettivi
   const lato = `<i class="lSali">${sopra ? t('lega.sali', STAGIONE.servono) : t('lega.cima')}</i>`;
-  const sinistra = pannello('lObiettivi', t('lega.obiettivi', ob.filter((o) => o.fatto).length, ob.length), `<div class="lGriglia">${obiettivi().join('')}</div>`, lato);
+  const sinistra = pannello('lObiettivi', t('lega.obiettivi', ob.filter((o) => o.sicuro).length, ob.length), `<div class="lGriglia">${obiettivi().join('')}</div>`, lato);
   // la classifica: la forma si legge da sinistra (la più vecchia) a destra (l'ultima); i posti senza partita restano vuoti
   const pallini = (id) => { const f = forme[id] || []; return `<span class="lForma">${'<i></i>'.repeat(quanti - f.length)}${f.map((x) => `<i class="${x}">${t('lega.esito.' + x)}</i>`).join('')}</span>`; };
   const righe = tab.map((r, i) => { const c = club(r.id); return `<div class="lRiga${r.id === K.club ? ' io' : ''}${i < D.obiettivi.posizione ? ' su' : ''}"><b>${i + 1}</b><img src="${img(r.id + '-mini')}" alt=""><b class="lSq" ${attrNome(nomiDi(c), 11)}>${esc(c.name)}</b><i>${r.g}</i><i>${dr(r.gf - r.gs)}</i><b>${r.pt}</b>${pallini(r.id)}</div>`; }).join('');

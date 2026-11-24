@@ -30,6 +30,7 @@ import { panClubMio, panMercato, panAllenamento, consigliato, toccaEconomia } fr
 import { panMonete, SCHEDE_MONETE } from './vista-monete.js';
 import { panProfilo } from './vista-profilo.js';
 import { panStagione } from './vista-stagione.js';
+import { panBacheca } from './vista-bacheca.js';
 import { pronta, figura, stemmaPronto } from './immagini.js';
 import { icona, MO, DI } from './icone.js';
 
@@ -534,7 +535,7 @@ function buildMenu() {
   rotta('sfide', (tab) => panSfide(tab)); rotta('percorso', () => panPercorso()); rotta('guadagna', panMonete);
   rotta('profilo', panProfilo); rotta('info', panInfo); rotta('impostazioni', () => { armato = false; panImp(); });
   rotta('mercato', () => panMercato()); rotta('allenamento', panAllenamento);
-  rotta('club', (tab) => panClubMio(tab)); rotta('negozio', (tab) => panNegozio(tab)); rotta('personalizza', () => apriNuovo(true));
+  rotta('club', (tab) => panClubMio(tab)); rotta('bacheca', panBacheca); rotta('negozio', (tab) => panNegozio(tab)); rotta('personalizza', () => apriNuovo(true));
   rotta('amichevole', vai); rotta('sfidaLibera', () => { show('#sfida'); disegnaSfida({ tipo: 'amichevole', mia: sel.mia, loro: sel.loro, fuori: false, rigori: false }); });
   rotta('squadra', () => { show('#squadra'); apriSquadra(); });
   rotta('sfida', (tipo, avv, titolo, fuori, rigori) => { show('#sfida'); disegnaSfida({ tipo, mia: K.club, loro: avv, fuori: !!fuori, rigori: !!rigori }); });
