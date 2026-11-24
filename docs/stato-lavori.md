@@ -299,3 +299,25 @@ Come sono fatti, chi ha quale volto e come si rifanno: `docs/ritratti.md`. Strum
   80 contando preparazione e passaggio a WebP; ogni maglia 26 secondi, una volta sola. 415 volti: poco più di 9 ore.
 - **Peso**: testa a 512 e 256 punti insieme circa 27 KB a volto (415 volti, coi 35 strati «sopra» e le maglie: 12,5 MB in tutto); le due maglie 345 KB.
   I ritratti non si precaricano: ogni telefono prende solo quelli che guarda.
+
+## Schermate a pannelli (24/11)
+Tre schermate rifatte sulle bozze di Alex: **Monete e diamanti** (`src/casa/vista-monete.js`), **Profilo**
+(`src/casa/vista-profilo.js`) e **Stagione** (`src/casa/vista-stagione.js`). I pezzi comuni sono in `src/casa/quadri.js`;
+misure e colori in `PANNELLI` di `src/config.js`, che arrivano allo stile come variabili `--q-*`.
+
+- **Regole comuni**: sfondo della home sfocato con un velo scuro; tutto il contenuto dentro pannelli, mai scritto sulla
+  foto; premi sempre a icone (`premi` in `quadri.js`); la schermata non scorre, scorre solo la parte che non ci sta
+  dentro il suo pannello. Il testo secondario qui scende fino a 10 px (nelle altre schermate il minimo resta 12).
+- **Monete e diamanti**: i due saldi, «Il premio più vicino» (`premioVicino`: prima ciò che è da ritirare, poi tra
+  percorso premi, sfide e sette giorni di fila quello con la parte fatta più grande) e quattro schede di tessere con
+  gli importi della divisione in cui si gioca. L'ultima scheda scelta resta salvata sul dispositivo (`sel.monete`).
+  Gli «Ultimi movimenti» sono passati in Il mio club → Finanze.
+- **Profilo**: «chi sei» con l'avatar e la scelta degli avatar, tre tessere che aprono Personalizza e il Negozio,
+  l'account Fantatitano. Senza carriera resta solo il pannello dell'account. Statistiche, capocannoniere, trofei e
+  movimenti di mercato non sono nella bozza e qui non ci sono più: da decidere con Alex se e dove rimetterli.
+- **Stagione**: fascia con lega, partita e «Prossima»; quattro obiettivi con l'anello della percentuale; classifica con
+  la nostra riga in oro, la striscia verde sui posti dell'obiettivo e la forma (ultimi cinque risultati, `forma` in
+  `src/carriera.js`: si ricava dai risultati salvati, niente di nuovo nel salvataggio). Sotto la classifica, scorrendo,
+  risultati dell'ultima giornata e calendario.
+- **Prove**: `scripts/prove/schermate.cjs` controlla anche `#pan.quadri` (le quattro schede di Monete, le tessere e
+  l'avatar del Profilo, la scheda ricordata); `scripts/prova-carriera.mjs` prova `forma`.

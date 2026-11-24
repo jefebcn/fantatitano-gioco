@@ -91,6 +91,12 @@ assert.ok(v > s * 2.5 && gol / 4000 > 1.8 && gol / 4000 < 4, `forte-debole: ${v}
   // una vittoria per 3-0 batte una per 1-0, e a pari differenza reti chi ha segnato di più sta davanti
   Z.ris[0] = Z.cal[0].map((_, k) => (k === 0 ? [3, 0] : k === 1 ? [1, 0] : k === 2 ? [4, 1] : [0, 0])); const t1 = K.classifica(Z, cl);
   assert.equal(t1[0].id, Z.cal[0][2][0]); assert.equal(t1[1].id, Z.cal[0][0][0]); assert.equal(t1[2].id, Z.cal[0][1][0]);
+  // la forma: gli ultimi risultati di ogni squadra, dal più vecchio al più recente; chi non ha giocato non c'è
+  const f1 = K.forma(Z); assert.deepEqual(f1[Z.cal[0][0][0]], ['v']); assert.deepEqual(f1[Z.cal[0][0][1]], ['p']); assert.deepEqual(f1[Z.cal[0][3][0]], ['n']); assert.deepEqual(K.forma(K.nuova(cl, 'z', 'academy', rnd)), {});
+  // con più giornate restano solo le ultime richieste, e l'ultima giocata è in fondo
+  for (let g = 1; g < 7; g++) Z.ris[g] = Z.cal[g].map(([a]) => (a === 'academy' ? [0, 2] : [1, 1]));
+  Z.ris[7] = Z.cal[7].map((m) => (m.includes('academy') ? (m[0] === 'academy' ? [5, 0] : [0, 5]) : [1, 1]));
+  const f8 = K.forma(Z), f3 = K.forma(Z, 3); assert.ok(Object.values(f8).every((x) => x.length === 5)); assert.equal(f8.academy[4], 'v'); assert.deepEqual(f3.academy, f8.academy.slice(-3));
 }
 // panchina: i dati hanno le riserve; titolare e riserva dello stesso ruolo si scambiano, e lo scambio resta salvato
 {

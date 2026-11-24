@@ -573,6 +573,32 @@ export const PREMIO = {
 export const AUDIO = {
   musica: { cartella: 'audio/', brani: ['musica-home-rise-up'], livello: 1, entra: 1.5, esce: 1.2 },
 };
+// Le schermate a pannelli (src/casa/quadri.js), sulle bozze di Alex del 24/11: Monete e diamanti, Profilo, Stagione.
+// Misure in punti, colori come li legge lo stile: diventano le variabili --q-* della pagina.
+// sfondo: di quanto è sfocata l'illustrazione della home e il velo scuro che le sta sopra.
+// margine: lo spazio dai lati dello schermo; alto: sotto la barra; basso: dal bordo in basso; tra: lo spazio tra un
+//   pannello e l'altro; dentro: il bordo interno di un pannello. minimo: sotto questa altezza la schermata non si
+//   schiaccia più e scorre (capita con la tastiera aperta).
+// pannello e tessera (i riquadri dentro i pannelli): fondo, raggio degli angoli, bordo.
+// titolo: i titoli dei pannelli. testo: il testo principale e quello secondario. oro, azzurro, verde, rosso: gli accenti.
+// monete: la colonna di sinistra, l'icona e il numero dei due saldi, quante tessere per riga, quanto è alta l'illustrazione
+//   di una tessera e quanto l'icona di un premio.
+// profilo: la colonna di sinistra (e quanta parte della larghezza può prendere al massimo), l'avatar grande, il nome,
+//   gli avatar tra cui scegliere, i campi dell'accesso (altezza e raggio).
+// stagione: la fascia in alto, la colonna degli obiettivi (e quanta parte della larghezza al massimo), l'anello della
+//   percentuale, la riga della classifica, quanti risultati mostra la forma e quanto è largo un suo pallino.
+export const PANNELLI = {
+  sfondo: { sfoca: 3, velo: 'rgba(5,10,26,.8)' },
+  margine: 16, alto: 8, basso: 12, tra: 10, dentro: 14, minimo: 300,
+  pannello: { fondo: 'rgba(16,30,72,.92)', raggio: 14, bordo: 'rgba(63,198,255,.27)' },
+  tessera: { fondo: 'rgba(40,70,140,.67)', raggio: 12, bordo: 'rgba(63,198,255,.27)' },
+  titolo: { misura: 19, colore: '#E8B64C' },
+  testo: { misura: 12.5, colore: '#FFFFFF', piccolo: 11, secondario: '#AFC0DA' },
+  oro: '#E8B64C', azzurro: '#3FC6FF', verde: '#5BE37A', rosso: '#FF5A5A',
+  monete: { colonna: 216, icona: 48, numero: 30, perRiga: 3, figura: 46, premio: 20 },
+  profilo: { colonna: 254, parte: .35, avatar: 96, nome: 30, scelta: 44, campo: 36, raggioCampo: 10 },
+  stagione: { fascia: 58, colonna: 296, parte: .4, anello: 34, riga: 27, forma: 5, pallino: 15 },
+};
 // La schermata Squadra (docs/navigazione.md §3.3), con le misure date da Alex il 23/11.
 // carta: quanto è larga una carta, in parti della larghezza dello schermo (uguale in campo e tra i sostituti).
 // aria: i punti che restano tra la testa di una carta e la carta della linea sopra, nei moduli con più linee.

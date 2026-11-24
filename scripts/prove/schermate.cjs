@@ -2,8 +2,9 @@
    orizzontale: 667 × 375, 844 × 390 e 932 × 430. Il giro è ripetibile (numeri casuali e data fissi, animazioni ferme,
    campo 3D nascosto): due giri sullo stesso codice danno le stesse foto, quindi si può confrontare prima e dopo una
    modifica. Accanto alle foto salva il contenuto di ogni schermata (misura-testi.json).
-   Nelle schermate rifatte (barra in alto, Home, Carriera, Sfida e finestre, per ora) controlla anche le regole di qualità: testo
-   mai sotto 12 px (tranne dentro la carta del giocatore), niente testo tagliato, niente fuori dallo schermo, pulsanti alti e larghi almeno 44 px. Esce con errore
+   Nelle schermate rifatte (barra in alto, Home, Carriera, Sfida, finestre e schermate a pannelli, per ora) controlla anche le regole di qualità: testo
+   mai sotto 12 px (tranne dentro la carta del giocatore, e 10 px per il testo secondario delle schermate a pannelli), niente testo tagliato, niente fuori
+   dallo schermo (tranne dentro un riquadro che scorre), pulsanti alti e larghi almeno 44 px. Esce con errore
    se una regola non è rispettata o se la pagina dà errori.
    Uso: npm run build && node scripts/prove/schermate.cjs cartella-di-uscita   (serve Playwright, come partita.cjs)
      SCALA=2   foto a doppia definizione, da guardare (per il confronto pixel per pixel si lascia 1) */
@@ -15,7 +16,7 @@ const mime = { '.html': 'text/html', '.js': 'text/javascript', '.webp': 'image/w
 const srv = http.createServer((q, r) => { const u = q.url.split('?')[0], f = path.join(root, u === '/' ? 'index.html' : decodeURIComponent(u)); fs.readFile(f, (e, d) => { if (e) { r.writeHead(404); r.end(); } else { r.writeHead(200, { 'content-type': mime[path.extname(f)] || 'application/octet-stream' }); r.end(d); } }); });
 const MISURE = [[667, 375], [844, 390], [932, 430]];
 // le parti della pagina già rifatte secondo le regole di qualità: qui si controlla ogni elemento
-const RIFATTE = ['#barraF', '#casa', '#carriera', '#sfida', '#squadra', '#schedaG', '#finestra', '#premio'];
+const RIFATTE = ['#barraF', '#casa', '#carriera', '#sfida', '#squadra', '#schedaG', '#finestra', '#premio', '#pan.quadri'];
 
 // Gira nella pagina: elenca le regole di qualità non rispettate dentro le parti rifatte che si vedono
 function qualita(radici) {
@@ -28,16 +29,20 @@ function qualita(radici) {
       const r = e.getBoundingClientRect(), st = getComputedStyle(e);
       // un decoro (luci e raggi dietro la scena: vuoto, non si tocca, nascosto a chi legge lo schermo) può uscire dai bordi
       const decoro = e.getAttribute('aria-hidden') === 'true' && st.pointerEvents === 'none' && !e.textContent.trim();
-      if (!decoro && (r.right > W + .5 || r.bottom > H + .5 || r.left < -.5 || r.top < -.5)) guai.push(`fuori dallo schermo: ${dice(e)}`);
+      // nelle schermate a pannelli una parte può scorrere dentro il suo pannello: lì quello che non si vede è fuori apposta
+      const scorre = e.closest('.lScorre, .uScelta, .dGriglia');
+      if (!decoro && !(scorre && scorre !== e) && (r.right > W + .5 || r.bottom > H + .5 || r.left < -.5 || r.top < -.5)) guai.push(`fuori dallo schermo: ${dice(e)}`);
       const testo = [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
       // dentro la carta grande del giocatore le scritte seguono le proporzioni della carta (docs/carte-giocatori.md): è la
-      // sola eccezione ai 12 px, e anche lì non si scende sotto i 5
-      const minimo = e.closest('.gC:not(.piccola) .gS') ? 5 : 12;
+      // sola eccezione ai 12 px, e anche lì non si scende sotto i 5. Nelle schermate a pannelli il testo secondario arriva a 10
+      const minimo = e.closest('.gC:not(.piccola) .gS') ? 5 : e.closest('#pan.quadri') ? 10 : 12;
       if (testo && parseFloat(st.fontSize) < minimo) guai.push(`testo da ${st.fontSize}: ${dice(e)}`);
       // un testo su una riga è tagliato se è più largo del suo posto; uno su più righe se è più alto. E non deve uscire dal genitore
       const unaRiga = st.whiteSpace === 'nowrap', gen = e.parentElement.getBoundingClientRect();
       if (testo && st.overflow !== 'visible' && (unaRiga ? e.scrollWidth > e.clientWidth + 1 : e.scrollHeight > e.clientHeight + 2)) guai.push(`testo tagliato: ${dice(e)}`);
-      if (testo && st.position !== 'absolute' && (r.right > gen.right + 1.5 || r.left < gen.left - 1.5)) guai.push(`testo che esce dal suo posto: ${dice(e)}`);
+      // (di un pulsante con il bordo trasparente, che allarga solo la parte da toccare, conta quello che si vede)
+      const orlo = st.backgroundClip === 'padding-box' && /, 0\)$/.test(st.borderRightColor) ? parseFloat(st.borderRightWidth) : 0;
+      if (testo && st.position !== 'absolute' && (r.right - orlo > gen.right + 1.5 || r.left + orlo < gen.left - 1.5)) guai.push(`testo che esce dal suo posto: ${dice(e)}`);
       // anche senza taglio: un testo su una riga più largo della sua scatola finisce sopra quello che ha accanto
       if (testo && unaRiga && st.overflow === 'visible' && st.display !== 'inline' && e.scrollWidth > e.clientWidth + 1) guai.push(`testo più largo del suo posto: ${dice(e)}`);
       // dentro una carta ogni testo sta nella sua parte (fascia, corpo o fascia in basso): non la supera e non tocca le altre
@@ -168,17 +173,27 @@ srv.listen(0, async () => {
     });
     await vai('#casa .c-club', 'club', async () => { const tab = await pg.$$eval('#panC [data-ctab]', (l) => l.map((b) => b.dataset.ctab)); for (const t of tab) { await tocca(`#panC [data-ctab="${t}"]`); await foto(`club-${t}`); } });
     // dalla barra
-    await vai('#barraF [data-vai="impostazioni"]', 'impostazioni'); await vai('#barraF [data-vai="info"]', 'info'); await vai('#barraF [data-vai="profilo"]', 'profilo');
-    await vai('#barraF [data-vai="percorso"]', 'percorso-dalla-barra'); await tocca('#barraF [data-az="serie"]'); await foto('premio-del-giorno'); await tocca('#finestra [data-az="si"]');
-    await vai('#barraF [data-vai="guadagna"]', 'guadagna', async () => {
-      // dal «come guadagnare» a Personalizza (prima il modulo del club, poi le schede dei pezzi che si comprano): un
-      // livello in più, e Indietro torna al «come guadagnare»
+    await vai('#barraF [data-vai="impostazioni"]', 'impostazioni'); await vai('#barraF [data-vai="info"]', 'info');
+    await vai('#barraF [data-vai="profilo"]', 'profilo', async () => {
+      // dal Profilo a Personalizza (prima il modulo del club, poi le schede dei pezzi che si comprano): un livello in
+      // più, e Indietro torna al Profilo
       if (!(await tocca('#panC [data-club="personalizza"]'))) return; await foto('negozio');
       const vera = await pg.evaluate(() => { const i = document.querySelector('#nvMaglia .magliaVera'); return !!i && i.naturalWidth > 0; }); if (!vera) errori.push(`${w}: in Personalizza manca l'anteprima della maglia vera`);
       if (!(await tocca('#nuovo [data-ntab="stemma"]'))) return;
       const tab = await pg.$$eval('#panC [data-ntab]', (l) => l.map((b) => b.dataset.ntab)); for (const t of tab) { await tocca(`#panC [data-ntab="${t}"]`); await foto(`negozio-${t}`); }
       await tocca('#panC .ogg.chiuso', 0); await foto('negozio-armato'); await tocca('#bCasa');
+      // le tessere del Profilo portano dritte alla scheda giusta, e l'avatar scelto cambia
+      if (await tocca('#panC .uTess[data-ntab="manager"]')) { const scheda = await pg.$eval('#panC [data-ntab].on', (b) => b.dataset.ntab).catch(() => ''); if (scheda !== 'manager') errori.push(`${w}: la tessera «Avatar e cornici» apre la scheda «${scheda}»`); await tocca('#bCasa'); }
+      if (await tocca('#panC .uScelta button', 1)) { const scelto = await pg.evaluate(() => [window.__g.carriera().avatar, document.querySelector('#panC .uScelta .on').dataset.avatar]); if (scelto[0] !== +scelto[1] || !scelto[0]) errori.push(`${w}: l'avatar scelto nel Profilo è ${scelto}`); await tocca('#panC .uScelta button', 0); }
     });
+    await vai('#barraF [data-vai="percorso"]', 'percorso-dalla-barra'); await tocca('#barraF [data-az="serie"]'); await foto('premio-del-giorno'); await tocca('#finestra [data-az="si"]');
+    await vai('#barraF [data-vai="guadagna"]', 'guadagna', async () => {
+      // le quattro schede di «Monete e diamanti»
+      const schede = await pg.$$eval('#panC [data-mtab]', (l) => l.map((b) => b.dataset.mtab)); for (const s of schede.slice(1)) { await tocca(`#panC [data-mtab="${s}"]`); await foto(`guadagna-${s}`); }
+    });
+    // il gioco ricorda l'ultima scheda scelta; poi si rimette la prima
+    await tocca('#barraF [data-vai="guadagna"]'); { const ora = await pg.$eval('#panC [data-mtab].on', (b) => b.dataset.mtab).catch(() => ''); if (ora !== 'bonus') errori.push(`${w}: «Monete e diamanti» riapre la scheda «${ora}» invece dell'ultima scelta`); }
+    await tocca('#panC [data-mtab]', 0); await tocca('#bCasa');
     // la Carriera e le sue schermate
     await tocca('#casa .c-carriera'); await foto('carriera');
     await vai('#carriera .k-classifica', 'classifica'); await vai('#carriera .k-castelli', 'castelli'); await vai('#carriera .k-titano', 'coppa'); await vai('#carriera .k-prossima', 'sfida-campionato');
