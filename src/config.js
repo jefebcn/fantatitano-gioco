@@ -125,6 +125,12 @@ export const CAMERA = { alto: 12.5, dietro: 36.8, inclina: 21.75, fovOriz: 58.7,
 // Vista dall'alto di tutto lo stadio, solo per controlli: si accende con ?alto nell'indirizzo. [x, y, z della telecamera,
 // x, y, z del punto guardato, FOV verticale]
 export const CAMERA_ALTO = [0, 95, 40, 0, 0, 0, 55];
+// Calcio d'angolo: la telecamera sta dietro chi batte, bassa, e guarda l'area: si vedono lui, il pallone e la porta, e la
+// levetta segue lo schermo, in su è verso l'area. dietro e alto: metri dietro il pallone e da terra. avanti: quanti
+// metri oltre il pallone guarda a terra, cioè quanto è inclinata. mira: il punto dell'area verso cui è girata, come
+// [metri dalla linea di fondo, metri dal centro della porta verso il lato dell'angolo]; fov in gradi. Prima stava a 12 m
+// d'altezza di fianco alla bandierina, e chi batte restava fuori dallo schermo, in basso.
+export const ANGOLO_CAM = { dietro: 11, alto: 6, avanti: 5, mira: [9, 2], fov: 38 };
 
 /* ---------------------------------------------------------------- comandi dell'utente (come Dream League, docs/dls-gameplay.md) */
 // La levetta: base fissa (un cerchio di `raggio` px), la levetta si muove dentro. Poco inclinata si cammina, poi si corre;

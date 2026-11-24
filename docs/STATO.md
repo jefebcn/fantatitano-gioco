@@ -177,6 +177,14 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 ## Seconda risposta di Alex del 24/11 (dopo il video «angolo-rimessa-30s»)
 - Rimessa laterale coi piedi in campo: FATTO. Chi batte sta 40 cm fuori (`RIMESSA.linea`), col pallone in mano dietro la
   riga; rientra in campo quando lo lancia. `scripts/prove/riprese.cjs` lo controlla.
+- «Fanno gol e danno il rinvio dal fondo»: in 10 partite simulate nessun gol vero non assegnato; trovati invece molti
+  tiri a 10-60 cm dal palo o appena sopra la traversa. Il pallone spariva sulla linea, la rete si muoveva lo stesso e
+  partiva il replay della grande occasione: sembrava gol. FATTO: il pallone uscito si vede andare fuori per
+  `FERMI.uscita` secondi (`G.fantasma`, solo disegno), la rete da fuori si muove solo se toccata (`Porta.urtaFuori`), il
+  replay parte dopo e lo mostra uscire. Da chiedere ad Alex se era questo, o se il tabellone aveva segnato il gol.
+- Calcio d'angolo: FATTO. Telecamera bassa dietro chi batte (`ANGOLO_CAM`), si vedono lui, bandierina, area e porta; la
+  levetta segue lo schermo (in su è verso l'area), anche dall'angolo sul lato lontano. Da chiedere se in Dream League
+  rigore e punizione hanno la levetta allo stesso modo (oggi no).
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato
