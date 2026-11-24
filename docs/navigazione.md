@@ -48,7 +48,7 @@ HOME (livello 0)
 ├── CARRIERA (il pulsante «GIOCA» sulla carta salta la Carriera: Sfida → Partita → Fine partita → Home)
 │   ├── GIOCA ADESSO → Sfida → Partita → Fine partita → Carriera
 │   │                  └── Squadra (e ritorno alla Sfida)
-│   ├── Classifica completa (schede: Classifica, Calendario, Risultati)
+│   ├── Stagione (lega, prossima partita, obiettivi, classifica con la forma; sotto risultati e calendario)
 │   ├── Trofeo dei Castelli (gironi, poi tabellone) → Sfida
 │   └── Coppa Titano (tabellone) → Sfida
 ├── SCENARIO → Sfida già impostata → Partita → Fine partita → Scenario
@@ -80,8 +80,8 @@ HOME (livello 0)
 DALLA BARRA (da qualsiasi schermata)
 ├── Impostazioni (audio, comandi, grafica, lingua, account Fantatitano)
 ├── Info (regole, crediti, licenze)
-├── Come guadagnare (fonti di monete e diamanti, storico)
-└── Profilo (manager, statistiche, trofei)
+├── Monete e diamanti (saldi, il premio più vicino, da dove arrivano)
+└── Profilo (avatar, livello, il tuo club, account Fantatitano)
 ```
 
 ## 3. Ogni schermata: da dove si entra, dove porta Indietro
@@ -102,7 +102,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 |---|---|---|---|---|
 | **Home** | 0 | avvio; Indietro dal livello 1 | — | le 8 carte (§2) |
 | **Carriera** | 1 | Home, carta CARRIERA | Home | Prossima partita → Sfida; Classifica → Classifica completa; Trofeo dei Castelli → gironi; Coppa Titano → tabellone (le quattro scorciatoie in basso sono state tolte il 23/11: Sfide, Squadra, Mercato e Il mio club si aprono dalla Home) |
-| Classifica completa | 2 | Carriera, carta Classifica | Carriera | schede Classifica, Calendario, Risultati |
+| Stagione (prima «Classifica completa») | 2 | Carriera, carta Classifica | Carriera | fascia con la lega e «Prossima» → Sfida; i quattro obiettivi; la classifica con la forma delle squadre, e sotto, scorrendo, risultati dell'ultima giornata e calendario |
 | Trofeo dei Castelli | 2 | Carriera | Carriera | gironi (poi tabellone); «Gioca» → Sfida |
 | Coppa Titano | 2 | Carriera | Carriera | tabellone; «Gioca» → Sfida |
 | **Sfida** | 2 | Carriera (GIOCA ADESSO), coppe («Gioca»), Scenario, Amichevole | da dove sei venuto | SQUADRA → Squadra (poi Indietro riporta qui); Riscaldamento (finestra di conferma); GIOCA → Partita |
@@ -155,8 +155,8 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 |---|---|---|---|
 | Impostazioni | barra | da dove sei venuto | audio, comandi, grafica, lingua, account Fantatitano |
 | Info | barra | da dove sei venuto | regole, crediti, licenze |
-| Come guadagnare | «+» della barra; negozio, mercato e strutture quando il saldo non basta | da dove sei venuto | elenco delle fonti; scheda Storico |
-| Profilo | barra, a destra | da dove sei venuto | nome del manager, statistiche, trofei; «Personalizza» → Personalizza |
+| Monete e diamanti (prima «Come guadagnare») | i due saldi della barra; negozio, mercato e strutture quando il saldo non basta | da dove sei venuto | i due saldi; «Il premio più vicino» col suo pulsante (Gioca, Ritira, Riscuoti…); quattro schede di tessere: Partite, Competizioni, Sfide, Bonus (resta l'ultima scelta). Lo storico dei movimenti è in Il mio club → Finanze |
+| Profilo | barra, a destra | da dove sei venuto | avatar (si cambia qui), nome, club, livello; tre tessere: «Nome, colori e disegno» → Personalizza, «Avatar e cornici» e «Pezzi dello stemma» → Negozio; account Fantatitano. Senza carriera (dal benvenuto): solo l'account |
 
 ## 4. Cosa cambia rispetto a oggi
 

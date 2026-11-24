@@ -26,6 +26,8 @@ const AZIONI = {
   prossima: () => { const p = CAR.prossima(K); if (p) apri('sfida', 'camp', p.avv, t('sfida.campionato', p.giornata, p.totale, p.inCasa), !p.inCasa); else nuovaStagione(); },
   classifica: () => apri('classifica'), castelli: () => apri('castelli'), coppa: () => apri('coppa'),
 };
+/** Gioca la prossima partita di campionato o, a campionato finito, chiude la stagione: lo usano anche le altre schermate. */
+export const giocaProssima = () => AZIONI.prossima();
 radice.addEventListener('click', (e) => { const b = e.target.closest('[data-vai]'); if (b && AZIONI[b.dataset.vai]) AZIONI[b.dataset.vai](); });
 
 /**

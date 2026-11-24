@@ -1,6 +1,6 @@
 // I pannelli dell'economia nuova, in forma semplice finché Mercato e Il mio club non vengono ridisegnati (passi 9 e 10):
-// il club (strutture, allenatori, finanze), il mercato (offerte a tempo, lista trasferimenti, osservatore, agente) e
-// «Come guadagnare». Tutta la logica sta in src/carriera.js: qui ci sono solo l'elenco e i pulsanti.
+// il club (strutture, allenatori, finanze coi movimenti) e il mercato (offerte a tempo, lista trasferimenti, osservatore,
+// agente). Tutta la logica sta in src/carriera.js: qui ci sono solo l'elenco e i pulsanti. «Monete e diamanti» è in vista-monete.js.
 import * as CAR from '../carriera.js';
 import { ECONOMIA, DIVISIONI, FORMS, CARTA } from '../config.js';
 import { K, DATI, club, pan, mini, mon, esc, fmtTempo, salvaK, applicaMio, premioTesto } from './casa.js';
@@ -31,6 +31,12 @@ function effetto(q, n) {
   return `${mon(S.stadio.posti[n])} posti · +${mon(CAR.inMonete(K, S.stadio.incasso[n]))} monete a ogni partita in casa`;
 }
 
+// Gli ultimi movimenti di monete e diamanti, dal più recente: giorno, causale e importo col suo segno
+function movimenti() {
+  const giorno = (quando) => new Date(quando).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+  const righe = (K.storico || []).slice(0, 40).map((x) => `<div class="${x.m + x.g * 100 < 0 ? 'meno' : 'piu'}"><span>${giorno(x.t)} · ${esc(x.d || x.c)}</span><b>${[x.m ? `${conSegno(x.m)} ${MO}` : '', x.g ? `${conSegno(x.g)} ${DI}` : ''].filter(Boolean).join(' ')}</b></div>`).join('');
+  return righe ? `<div class="ris2 mov">${righe}</div>` : '';
+}
 let cTab = 'strutture';
 /** Il mio club: le sette strutture, gli allenatori in inventario, le finanze. */
 export function panClubMio(tab, msg) {
@@ -60,7 +66,8 @@ export function panClubMio(tab, msg) {
       + '<p class="nota2">I comuni arrivano dalle sfide di ogni giorno e dal Centro allenamento, i rari dalle sfide della settimana e dal percorso premi, i leggendari a fine stagione, con la promozione e arrivando in finale di coppa. Anche svincolando un giocatore se ne ottiene uno.</p>';
   } else {
     const st = K.storico || [], entrate = st.reduce((t, x) => t + Math.max(0, x.m), 0), uscite = st.reduce((t, x) => t - Math.min(0, x.m), 0), d = (ico, v, e) => `<div>${icona(ico)}<b>${v}</b><span>${e}</span></div>`;
-    corpo = `<div class="dati finanze">${d('finanze', CAR.finanze(K), 'Finanze')}${d('moneta', mon(K.monete), 'Monete')}${d('diamante', K.gemme, 'Diamanti')}${d('entrate', conSegno(entrate), 'Entrate recenti')}${d('uscite', conSegno(-uscite), 'Uscite recenti')}</div><p class="nota2">Il giudizio dipende da quante vittorie vale il saldo in monete. Entrate e uscite contano gli ultimi ${ECONOMIA.storico} movimenti.</p><div class="seg"><button data-az="guadagna">Vedi i movimenti e come guadagnare</button></div>`;
+    corpo = `<div class="dati finanze">${d('finanze', CAR.finanze(K), 'Finanze')}${d('moneta', mon(K.monete), 'Monete')}${d('diamante', K.gemme, 'Diamanti')}${d('entrate', conSegno(entrate), 'Entrate recenti')}${d('uscite', conSegno(-uscite), 'Uscite recenti')}</div><p class="nota2">Il giudizio dipende da quante vittorie vale il saldo in monete. Entrate e uscite contano gli ultimi ${ECONOMIA.storico} movimenti.</p><div class="seg"><button data-az="guadagna">Come si guadagnano monete e diamanti</button></div>`
+      + `<div class="sez">Ultimi movimenti</div>${movimenti() || '<p class="vuoto">Ancora nessun movimento: gioca una partita.</p>'}`;
   }
   pan(me.name, `${msg ? `<p class="avviso">${msg}</p>` : ''}${tabs}${corpo}`);
 }
@@ -126,22 +133,6 @@ export function consigliato() {
   const posso = [...lista, ...a_tempo].filter((g) => g.prezzo <= K.monete && (g.gemme || 0) <= K.gemme).sort((x, y) => y.val - x.val || x.prezzo - y.prezzo);
   const g = posso[0] || lista.sort((x, y) => x.prezzo - y.prezzo)[0];
   return g ? { c: { id: g.da || K.club }, x: g.x, da: g.da, v: g.val, costo: g.prezzo, gemme: g.gemme || 0, posso: posso.length > 0 } : null;
-}
-
-/** «Come guadagnare»: da dove arrivano monete e diamanti (importi veri, nella divisione in cui si gioca) e gli ultimi movimenti. */
-export function panGuadagna() {
-  const P = ECONOMIA.premi, D = CAR.divisione(K), G = ECONOMIA.diamanti, v = (n) => `${MO} ${mon(CAR.inMonete(K, n))}`, vinta = Math.round(CAR.premioVittoria(K)), rigaF = (t, x) => `<div><span>${t}</span><b>${x}</b></div>`;
-  const somma = (g, k) => CAR.statoSfide(K)[g].reduce((t, x) => t + (x[k] || 0), 0), perc = CAR.statoPercorso(K).premi;
-  const fonti = [['Vittoria', `${MO} ${mon(vinta)}`], ['Pareggio', `${MO} ${mon(Math.round(vinta * P.pareggio))}`], ['Sconfitta', `${MO} ${mon(Math.round(vinta * P.sconfitta))}`], ['Partita in casa (dallo Stadio)', v(ECONOMIA.strutture.stadio.incasso[CAR.stelle(K, 'stadio')]) || `${MO} 0`],
-    ['Turno di coppa superato', v(P.turno)], [`${D.nome} vinto`, v(P.campionato)], [`${D.nome}: dal 2° ${[8, 11].includes(P.piazzamento.length + 1) ? 'all\'' : 'al '}${P.piazzamento.length + 1}° posto`, `da ${v(P.piazzamento[0])} a ${v(P.piazzamento[P.piazzamento.length - 1])}`], ['Coppa Titano vinta', `${v(P.coppa)} ${DI} ${G.coppa}`], ['Trofeo dei Castelli vinto', `${v(P.castelli)} ${DI} ${G.coppa}`],
-    ['Sette giorni di fila con una partita', `${DI} ${G.serie.reduce((a, b) => a + b, 0)} e un contatto dell'agente`], ['Sfide di oggi (tutte)', `${premioTesto(somma('d', 'monete'), 0)} e un allenatore comune`],
-    ['Sfide della settimana (tutte)', `${premioTesto(somma('w', 'monete'), G.settimana)} e un allenatore raro`], ['Sfide di stagione (tutte)', premioTesto(somma('s', 'monete'), somma('s', 'gemme'))], ['Sfide di carriera (tutte)', premioTesto(0, somma('c', 'gemme'))],
-    ['Percorso premi (tutti i livelli)', `${premioTesto(perc.reduce((t, x) => t + x.monete, 0), perc.reduce((t, x) => t + x.gemme, 0))} e ${perc.filter((x) => x.allenatore).length} allenatori rari`],
-    ['Fine stagione', `${DI} ${D.fine} e un allenatore leggendario`], ['Promozione', `${DI} ${G.promozione}, un allenatore leggendario e un contatto dell'agente`], ['Finale di coppa raggiunta', 'un allenatore leggendario e un contatto dell\'agente']];
-  const giorno = (t) => new Date(t).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }), segno = conSegno;
-  const mov = (K.storico || []).slice(0, 40).map((x) => `<div class="${x.m + x.g * 100 < 0 ? 'meno' : 'piu'}"><span>${giorno(x.t)} · ${esc(x.d || x.c)}</span><b>${[x.m ? `${segno(x.m)} ${MO}` : '', x.g ? `${segno(x.g)} ${DI}` : ''].filter(Boolean).join(' ')}</b></div>`).join('');
-  pan('Monete e diamanti', `<div class="info guadagna"><div><div class="sez">Come si guadagnano · ${D.nome}</div><div class="ris2">${fonti.map(([t, x]) => rigaF(t, x)).join('')}</div><p class="nota2">Monete e diamanti non si comprano: si guadagnano solo giocando. Salendo di divisione i premi in monete crescono.</p><div class="seg"><button data-club="personalizza">Personalizza il club</button><button data-ctab="strutture">Strutture del club</button></div></div>`
-    + `<div><div class="sez">Ultimi movimenti</div>${mov ? `<div class="ris2 mov">${mov}</div>` : '<p class="vuoto">Ancora nessun movimento: gioca una partita.</p>'}</div></div>`);
 }
 
 const MOTIVI = { soldi: 'Servono più monete o diamanti', rosa: 'La rosa è piena: vendi un giocatore o fai crescere la Foresteria', massimo: 'È già al massimo', aperta: 'C\'è già un giocatore in attesa', contatto: 'Serve un contatto dell\'agente', nessuno: 'Nessun giocatore trovato', giocatore: 'Questo giocatore non c\'è più' };
