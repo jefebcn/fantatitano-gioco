@@ -232,6 +232,12 @@ con `&alto` per la vista dall'alto e `&fps` per il contatore dei fotogrammi al s
   contatore di `?fps` ora scrive, per giro, gioco, gol e replay, il secondo peggiore e il fotogramma più lungo
   dall'inizio della partita (`fasePerf` in `src/game.js`, `contatore` in `src/prestazioni.js`). Serve una foto di Alex
   dopo un gol col replay finito; solo dopo si decide cosa alleggerire.
+- **Foto di Alex col contatore nuovo (25/11, grande, risoluzione 2.00x, qualità 0)**, scattata durante il primo piano
+  del gol: 60 fps, minimo 60; giro 59 (22 ms), gioco 56 (86 ms), gol 60 (20 ms). Nessun calo nel giro né al gol: lo
+  scatto dopo il gol è sparito. In gioco un solo fotogramma da 86 ms. I 31 e 39 di prima non si sono ripetuti:
+  probabile che il vecchio minimo contasse anche la costruzione dello stadio a inizio partita, che ora è esclusa.
+  Manca solo il numero del replay (la foto è prima che partisse): il sospetto sul replay da dietro la porta resta
+  da provare.
 - **Medio, dettagli fatti**: tetti che salgono verso il campo (`tetto.sale`) con la fronte nei colori di casa, il sotto
   illuminato di notte e una fila di luci sotto il bordo; tabellone col risultato vero (`SPALTI.punteggio`, vale anche
   per i maxischermi del grande); torri faro a traliccio con la griglia dei proiettori; da fuori una fascia coi colori di
