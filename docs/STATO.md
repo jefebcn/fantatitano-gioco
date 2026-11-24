@@ -236,8 +236,8 @@ con `&alto` per la vista dall'alto e `&fps` per il contatore dei fotogrammi al s
   del gol: 60 fps, minimo 60; giro 59 (22 ms), gioco 56 (86 ms), gol 60 (20 ms). Nessun calo nel giro né al gol: lo
   scatto dopo il gol è sparito. In gioco un solo fotogramma da 86 ms. I 31 e 39 di prima non si sono ripetuti:
   probabile che il vecchio minimo contasse anche la costruzione dello stadio a inizio partita, che ora è esclusa.
-  Manca solo il numero del replay (la foto è prima che partisse): il sospetto sul replay da dietro la porta resta
-  da provare.
+  Mancava il numero del replay (la foto è prima che partisse): Alex l'ha poi guardato e ha risposto «il numero va
+  bene, è tutto ok» (25/11), senza dire la cifra. Punto chiuso: non c'è niente da alleggerire.
 - **Medio, dettagli fatti**: tetti che salgono verso il campo (`tetto.sale`) con la fronte nei colori di casa, il sotto
   illuminato di notte e una fila di luci sotto il bordo; tabellone col risultato vero (`SPALTI.punteggio`, vale anche
   per i maxischermi del grande); torri faro a traliccio con la griglia dei proiettori; da fuori una fascia coi colori di
