@@ -197,7 +197,7 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   `DIVISE.chiaro` (una chiara e una scura): gli ospiti passano alla seconda maglia, poi bianca o nera. Prima 147 coppie
   su 240 avevano maglie chiare quasi uguale (rosso contro blu, verde contro blu). `scripts/prove/divise.cjs` lo controlla.
 
-## Stadi per divisione (richiesta di Alex del 24/11): fatto il grande, mancano medio e paese
+## Stadi per divisione (richiesta di Alex del 24/11): fatti grande e medio, manca il paese
 
 Tre stadi secondo la divisione di chi gioca in casa: **paese** (Esordienti, Borghi), **medio** (Contrade, Cadetta),
 **grande** (Sammarinese). Numeri in `STADI` (`src/config.js`); `src/grafica/spalti.js` costruisce i tre dagli stessi
@@ -219,12 +219,23 @@ con `&alto` per la vista dall'alto e `&fps` per il contatore dei fotogrammi al s
   colori; palchi con le vetrate accese; fuori piazzale, strada ad anello, parcheggi, lampioni e palazzi con le
   finestre accese di notte. 58.852 tifosi disegnati su 75 mila dichiarati; in vista di gioco 166 chiamate di disegno
   e 421 mila triangoli, contro 140 e 348 mila del medio.
-- **Fotogrammi al secondo su iPhone: da leggere**. Da qui non si misurano; Alex li legge con `?stadio=grande&fps`
-  sul telefono più vecchio e li confronta con `?stadio=medio&fps`. Se scendono: spezzare le sagome a tratti perché
-  quelle fuori schermo non si disegnino, o abbassare `folla`.
+- **Fotogrammi al secondo sul telefono di Alex** (video del 24/11, stadio grande, risoluzione 2.00x, qualità 0, con
+  la vista `?ia` accesa): 56-61 in gioco. Un solo calo a 22 per un secondo subito dopo il gol: tre fermi in fila
+  (0,32 + 0,10 + 0,23 s) mentre la scheda grafica preparava per la prima volta una cinquantina di immagini e due
+  materiali (tribune, striscioni, gente a bordo campo, numeri e stemmi dei primi piani). Ora `scalda` in `src/game.js`
+  disegna tutto una volta prima del calcio d'inizio, sotto la schermata delle due squadre: al gol restano solo i
+  cartelloni e il tabellone che cambiano scritta. Da far riprovare ad Alex; manca il numero del medio.
+- **Medio, dettagli fatti**: tetti che salgono verso il campo (`tetto.sale`) con la fronte nei colori di casa, il sotto
+  illuminato di notte e una fila di luci sotto il bordo; tabellone col risultato vero (`SPALTI.punteggio`, vale anche
+  per i maxischermi del grande); torri faro a traliccio con la griglia dei proiettori; da fuori una fascia coi colori di
+  casa in cima ai muri e i portoni (`esterno`).
+- **Tribune fuori inquadratura non disegnate** (`SPALTI.inquadra`, chiamata prima di ogni disegno): la tribuna alle
+  spalle della telecamera di gioco è lunga quanto il campo e il controllo a sfere di three.js la disegnava sempre, con
+  tutta la sua gente. Ora si prova la sua scatola contro l'inquadratura. In vista di gioco, di giorno: medio 147
+  chiamate e 265 mila triangoli, grande 169 e 345 mila, paese 139 e 157 mila; lo stadio unico di prima ne faceva 148
+  e 432 mila.
 - **Notte**: in paese e medio la luce è stata alzata (`STADI.tipi.*.luce`) finché l'erba resta verde.
-- **Da fare, una PR per stadio**: medio (tetti, tabellone, tribune) e paese (cartelloni fissi dipinti al posto dei
-  LED, che restano solo da medio in su). I riflessi dell'ambiente di notte (`src/grafica/resa.js`) usano ancora i fari
+- **Da fare**: il paese (cartelloni fissi dipinti al posto dei LED, che restano solo da medio in su). I riflessi dell'ambiente di notte (`src/grafica/resa.js`) usano ancora i fari
   dello stadio costruito all'avvio.
 
 ## Prova di Alex su iPhone (21/11): punti in ordine

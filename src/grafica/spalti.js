@@ -139,7 +139,9 @@ export function creaSpalti(T, scene, { HL, HW, stadi, tipo, renderer = null, luc
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.wrapS = T.RepeatWrapping; return t;
   })();
   const vetro = new T.MeshStandardMaterial({ color: 0x8a93a8, map: texPalchi, roughness: 0.2, metalness: 0.4, emissive: 0xffffff, emissiveMap: texPalchi, emissiveIntensity: 0.55 });
-  const copertura = new T.MeshStandardMaterial({ color: 0x8e96a4, roughness: 0.55, metalness: 0.5 }); // il sopra del tetto ad anello
+  const copertura = new T.MeshStandardMaterial({ color: 0x8e96a4, roughness: 0.55, metalness: 0.5 }); // il sopra dei tetti
+  // la vernice coi colori della squadra di casa: fronte dei tetti e fascia in cima ai muri di fuori (la tinge colora)
+  const vernice = new T.MeshStandardMaterial({ color: 0x4B06FC, roughness: 0.6, metalness: 0.15 });
   const parete = new T.MeshStandardMaterial({ color: 0x6f7888, roughness: 0.5, metalness: 0.55 }); // la parete esterna della conca
   // la fascia LED tra un anello e l'altro: una tela lunga con le scritte e i colori delle due squadre (la disegna
   // colora), che gira tutto intorno allo stadio e scorre piano. E gli schermi: una tela col nome delle due squadre
@@ -189,19 +191,33 @@ export function creaSpalti(T, scene, { HL, HW, stadi, tipo, renderer = null, luc
       }
       filaPrima += A.file;
     });
-    // tetto: dal fondo della tribuna fino al bordo, con le travi a sbalzo a vista (nella conca chiusa lo fa il giro)
+    // tetto: dal fondo della tribuna fino al bordo, con le travi a sbalzo a vista (nella conca chiusa lo fa il giro).
+    // Sale verso il campo di `sale` metri: lastra, travi, fronte e luci sono messe rispetto al bordo di dietro e girate
+    // insieme. Sopra è lamiera chiara come le travi, sotto un piano scuro che di notte si illumina; la fronte ha i colori di casa
     if (tr.tetto) {
-      const Tt = tr.tetto, prof = Tt.sporge - fondo, semi = tr.len / 2;
-      g.add(new T.Mesh(lastra(T, fondo, Tt.sporge, semi, semi, Tt.y, Tt.spessore), tettoM));
+      const Tt = tr.tetto, prof = Tt.sporge - fondo, semi = tr.len / 2, sale = Tt.sale || 0, pende = -Math.atan2(sale, prof), lungo = Math.hypot(prof, sale);
+      const sulTetto = (geo, mat, x, y, z) => { geo.translate(x, y, z); const m = new T.Mesh(geo, mat); m.position.set(0, Tt.y, fondo); m.rotation.x = pende; g.add(m); return m; };
+      sulTetto(lastra(T, 0, lungo, semi, semi, 0, Tt.spessore), acciaio, 0, 0, 0);
+      sulTetto(new T.PlaneGeometry(tr.len - 0.2, lungo - 0.2).rotateX(Math.PI / 2), tettoM, 0, -Tt.spessore / 2 - 0.02, lungo / 2);
       const nT = Math.max(2, Math.round(tr.len / Tt.trave));
       for (let k = 0; k <= nT; k++) {
-        const x = -semi + k * tr.len / nT;
-        const trave = new T.Mesh(new T.BoxGeometry(0.35, 1.2, prof), acciaio); trave.position.set(x, Tt.y - 0.85, fondo + prof / 2); g.add(trave);
+        const x = -semi + k * tr.len / nT, su = 6 - sale * 0.7;
+        sulTetto(new T.BoxGeometry(0.35, 1.2, lungo), acciaio, x, -0.85, lungo / 2);
         const pil = new T.Mesh(new T.BoxGeometry(0.6, Tt.y, 0.6), acciaio); pil.position.set(x, Tt.y / 2, fondo - 0.4); g.add(pil);
-        const tir = new T.Mesh(new T.BoxGeometry(0.15, 0.15, Math.hypot(prof * 0.7, 6)), acciaio); tir.position.set(x, Tt.y + 3, fondo + prof * 0.35); tir.rotation.x = Math.atan2(6, prof * 0.7); g.add(tir); // tirante
-        const ant = new T.Mesh(new T.BoxGeometry(0.4, 6, 0.4), acciaio); ant.position.set(x, Tt.y + 3, fondo - 0.4); g.add(ant); // antenna del tirante
+        // tirante, dalla cima dell'antenna al tetto
+        const tir = new T.Mesh(new T.BoxGeometry(0.15, 0.15, Math.hypot(prof * 0.7, su)), acciaio); tir.position.set(x, Tt.y + 6 - su / 2, fondo + prof * 0.35); tir.rotation.x = Math.atan2(su, prof * 0.7); g.add(tir);
+        const ant = new T.Mesh(new T.BoxGeometry(0.4, 6, 0.4), acciaio); ant.position.set(x, Tt.y + 3, fondo - 0.4); g.add(ant);
       }
-      const bordo = new T.Mesh(new T.BoxGeometry(tr.len, 1.4, 0.5), acciaio); bordo.position.set(0, Tt.y - 0.5, Tt.sporge); g.add(bordo); // trave di bordo
+      // la fronte, coi colori di casa, e sotto il bordo una fila di luci
+      sulTetto(new T.BoxGeometry(tr.len, 1.4, 0.5), vernice, 0, -0.5, lungo);
+      if (Tt.luci && luce) sulTetto(new T.BoxGeometry(tr.len - 4, 0.22, 0.5), luce, 0, -1.25, lungo - Tt.luci);
+    }
+    // da fuori: in cima al muro di fondo una fascia coi colori di casa, e ai suoi piedi i portoni, uno ogni tot metri,
+    // verniciati uguale
+    if (ST.esterno && !chiuso) {
+      const E = ST.esterno, cima = muro + (A0.file - 1) * A0.alt + 2.5, band = new T.Mesh(new T.BoxGeometry(tr.len + 0.4, E.fascia, 0.3), vernice); band.position.set(0, cima - E.fascia / 2, fondo - 0.1); g.add(band);
+      const nP = Math.max(1, Math.round(tr.len / E.porte));
+      for (let k = 0; k < nP; k++) { const porta = new T.Mesh(new T.BoxGeometry(E.porta[0], E.porta[1], 0.3), vernice); porta.position.set(-tr.len / 2 + (k + 0.5) * tr.len / nP, E.porta[1] / 2, fondo - 0.1); g.add(porta); }
     }
     // ringhiera sul muretto: montanti e due corrimano
     const nP = Math.floor(tr.len / 2.5), mont = new T.InstancedMesh(new T.CylinderGeometry(0.035, 0.035, 1, 6), ferro, nP + 1);
@@ -235,8 +251,12 @@ export function creaSpalti(T, scene, { HL, HW, stadi, tipo, renderer = null, luc
       asta.position.set(x, muro + r * A0.alt + 1.6, -r * A0.prof); f.position.set(x + 1.1, muro + r * A0.alt + 2.5, -r * A0.prof); g.add(asta, f);
       bandiere.push({ f, pg, settore: tr.settore, fase: rand() * 6 });
     }
-    unisci(T, g, [cemento, ferro, tettoM, fascia, acciaio]); // gradoni e muri, corrimano e aste, tetto, travi: una mesh per materiale
+    // la vernice delle tribune che restano sempre in scena va tutta in una mesh sola (quella alle spalle della telecamera
+    // resta con la sua tribuna, che si nasconde)
+    if (tr.nome !== 'vicino') for (const m of g.children.filter((c) => c.material === vernice)) { m.updateMatrix(); m.applyMatrix4(g.matrix); radice.add(m); }
+    unisci(T, g, [cemento, ferro, fascia, acciaio, vernice]); // gradoni e muri, corrimano e aste, travi, vernice: una mesh per materiale
   }
+  unisci(T, radice, [vernice]);
   // ---------------------------------------------------------------- la conca chiusa: angoli curvi, tetto ad anello, fascia LED
   // dove arriva lo stadio in pianta, dal centro del campo: serve a chi disegna i dintorni
   const fondi = tribune.map((tr) => { const u = tr.anelli[tr.anelli.length - 1]; return (u.dietro || 0) + u.file * u.prof; });
@@ -501,6 +521,7 @@ diffuseColor = vec4((vMaglia * masc.r + vPelle * masc.g + vScuro * masc.b) / max
     disegnaLed(casa, ospiti); disegnaSchermo(casa, ospiti);
     for (const b of bandiere) { const sq = squadre[b.settore], a = new T.Color(sq.c1), c2 = new T.Color(sq.c2), col3 = b.pg.attributes.color; for (let i = 0; i < col3.count; i++) { const x = b.pg.attributes.position.getX(i), c = Math.floor((x + 1.1) / 0.44) % 2 ? a : c2; col3.setXYZ(i, c.r, c.g, c.b); } col3.needsUpdate = true; }
     if (tribune[0].copertura) tribune[0].copertura.material.color.set(casa.c1);
+    vernice.color.set(casa.c1);
   }
   /** La fascia LED: quattro riquadri uguali in fila, i due marchi alternati ai colori e ai nomi delle due squadre. */
   function disegnaLed(casa, ospiti) {
@@ -513,15 +534,21 @@ diffuseColor = vec4((vMaglia * masc.r + vPelle * masc.g + vScuro * masc.b) / max
     });
     texLed.needsUpdate = true;
   }
-  /** Gli schermi (tabellone, maxischermi): le due squadre una accanto all'altra, coi loro colori. */
+  /** Gli schermi (tabellone, maxischermi): le due squadre una accanto all'altra coi loro colori, e in mezzo il risultato. */
+  let gol = [0, 0];
   function disegnaSchermo(casa, ospiti) {
     const x = telaSchermo.getContext('2d'), W = telaSchermo.width, H = telaSchermo.height;
+    x.textAlign = 'center'; x.textBaseline = 'middle';
     [casa, ospiti].forEach((sq, k) => {
-      x.fillStyle = sq.c1; x.fillRect(k * W / 2, 0, W / 2, H); x.fillStyle = sq.c2; x.textAlign = 'center'; x.textBaseline = 'middle';
-      x.font = '96px Anton, Impact, sans-serif'; x.fillText(sq.short || (sq.name || '').slice(0, 3).toUpperCase(), k * W / 2 + W / 4, H / 2);
+      x.fillStyle = sq.c1; x.fillRect(k * W / 2, 0, W / 2, H); x.fillStyle = sq.c2; x.fillRect(k * W / 2, H - 14, W / 2, 14);
+      x.font = '84px Anton, Impact, sans-serif'; x.fillText(sq.short || (sq.name || '').slice(0, 3).toUpperCase(), k * W / 2 + W / 4, H * 0.3);
     });
-    x.fillStyle = '#0A0A0C'; x.fillRect(W / 2 - 6, 0, 12, H); texSchermo.needsUpdate = true;
+    x.fillStyle = '#0A0A0C'; x.fillRect(W / 2 - 5, 0, 10, H); x.fillRect(W / 2 - 120, H * 0.5, 240, H * 0.42);
+    x.fillStyle = '#D9F51F'; x.font = '100px Anton, Impact, sans-serif'; x.fillText(`${gol[0]} - ${gol[1]}`, W / 2, H * 0.72);
+    texSchermo.needsUpdate = true;
   }
+  /** Il risultato sugli schermi dello stadio: si ridisegna solo quando cambia. */
+  function punteggio(a, b) { if (a === gol[0] && b === gol[1]) return; gol = [a, b]; if (squadre) disegnaSchermo(squadre[0], squadre[1]); }
   function disegnaStriscione(s, sq) {
     const x = s.c.getContext('2d'), testo = [`FORZA ${sq.short || sq.name}`, (sq.name || '').toUpperCase(), 'SEMPRE CON VOI'][s.k];
     x.fillStyle = sq.c1; x.fillRect(0, 0, 512, 96); x.fillStyle = sq.c2; x.fillRect(0, 0, 512, 14); x.fillRect(0, 82, 512, 14);
@@ -538,7 +565,18 @@ diffuseColor = vec4((vMaglia * masc.r + vPelle * masc.g + vScuro * masc.b) / max
   function dettaglio(on) { for (const tr of tribune) if (tr.folla3d && tr.sagomeVicine) { tr.folla3d.m.visible = on; tr.sagomeVicine.m.visible = !on; } }
   /** La tribuna sotto la telecamera di gioco (gradoni, ringhiere e folla) si vede o no. Quando la telecamera le sale sopra
    *  per seguire il pallone sulla linea laterale vicina, le prime file spuntano in basso e coprono gioco e comandi. */
-  function spalle(nascosta) { const tr = tribune[1]; if (tr.g.visible === nascosta) tr.g.visible = tr.folla.visible = !nascosta; }
+  let dietro = false;
+  function spalle(nascosta) { dietro = nascosta; }
+  // la scatola che contiene ogni tribuna con la sua gente e le bandiere: serve a sapere se entra nell'inquadratura
+  const tronco = new T.Frustum(), pv = new T.Matrix4();
+  radice.updateMatrixWorld(true);
+  for (const tr of tribune) tr.scatola = new T.Box3().setFromObject(tr.g).expandByVector(new T.Vector3(1, 4, 1));
+  /** Prima di disegnare: una tribuna che non entra nell'inquadratura non si disegna, né lei né la sua gente. Quella alle
+   *  spalle della telecamera di gioco è lunga quanto il campo: il controllo solito, a sfere, la disegnava sempre. */
+  function inquadra(cam) {
+    cam.updateMatrixWorld(); pv.copy(cam.matrixWorld).invert().premultiply(cam.projectionMatrix); tronco.setFromProjectionMatrix(pv);
+    for (const tr of tribune) { const v = !(dietro && tr === tribune[1]) && tronco.intersectsBox(tr.scatola); if (tr.g.visible !== v) { tr.g.visible = v; if (tr.folla) tr.folla.visible = v; } }
+  }
   function muovi(dt, t) {
     U.uT.value = t; if (ST.led) texLed.offset.x = (t * ST.led.scorre) % 1; // la fascia LED scorre piano
     for (let k = 0; k < 2; k++) { fino[k] -= dt; if (fino[k] <= 0) es[k] = Math.max(0, es[k] - dt * 1.5); }
@@ -560,6 +598,6 @@ diffuseColor = vec4((vMaglia * masc.r + vPelle * masc.g + vScuro * masc.b) / max
     });
     DETT.dispose(); QUAD.dispose(); riserva.dispose(); texPalchi.dispose(); texLed.dispose(); texSchermo.dispose(); if (quadroSagome) quadroSagome.dispose();
   }
-  return { colora, esulta, canta, densita, dettaglio, spalle, muovi, illumina, togli, materiali, tipo, ingombro, get squadre() { return squadre; }, N, posti: posti.length };
+  return { colora, punteggio, esulta, canta, densita, dettaglio, spalle, inquadra, muovi, illumina, togli, materiali, tipo, ingombro, get squadre() { return squadre; }, N, posti: posti.length };
 }
 function hashStr(s) { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
