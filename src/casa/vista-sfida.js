@@ -117,6 +117,8 @@ function richiesta() {
   // riscaldamento e Curva dei tifosi: per questa partita i giocatori del club valgono un po' di più
   const noi = squadraPonte(H, moduloMio(), true, mio, mio ? CAR.bonusPartita(K, !S.fuori) : 0), loro = squadraPonte(A, aiForm(A), false, false);
   return { versione: 1, tipo: TIPO_PONTE[S.tipo], titolo: `${comp.nome} · ${comp.fase}`, difficolta: sel.diff, ora: m.ora, meteo: { cielo: m.cielo, gradi: m.gradi, orario: m.orario },
+    // lo stadio è quello di chi ospita (§11): la sua divisione ne decide il tipo, le stelle quanto è curato e pieno
+    stadio: CAR.stadioDi(K, CLUBS, S.fuori ? S.loro : S.mia),
     supplementariERigori: !!S.rigori, squadre: S.fuori ? [loro, noi] : [noi, loro], allaFine: (esito) => finePartita(partita, esito) };
 }
 
