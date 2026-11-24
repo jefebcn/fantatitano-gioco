@@ -13,12 +13,13 @@ import { finestra } from './finestra.js';
 import { apriPremio, premiDa } from './premio.js';
 import { t } from './testi.js';
 import { apri, ridisegna } from './nav.js';
+import { quandoCambiaMisura } from './schermo.js';
 
 document.getElementById('vs').insertAdjacentHTML('beforebegin', '<div id="carriera" class="scr nas"></div>');
 const radice = document.getElementById('carriera');
 // quando arriva un'immagine o cambia la misura dello schermo i posti si spostano: i testi si riadattano
 radice.addEventListener('load', () => adatta(radice), true);
-addEventListener('resize', () => { if (!radice.classList.contains('nas')) adatta(radice); });
+quandoCambiaMisura(() => { if (!radice.classList.contains('nas')) adatta(radice); });
 
 // cosa fa ogni carta
 const AZIONI = {
