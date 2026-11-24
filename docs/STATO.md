@@ -141,8 +141,11 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - 12 FATTO: un solo segnalino, sul giocatore comandato (quello grigio sul compagno è spento: `SEGNI.grigio`); il nome
   dell'avversario col pallone si nasconde quando finirebbe sopra nome o segnalino del comandato (`SEGNI.largo`,
   `sopraIlNome` in `src/regia.js`); lettere col bordo scuro, leggibili anche davanti ai cartelloni.
-- Restano: 13 tasto A in difesa (chiedere),
-  14 maglie simili, 15 animazioni (video rallentato dei 5 gesti).
+- 14 FATTO: il controllo delle divise c'era già (gli ospiti cambiano maglia se è vicina a quella di casa), ma guardava
+  solo maglia contro maglia: ospiti blu con le maniche gialle contro una squadra gialla passavano. Ora nemmeno disegno,
+  maniche e calzettoni degli ospiti possono avere il colore della maglia di casa (`DIVISE`, `pickKits`). Prova:
+  `scripts/prove/divise.cjs`, nelle prove automatiche (prima 29 coppie su 342 sbagliate, ora 0).
+- Restano: 13 tasto A in difesa (chiedere), 15 animazioni (video rallentato dei 5 gesti).
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato
