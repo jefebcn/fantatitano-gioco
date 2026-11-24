@@ -136,7 +136,10 @@ export const CAMERA_ALTO = [0, 95, 40, 0, 0, 0, 55];
 // di fronte alla telecamera, col tunnel; destra è la curva degli ospiti) ha `lungo` in metri e i suoi `anelli`: file,
 // alzata e pedata di ogni fila, e per gli anelli sopra il primo la quota `y` e quanti metri sta `dietro` al muretto
 // (`posto`, se c'è, è la larghezza dei posti di quell'anello: più stretti dove ci sono solo sagome).
-// `tetto`: quota, dove arriva il bordo (metri dal muretto, negativo = più indietro), spessore, una trave ogni tot metri.
+// `tetto`: quota, dove arriva il bordo (metri dal muretto, negativo = più indietro), spessore, una trave ogni tot metri;
+// `sale` di quanti metri il bordo verso il campo è più alto del fondo, `luci` a quanti metri dal bordo sta la fila di luci.
+// `esterno`: in cima ai muri di fuori una `fascia` coi colori di casa alta tot metri, e un ingresso ogni `porte` metri,
+// largo e alto `porta`.
 // Con `chiuso` i quattro lati hanno gli stessi anelli e sono uniti da angoli curvi, senza buchi: `raggio` è quello della
 // curva del muretto, `spicchi` in quanti pezzi è diviso ogni angolo. Il tetto allora è un anello intero.
 // Con `lama` ha una costola sopra e una lama sulla parete di fuori a ogni trave: larghezza, altezza, quanto sporge.
@@ -144,7 +147,9 @@ export const CAMERA_ALTO = [0, 95, 40, 0, 0, 0, 55];
 // allo stadio e scorre di `scorre` giri al secondo. `palchi` e `schermi`: dove stanno e quanto sono grandi.
 // Nei palchi `vetrate` sono i metri occupati da otto vetrate.
 // `fari`: pali bassi agli angoli, torri agli angoli oppure file di proiettori sul bordo del tetto. `y` è l'altezza, `fuori`
-// i metri oltre la bandierina (in diagonale), `bordo` i metri del bordo del tetto dalla linea laterale.
+// i metri oltre la bandierina (in diagonale), `bordo` i metri del bordo del tetto dalla linea laterale. `griglia`: in
+// quante colonne e righe le sbarre dividono il pannello dei proiettori. `traliccio`: lato della torre a terra e in cima,
+// e altezza di un piano.
 // `luce`, solo di notte: quanto valgono la luce diffusa e quella dei fari rispetto a NOTTURNA, il colore dei fari, quanto
 // restano in penombra le tribune e quanto brilla il tetto. `alto`: la telecamera di ?alto, come CAMERA_ALTO.
 // `fuori` sono i dintorni, vedi src/grafica/dintorni.js. Terreno a prato o di città, `margine` è il piazzale attorno allo stadio,
@@ -173,13 +178,14 @@ export const STADI = {
     medio: {
       posti: 10000, folla: 10000,
       lati: {
-        lontano: { lungo: 2 * HL + 10, anelli: [{ file: 20, ...GRADONE }], tetto: { y: 15, sporge: -2.5, spessore: .5, trave: 12 } },
-        vicino: { lungo: 2 * HL + 10, anelli: [{ file: 20, ...GRADONE }], tetto: { y: 15, sporge: -2.5, spessore: .5, trave: 12 } },
+        lontano: { lungo: 2 * HL + 10, anelli: [{ file: 20, ...GRADONE }], tetto: { y: 15, sporge: -2.5, spessore: .5, trave: 12, sale: 2.2, luci: 1.5 } },
+        vicino: { lungo: 2 * HL + 10, anelli: [{ file: 20, ...GRADONE }], tetto: { y: 15, sporge: -2.5, spessore: .5, trave: 12, sale: 2.2, luci: 1.5 } },
         destra: { lungo: 2 * HW + 6, anelli: [{ file: 18, ...GRADONE }] },
         sinistra: { lungo: 2 * HW + 6, anelli: [{ file: 18, ...GRADONE }], tabellone: { largo: 16, alto: 7, y: 15 } },
       },
-      fari: { tipo: 'torri', y: 38, fuori: 22, largo: 9 },
-      luce: { hemi: 1.7, fari: 1.2, colore: 0xf3f6ff, tribune: 0x666d82, tetto: 0 },
+      fari: { tipo: 'torri', y: 38, fuori: 22, largo: 9, griglia: [8, 4], traliccio: [3.4, 1.5, 4.75] },
+      esterno: { fascia: 1.6, porte: 18, porta: [3, 2.8] },
+      luce: { hemi: 1.7, fari: 1.2, colore: 0xf3f6ff, tribune: 0x7a8196, tetto: .3 },
       fuori: { terreno: 'prato', margine: 20, strade: 2, parcheggi: 4, parcheggio: [70, 40], pieno: .7, lampioni: 34, palo: 9, colline: 2 },
       alto: [0, 100, 92, 0, 0, -4, 55],
     },

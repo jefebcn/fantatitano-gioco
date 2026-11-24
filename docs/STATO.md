@@ -197,7 +197,7 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   `DIVISE.chiaro` (una chiara e una scura): gli ospiti passano alla seconda maglia, poi bianca o nera. Prima 147 coppie
   su 240 avevano maglie chiare quasi uguale (rosso contro blu, verde contro blu). `scripts/prove/divise.cjs` lo controlla.
 
-## Stadi per divisione (richiesta di Alex del 24/11): fatto il grande, mancano medio e paese
+## Stadi per divisione (richiesta di Alex del 24/11): fatti grande e medio, manca il paese
 
 Tre stadi secondo la divisione di chi gioca in casa: **paese** (Esordienti, Borghi), **medio** (Contrade, Cadetta),
 **grande** (Sammarinese). Numeri in `STADI` (`src/config.js`); `src/grafica/spalti.js` costruisce i tre dagli stessi
@@ -222,9 +222,17 @@ con `&alto` per la vista dall'alto e `&fps` per il contatore dei fotogrammi al s
 - **Fotogrammi al secondo su iPhone: da leggere**. Da qui non si misurano; Alex li legge con `?stadio=grande&fps`
   sul telefono più vecchio e li confronta con `?stadio=medio&fps`. Se scendono: spezzare le sagome a tratti perché
   quelle fuori schermo non si disegnino, o abbassare `folla`.
+- **Medio, dettagli fatti**: tetti che salgono verso il campo (`tetto.sale`) con la fronte nei colori di casa, il sotto
+  illuminato di notte e una fila di luci sotto il bordo; tabellone col risultato vero (`SPALTI.punteggio`, vale anche
+  per i maxischermi del grande); torri faro a traliccio con la griglia dei proiettori; da fuori una fascia coi colori di
+  casa in cima ai muri e i portoni (`esterno`).
+- **Tribune fuori inquadratura non disegnate** (`SPALTI.inquadra`, chiamata prima di ogni disegno): la tribuna alle
+  spalle della telecamera di gioco è lunga quanto il campo e il controllo a sfere di three.js la disegnava sempre, con
+  tutta la sua gente. Ora si prova la sua scatola contro l'inquadratura. In vista di gioco, di giorno: medio 147
+  chiamate e 265 mila triangoli, grande 169 e 345 mila, paese 139 e 157 mila; lo stadio unico di prima ne faceva 148
+  e 432 mila.
 - **Notte**: in paese e medio la luce è stata alzata (`STADI.tipi.*.luce`) finché l'erba resta verde.
-- **Da fare, una PR per stadio**: medio (tetti, tabellone, tribune) e paese (cartelloni fissi dipinti al posto dei
-  LED, che restano solo da medio in su). I riflessi dell'ambiente di notte (`src/grafica/resa.js`) usano ancora i fari
+- **Da fare**: il paese (cartelloni fissi dipinti al posto dei LED, che restano solo da medio in su). I riflessi dell'ambiente di notte (`src/grafica/resa.js`) usano ancora i fari
   dello stadio costruito all'avvio.
 
 ## Prova di Alex su iPhone (21/11): punti in ordine

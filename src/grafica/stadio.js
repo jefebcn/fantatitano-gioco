@@ -195,16 +195,37 @@ export function panchine(T, scene, { HW, colore = 0x4B06FC }) {
 export function torriFaro(T, scene, { HL, HW, fari }) {
   const pal = new T.MeshStandardMaterial({ color: 0x8c93a3, metalness: 0.6, roughness: 0.4 }), luci = [], radice = new T.Group(); scene.add(radice);
   const pann = new T.MeshStandardMaterial({ color: 0x2a2f3a, emissive: 0xfff4d6, emissiveIntensity: 0.15, roughness: 0.3 });
+  const scuro = new T.MeshStandardMaterial({ color: 0x14171d, roughness: 0.6, metalness: 0.4 });
   const sulTetto = fari.tipo === 'tetto', largo = sulTetto ? 12 : fari.largo, alto = sulTetto ? 2.6 : largo * 0.55, f = (fari.fuori || 0) / Math.SQRT2;
   for (const d of [-1, 1]) for (const e of [-1, 1]) {
     const x = sulTetto ? d * (HL - 10) : d * (HL + f), z = sulTetto ? e * (HW + fari.bordo) : e * (HW + f), y = fari.y - (sulTetto ? 0.6 : alto / 2), g = new T.Group(); g.position.set(x, y, z); g.lookAt(d * HL * 0.25, 0, e * HW * 0.15); radice.add(g);
     const telaio = new T.Mesh(new T.BoxGeometry(largo, 0.3, 0.3), pal); telaio.position.set(0, alto / 2 + 0.3, 0); g.add(telaio);
     const testa = new T.Mesh(new T.BoxGeometry(largo, alto, 0.5), pann); testa.position.set(0, 0, 0.3); g.add(testa);
-    // il sostegno: una torre a traliccio (qui un blocco) o un palo sottile, da terra fin sotto i proiettori
-    if (!sulTetto) { const lato = fari.tipo === 'torri' ? 1.6 : 0.35, palo = new T.Mesh(new T.BoxGeometry(lato, y, lato), pal); palo.position.set(x, y / 2, z); radice.add(palo); }
+    // la griglia dei proiettori: sbarre scure davanti al pannello luminoso
+    if (fari.griglia) {
+      const [nx, ny] = fari.griglia;
+      for (let i = 1; i < nx; i++) { const b = new T.Mesh(new T.BoxGeometry(0.14, alto, 0.1), scuro); b.position.set(-largo / 2 + i * largo / nx, 0, 0.58); g.add(b); }
+      for (let j = 1; j < ny; j++) { const b = new T.Mesh(new T.BoxGeometry(largo, 0.14, 0.1), scuro); b.position.set(0, -alto / 2 + j * alto / ny, 0.58); g.add(b); }
+      unisci(T, g, [scuro]);
+    }
+    // il sostegno, da terra fin sotto i proiettori: un palo sottile, oppure una torre a traliccio che si stringe salendo,
+    // con quattro gambe, un giro di traversi a ogni piano e una diagonale per faccia. Ogni torre è una mesh sola, per
+    // conto suo: quando è fuori dall'inquadratura non si disegna
+    if (fari.tipo === 'pali') { const palo = new T.Mesh(new T.BoxGeometry(0.35, y, 0.35), pal); palo.position.set(x, y / 2, z); radice.add(palo); }
+    if (fari.tipo === 'torri') {
+      const [base, cima, piano] = fari.traliccio, piani = Math.max(1, Math.round(y / piano)), ang = [[1, 1], [1, -1], [-1, -1], [-1, 1]];
+      const nodo = (k, j) => new T.Vector3(x + ang[k % 4][0] * (base + (cima - base) * j / piani) / 2, y * j / piani, z + ang[k % 4][1] * (base + (cima - base) * j / piani) / 2);
+      const torre = new T.Group(); radice.add(torre);
+      const asta = (a, b, lato) => { const m = new T.Mesh(new T.BoxGeometry(lato, lato, a.distanceTo(b)), pal); m.position.copy(a).add(b).multiplyScalar(0.5); m.lookAt(b); torre.add(m); };
+      for (let k = 0; k < 4; k++) {
+        asta(nodo(k, 0), nodo(k, piani), 0.32);
+        for (let j = 1; j <= piani; j++) { asta(nodo(k, j), nodo(k + 1, j), 0.16); asta(nodo(k, j - 1), nodo(k + 1, j), 0.12); }
+      }
+      unisci(T, torre, [pal]);
+    }
     luci.push({ testa, pos: { x, y, z }, alone: sulTetto ? 16 : largo * 1.6 });
   }
-  const togli = () => { scene.remove(radice); radice.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); pal.dispose(); pann.dispose(); };
+  const togli = () => { scene.remove(radice); radice.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); pal.dispose(); pann.dispose(); scuro.dispose(); };
   return { luci, materiale: pann, togli };
 }
 

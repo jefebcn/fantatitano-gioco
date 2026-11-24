@@ -2669,7 +2669,7 @@ function disegna(dt) {
     PART.muovi(dt); if (SPALTI) folla(dt); if (BORDO && G.ball) BORDO.muovi(dt, G.ball.x, G.ball.z); rilievoDivise();
   }
   buio();
-  updateCamera(dt); REGIA.dopo(dt); seguiOmbre(); dettagliFigure(); if (RESA) RESA.disegna(); else renderer.render(scene, cam);
+  updateCamera(dt); REGIA.dopo(dt); SPALTI.inquadra(cam); seguiOmbre(); dettagliFigure(); if (RESA) RESA.disegna(); else renderer.render(scene, cam);
   DBG_IA.disegna();
 }
 const REGIA = creaRegia({ scene, cam, G, $, all, pose, hyp, clamp, sgn, HL, HW, ballMesh, ballShadow, mettiPalla, ring, arrow, camPos, camLook, boards, img, cdist, lum,
@@ -2695,6 +2695,7 @@ const potenzaBarra = () => (G.charge >= 0 && G.ctrl && G.ball && G.ball.owner ==
 function hud() {
   if (!G.teams.length) return;
   $('#sbS').textContent = `${G.teams[0].score} - ${G.teams[1].score}`;
+  SPALTI.punteggio(G.teams[0].score, G.teams[1].score);
   const m = ((G.half - 1) + Math.min(1, G.clock / HALF_SECS)) * 45, txt = `${String(Math.floor(m)).padStart(2, '0')}:${String(Math.floor(m % 1 * 60)).padStart(2, '0')}`;
   if (txt !== lastClock) { $('#sbT').textContent = txt; lastClock = txt; }
   if (G.ctrl !== lastChi) { lastChi = G.ctrl; $('#chi').innerHTML = G.ctrl ? `<i>${G.ctrl.num}</i>${G.ctrl.name.replace(/[<>&]/g, '')}` : ''; }
