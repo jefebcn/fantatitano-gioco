@@ -272,10 +272,11 @@ export const RINVIO = { attesa: [1.3, 2.1], braccio: .63, piede: .3, corto: 30, 
 export const MANO = { peso: 9 };
 
 /* ---------------------------------------------------------------- riprese, panchina, a terra */
-// Rimessa laterale con le mani. linea: dove sta chi batte; max: fin dove può lanciare; lunga: da quanti metri il lancio è
+// Rimessa laterale con le mani. linea: dove sta chi batte, fuori dal campo coi piedi dietro la riga bianca come da
+// regolamento. Prima stava 25 cm dentro. max: fin dove può lanciare; lunga: da quanti metri il lancio è
 // lungo e alto; fermo: il secondo della clip in cui si tiene il pallone dietro la testa; pensa: quanto aspetta dopo il fischio
 // mani e manoMin: a che altezza sta il pallone sopra la testa, se la posa non si può leggere, e il minimo
-export const RIMESSA = { linea: HW - .25, max: 28, lunga: 14, fermo: .08, mani: 1.95, manoMin: .9 };
+export const RIMESSA = { linea: HW + .4, max: 28, lunga: 14, fermo: .08, mani: 1.95, manoMin: .9 };
 // Panchina: quante sostituzioni a partita, quante ne fa l'IA, da che punto della partita comincia e ogni quanto ne fa un'altra
 export const SUB = { max: 5, ai: 3, from: .55, every: .12 };
 /** Quanto si resta a terra dopo una scivolata, un tuffo o un contrasto subito: si allunga se ci sono le clip registrate. */

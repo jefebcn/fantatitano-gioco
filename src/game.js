@@ -972,7 +972,7 @@ function piede(p) {
   if (d <= 1.6 && b.y < 1.2 && !(p.i === 0 && b.owner === p)) return { x: b.x, y: BR, z: b.z };
   return { x: p.x + Math.sin(p.dir) * .8, y: BR, z: p.z + Math.cos(p.dir) * .8 };
 }
-/* Rimessa laterale con le mani (clip di GameplayFootball): chi la batte si mette sulla linea, prende il pallone sopra la
+/* Rimessa laterale con le mani (clip di GameplayFootball): chi la batte si mette dietro la linea, prende il pallone sopra la
    testa, si gira verso il compagno e lo lancia quando le braccia arrivano in avanti (il «tocco» della clip). Corta sui
    piedi fino a 14 m, poi lunga e più alta. Niente fuorigioco (G.noOff resta acceso dalla ripresa fino al lancio). */
 function lanciaRimessa(p, m) {
@@ -992,11 +992,12 @@ function lanciaRimessa(p, m) {
 function palloneInMano() {
   const r = G.rimessa, b = G.ball; if (!r) return; const k = r.chi;
   if (G.state !== 'restart' && G.state !== 'play') { G.rimessa = null; return; }
-  if (G.state === 'restart' && !r.mani) { const q = postoBattitore(k, b); if (hyp(k.x - q[0], k.z - q[1]) < .6) r.mani = true; else return; } // lo prende quando arriva sulla linea
+  if (G.state === 'restart' && !r.mani) { const q = postoBattitore(k, b); if (hyp(k.x - q[0], k.z - q[1]) < .6) r.mani = true; else return; } // lo prende quando arriva dietro la linea
   if (G.state === 'play' && b.owner !== k) { G.rimessa = null; return; }
   if (!k.carica && !(k.fx === 'rimessa' && k.fxFermo)) { k.dir = Math.atan2(0, -sgn(k.z)); if (clipGF(k, 'rimessa', RIMESSA.fermo)) k.fxFermo = true; } // rivolto al campo, pallone dietro la testa
   const h = traLeMani(k) || { x: k.x + Math.sin(k.dir) * .1, y: RIMESSA.mani, z: k.z + Math.cos(k.dir) * .1 };
-  b.x = h.x; b.y = Math.max(h.y, RIMESSA.manoMin); b.z = clamp(h.z, -HW + .05, HW - .05); b.vx = b.vy = b.vz = 0;
+  // in mano il pallone sta dov'è chi batte, fuori dal campo: rientra quando lo lancia
+  b.x = h.x; b.y = Math.max(h.y, RIMESSA.manoMin); b.z = h.z; b.vx = b.vy = b.vz = 0;
 }
 function kick(p, vx, vy, vz, anim = 'passaggio', c = 0, tp = 0) {
   const b = G.ball, o = piede(p); b.owner = null; b.x = o.x; b.z = o.z; b.y = BR;
@@ -1978,7 +1979,7 @@ function movePlayer(p, dt) {
   else if (p.st === 'dive') { const k = Math.max(0, 1 - p.stT / .5) * (p.diveV || 8); p.vx *= Math.pow(.8, dt * 60); p.vz = p.diveS * k; if (p.stT > .5) { p.st = 'down'; p.stT = 0; } }
   else if (p.st === 'down') { const f = Math.pow(.7, dt * 60); p.vx *= f; p.vz *= f; if (p.stT > (p.i === 0 ? DOWN.gk : DOWN.pl)) { p.st = 'run'; p.stT = 0; } }
   else if (/^rialza/.test(p.fx || '') && p.fxT < .45) { const f = Math.pow(.8, dt * 60); p.vx *= f; p.vz *= f; } // si sta rialzando: parte solo quando è quasi in piedi
-  else if (G.rimessa && G.rimessa.chi === p && G.state === 'play' && b.owner === p) { p.vx = p.vz = 0; } // la rimessa: dopo il fischio fermo sulla linea col pallone in mano (prima ci torna se lo spostano)
+  else if (G.rimessa && G.rimessa.chi === p && G.state === 'play' && b.owner === p) { p.vx = p.vz = 0; } // la rimessa: dopo il fischio fermo dietro la linea col pallone in mano (prima ci torna se lo spostano)
   else return corri(p, dt);
   p.x = clamp(p.x + p.vx * dt, -HL - 3.5, HL + 3.5); p.z = clamp(p.z + p.vz * dt, -HW - 3, HW + 3);
 }
@@ -2180,7 +2181,8 @@ function contacts(dt) {
   }
 }
 function bounds() {
-  const b = G.ball; if (b.owner && b.owner.i === 0) return;
+  // il portiere col pallone in mano e chi batte la rimessa laterale da dietro la riga non lo portano fuori
+  const b = G.ball; if (b.owner && (b.owner.i === 0 || (G.rimessa && G.rimessa.chi === b.owner))) return;
   if (Math.abs(b.x) > HL) {
     const e = sgn(b.x), az = Math.abs(b.z);
     if (az > GH && az < GH + 1.4 && b.y < GT + .4) for (const p of PORTE) if (p.d === e) p.colpoFuori(b); // sfiora l'esterno della rete uscendo sul fondo
@@ -2200,7 +2202,7 @@ function bounds() {
     restart(t, clamp(b.x, -HL + 1.5, HL - 1.5), sgn(b.z) * (HW - .5), 'laterale');
   }
 }
-/** Dove si mette chi batte: sulla linea laterale col pallone in mano per la rimessa, appena dietro il pallone per il resto. */
+/** Dove si mette chi batte: appena dietro la linea laterale col pallone in mano per la rimessa, appena dietro il pallone per il resto. */
 function postoBattitore(k, b, oltre = 0) { return G.rimessa && G.rimessa.chi === k ? [b.x, sgn(b.z) * (RIMESSA.linea + oltre)] : [b.x - k.team.side * (.5 + oltre), b.z]; }
 // tipo: il codice della palla ferma (fondo, laterale, angolo, rigore, punizione, fuorigioco, oppure niente). La scritta che
 // si legge sotto il tabellone è in src/testi.js ('partita.fermo')
