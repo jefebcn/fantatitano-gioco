@@ -307,17 +307,25 @@ misure e colori in `PANNELLI` di `src/config.js`, che arrivano allo stile come v
 
 - **Regole comuni**: sfondo della home sfocato con un velo scuro; tutto il contenuto dentro pannelli, mai scritto sulla
   foto; premi sempre a icone (`premi` in `quadri.js`); la schermata non scorre, scorre solo la parte che non ci sta
-  dentro il suo pannello. Il testo secondario qui scende fino a 10 px (nelle altre schermate il minimo resta 12).
+  dentro il suo pannello. Testo: minimo 11 px per tutto ciò che si deve leggere, 10 solo per le note secondarie
+  (classe `kNota`, per ora nessuna); nelle altre schermate il minimo resta 12.
 - **Monete e diamanti**: i due saldi, «Il premio più vicino» (`premioVicino`: prima ciò che è da ritirare, poi tra
   percorso premi, sfide e sette giorni di fila quello con la parte fatta più grande) e quattro schede di tessere con
   gli importi della divisione in cui si gioca. L'ultima scheda scelta resta salvata sul dispositivo (`sel.monete`).
   Gli «Ultimi movimenti» sono passati in Il mio club → Finanze.
 - **Profilo**: «chi sei» con l'avatar e la scelta degli avatar, tre tessere che aprono Personalizza e il Negozio,
-  l'account Fantatitano. Senza carriera resta solo il pannello dell'account. Statistiche, capocannoniere, trofei e
-  movimenti di mercato non sono nella bozza e qui non ci sono più: da decidere con Alex se e dove rimetterli.
-- **Stagione**: fascia con lega, partita e «Prossima»; quattro obiettivi con l'anello della percentuale; classifica con
+  l'account Fantatitano. Senza carriera resta solo il pannello dell'account. «Mister del / dell' / dello» segue la
+  regola di Alex (`profilo.mister` in `testi.js`, provata in `scripts/prova-dati.mjs`). Statistiche, capocannoniere
+  e trofei sono nella Bacheca; i movimenti di mercato restano in Il mio club → Finanze.
+- **Bacheca** (`src/casa/vista-bacheca.js`, da Il mio club): a sinistra i tre trofei (vinti a colori col numero di
+  volte, gli altri grigi e trasparenti); a destra i sei numeri della carriera e il capocannoniere con la carta del
+  campo, grande quanto lascia il pannello, più il secondo e il terzo dove ci stanno (`marcatori` in `src/carriera.js`).
+- **Stagione**: fascia con lega, partita e «Prossima»; quattro obiettivi con l'anello della percentuale (verde con la
+  spunta quando l'obiettivo è sicuro, grigio con «mancato» quando non si può più raggiungere: `sicuro` e `mancato` in
+  `obiettivi` di `src/carriera.js`; il conto «n di 4» conta quelli sicuri, anche nella carta della Carriera); classifica con
   la nostra riga in oro, la striscia verde sui posti dell'obiettivo e la forma (ultimi cinque risultati, `forma` in
   `src/carriera.js`: si ricava dai risultati salvati, niente di nuovo nel salvataggio). Sotto la classifica, scorrendo,
   risultati dell'ultima giornata e calendario.
 - **Prove**: `scripts/prove/schermate.cjs` controlla anche `#pan.quadri` (le quattro schede di Monete, le tessere e
-  l'avatar del Profilo, la scheda ricordata); `scripts/prova-carriera.mjs` prova `forma`.
+  l'avatar del Profilo, la scheda ricordata, la Bacheca vuota e piena, la Stagione a campionato finito);
+  `scripts/prova-carriera.mjs` prova `forma`, `marcatori` e gli obiettivi sicuri o mancati.

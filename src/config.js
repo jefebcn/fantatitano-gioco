@@ -588,6 +588,9 @@ export const AUDIO = {
 //   gli avatar tra cui scegliere, i campi dell'accesso (altezza e raggio).
 // stagione: la fascia in alto, la colonna degli obiettivi (e quanta parte della larghezza al massimo), l'anello della
 //   percentuale, la riga della classifica, quanti risultati mostra la forma e quanto è largo un suo pallino.
+// bacheca: la colonna dei trofei (e quanta parte della larghezza al massimo), quanto è alta l'illustrazione di un
+//   trofeo, i numeri della carriera, quanto è larga la carta del capocannoniere, il numero dei suoi gol e quanti
+//   altri marcatori si mostrano accanto.
 export const PANNELLI = {
   sfondo: { sfoca: 3, velo: 'rgba(5,10,26,.8)' },
   margine: 16, alto: 8, basso: 12, tra: 10, dentro: 14, minimo: 300,
@@ -599,6 +602,7 @@ export const PANNELLI = {
   monete: { colonna: 216, icona: 48, numero: 30, perRiga: 3, figura: 46, premio: 20 },
   profilo: { colonna: 254, parte: .35, avatar: 96, nome: 30, scelta: 44, campo: 36, raggioCampo: 10 },
   stagione: { fascia: 58, colonna: 296, parte: .4, anello: 34, riga: 27, forma: 5, pallino: 15 },
+  bacheca: { colonna: 250, parte: .36, trofeo: 58, numero: 28, carta: 58, gol: 36, altri: 2 },
 };
 // La schermata Squadra (docs/navigazione.md §3.3), con le misure date da Alex il 23/11.
 // carta: quanto è larga una carta, in parti della larghezza dello schermo (uguale in campo e tra i sostituti).

@@ -42,7 +42,7 @@ let cTab = 'strutture';
 export function panClubMio(tab, msg) {
   if (['strutture', 'allenatori', 'finanze'].includes(tab)) cTab = tab;
   const me = club(K.club), voci = [['strutture', 'Strutture'], ['allenatori', `Allenatori (${CAR.quantiAllenatori(K)})`], ['finanze', 'Finanze']];
-  const tabs = `<div class="seg">${voci.map(([k, n]) => `<button data-ctab="${k}" class="${k === cTab ? 'on' : ''}">${n}</button>`).join('')}<button data-club="personalizza">Personalizza</button><button data-club="allenamento">${t('allenamento.titolo')}</button><button data-club="amichevole">Amichevole</button></div>`;
+  const tabs = `<div class="seg">${voci.map(([k, n]) => `<button data-ctab="${k}" class="${k === cTab ? 'on' : ''}">${n}</button>`).join('')}<button data-vai="bacheca">${t('bacheca.titolo')}</button><button data-club="personalizza">Personalizza</button><button data-club="allenamento">${t('allenamento.titolo')}</button><button data-club="amichevole">Amichevole</button></div>`;
   let corpo;
   if (cTab === 'strutture') {
     // una struttura è una carta: il suo disegno, il nome, le stelle, cosa dà adesso, cosa darà con una stella in più e il
