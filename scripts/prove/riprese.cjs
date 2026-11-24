@@ -3,7 +3,8 @@
    - il pallone non si muove finché non viene battuto;
    - se batte chi gioca, dopo 12 secondi senza toccare niente è ancora lì e gli altri sono fermi; col tasto parte subito;
    - se batte il computer, parte dopo l'attesa (FERMI.cpu) e non prima;
-   - nessuno scatta mentre va al suo posto (andatura di FERMI.passo, con un metro al secondo di margine).
+   - nessuno scatta mentre va al suo posto (andatura di FERMI.passo, con un metro al secondo di margine);
+   - prima del calcio d'inizio di un tempo il cronometro resta fermo.
    Uso: npm run build && node scripts/prove/riprese.cjs (serve Playwright, come partita.cjs). */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
@@ -51,7 +52,7 @@ srv.listen(0, async () => {
       G.auto = false; G.rivede = null;
       const t = G.teams[chi === 'utente' ? 0 : 1], e = { nome, chi, male: [] };
       riprese[nome](t);
-      const b = G.ball, mani = nome === 'rimessa laterale' || nome === 'rimessa dal fondo';
+      const orologio = G.clock, b = G.ball, mani = nome === 'rimessa laterale' || nome === 'rimessa dal fondo';
       let pronto = null, battuto = null, punto = null, scatto = 0, mosso = 0, n = 0;
       const passo = () => {
         g.step(dt); g.draw(dt); n++;
@@ -59,6 +60,7 @@ srv.listen(0, async () => {
         // battuto: il pallone ha lasciato chi batte
         if (pronto !== null && battuto === null && !G.attesa) battuto = n * dt;
         if (battuto === null) {
+          if (nome === 'calcio d\'inizio' && G.clock !== orologio && !e.orologio) { e.orologio = true; e.male.push('il cronometro va avanti prima del calcio d\'inizio'); }
           if (pronto === null && b.owner) e.male.push('qualcuno ha il pallone prima che si possa battere');
           // il pallone fermo: fino a quando parte il gesto di chi batte (che lo porta davanti al piede)
           if (punto && !mani && G.attesa && b.owner === G.attesa.chi && !G.attesa.chi.carica) mosso = Math.max(mosso, hyp(b.x - punto[0], b.z - punto[1]));
