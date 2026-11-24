@@ -16,7 +16,7 @@ from bl_ext.blender_org.mpfb.services.targetservice import TargetService
 
 arg = sys.argv[sys.argv.index('--') + 1:]
 VECCHIO, USCITA = arg[0], arg[1]; os.makedirs(USCITA, exist_ok=True)
-LOD = [4500, 1500, 600]
+LOD = [12000, 1500, 600]
 # corporature: muscoli e peso di MakeHuman (0..1). Viso, età e proporzioni restano gli stessi
 BASE = {'gender': 1.0, 'age': 0.5, 'muscle': 0.7, 'weight': 0.47, 'proportions': 0.75, 'height': 0.55, 'cupsize': 0.5, 'firmness': 0.5, 'race': {'asian': 0.33, 'caucasian': 0.34, 'african': 0.33}}
 # Ritocchi di forma (regolatori di MakeHuman, da 0 a 1): calciatore atletico ma non da culturista. Spalle larghe e vita dritta,
@@ -137,7 +137,7 @@ tri_pieni = [[v.index for v in f.verts] for f in bm.faces]; albero = BVHTree.Fro
 # X di lato, -Y davanti). Struttura come il riferimento di Alex: maglia morbida, maniche larghe, pantaloncini ampi,
 # calzettoni col risvolto, scarpini con la suola.
 VOLUME = {'maglia': 0.010, 'pancia': 0.012, 'schiena': 0.5, 'manica': 0.010, 'orlo_manica': 0.022, 'corti': 0.012,
-          'orlo_corti': 0.026, 'interno': 0.5, 'calze': 0.003, 'risvolto': 0.008, 'scarpa': 0.006, 'suola': 0.004}
+          'orlo_corti': 0.026, 'interno': 0.5, 'calze': 0.003, 'risvolto': 0.008, 'scarpa': 0.006, 'suola': 0.004, 'parastinchi': 0.007}
 ORLO = 0.004
 # quante passate di lisciatura fanno del piede uno scarpino
 SCARPA_GIRI = 25
@@ -228,6 +228,9 @@ def divisa_volume(o, rig):
         elif c.z > calza - ORLO + e: d = 0.0
         elif c.z > risvolto - e: d = VOLUME['risvolto']
         elif c.z > caviglia + 0.05: d = VOLUME['calze']
+        # il parastinchi sotto il calzettone: davanti alla tibia, dal risvolto fino a sopra la caviglia, con i bordi morbidi
+        if gamba(c) and caviglia + 0.05 < c.z < risvolto - e and n.y < -0.2:
+            d += VOLUME['parastinchi'] * sm(-0.2, -0.75, n.y) * sm(caviglia + 0.06, caviglia + 0.11, c.z) * sm(risvolto - 0.005, risvolto - 0.04, c.z)
         sposta.append((v, n * d))
     for v, dv in sposta: v.co += dv
     # la suola: sotto il suo anello lo scarpino si allarga in pianta, e il fondo resta piatto
@@ -292,7 +295,7 @@ for k, tri in enumerate(LOD):
 # e ogni capigliatura aggiunge la sua forma. Coordinate di Blender: Z in alto, -Y davanti.
 # Il guscio viene prima infittito (ogni faccia in quattro), perché ciocche e ciuffi hanno bisogno di punti; alla fine
 # ogni capigliatura si alleggerisce a CAPELLI_TRI triangoli.
-CAPELLI_TRI = 900
+CAPELLI_TRI = 1500
 bmc = bmesh.new()
 for _, c, _ in calotta[0]: bmc.verts.new(c)
 bmc.verts.ensure_lookup_table()

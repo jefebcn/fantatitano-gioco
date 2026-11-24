@@ -37,7 +37,8 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 
 ## Giocatori 3D: corpo MPFB (chat «3D», aggiornato il 23/11/2026)
 - Corpo MakeHuman/MPFB (CC0, viso generico) sullo scheletro di sempre: animazioni invariate. Tre livelli di dettaglio
-  (4.266 / 1.500 / 600 triangoli), un materiale, texture 1024, `public/modello.js` compresso con Meshopt (376 KB).
+  (11.848 / 1.500 / 600 triangoli: il primo solo entro 22 m, cioè primi piani e replay), un materiale, texture 1024,
+  `public/modello.js` compresso con Meshopt (648 KB), capelli a 1.500 triangoli.
   Come si rifà: `modelli/mpfb/LEGGIMI.md` e la ricetta in `docs/RICETTE.md`. Ripiego: `?corpo=vecchio`.
 - FATTO (#131): proporzioni da atleta, divisa con volume (maglia, maniche, pantaloncini, risvolto, scarpini con suola),
   viso più scolpito, capelli con ciocche, dal riferimento generico di Alex del 23/11 (niente volti veri né grafica di altri giochi).
@@ -48,6 +49,12 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   risvolto dei calzettoni da 4 a 8 cm (`MISURE.risvolto` 0,355 e `risvolto` in `scripts/blender/calciatore.py`).
   Stessi triangoli, nessun file nuovo. Partite: 16 su 16 identiche prima e dopo (semi 7 e 15), 0 anomalie.
   Foto: `docs/calciatore/16-18`. Da vedere su iPhone: fps con `?debug`. Non fatto: texture KTX2 (non servono).
+- FATTO (#136): più dettaglio come la foto di riferimento di Alex. Il livello vicino passa a 11.848 triangoli (si vede solo entro
+  22 m: in partita in media 2,15 giocatori per fotogramma, al massimo 18 nelle inquadrature strette), capelli a 1.500,
+  parastinchi sotto il calzettone (`VOLUME.parastinchi`), due nastri sui calzettoni (`MISURE.nastri`). Texture sempre 1024.
+  Partite (semi 7 e 15, 8+8): 0 anomalie, gol e tiri uguali come media; non più identiche perché il modello nuovo ha il punto
+  più basso diverso e il gioco lo riscala dello 0,1%. Foto: `docs/calciatore/19-21`. Ancora da fare: capelli ricci
+  sfaccettati da vicino, parastinchi poco visibili di fronte, fps su iPhone con `?debug`.
 
 ## Fase 4 (verifica delle sezioni 2-6 del prompt del 21/11) — FATTO
 - C'era già tutto tranne due cose, aggiunte ora: la vista di controllo dell'IA (`?ia` o tasto O, `src/debug-ia.js`) e lo

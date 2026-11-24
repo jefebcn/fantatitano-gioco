@@ -11,7 +11,7 @@
 
 const ZONA = { PELLE: 0, MAGLIA: 1, PANTALONCINI: 2, CALZETTONI: 3, SCARPE: 4, AVAMBRACCIO: 5, MANO: 6, COLLETTO: 7, BORDO: 8 };
 // misure sul corpo (metri): dove finisce la maglia, l'orlo dei pantaloncini, il risvolto dei calzettoni, la suola, la fascia
-export const MISURE = { orloMaglia: 0.945, orloCorti: 0.705, bandaCorti: 0.176, risvolto: 0.355, suola: 0.022, fascia: [0.27, 0.315], braccio: 1.3 };
+export const MISURE = { orloMaglia: 0.945, orloCorti: 0.705, bandaCorti: 0.176, risvolto: 0.355, nastri: [[0.29, 0.325], [0.15, 0.175]], suola: 0.022, fascia: [0.27, 0.315], braccio: 1.3 };
 // le pieghe della stoffa nella normal map: quanto sono profonde (metri), quanti metri copre un pixel della texture e quanto
 // si lisciano le coordinate della maschera (pixel), che a 8 bit vanno a gradini di 4-7 mm
 export const PIEGHE = { vita: 0.0022, ascelle: 0.0018, manica: 0.0016, inguine: 0.0024, orlo: 0.0016, onda: 0.0010, metriPixel: 0.00085, liscia: 4 };
@@ -76,7 +76,8 @@ export function creaDivisa(maschera, pelle, kit) {
       }
     } else if (z === ZONA.COLLETTO || z === ZONA.BORDO) col = due;
     else if (z === ZONA.PANTALONCINI) col = h < M.orloCorti ? scuro(corti, 0.78) : ax > M.bandaCorti && h > 0.75 ? bandaCorti : corti; // orlo e banda laterale
-    else if (z === ZONA.CALZETTONI) col = h > M.risvolto ? due : h > M.risvolto - 0.02 ? scuro(calze, 0.75) : calze; // il risvolto in alto, con una cucitura
+    // il risvolto in alto, con una cucitura; sotto, i due giri di nastro che tengono il parastinchi (un filo più scuri)
+    else if (z === ZONA.CALZETTONI) col = h > M.risvolto ? due : h > M.risvolto - 0.02 ? scuro(calze, 0.75) : M.nastri.some(([a, b]) => h > a && h < b) ? scuro(calze, 0.93) : calze;
     else if (z === ZONA.SCARPE) { const l = 0.3 * s[i] + 0.59 * s[i + 1] + 0.11 * s[i + 2]; const v = 175 + l * 0.3; col = [v, v, v]; tessuto = false; } // grigio: il colore lo mette lo shader, qui restano i dettagli
     else if (z === ZONA.AVAMBRACCIO && guanti) col = maglia; // il portiere ha le maniche lunghe
     else if (z === ZONA.MANO && guanti) col = guanti;
@@ -196,7 +197,12 @@ export function creaRilievo(maschera) {
       if (h < M.orloMaglia && ax < 0.19) a += 0.35 - (Math.abs(h - M.orloMaglia) < 0.005 ? 0.9 : 0); // orlo, con la cucitura sopra
     } else if (z === ZONA.COLLETTO || z === ZONA.BORDO) { a = 0.5 + 0.3 * Math.sin(u * 1.9); r = 0.74; } // costine a rilievo
     else if (z === ZONA.PANTALONCINI) a = trama + (h < M.orloCorti ? 0.35 - (Math.abs(h - M.orloCorti) < 0.005 ? 0.9 : 0) : 0);
-    else if (z === ZONA.CALZETTONI) { a = 0.3 * Math.sin(XL[p] * 520) + (h > M.risvolto ? 0.5 : 0); r = h > M.risvolto ? 0.74 : 0.85; } // costine verticali e risvolto
+    else if (z === ZONA.CALZETTONI) {
+      // costine verticali e risvolto; sui giri di nastro niente costine ma pieghe fitte e storte, e il nastro un po' in rilievo
+      const nastro = M.nastri.some(([a, b]) => YL[p] > a && YL[p] < b);
+      a = nastro ? 0.6 + 0.45 * Math.sin(YL[p] * 420 + XL[p] * 160 + Math.sin(XL[p] * 90) * 2) : 0.3 * Math.sin(XL[p] * 520) + (h > M.risvolto ? 0.5 : 0);
+      r = h > M.risvolto ? 0.74 : nastro ? 0.6 : 0.85;
+    }
     else if (z === ZONA.SCARPE) { r = 0.35; a = h < M.suola ? 0.4 : 0; }
     else if ((z === ZONA.MANO || z === ZONA.AVAMBRACCIO)) r = 0.62;
     else r = 0.6;
