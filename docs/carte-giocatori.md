@@ -75,8 +75,8 @@ La carta è una sola; cosa mostra dipende da quanto è larga (lo decide `cartaGi
   come nella guida.
 - **Fascia del nome nella carta stretta**: arriva in fondo alla carta, con la barretta dell'energia dentro, sul bordo
   basso. La striscia sotto la fascia che si vede nel disegno era un errore della guida (Alex, 23/11).
-- **Ritratto mancante**: se il file non c'è resta il ritratto vecchio, ripreso dal modello 3D: sta tutto dentro la carta,
-  a destra della valutazione.
+- **Ritratto mancante**: non c'è più un ritratto di ripiego (tolto il 24/11). Se il file non c'è o non arriva la carta
+  resta con la sagoma neutra, nello stesso quadrato del ritratto; `npm run prova` controlla che i file ci siano tutti.
 
 ## Scritte sotto i 12 punti: l'unica eccezione
 Dentro la carta tutto è in proporzione alla larghezza, scritte comprese: è la sola eccezione alla regola dei 12 punti

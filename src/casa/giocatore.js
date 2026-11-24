@@ -9,7 +9,6 @@
 // Sfida c'è la carta piccola: stessi colori e stesso ritratto, senza ruolo, con energia e nome sotto.
 // Tutte le misure stanno in CARTA (src/config.js): qui diventano variabili dello stile.
 import { icona } from './icone.js';
-import { ritratto } from './casa.js';
 import { ritrattoNuovo } from './ritratti.js';
 import { RITRATTI, CARTA } from '../config.js';
 import { SPORGE } from './campo.js';
@@ -19,7 +18,7 @@ const C = CARTA;
 const MISURE = {
   alta: C.alta, raggio: C.raggio, sp: SPORGE,
   bl: C.bordo.lato, ba: C.bordo.alto, br: C.bordo.raggio, bs: C.bordo.spesso, bc: C.bordo.colore,
-  rl: C.ritratto.lato, rs: C.ritratto.sinistra, ra: C.ritratto.alto, rp: C.ritratto.sporge, os: C.ritratto.ripiego.sinistra, oa: C.ritratto.ripiego.alto,
+  rl: C.ritratto.lato, rs: C.ritratto.sinistra, ra: C.ritratto.alto, rp: C.ritratto.sporge,
   vm: C.valutazione.misura, vx: C.valutazione.x, vy: C.valutazione.y,
   um: C.ruolo.misura, ux: C.ruolo.x, uy: C.ruolo.y, uf: C.ruolo.fuori,
   fd: C.fascia.da, fa: C.fascia.alta, fc: C.fascia.colore, fn: C.fascia.nome, fm: C.fascia.margine,
@@ -83,9 +82,9 @@ export function cartaGiocatore(sc, { club, larga = C.stretta.sotto, energia = nu
 
 /**
  * Chi è il giocatore di un ritratto, scritto nell'attributo data-ritr dell'immagine: squadra in cui gioca adesso, nome,
- * numero, se è portiere, squadra vera da cui viene ('inv' per gli inventati) e se serve il file grande.
+ * squadra vera da cui viene ('inv' per gli inventati) e se serve il file grande.
  */
-export const chiRitratto = (club, sc, grande = false) => `${pulito(club)}|${pulito(sc.nome)}|${sc.numero}|${sc.reparto === 'P' ? 1 : 0}|${pulito(sc.origine || 'inv')}|${grande ? 1 : 0}`;
+export const chiRitratto = (club, sc, grande = false) => `${pulito(club)}|${pulito(sc.nome)}|${pulito(sc.origine || 'inv')}|${grande ? 1 : 0}`;
 
 // La carta che prende la misura dal suo riquadro della Home: la più larga che ci sta in altezza, testa compresa. Se di
 // fianco resta posto per titolo e testo (CARTA.larga.accanto) è alta quanto tutto il riquadro, se no sta sotto il titolo.
@@ -118,8 +117,8 @@ function sistemaNome(el) {
 /**
  * Prepara le carte dentro `radice`, dopo che sono state disegnate: dà la misura a quelle che la prendono dal riquadro,
  * fa stare i cognomi nella fascia e riempie i ritratti (le immagini con data-ritr), pochi alla volta per non fermare
- * la schermata. Ogni ritratto è quello nuovo, intero, con viso e maglia già dentro (src/casa/ritratti.js); se per quel
- * giocatore non c'è, o il file non arriva, resta quello vecchio ripreso dal modello 3D, che sta tutto dentro la carta.
+ * la schermata. Ogni ritratto è un'immagine intera, con viso e maglia già dentro (src/casa/ritratti.js); se il file non
+ * c'è o non arriva la carta resta con la sagoma neutra che ha già, senza errori.
  */
 export function prontaCarte(radice) {
   for (const el of radice.querySelectorAll('.gC[data-entra]')) entra(el);
@@ -128,11 +127,9 @@ export function prontaCarte(radice) {
   const prossimo = () => {
     const el = coda.shift(); if (!el) return;
     if (!el.isConnected) return prossimo();
-    const [club, nome, num, por, origine, grande] = el.dataset.ritr.split('|');
+    const [club, nome, origine, grande] = el.dataset.ritr.split('|');
     ritrattoNuovo(club, nome, origine, grande === '1').catch(() => '').then((url) => {
-      const foto = url || ritratto(club, nome, +num, por === '1');
-      if (!url) el.classList.add('vecchio');
-      if (foto) el.src = foto; else el.removeAttribute('data-ritr');
+      if (url) el.src = url; else el.removeAttribute('data-ritr');
       prossimo();
     });
   };

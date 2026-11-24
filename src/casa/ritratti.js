@@ -68,8 +68,9 @@ function esiste(indirizzo) {
 }
 
 /**
- * L'indirizzo del ritratto intero di un giocatore, o '' se non c'è (allora chi chiama usa il ritratto vecchio, ripreso
- * dal modello 3D). Dipende solo dal volto e dalla misura, non dai colori della divisa.
+ * L'indirizzo del ritratto intero di un giocatore, o '' se il file non c'è o non arriva: allora la carta resta con la
+ * sagoma neutra, senza errori. `npm run prova` controlla che ogni volto dell'elenco abbia i suoi due file. Dipende solo
+ * dal volto e dalla misura, non dai colori della divisa.
  * @param {string} clubId   la squadra in cui gioca adesso: serve a scegliere il volto
  * @param {string} nome
  * @param {string} origine  la squadra vera da cui viene, o 'inv'

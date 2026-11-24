@@ -1,8 +1,8 @@
 /* Prove della scala delle valutazioni e dei dati dei giocatori (src/dati/scala.js, src/dati/giocatori.js).
    Uso: node scripts/prova-dati.mjs */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
-import { SCALA, CARTE, FORMS } from '../src/config.js';
+import { SCALA, CARTE, FORMS, RITRATTI } from '../src/config.js';
 import { scala, creaDati, statistiche, moduli, postiModulo, adatto, fascia, hash } from '../src/dati/scala.js';
 import { GIOCATORI } from '../src/dati/giocatori.js';
 import { SQUADRE, nomeBreve, nomiDi } from '../src/dati/squadre.js';
@@ -111,6 +111,23 @@ for (const c of clubs) for (const m of moduli()) {
   assert.ok(provati > 3, 'troppo pochi casi per provare il cambio di un titolare stremato');
 }
 
+// ---------- ritratti: ogni volto dell'elenco (src/dati/volti.json) ha i suoi due file in public/img/ritratti-carte, e
+// nella cartella non ci sono file che l'elenco non conosce. Nel gioco non c'è più un ritratto di ripiego: se un file
+// manca la carta resta con la sagoma, quindi qui la prova si ferma prima.
+let quantiVolti = 0;
+{
+  const VOLTI = JSON.parse(readFileSync(new URL('../src/dati/volti.json', import.meta.url), 'utf8')), ids = [...VOLTI.veri, ...VOLTI.condivisi];
+  const file = new Set(readdirSync(new URL(`../public/${RITRATTI.cartella}`, import.meta.url)));
+  const attesi = ids.flatMap((id) => Object.values(RITRATTI.lato).map((lato) => `${id}-${lato}.webp`)), voluti = new Set(attesi);
+  assert.ok(VOLTI.veri.length && VOLTI.condivisi.length, 'l\'elenco dei volti è vuoto');
+  assert.equal(new Set(ids).size, ids.length, 'un volto è scritto due volte nell\'elenco');
+  assert.ok(VOLTI.veri.every((x) => !x.startsWith('volto-')) && VOLTI.condivisi.every((x) => x.startsWith('volto-')), 'un volto è nella lista sbagliata (i condivisi cominciano con «volto-»)');
+  assert.deepEqual(attesi.filter((f) => !file.has(f)), [], 'mancano dei file di ritratto in public/img/ritratti-carte');
+  assert.deepEqual([...file].filter((f) => !voluti.has(f)), [], 'ci sono file di ritratto che l\'elenco non conosce: rilanciare node scripts/volti.mjs');
+  quantiVolti = ids.length;
+}
+
 const conta = {}; for (const t of tutti) conta[t.s.ruolo] = (conta[t.s.ruolo] || 0) + 1;
 console.log(`dati: ${n} giocatori, valutazioni 55-82, ${alti} da 76 in su; ruoli ${JSON.stringify(conta)}`);
+console.log(`ritratti: ${quantiVolti} volti, ognuno coi suoi due file`);
 console.log('capitani: ' + cap.map((t) => `${t.s.ruolo} ${t.s.val} ${t.s.nome} (${t.s.forte})`).join(', '));

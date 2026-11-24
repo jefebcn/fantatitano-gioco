@@ -483,8 +483,7 @@ export const RITRATTI = { cartella: 'img/ritratti-carte/', lato: { piccolo: 256,
 // ritratto: il quadrato del ritratto. lato. sinistra: distanza dal bordo sinistro. alto: distanza dal bordo alto, che
 //   è negativa perché la testa esce sopra la carta, di 0,05 H. sporge: quanto spazio lasciare sopra la carta alla testa.
 //   Sono le misure esatte della guida: la testa è larga 0,42 W e la maglia finisce un po' sopra la fascia del nome,
-//   come nel disegno. ripiego: dove sta il ritratto vecchio, ripreso dal modello 3D, quando quello nuovo manca. È la
-//   distanza dal bordo sinistro e dal bordo alto, di H. Non esce dalla carta.
+//   come nel disegno. Se il file del ritratto manca resta la sagoma neutra, nello stesso quadrato.
 // valutazione, ruolo: grandezza del carattere e centro: x in parti di W, y di H. Il ruolo fuori posto ha fondo `fuori`.
 // fascia: la fascia del nome. da: dove comincia, di H. alta: di H. Poi il colore. nome: grandezza del cognome.
 //   margine: lo spazio libero ai lati del cognome.
@@ -522,7 +521,7 @@ export const CARTA = {
     argento: { da: 55, alto: '#DEE4EC', basso: '#828C9B', testo: '#282D37' },
     bronzo: { da: 0, alto: '#D69660', basso: '#824B28', testo: '#321C0C' },
   },
-  ritratto: { lato: 1.05, sinistra: .065, alto: -.1425, sporge: .2, ripiego: { sinistra: .24, alto: .05 } },
+  ritratto: { lato: 1.05, sinistra: .065, alto: -.1425, sporge: .2 },
   valutazione: { misura: .24, x: .17, y: .12 },
   ruolo: { misura: .15, x: .17, y: .25, fuori: '#E0262D' },
   fascia: { da: .70, alta: .13, colore: 'rgba(15,25,55,.92)', nome: .11, margine: .05 },

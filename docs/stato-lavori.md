@@ -261,6 +261,10 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   Carriera, Sfida, Squadra, scheda) non ascoltano più «resize»: `src/casa/schermo.js` osserva la grandezza vera della
   pagina e le avvisa quando cambia. Prova: `node scripts/prove/gira.cjs` (anche nel controllo automatico), coi margini
   della tacca dell'iPhone.
+- **Ritratti vecchi tolti (24/11, deciso da Alex)**: cancellata `public/img/ritratti/` (908 file, 12,5 MB). Le carte
+  usano solo `public/img/ritratti-carte/`. `scripts/volti.mjs` legge quella cartella e `src/dati/volti.json` non ha più
+  la voce «sopra» (265 veri e 150 condivisi, uguali a prima). Tolto il ritratto di ripiego del modello 3D: se un file
+  manca la carta mostra la sagoma neutra. `npm run prova` controlla che ogni volto abbia i suoi due file.
 - **Resta da fare**: aspetto nuovo di Mercato (passo 9), Il mio club (10) e Sfide (11); «sotto il 60% di energia cala
   prima la velocità» (sessione della partita); il limite dei moduli nella pausa della partita; l'esultanza del capitano
   (servono animazioni); il listino del database.
@@ -273,6 +277,8 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
 Come sono fatti, chi ha quale volto e come si rifanno: `docs/ritratti.md`. Strumenti: `scripts/aspetti.mjs`,
 `scripts/blender/render_ritratti.py`, `scripts/blender/tutti.sh`, `scripts/ritratti_webp.py`, `scripts/volti.mjs`.
 
+- **Dal 24/11 questa sezione è storia**: i ritratti di Blender e la cartella `public/img/ritratti/` non ci sono più,
+  le carte usano quelli di Gemini (`docs/ritratti.md`).
 - **Stato (22/11)**: Alex ha approvato il terzo foglio di prova e ha chiesto tutti i ritratti. **Tutti generati**: 415
   volti (265 giocatori veri + 150 condivisi), in `public/img/ritratti/`; l'elenco per il gioco è `src/dati/volti.json`
   (da rifare con `node scripts/volti.mjs` se cambiano i volti). I fogli completi sono stati mandati ad Alex.

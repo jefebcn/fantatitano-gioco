@@ -28,3 +28,5 @@ PR e merge senza `gh` | `git push`, poi in Chrome `github.com/…/compare/main..
 3. `python3 scripts/ritratti_gemini.py foglio-<n>.jpg g id1,id2,id3,id4` → `public/img/ritratti-carte/`.
 4. Foglio di controllo numerato per Alex; i volti scartati si rifanno **cambiando la descrizione del viso** (forma,
    naso, capelli, barba, età): con la stessa descrizione Gemini rifà quasi la stessa faccia.
+5. Se si aggiungono o si tolgono volti: `node scripts/volti.mjs` riscrive `src/dati/volti.json` dalla cartella;
+   `npm run prova` si ferma se a un volto manca il file da 512 o da 256, o se c'è un file che l'elenco non conosce.
