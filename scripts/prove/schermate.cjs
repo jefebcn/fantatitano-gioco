@@ -115,6 +115,9 @@ srv.listen(0, async () => {
     await vai('#casa .c-squadra', 'squadra', async () => {
       const rosa = () => pg.evaluate(() => { const g = window.__g, K = g.carriera(), c = g.club(K.club); return { xi: c.xi.map((x) => x[0]), pan: c.pan.map((x) => x[0]), salvata: JSON.parse(localStorage.getItem('fantatitano-carriera')).rose[c.id].map((x) => x[0]), inc: K.incarichi || {}, cap: (K.mio || {}).capitano, form: g.sel.form, monete: K.monete, crescita: K.crescita || {}, allenatori: g.CAR.quantiAllenatori(K) }; });
       const carta = (g) => `#squadra .gC[data-g="${g}"]`, centroDi = async (sel) => { const r = await (await pg.$(sel)).boundingBox(); return [r.x + r.width / 2, r.y + r.height / 2]; }, centro = (g) => centroDi(carta(g));
+      // lo sfondo è lo stadio dipinto: le torri disegnate non servono più
+      const fondoQ = await pg.evaluate(() => { const q = document.querySelector('#squadra'); return { img: getComputedStyle(q).backgroundImage.includes('sfondo-squadra'), torri: !!q.querySelector('.qTorri') }; });
+      if (!fondoQ.img || fondoQ.torri) errori.push(`${w}: la Squadra non ha lo sfondo dello stadio dipinto`);
       // prende una cosa col dito, la porta sopra un'altra e la lascia; con un nome fa la foto a metà strada
       const trascina = async (da, a, nome) => { const [ax, ay] = await centroDi(da), [bx, by] = await centroDi(a); await pg.mouse.move(ax, ay); await pg.mouse.down(); await pg.mouse.move(ax + 14, ay + 6, { steps: 3 }); await pg.mouse.move(bx, by, { steps: 6 }); if (nome) await foto(nome); await pg.mouse.up(); await pg.waitForTimeout(450); };
       const r0 = await rosa();
@@ -189,8 +192,9 @@ srv.listen(0, async () => {
     await foto('pausa'); if (await tocca('#apriCambi')) { await foto('cambi'); await tocca('#cambiL [data-o]', 3); await foto('cambi-tocco'); await tocca('#cambiOk'); }
     // tre dei miei (in partita la mia squadra è sempre la numero 0, anche fuori casa) restano stanchi fino al fischio finale,
     // qualunque piega prenda la partita: così i controlli sull'energia
-    // (chi è stanco dopo la partita, riscaldamento, fisioterapista) non dipendono da come va questa partita
-    const fine = await pg.evaluate(() => { const g = window.__g; window.__seme(502); g.pause(false); const stanchi = g.G.teams[0].players.slice(1, 4); let i = 0; for (; i < 40000 && g.G.state !== 'full'; i++) { for (const p of stanchi) p.en = Math.min(p.en, .3); g.step(1 / 30); } for (let k = 0; k < 400; k++) g.step(1 / 30); return [g.G.state, i, g.G.teams[0].score, g.G.teams[1].score, !document.querySelector('#fine').classList.contains('nas')]; });
+    // (chi è stanco dopo la partita, riscaldamento, fisioterapista) non dipendono da come va questa partita. Le riprese
+    // non partono da sole: quando tocca a chi gioca, la prova preme il tasto del passaggio (del tiro, sul rigore)
+    const fine = await pg.evaluate(() => { const g = window.__g; window.__seme(502); g.pause(false); const stanchi = g.G.teams[0].players.slice(1, 4); let i = 0, giu = 0, tasto = null; for (; i < 40000 && g.G.state !== 'full'; i++) { for (const p of stanchi) p.en = Math.min(p.en, .3); const a = g.G.attesa; if (giu) { if (!--giu) tasto(false); } else if (a && !a.batti) { tasto = a.rigore ? g.pressB : g.pressA; tasto(true); giu = 6; } g.step(1 / 30); } for (let k = 0; k < 400; k++) g.step(1 / 30); return [g.G.state, i, g.G.teams[0].score, g.G.teams[1].score, !document.querySelector('#fine').classList.contains('nas')]; });
     await foto('fine'); if (await tocca('#continua')) await foto('dopo-la-partita');
     if (await dove() !== 'carriera') errori.push(`${w}: dopo la partita si è in «${await dove()}» invece che nella Carriera`);
     // il risultato è registrato, l'energia con cui si è usciti dal campo è salvata, e la finestra dice cosa si è guadagnato
