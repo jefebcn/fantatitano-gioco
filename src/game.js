@@ -2522,6 +2522,9 @@ function updateCamera(dt) {
     const lontano = (f) => C.alto / Math.tan(C.inclina * Math.PI / 180 - Math.atan((1 - 2 * f) * Math.tan(fov * Math.PI / 360))), fzc = clamp(fz, -HW, HW);
     pz = Math.min(clamp(tz + C.dietro, fzc + lontano(C.fascia[1]), fzc + lontano(C.fascia[0])), C.zMax);
     px = tx; py = C.alto; lx = tx; lz = pz - C.dietro;
+    // Pallone in volo (lanci lunghi, rinvii, campanili): la telecamera sale quanto basta perché non superi l'altezza
+    // dello schermo CAMERA.cielo. Inclinazione e distanza non cambiano, quindi il campo scende appena nello schermo.
+    if (b && b.y > BR) py = clamp(b.y + (pz - fzc) * Math.tan(C.inclina * Math.PI / 180 - Math.atan((1 - 2 * C.cielo) * Math.tan(fov * Math.PI / 360))), C.alto, C.alto + C.sale);
   }
   // movimento morbido: una molla smorzata al punto giusto, senza scatti né oscillazioni, più lenta nel menu. In gioco è il
   // leggero ritardo con cui l'inquadratura segue il pallone
