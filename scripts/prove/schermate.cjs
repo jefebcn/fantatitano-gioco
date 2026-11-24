@@ -3,7 +3,7 @@
    campo 3D nascosto): due giri sullo stesso codice danno le stesse foto, quindi si può confrontare prima e dopo una
    modifica. Accanto alle foto salva il contenuto di ogni schermata (misura-testi.json).
    Nelle schermate rifatte (barra in alto, Home, Carriera, Sfida, finestre e schermate a pannelli, per ora) controlla anche le regole di qualità: testo
-   mai sotto 12 px (tranne dentro la carta del giocatore, e 10 px per il testo secondario delle schermate a pannelli), niente testo tagliato, niente fuori
+   mai sotto 12 px (tranne dentro la carta del giocatore; nelle schermate a pannelli 11 px, e 10 solo per le note secondarie), niente testo tagliato, niente fuori
    dallo schermo (tranne dentro un riquadro che scorre), pulsanti alti e larghi almeno 44 px. Esce con errore
    se una regola non è rispettata o se la pagina dà errori.
    Uso: npm run build && node scripts/prove/schermate.cjs cartella-di-uscita   (serve Playwright, come partita.cjs)
@@ -34,8 +34,9 @@ function qualita(radici) {
       if (!decoro && !(scorre && scorre !== e) && (r.right > W + .5 || r.bottom > H + .5 || r.left < -.5 || r.top < -.5)) guai.push(`fuori dallo schermo: ${dice(e)}`);
       const testo = [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
       // dentro la carta grande del giocatore le scritte seguono le proporzioni della carta (docs/carte-giocatori.md): è la
-      // sola eccezione ai 12 px, e anche lì non si scende sotto i 5. Nelle schermate a pannelli il testo secondario arriva a 10
-      const minimo = e.closest('.gC:not(.piccola) .gS') ? 5 : e.closest('#pan.quadri') ? 10 : 12;
+      // sola eccezione ai 12 px, e anche lì non si scende sotto i 5. Nelle schermate a pannelli il minimo è 11, e 10 solo
+      // per le note secondarie (classe kNota)
+      const minimo = e.closest('.gC:not(.piccola) .gS') ? 5 : e.closest('#pan.quadri') ? (e.closest('.kNota') ? 10 : 11) : 12;
       if (testo && parseFloat(st.fontSize) < minimo) guai.push(`testo da ${st.fontSize}: ${dice(e)}`);
       // un testo su una riga è tagliato se è più largo del suo posto; uno su più righe se è più alto. E non deve uscire dal genitore
       const unaRiga = st.whiteSpace === 'nowrap', gen = e.parentElement.getBoundingClientRect();
@@ -171,7 +172,9 @@ srv.listen(0, async () => {
       const dopo = await pg.evaluate(() => { const g = window.__g, K = g.carriera(); return [g.CAR.quantiInRosa(K, window.CLUBS), !!K.mercato.osservato]; });
       if (dopo[0] !== prima + 1 || !dopo[1]) errori.push(`${w}: mercato: rosa da ${prima} a ${dopo[0]}, osservatore ${dopo[1]}`);
     });
-    await vai('#casa .c-club', 'club', async () => { const tab = await pg.$$eval('#panC [data-ctab]', (l) => l.map((b) => b.dataset.ctab)); for (const t of tab) { await tocca(`#panC [data-ctab="${t}"]`); await foto(`club-${t}`); } });
+    await vai('#casa .c-club', 'club', async () => { const tab = await pg.$$eval('#panC [data-ctab]', (l) => l.map((b) => b.dataset.ctab)); for (const t of tab) { await tocca(`#panC [data-ctab="${t}"]`); await foto(`club-${t}`); }
+      // la Bacheca, ancora vuota: un livello in più, e Indietro torna al club
+      if (await tocca('#panC [data-vai="bacheca"]')) { await foto('bacheca-vuota'); await tocca('#bCasa'); } });
     // dalla barra
     await vai('#barraF [data-vai="impostazioni"]', 'impostazioni'); await vai('#barraF [data-vai="info"]', 'info');
     await vai('#barraF [data-vai="profilo"]', 'profilo', async () => {
@@ -231,8 +234,11 @@ srv.listen(0, async () => {
     if (fis.monete >= mf || fis.stanchi) errori.push(`${w}: fisioterapista ${JSON.stringify(fis)} (prima ${mf} monete)`);
     await tocca('#bCasa'); await tocca('#bCasa');
     // fine del campionato: le altre giornate giocate a tavolino, poi la carta diventa «Nuova stagione» con la finestra di conferma
-    await pg.evaluate(() => { const g = window.__g, K = g.carriera(); window.__seme(600); while (g.CAR.prossima(K)) g.CAR.giocaCampionato(K, window.CLUBS, 1, 1, []); g.salvaK(); });
-    await tocca('#carriera .k-classifica'); await tocca('#bCasa'); await foto('carriera-fine-campionato');
+    await pg.evaluate(() => { const g = window.__g, K = g.carriera(); window.__seme(600); const io = g.club(K.club); let n = 0; while (g.CAR.prossima(K)) g.CAR.giocaCampionato(K, window.CLUBS, 1, 1, [io.xi[8 + n++ % 3][0]]); g.salvaK(); });
+    // la Stagione a campionato finito (obiettivi sicuri o mancati) e la Bacheca coi numeri e i marcatori
+    await tocca('#carriera .k-classifica'); await foto('stagione-fine-campionato'); await tocca('#bCasa');
+    await tocca('#bCasa'); await tocca('#casa .c-club'); if (await tocca('#panC [data-vai="bacheca"]')) { await foto('bacheca'); const carta = await pg.evaluate(() => !!document.querySelector('#panC .bCarta .gC')); if (!carta) errori.push(`${w}: nella Bacheca manca la carta del capocannoniere`); await tocca('#bCasa'); }
+    await tocca('#bCasa'); await tocca('#casa .c-carriera'); await foto('carriera-fine-campionato');
     await tocca('#carriera .k-prossima'); await foto('finestra-nuova-stagione');
     if (!(await pg.evaluate(() => !document.querySelector('#finestra').classList.contains('nas')))) errori.push(`${w}: la finestra della stagione nuova non si apre`);
     await tocca('#finNo'); await tocca('#carriera .k-prossima'); await tocca('#finSi'); await foto('premi-stagione');

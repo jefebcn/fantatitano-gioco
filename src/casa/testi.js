@@ -215,7 +215,8 @@ const IT = {
   // Profilo (vista-profilo.js)
   'profilo.account': 'Account', 'profilo.accountTitolo': 'Account Fantatitano', 'profilo.tuoClub': 'Il tuo club', 'profilo.cambia': 'Cambia avatar',
   'profilo.avatar': (n) => `Avatar ${n}`,
-  'profilo.mister': (clubNome, stelle) => `Mister ${/^[aeiouàèéìòù]/i.test(clubNome) ? 'dell\'' : 'del '}${clubNome} · ${stelle === 1 ? '1 stella' : `${stelle} stelle`}`,
+  // «dell'» davanti a vocale, «dello» davanti a s + consonante, z, gn, ps, x, «del» negli altri casi
+  'profilo.mister': (clubNome, stelle) => `Mister ${/^[aeiouàèéìòù]/i.test(clubNome) ? 'dell\'' : /^(s[^aeiouàèéìòù\s]|z|gn|ps|x)/i.test(clubNome) ? 'dello ' : 'del '}${clubNome} · ${stelle === 1 ? '1 stella' : `${stelle} stelle`}`,
   'profilo.livello': (n) => `Livello ${n}`,
   'profilo.nome': 'Nome, colori e disegno', 'profilo.nome.sotto': 'personalizza il club',
   'profilo.avatarCornici': 'Avatar e cornici', 'profilo.avatarCornici.sotto': 'altri da sbloccare',
@@ -234,9 +235,16 @@ const IT = {
   'lega.obPosizione': (n) => `Prime ${n} in campionato`, 'lega.obCoppa': (dove) => `Coppa Titano ${dove}`, 'lega.obGironi': 'Castelli: passa i gironi',
   'lega.obCastelli': (dove) => `Castelli ${dove}`, 'lega.obRosa': (n) => `Media titolari ${n}`,
   'lega.turno.0': 'agli ottavi', 'lega.turno.1': 'ai quarti', 'lega.turno.2': 'in semifinale', 'lega.turno.3': 'in finale', 'lega.turno.gironi': 'ai gironi',
-  'lega.ora': (cosa) => `ora ${cosa}`, 'lega.sei': (dove) => `sei ${dove}`, 'lega.fuori': (dove) => `fuori ${dove}`, 'lega.vinta': 'vinta', 'lega.gironi': 'gironi in corso',
+  'lega.ora': (cosa) => `ora ${cosa}`, 'lega.sei': (dove) => `sei ${dove}`, 'lega.fuori': (dove) => `fuori ${dove}`, 'lega.vinta': 'vinta', 'lega.gironi': 'gironi in corso', 'lega.mancato': 'mancato',
   'lega.g': 'G', 'lega.forma': 'Forma', 'lega.esito.v': 'V', 'lega.esito.n': 'N', 'lega.esito.p': 'P',
   'lega.risultati': (n) => `Giornata ${n}: tutti i risultati`, 'lega.calendario': 'Il tuo calendario', 'lega.daGiocare': 'prossima',
+  // bacheca
+  'bacheca.titolo': 'Bacheca', 'bacheca.trofei': 'Trofei', 'bacheca.carriera': 'Carriera', 'bacheca.capocannoniere': 'Capocannoniere',
+  'bacheca.trofeo.trofeo-campionato': 'Campionato', 'bacheca.trofeo.coppa-titano': 'Coppa Titano', 'bacheca.trofeo.trofeo-castelli': 'Trofeo dei Castelli',
+  'bacheca.vinto': (n) => (n === 1 ? 'vinto 1 volta' : `vinto ${n} volte`), 'bacheca.mai': 'non ancora vinto',
+  'bacheca.partite': 'Partite', 'bacheca.vinte': 'Vinte', 'bacheca.pareggiate': 'Pareggiate', 'bacheca.perse': 'Perse', 'bacheca.golFatti': 'Gol fatti', 'bacheca.golSubiti': 'Gol subiti',
+  'bacheca.stagione': (n) => (n === 1 ? 'in 1 stagione' : `in ${n} stagioni`), 'bacheca.gol': () => 'gol',
+  'bacheca.nessunGol': 'Ancora nessun gol: gioca una partita.', 'bacheca.partito': 'non è più nel club',
   // ingresso
   'capitano.titolo': 'Ingaggia il tuo capitano',
   'capitano.tocca': 'Tocca un giocatore per sceglierlo',

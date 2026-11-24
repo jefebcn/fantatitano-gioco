@@ -810,7 +810,7 @@ button.mG{cursor:pointer}
 /* ---------- schermate a pannelli: Monete e diamanti, Profilo, Stagione (bozze di Alex del 24/11) ---------- */
 /* Tutto sta in una schermata, sotto la barra, senza scorrere: se una parte non ci sta scorre solo dentro il suo
    pannello. Lo sfondo è quello della home, sfocato e scurito; il contenuto sta sempre dentro pannelli. Misure e colori
-   arrivano da PANNELLI (src/config.js) come variabili --q-*. Qui il testo secondario scende fino a 10 px, come nelle bozze. */
+   arrivano da PANNELLI (src/config.js) come variabili --q-*. Qui il testo che si deve leggere non scende sotto gli 11 px; a 10 arrivano solo le note secondarie (classe kNota). */
 #pan.quadri{gap:0;background:#050A1A;padding-right:max(var(--q-margine),env(safe-area-inset-right));padding-bottom:max(var(--q-basso),env(safe-area-inset-bottom));padding-left:max(var(--q-margine),env(safe-area-inset-left))}
 body.conBarra #pan.quadri{padding-top:calc(var(--barra) + var(--q-alto))}
 #pan.quadri.illustrata::before{content:"";position:fixed;inset:calc(var(--q-sfoca) * -3);z-index:0;filter:blur(var(--q-sfoca));
@@ -891,7 +891,7 @@ body.conBarra #pan.quadri{padding-top:calc(var(--barra) + var(--q-alto))}
 .uTess{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;column-gap:6px;row-gap:2px;padding:8px;text-align:left;transition:transform .08s,filter .08s}
 .uTess .uIco{width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
 .uTess b{font:800 12px/1.15 Montserrat,sans-serif}
-.uTess i{grid-column:1 / 3;align-self:end;padding-right:16px;font:600 10.5px/1.2 Montserrat,sans-serif;font-style:normal;color:var(--q-secondario)}
+.uTess i{grid-column:1 / 3;align-self:end;padding-right:16px;font:600 11px/1.2 Montserrat,sans-serif;font-style:normal;color:var(--q-secondario)}
 .uTess .uVai{position:absolute;right:8px;bottom:9px;width:8px;height:13px;color:var(--q-azzurro)}
 @container (min-width:515px){
   .uTess{column-gap:8px;padding:12px 9px}
@@ -937,8 +937,15 @@ body.conBarra #pan.quadri{padding-top:calc(var(--barra) + var(--q-alto))}
 .lAnello circle{fill:none;stroke:rgba(255,255,255,.16);stroke-width:4}
 .lAnello circle.pieno{stroke:var(--q-azzurro);stroke-linecap:round}
 .lAnello.fatto circle.pieno{stroke:var(--q-verde)}
-.lAnello b{position:relative;font:800 10px/1 Montserrat,sans-serif}
+.lAnello b{position:relative;font:800 11px/1 Montserrat,sans-serif;letter-spacing:-.02em}
 .lAnello .ico{position:relative;width:16px;height:16px;color:var(--q-verde)}
+/* l'obiettivo che non si può più raggiungere: anello grigio con la croce, e sotto «mancato» */
+.lAnello.mancato .ico{width:13px;height:13px;color:var(--q-secondario)}
+.lAnello.mancato circle.pieno{display:none}
+.lOb.mancato{background:rgba(60,72,104,.5);border-color:rgba(175,192,218,.2)}
+.lOb.mancato .lFig{filter:grayscale(1);opacity:.55}
+.lOb.mancato>b{color:var(--q-secondario)}
+.lOb.mancato>i{color:var(--q-secondario)}
 .lOb>b{font:800 11.5px/1.2 Montserrat,sans-serif}
 .lOb>i{margin-top:2px;font:700 11px/1.2 Montserrat,sans-serif;font-style:normal;color:var(--q-azzurro)}
 .lOb.fatto>i{color:var(--q-verde)}
@@ -957,7 +964,7 @@ body.conBarra #pan.quadri{padding-top:calc(var(--barra) + var(--q-alto))}
 .lRiga.io{position:sticky;top:0;bottom:0;z-index:1;background:linear-gradient(rgba(232,182,76,.2),rgba(232,182,76,.2)),#15224F;box-shadow:inset 0 0 0 1.5px var(--q-oro)}
 .lRiga.io .lSq{color:var(--q-oro)}
 .lForma{display:grid;grid-template-columns:repeat(var(--q-sta-forma),var(--q-sta-pallino));gap:3px}
-.lForma i{width:var(--q-sta-pallino);height:var(--q-sta-pallino);border-radius:50%;display:grid;place-items:center;background:rgba(175,192,218,.26);font:800 10px/1 Montserrat,sans-serif;font-style:normal;color:#06122B}
+.lForma i{width:var(--q-sta-pallino);height:var(--q-sta-pallino);border-radius:50%;display:grid;place-items:center;background:rgba(175,192,218,.26);font:800 11px/1 Montserrat,sans-serif;font-style:normal;color:#06122B}
 .lForma i.v{background:var(--q-verde)}
 .lForma i.n{background:var(--q-secondario)}
 .lForma i.p{background:var(--q-rosso);color:#fff}
@@ -974,3 +981,47 @@ body.conBarra #pan.quadri{padding-top:calc(var(--barra) + var(--q-alto))}
 .lCal u{margin-left:6px;font-size:11px;text-decoration:none;color:var(--q-secondario)}
 .lCal b.v{color:var(--q-verde)}
 .lCal b.p{color:#FF8A8A}
+
+/* --- Bacheca: i trofei a sinistra, i numeri della carriera in alto a destra, il capocannoniere in basso a destra */
+#panC.q-bacheca{grid-template-columns:min(var(--q-bac-colonna),var(--q-bac-parte)) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+.bTrofei{grid-row:1 / 3}
+.bLista{flex:1 1 0;min-height:0;display:grid;grid-template-rows:repeat(3,minmax(0,1fr));gap:8px}
+.bTrofeo{display:flex;align-items:center;gap:10px;padding:6px 10px}
+.bTrofeo .bFig{flex:none;width:var(--q-bac-trofeo);height:100%;max-height:var(--q-bac-trofeo);min-height:0;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.bTrofeo span{flex:1 1 0;min-width:0;display:grid;gap:2px}
+.bTrofeo span b{font:800 var(--q-testo)/1.15 Montserrat,sans-serif}
+.bTrofeo span i{font:600 var(--q-piccolo)/1.2 Montserrat,sans-serif;font-style:normal;color:var(--q-verde)}
+.bTrofeo em{flex:none;font:400 var(--q-bac-numero)/1 Anton,Impact,sans-serif;font-style:normal;color:var(--q-oro)}
+/* il trofeo non ancora vinto: grigio e trasparente */
+.bTrofeo.mai{background:rgba(40,70,140,.3);border-color:rgba(175,192,218,.16)}
+.bTrofeo.mai .bFig{filter:grayscale(1);opacity:.35}
+.bTrofeo.mai span b{color:var(--q-secondario)}
+.bTrofeo.mai span i{color:var(--q-secondario)}
+.bLato{font:700 var(--q-piccolo)/1 Montserrat,sans-serif;font-style:normal;color:var(--q-secondario);white-space:nowrap}
+/* i numeri della carriera: sei in fila; dove il pannello è stretto, tre per riga */
+.bCarriera{container-type:inline-size}
+.bNumeri{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@container (min-width:470px){.bNumeri{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.bNumero{display:grid;justify-items:center;gap:3px;padding:7px 4px 8px;text-align:center}
+.bNumero b{font:400 var(--q-bac-numero)/1 Anton,Impact,sans-serif}
+.bNumero i{font:700 var(--q-piccolo)/1.1 Montserrat,sans-serif;font-style:normal;color:var(--q-secondario);white-space:nowrap}
+/* il capocannoniere: carta, nome e gol in grande; accanto il secondo e il terzo (dove non ci stanno, restano fuori) */
+.bCannoniere{container-type:inline-size}
+.bMarcatori{flex:1 1 0;min-height:0;display:flex;align-items:stretch;gap:14px}
+.bPrimo{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:12px}
+.bCarta{flex:none;align-self:stretch;min-height:0;display:grid;place-items:center}
+.bChi{flex:0 1 auto;min-width:0;display:grid;gap:3px}
+.bChi b{font:800 15px/1.15 Montserrat,sans-serif}
+.bChi i{font:600 var(--q-piccolo)/1.2 Montserrat,sans-serif;font-style:normal;color:var(--q-secondario)}
+.bGol{flex:none;display:grid;justify-items:center}
+.bGol b{font:400 var(--q-bac-gol)/1 Anton,Impact,sans-serif;color:var(--q-oro)}
+.bGol i{font:700 var(--q-piccolo)/1 Montserrat,sans-serif;font-style:normal;color:var(--q-secondario)}
+.bPrimo .bGol{margin-left:auto;padding:0 6px}
+.bAltri{flex:0 1 44%;min-width:0;display:none;align-content:center;gap:8px}
+@container (min-width:430px){.bAltri{display:grid}}
+.bAltro{display:flex;align-items:center;gap:8px;padding:6px 10px}
+.bAltro u{flex:none;font:400 17px/1 "Bebas Neue",Anton,Impact,sans-serif;text-decoration:none;color:var(--q-azzurro)}
+.bAltro>b{flex:1 1 0;min-width:0;font:800 var(--q-testo)/1.15 Montserrat,sans-serif;white-space:nowrap}
+.bAltro .bGol{grid-auto-flow:column;align-items:baseline;gap:4px}
+.bAltro .bGol b{font-size:19px;color:#fff}
+.bVuoto{align-self:center;margin:0;font:600 12px/1.3 Montserrat,sans-serif;color:var(--q-secondario)}

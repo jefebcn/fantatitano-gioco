@@ -55,7 +55,7 @@ const trofeo = (nome, ico) => figura(nome, 'trofeo', 56) || icona(ico, 'trofeo')
 export function disegnaCarriera() {
   const p = CAR.prossima(K), tab = CAR.classifica(K, CLUBS), io = tab.findIndex((r) => r.id === K.club);
   // in fondo alla carta: la divisione in cui si gioca e quanti obiettivi della stagione sono fatti
-  const ob = CAR.obiettivi(K, CLUBS), obiettiviT = K.div === 1 ? t('carriera.cima', CAR.divisione(K).nome) : t('carriera.obiettivi', CAR.divisione(K).nome, ob.filter((o) => o.fatto).length, ob.length);
+  const ob = CAR.obiettivi(K, CLUBS), obiettiviT = K.div === 1 ? t('carriera.cima', CAR.divisione(K).nome) : t('carriera.obiettivi', CAR.divisione(K).nome, ob.filter((o) => o.sicuro).length, ob.length);
   // prossima partita di campionato, o la stagione nuova quando il campionato è finito
   const prossima = p
     ? carta({ rotta: 'prossima', titolo: t('carriera.gioca'), nota: t('carriera.campionatoNome'), colore: 'oro', sfondo: 'carta-carriera', classe: 'k-prossima',

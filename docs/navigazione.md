@@ -148,6 +148,7 @@ Livello: 0 home, 1 sezione, 2 e 3 schermate interne. «da dove sei venuto» = la
 | Divisa, Stemma, Modifica giocatori, Modifica manager | 3 | Personalizza | Personalizza | — |
 | Negozio | 3 | Personalizza; «Sblocca» dentro Divisa, Stemma, Modifica manager | da dove sei venuto | categorie, griglia, anteprima, «Usa» o «Sblocca per ◆ 10» → conferma; se i diamanti non bastano «Come guadagnare» |
 | Allenamento | 2 | Il mio club | Il mio club | 5 modi → Partita in allenamento → Fine → Allenamento |
+| Bacheca | 2 | Il mio club, pulsante «Bacheca» | Il mio club | niente da toccare: trofei vinti (gli altri in grigio), numeri della carriera, capocannoniere con la sua carta e i due marcatori dopo di lui |
 
 ### 3.7 Dalla barra
 

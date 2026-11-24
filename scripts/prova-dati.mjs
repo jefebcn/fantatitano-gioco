@@ -7,6 +7,7 @@ import { scala, creaDati, statistiche, moduli, postiModulo, adatto, fascia, hash
 import { GIOCATORI } from '../src/dati/giocatori.js';
 import { SQUADRE, nomeBreve, nomiDi } from '../src/dati/squadre.js';
 import { resa, squadraMigliore } from '../src/casa/rosa.js';
+import { t as testo } from '../src/casa/testi.js';
 
 const src = readFileSync(new URL('../public/data.js', import.meta.url), 'utf8');
 const clubs = JSON.parse(src.slice(src.indexOf('['), src.lastIndexOf(']') + 1));
@@ -131,3 +132,9 @@ const conta = {}; for (const t of tutti) conta[t.s.ruolo] = (conta[t.s.ruolo] ||
 console.log(`dati: ${n} giocatori, valutazioni 55-82, ${alti} da 76 in su; ruoli ${JSON.stringify(conta)}`);
 console.log(`ritratti: ${quantiVolti} volti, ognuno coi suoi due file`);
 console.log('capitani: ' + cap.map((t) => `${t.s.ruolo} ${t.s.val} ${t.s.nome} (${t.s.forte})`).join(', '));
+
+// «Mister del…» nel Profilo: «dell'» davanti a vocale, «dello» davanti a s + consonante, z, gn, ps, x, «del» negli altri casi
+for (const [nome, atteso] of [['Atletico Borgo', 'dell\'Atletico Borgo'], ['Stella Titano', 'dello Stella Titano'], ['Lillo', 'del Lillo'], ['Ca\' Martino', 'del Ca\' Martino'], ['Zenit Monte', 'dello Zenit Monte'],
+  ['Gnomi FC', 'dello Gnomi FC'], ['Psiche', 'dello Psiche'], ['Xenia', 'dello Xenia'], ['San Marino', 'del San Marino'], ['Sporting Fiorentino', 'dello Sporting Fiorentino'], ['Èlite', 'dell\'Èlite'], ['Titani FC', 'del Titani FC']])
+  assert.equal(testo('profilo.mister', nome, 4), `Mister ${atteso} · 4 stelle`);
+console.log('testi: «del», «dell\'» e «dello» davanti al nome del club');
