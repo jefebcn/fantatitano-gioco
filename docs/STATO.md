@@ -127,7 +127,8 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   scacchi nel cerchio (`src/grafica/campo.js`, `PRATO` in `src/config.js`).
 - 7 FATTO: l'alone biancastro e i cunei chiari erano i fasci di luce dei fari, disegnati fino a terra: la telecamera ci
   guardava attraverso. Ora si spengono in aria vicino al tetto e sono più leggeri; un po' più di luce diffusa sui
-  giocatori (`NOTTURNA` in `src/config.js`, `src/grafica/luce.js`).
+  giocatori. Le chiazze biancastre erano i riflessi dei quattro faretti d'angolo sull'erba: ora sono deboli e la luce
+  viene dall'alto, uguale su tutto il campo (`NOTTURNA` in `src/config.js`, `src/grafica/luce.js`).
 - Restano: 8 ombre, 10 cartelloni, 11 telecamera vicino alla linea, 12 nomi sovrapposti, 13 tasto A in difesa (chiedere),
   14 maglie simili, 15 animazioni (video rallentato dei 5 gesti).
 
