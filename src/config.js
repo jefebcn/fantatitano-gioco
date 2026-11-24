@@ -206,10 +206,11 @@ export const PRATO = { tinta: [.8, 1.04, .7], strisce: [.74, 1.18], rilievo: .8,
 // fari e che parte della strada verso il campo percorrono prima di spegnersi (restano in aria, vicino al tetto: sopra il
 // prato niente). `hemi`: la luce diffusa che schiarisce giocatori e prato anche dove i fari arrivano meno.
 // `faretti`: la forza dei quattro faretti d'angolo, che danno i riflessi su erba e linee. A 1 lasciavano grandi chiazze
-// biancastre sul prato: ora sono deboli e la luce la dà quella dall'alto, uguale su tutto il campo (`sole`). `croce`: le
+// biancastre sul prato, e anche a 0,35 restava un alone ai bordi dello schermo: ora sono spenti (0) e la luce la dà
+// quella dall'alto, uguale su tutto il campo (`sole`). `croce`: le
 // quattro ombre leggere che ogni persona ha sotto i fari, una per torre: quanto sono scure, larghe (m) e lunghe (da, a).
 // `cartelloni`: quanto sono accesi i cartelloni LED di notte. Con 1 sono come di giorno, sotto 0,78 non fanno alone.
-export const NOTTURNA = { fasci: [.1, .3], hemi: .45, sole: 1.25, faretti: .35, croce: { forza: .24, largo: .7, lungo: [1.3, 2.8] }, cartelloni: .72 };
+export const NOTTURNA = { fasci: [.1, .3], hemi: .45, sole: 1.25, faretti: 0, croce: { forza: .24, largo: .7, lungo: [1.3, 2.8] }, cartelloni: .72 };
 export const LOD = { vicino: 22, lontano: 62 };
 // Le divise in campo (pickKits in src/game.js). `soglia`: quanto devono essere lontane le due maglie perché gli ospiti
 // tengano quella divisa (se no provano la seconda, poi bianca, scura e le terze). `simile`: sotto questa distanza due
