@@ -137,11 +137,20 @@ export const CAMERA_ALTO = [0, 95, 40, 0, 0, 0, 55];
 // alzata e pedata di ogni fila, e per gli anelli sopra il primo la quota `y` e quanti metri sta `dietro` al muretto
 // (`posto`, se c'è, è la larghezza dei posti di quell'anello: più stretti dove ci sono solo sagome).
 // `tetto`: quota, dove arriva il bordo (metri dal muretto, negativo = più indietro), spessore, una trave ogni tot metri.
-// Con `chiuso` i quattro lati hanno gli stessi anelli e si incontrano negli angoli, senza buchi.
+// Con `chiuso` i quattro lati hanno gli stessi anelli e sono uniti da angoli curvi, senza buchi: `raggio` è quello della
+// curva del muretto, `spicchi` in quanti pezzi è diviso ogni angolo. Il tetto allora è un anello intero.
+// Con `lama` ha una costola sopra e una lama sulla parete di fuori a ogni trave: larghezza, altezza, quanto sporge.
+// `led`: la fascia luminosa tra un anello e l'altro, alta `alto` metri; la tela con le scritte fa `giri` giri attorno
+// allo stadio e scorre di `scorre` giri al secondo. `palchi` e `schermi`: dove stanno e quanto sono grandi.
+// Nei palchi `vetrate` sono i metri occupati da otto vetrate.
 // `fari`: pali bassi agli angoli, torri agli angoli oppure file di proiettori sul bordo del tetto. `y` è l'altezza, `fuori`
 // i metri oltre la bandierina (in diagonale), `bordo` i metri del bordo del tetto dalla linea laterale.
 // `luce`, solo di notte: quanto valgono la luce diffusa e quella dei fari rispetto a NOTTURNA, il colore dei fari, quanto
 // restano in penombra le tribune e quanto brilla il tetto. `alto`: la telecamera di ?alto, come CAMERA_ALTO.
+// `fuori` sono i dintorni, vedi src/grafica/dintorni.js. Terreno a prato o di città, `margine` è il piazzale attorno allo stadio,
+// in metri; quante `strade` partono dalla strada ad anello e quanti `parcheggi` ci sono, grandi `parcheggio` metri e
+// pieni per la parte `pieno`; un lampione ogni `lampioni` metri, alto `palo`; quante `colline`; in città quanti
+// `palazzi` e quante `finestre` accese ogni venti metri d'altezza.
 const GRADONE = { alt: .5, prof: .85 };
 export const STADI = {
   dist: [6.5, 8.5], posto: .78, scale: 16, muro: 1.6, vicine: 2, senza: 'medio',
@@ -156,8 +165,9 @@ export const STADI = {
         sinistra: { lungo: 56, anelli: [{ file: 3, alt: .4, prof: .85 }] },
       },
       fari: { tipo: 'pali', y: 15, fuori: 5, largo: 3.2 },
-      luce: { hemi: .8, fari: .8, colore: 0xffdfb0, tribune: 0x4a4944, tetto: 0 },
-      alberi: { quanti: 90, alti: [6, 11], colline: 3 },
+      luce: { hemi: 1.5, fari: 1.05, colore: 0xffe9c8, tribune: 0x55534d, tetto: 0 },
+      alberi: { quanti: 90, alti: [6, 11] },
+      fuori: { terreno: 'prato', margine: 10, strade: 1, parcheggi: 1, parcheggio: [40, 26], pieno: .45, lampioni: 46, palo: 7, colline: 3 },
       alto: [0, 62, 78, 0, 0, -4, 55],
     },
     medio: {
@@ -169,16 +179,18 @@ export const STADI = {
         sinistra: { lungo: 2 * HW + 6, anelli: [{ file: 18, ...GRADONE }], tabellone: { largo: 16, alto: 7, y: 15 } },
       },
       fari: { tipo: 'torri', y: 38, fuori: 22, largo: 9 },
-      luce: { hemi: 1, fari: 1, colore: 0xf3f6ff, tribune: 0x5c6378, tetto: 0 },
+      luce: { hemi: 1.7, fari: 1.2, colore: 0xf3f6ff, tribune: 0x666d82, tetto: 0 },
+      fuori: { terreno: 'prato', margine: 20, strade: 2, parcheggi: 4, parcheggio: [70, 40], pieno: .7, lampioni: 34, palo: 9, colline: 2 },
       alto: [0, 100, 92, 0, 0, -4, 55],
     },
     grande: {
-      posti: 75000, folla: 75000, chiuso: true,
+      posti: 75000, folla: 75000, chiuso: { raggio: 7, spicchi: 8 },
       anelli: [{ file: 24, alt: .45, prof: .85 }, { file: 26, alt: .52, prof: .8, y: 14, dietro: 16, posto: .62 }, { file: 28, alt: .6, prof: .78, y: 28.5, dietro: 30, posto: .62 }],
-      tetto: { y: 49.5, sporge: -12, spessore: 1.4, trave: 14 },
-      led: true, palchi: { y: 11.2, alto: 2.6, dietro: 15.6, lungo: 70 }, schermi: { largo: 22, alto: 9, y: 43.5, dietro: 31 },
-      fari: { tipo: 'tetto', y: 49.5, bordo: 18.5 },
-      luce: { hemi: 1.5, fari: 1.3, colore: 0xffffff, tribune: 0x8d93a6, tetto: .5 },
+      tetto: { y: 49.5, sporge: 0, spessore: 1.4, trave: 14, lama: [.7, .9, 2.4] },
+      led: { alto: 2.4, giri: 6, scorre: .004 }, palchi: { y: 11.2, alto: 2.6, dietro: 15.6, lungo: 70, vetrate: 20 }, schermi: { largo: 22, alto: 9, y: 43.5, dietro: 31 },
+      fari: { tipo: 'tetto', y: 49.5, bordo: 6.5 },
+      luce: { hemi: 2, fari: 1.45, colore: 0xffffff, tribune: 0x8d93a6, tetto: .5 },
+      fuori: { terreno: 'città', margine: 30, strade: 4, parcheggi: 6, parcheggio: [90, 48], pieno: .9, lampioni: 30, palo: 10, palazzi: 90, finestre: 14, colline: 0 },
       alto: [0, 175, 135, 0, 0, -8, 60],
     },
   },

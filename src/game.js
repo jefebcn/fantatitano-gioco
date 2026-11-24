@@ -16,6 +16,7 @@ import { creaCampo, texturaOmbra } from './grafica/campo.js';
 import { Porta, Bandierine, panchine, torriFaro, Particelle } from './grafica/stadio.js';
 import { creaAtmosfera } from './grafica/luce.js';
 import { creaSpalti } from './grafica/spalti.js';
+import { creaDintorni } from './grafica/dintorni.js';
 import { creaBordoCampo } from './grafica/bordocampo.js';
 import { creaAudio } from './audio.js';
 import { creaPrestazioni } from './prestazioni.js';
@@ -68,7 +69,7 @@ const G_INIZIO = { ...G }; // i valori al caricamento, per azzerare lo stato a o
 const canvas = $('#c');
 const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 // risoluzione che si adatta ai fotogrammi e indicatore ?debug (src/prestazioni.js)
-const PERF = creaPrestazioni({ renderer, debug: /[?&]debug\b/.test(location.search), extra: () => (G.ctrl && G.state !== 'menu' ? `giocatore ${hyp(G.ctrl.vx, G.ctrl.vz).toFixed(1)} m/s${G.ball && G.ball.owner === G.ctrl ? ' (con palla)' : ''}${G.ctrl.sprint ? ' · scatto' : ''}` : ''), livello: () => QUAL.livello + (RESA && RESA.effetti() ? ' · alone' : ''), rinuncia: () => !!RESA && RESA.rinuncia() });
+const PERF = creaPrestazioni({ renderer, debug: /[?&]debug\b/.test(location.search), fps: /[?&]fps\b/.test(location.search), nota: () => `stadio ${STADIO}`, extra: () => (G.ctrl && G.state !== 'menu' ? `giocatore ${hyp(G.ctrl.vx, G.ctrl.vz).toFixed(1)} m/s${G.ball && G.ball.owner === G.ctrl ? ' (con palla)' : ''}${G.ctrl.sprint ? ' · scatto' : ''}` : ''), livello: () => QUAL.livello + (RESA && RESA.effetti() ? ' · alone' : ''), rinuncia: () => !!RESA && RESA.rinuncia() });
 const scene = new T.Scene();
 scene.background = new T.Color(0x86b9ea);
 scene.fog = new T.Fog(0xa9cdee, 130, 330);
@@ -99,12 +100,12 @@ function ctex(c, repX = 1, repY = 1) {
 function cv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
 
 async function buildPitch() {
-  const { campo, fuori } = await creaCampo(T, { HL, HW, linee: LINEE, anisotropia: renderer.capabilities.getMaxAnisotropy(), passo: PRATO.piastrella, prato: PRATO }); scene.add(campo, fuori); CAMPO = campo; // prato PBR, strisce, usura e linee: src/grafica/campo.js
+  const { campo, fuori } = await creaCampo(T, { HL, HW, linee: LINEE, anisotropia: renderer.capabilities.getMaxAnisotropy(), passo: PRATO.piastrella, prato: PRATO }); scene.add(campo, fuori); CAMPO = campo; TERRENO = fuori; // prato PBR, strisce, usura e linee: src/grafica/campo.js
   // porte con la rete che si deforma e bandierine che si flettono (src/grafica/stadio.js)
   PORTE = [-1, 1].map((d) => new Porta(T, scene, { d, gx: d * HL, GH, GT }));
   BANDIERINE = new Bandierine(T, scene, { HL, HW });
 }
-let RESA = null, PORTE = [], BANDIERINE = null, FARI = null, CAMPO = null, SFONDO = null, ATMO = null, SPALTI = null, BORDO = null;
+let RESA = null, PORTE = [], BANDIERINE = null, FARI = null, DINTORNI = null, TERRENO = null, CAMPO = null, SFONDO = null, ATMO = null, SPALTI = null, BORDO = null;
 const PART = new Particelle(T, scene); // ciuffi d'erba e polvere: scivolate, frenate, tiri forti
 
 let boards = [], standMat = null, titoSprite = null;
@@ -120,14 +121,19 @@ function tipoStadio() {
 /** Costruisce lo stadio del tipo chiesto al posto di quello che c'è (niente da fare se è già quello). */
 function alzaStadio(tipo) {
   if (!STADI.tipi[tipo]) tipo = STADI.senza; if (tipo === STADIO) return;
-  if (SPALTI) SPALTI.togli(); if (FARI) FARI.togli();
+  if (SPALTI) SPALTI.togli(); if (FARI) FARI.togli(); if (DINTORNI) DINTORNI.togli();
   STADIO = tipo; const ST = STADI.tipi[tipo];
   FARI = torriFaro(T, scene, { HL, HW, fari: ST.fari });
   SPALTI = creaSpalti(T, scene, { HL, HW, stadi: STADI, tipo, renderer, luce: FARI.materiale });
+  // fuori dallo stadio: terreno, strade, parcheggi, lampioni, città (src/grafica/dintorni.js), con numeri sempre uguali
+  let seme = 20261124; const casuale = () => ((seme = (seme * 1664525 + 1013904223) >>> 0) / 4294967296);
+  DINTORNI = creaDintorni(T, scene, { terreno: TERRENO, fuori: ST.fuori, ingombro: SPALTI.ingombro, casuale });
   // luci, penombra delle tribune e colori del pubblico vanno rifatti sullo stadio nuovo
-  if (ATMO) ATMO.cambia({ fari: FARI, tribune: SPALTI.materiali, stadio: SPALTI, luce: ST.luce });
+  if (ATMO) ATMO.cambia({ fari: FARI, tribune: SPALTI.materiali, stadio: LUCI_STADIO, luce: ST.luce });
   TIFO.partita = ''; SPALTI.dettaglio(QUAL.livello < 1);
 }
+// di notte: il tetto illuminato da sotto, i lampioni e le finestre della città
+const LUCI_STADIO = { illumina(notte) { SPALTI.illumina(notte); DINTORNI.illumina(notte); } };
 function buildStadium() {
   // spalti, tetti, fari e dintorni del tipo di stadio (vedi alzaStadio), poi steward e fotografi a bordo campo (src/grafica/bordocampo.js)
   alzaStadio(tipoStadio()); BORDO = creaBordoCampo(T, scene, { HL, HW });
@@ -2995,7 +3001,7 @@ async function boot() {
   try { await Promise.race([document.fonts.load('40px Anton'), new Promise((r) => setTimeout(r, 2500))]); } catch (e) { /* si disegna col font di sistema */ }
   buildStadium(); paintBoards(CLUBS[0], CLUBS[1], null);
   RESA = creaResa(T, { renderer, scene, cam, torri: FARI.luci.map((l) => l.pos) }); // riflessi, tonalità e alone (src/grafica/resa.js)
-  ATMO = creaAtmosfera(T, { scene, hemi, sun, sole: SOLE, fari: FARI, sfondo: SFONDO, campo: CAMPO, tribune: SPALTI.materiali, stadio: SPALTI, luce: STADI.tipi[STADIO].luce, cartelloni: boards, resa: RESA, notturna: NOTTURNA }); ATMO.applica(sel.ora); // giorno o notte, scelto prima della partita
+  ATMO = creaAtmosfera(T, { scene, hemi, sun, sole: SOLE, fari: FARI, sfondo: SFONDO, campo: CAMPO, tribune: SPALTI.materiali, stadio: LUCI_STADIO, luce: STADI.tipi[STADIO].luce, cartelloni: boards, resa: RESA, notturna: NOTTURNA }); ATMO.applica(sel.ora); // giorno o notte, scelto prima della partita
   { const m = /[?&]seme=(\d+)/.exec(location.search); if (m) prova(+m[1]); } // modalità di prova: partita ripetibile, audio spento
   buildMenu(); comandiPartita(); bindInput();
   caricaCarriera(); // la carriera salvata, le rose cambiate col mercato e il club dell'utente, prima di caricare gli stemmi
@@ -3005,5 +3011,5 @@ async function boot() {
 }
 // quello che la home (src/casa/casa.js) prende da qui
 export { aiForm, $, rnd, clamp, hash, IMGX, img, G, renderer, cv, SCARPE_NEGOZIO, stemmi3d, makeSkinned, FIGURE, formaMaglia, pickKits, PALLONI, kitsFor, AU, tactics, club, chiudiPonte, startMatch, toMenu, CREST, loadImg, MODEL };
-window.__g = { prova, avviaPartita, hud, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, chiarezza, DIVISE, apriNuovo, spalti: () => SPALTI, STADI, alzaStadio, stadio: () => STADIO, fari: () => FARI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, INSERIMENTO, SMARCA, TIRO_IA, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, restart, kickoff, FERMI, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { prova, avviaPartita, hud, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, chiarezza, DIVISE, apriNuovo, spalti: () => SPALTI, STADI, alzaStadio, stadio: () => STADIO, fari: () => FARI, dintorni: () => DINTORNI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, INSERIMENTO, SMARCA, TIRO_IA, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, restart, kickoff, FERMI, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
