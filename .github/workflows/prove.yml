@@ -1,12 +1,15 @@
-# A ogni PR (e a ogni unione in main): compila, controlla i commenti, fa le prove di carriera e fisica e gioca tre partite
+# A ogni PR: compila, controlla i commenti, fa le prove di carriera e fisica e gioca tre partite
 # simulate con tutti i controlli (scripts/prove/partita.cjs). Se compare un'anomalia o un errore nella pagina la PR si
 # ferma. Le misure di gioco (angoli, tenuta palla, contrasti…) si leggono nel registro ma non bloccano.
 name: Prove
 
+# Solo sulle PR: su main si entra solo da PR unite con squash, e la PR ha già fatto
+# le stesse prove sul codice unito a main. Rifarle a ogni unione costava metà dei
+# minuti di Actions (24/11: 48 giri su 100, ~400 minuti al giorno). Su main le
+# prove si lanciano a mano da Actions → Prove → Run workflow.
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: prove-${{ github.ref }}
