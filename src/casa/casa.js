@@ -7,7 +7,7 @@ import * as T from 'three';
 import { DISEGNI } from '../divisa.js';
 import * as CLOUD from '../cloud.js';
 import * as CAR from '../carriera.js';
-import { ECONOMIA, DIFF, FORMS, PASSAGGIO, DIVISIONI, STAGIONE, MAGLIA_VERA, CARTA } from '../config.js';
+import { ECONOMIA, DIFF, FORMS, PASSAGGIO, MAGLIA_VERA, CARTA } from '../config.js';
 import { aiForm, $, rnd, clamp, hash, IMGX, img, G, renderer, cv, SCARPE_NEGOZIO, stemmi3d, makeSkinned, FIGURE, pickKits, PALLONI, kitsFor, AU, tactics, club as clubVero, chiudiPonte, startMatch, toMenu, CREST, loadImg, MODEL } from '../game.js';
 import HTML_CASA from './casa.html';
 import CSS_CASA from './casa.css';
@@ -19,14 +19,17 @@ import { rotta, apri, sostituisci, cima, indietro, ridisegna, tornaSotto, azzera
 import { mostraBarra, aggiornaBarra } from './barra.js';
 import { apriPremio, premiDa } from './premio.js';
 import { disegnaHome } from './home.js';
-import { disegnaCarriera } from './vista-carriera.js';
+import { disegnaCarriera, giocaProssima } from './vista-carriera.js';
 import { disegnaSfida } from './vista-sfida.js';
 import { apriSquadra } from './vista-squadra.js';
 import { cartaGiocatore, prontaCarte } from './giocatore.js';
 import { adatta, attrNome } from './carte.js';
 import { nomiDi } from '../dati/squadre.js';
 import { t } from './testi.js';
-import { panClubMio, panMercato, panAllenamento, panGuadagna, consigliato, toccaEconomia } from './vista-economia.js';
+import { panClubMio, panMercato, panAllenamento, consigliato, toccaEconomia } from './vista-economia.js';
+import { panMonete, SCHEDE_MONETE } from './vista-monete.js';
+import { panProfilo } from './vista-profilo.js';
+import { panStagione } from './vista-stagione.js';
 import { pronta, figura, stemmaPronto } from './immagini.js';
 import { icona, MO, DI } from './icone.js';
 
@@ -37,14 +40,14 @@ document.getElementById('vs').insertAdjacentHTML('beforebegin', HTML_CASA);
 // le schermate in cui si vede la barra in alto, quando c'è una carriera (in partita e nel benvenuto non c'è)
 const CON_BARRA = ['#casa', '#carriera', '#sfida', '#squadra', '#pan', '#scelta', '#pre', '#nuovo'];
 const show = (id) => { for (const s of ['#home', '#nuovo', '#casa', '#carriera', '#sfida', '#squadra', '#pan', '#scelta', '#pre', '#vs', '#stop', '#cambi', '#fine']) $(s).classList.toggle('nas', s !== id); mostraBarra(!!K && CON_BARRA.includes(id)); };
-const sel = { mia: null, loro: null, diff: 'normale', form: '4-3-3', ment: 0, ora: 'giorno', qual: 'auto', assistito: PASSAGGIO.assistito };
+const sel = { mia: null, loro: null, diff: 'normale', form: '4-3-3', ment: 0, ora: 'giorno', qual: 'auto', assistito: PASSAGGIO.assistito, monete: SCHEDE_MONETE[0] };
 const SAVE = 'fantatitano-partita';
-try { const v = JSON.parse(localStorage.getItem(SAVE) || '{}'); if (FORMS[v.form]) sel.form = v.form; if ([-1, 0, 1].includes(v.ment)) sel.ment = v.ment; if (DIFF[v.diff]) sel.diff = v.diff; if (v.ora === 'notte' || v.ora === 'giorno') sel.ora = v.ora; if (['auto', 'alta', 'media', 'bassa'].includes(v.qual)) sel.qual = v.qual; if (typeof v.assistito === 'boolean') sel.assistito = v.assistito; } catch (e) { /* si parte dai valori di base */ }
+try { const v = JSON.parse(localStorage.getItem(SAVE) || '{}'); if (FORMS[v.form]) sel.form = v.form; if ([-1, 0, 1].includes(v.ment)) sel.ment = v.ment; if (DIFF[v.diff]) sel.diff = v.diff; if (v.ora === 'notte' || v.ora === 'giorno') sel.ora = v.ora; if (['auto', 'alta', 'media', 'bassa'].includes(v.qual)) sel.qual = v.qual; if (typeof v.assistito === 'boolean') sel.assistito = v.assistito; if (SCHEDE_MONETE.includes(v.monete)) sel.monete = v.monete; } catch (e) { /* si parte dai valori di base */ }
 // il passaggio assistito scelto nelle impostazioni vale da subito (PASSAGGIO.assistito in config.js è il valore di partenza)
 PASSAGGIO.assistito = sel.assistito;
 // Il modulo con cui gioca il club: quello scelto, se il Centro allenamento lo ha aperto, altrimenti il 4-3-3
 const moduloMio = () => (FORMS[sel.form] && (!K || CAR.moduliAperti(K, Object.keys(FORMS)).includes(sel.form)) ? sel.form : '4-3-3');
-const save = () => { try { localStorage.setItem(SAVE, JSON.stringify({ form: sel.form, ment: sel.ment, diff: sel.diff, ora: sel.ora, qual: sel.qual, assistito: sel.assistito })); } catch (e) { /* senza memoria si gioca lo stesso */ } };
+const save = () => { try { localStorage.setItem(SAVE, JSON.stringify({ form: sel.form, ment: sel.ment, diff: sel.diff, ora: sel.ora, qual: sel.qual, assistito: sel.assistito, monete: sel.monete })); } catch (e) { /* senza memoria si gioca lo stesso */ } };
 const esc = (n) => String(n).replace(/[<>&"]/g, '');
 // La forza di un giocatore sulla scala di prima (55-88): serve solo a forzaClub, cioè alle stelle del club dell'utente, che
 // contano anche in partita. Non si mostra più: il numero che si vede è `ovr`, sulla scala nuova.
@@ -320,25 +323,15 @@ function ritratto(clubId, nome, num, portiere, mister = false) {
 }
 // Apre un pannello col suo titolo e il suo contenuto. trofeo: il nome di un'illustrazione da mettere accanto al titolo
 // (i trofei, nelle schermate delle competizioni). Lo sfondo è quello della home, scurito.
-function pan(titolo, html, trofeo = '') {
+// quadro: il nome di una schermata a pannelli (src/casa/quadri.js): occupa tutto lo schermo sotto la barra, senza
+// titolo e senza scorrere, con lo sfondo sfocato.
+function pan(titolo, html, trofeo = '', quadro = '') {
   $('#panT').innerHTML = (trofeo ? figura(trofeo, 'panTrofeo', 36) : '') + esc(titolo); $('#panC').innerHTML = html;
+  $('#pan').classList.toggle('quadri', !!quadro); $('#panC').className = quadro ? 'q-' + quadro : '';
   $('#pan').classList.toggle('illustrata', pronta('sfondo-home')); show('#pan'); aggiornaBarra();
 }
 const riga = (a, b, r, rg) => `<div class="${a === K.club || b === K.club ? 'io' : ''}"><span>${esc(club(a).name)} – ${esc(club(b).name)}</span><b>${r[0]}-${r[1]}${rg ? ` (${rg[0]}-${rg[1]} rig.)` : ''}</b></div>`;
 const tabella = (tab, corta) => `<table class="tab"><tr><th></th><th>Squadra</th><th>G</th>${corta ? '' : '<th>V</th><th>N</th><th>P</th>'}<th>GF</th><th>GS</th><th>DR</th><th>PT</th></tr>${tab.map((r, i) => `<tr class="${r.id === K.club ? 'io' : ''}"><td>${i + 1}</td><td>${mini(r.id)}${esc(club(r.id).name)}</td><td>${r.g}</td>${corta ? '' : `<td>${r.v}</td><td>${r.n}</td><td>${r.p}</td>`}<td>${r.gf}</td><td>${r.gs}</td><td>${r.gf - r.gs}</td><td>${r.pt}</td></tr>`).join('')}</table>`;
-function panClassifica() {
-  const g = K.giornata - 1;
-  // il calendario del proprio club: tutte le giornate, con il risultato di quelle già giocate
-  const mie = K.cal.map((gg, n) => { const i = gg.findIndex(([x, y]) => x === K.club || y === K.club), [x, y] = gg[i], r = K.ris[n] && K.ris[n][i], casa = x === K.club, avv = casa ? y : x, esito = r ? (r[casa ? 0 : 1] > r[casa ? 1 : 0] ? 'v' : r[casa ? 0 : 1] < r[casa ? 1 : 0] ? 'p' : 'n') : '';
-    return `<div class="${n === K.giornata ? 'io' : ''}"><span>${n + 1}. ${casa ? 'in casa' : 'in trasferta'} · ${esc(club(avv).name)}</span><b class="${esito}">${r ? `${r[casa ? 0 : 1]}-${r[casa ? 1 : 0]}` : n === K.giornata ? 'prossima' : '–'}</b></div>`; }).join('');
-  // gli obiettivi della stagione, con quelli già fatti segnati
-  const D = CAR.divisione(K), sopra = DIVISIONI[K.div - 2], turno = (n) => (n === 1 ? 'ai quarti' : n === 2 ? 'in semifinale' : 'in finale');
-  const frase = { posizione: (o) => `Arriva tra le prime ${o.n} in campionato (ora sei al posto ${o.ora})`, coppa: (o) => `Coppa Titano: arriva ${turno(o.n)}`, castelli: (o) => `Trofeo dei Castelli: ${o.n === 1 ? 'passa i gironi' : `arriva ${turno(o.n)}`}`, rosa: (o) => `Valutazione media dei titolari almeno ${o.n} (ora ${String(o.ora).replace('.', ',')})` };
-  const obiettivi = `<div class="sez">Obiettivi della stagione</div><div class="ris2">${CAR.obiettivi(K, CLUBS).map((o) => `<div class="${o.fatto ? 'io' : ''}"><span>${frase[o.id](o)}</span><b>${o.fatto ? '✓ fatto' : 'da fare'}</b></div>`).join('')}</div>`
-    + `<p class="nota2">${sopra ? `Con ${STAGIONE.servono} obiettivi su 4 sali in ${sopra.nome}.` : 'Sei nella divisione più alta.'}${K.div < DIVISIONI.length ? ` Chi arriva tra le ultime ${STAGIONE.retrocedono} scende.` : ''} Una vittoria qui vale ${D.vittoria} monete.</p>`;
-  pan(`${D.nome} · stagione ${K.stagione}`, obiettivi + tabella(CAR.classifica(K, CLUBS)) + (g >= 0 ? `<div class="sez">Giornata ${g + 1}: tutti i risultati</div><div class="ris2">${K.cal[g].map(([a, b], i) => riga(a, b, K.ris[g][i])).join('')}</div>` : '')
-    + `<div class="sez">Il tuo calendario</div><div class="ris2 cale">${mie}</div>`, 'trofeo-campionato');
-}
 // Come nelle schermate dei tornei: prima il quadro, e in cima il tasto per giocare la prossima partita
 function giocaCoppa() { const p = CAR.coppaProssima(K); if (p) apri('sfida', 'coppa', p.avv, `Coppa Titano · ${p.nome.toLowerCase()}`, false, true); }
 function giocaCastelli() { const p = CAR.castelliProssima(K); if (p) apri('sfida', 'castelli', p.avv, `Trofeo dei Castelli · ${p.nome.toLowerCase()}`, p.fase === 'gironi' && !p.inCasa, p.fase === 'ko'); }
@@ -376,13 +369,6 @@ function accountHtml() {
   if (u) return `<div class="acc"><p>Connesso come <b>${esc(u.nome || u.email)}</b>${u.email && u.nome !== u.email ? ` (${esc(u.email)})` : ''}. La carriera si salva anche sul tuo account.</p><p class="nota2" id="accStato">${testoCloud(a.stato)}</p><div class="seg"><button data-az="salvaora">Salva adesso</button><button data-az="esci">Esci</button></div></div>`;
   if (a.stato === 'spento') return '<div class="acc"><p>Il salvataggio sull\'account non è raggiungibile adesso: la carriera resta su questo dispositivo. Riprova più tardi.</p></div>';
   return `<div class="acc"><p>Accedi con l'account Fantatitano per salvare la carriera e ritrovarla su un altro telefono.</p><div class="form"><input id="accEmail" type="email" autocomplete="username" placeholder="Email" enterkeyhint="next"><input id="accPw" type="password" autocomplete="current-password" placeholder="Password" enterkeyhint="go"><button data-az="accedi" class="oro">Accedi</button></div><p class="nota2" id="accErr"></p><p class="nota2">Non hai un account? Crealo nell'app Fantatitano su <b>fantatitano.site</b>, poi torna qui.</p></div>`;
-}
-function panProfilo() {
-  const st = K ? K.stat : null, top = K && CAR.capocannoniere(K), d = (v, e) => `<div><b>${v}</b><span>${e}</span></div>`;
-  pan(K ? K.nome : 'Account', (K ? `<div class="sez">Avatar del manager</div><div class="avat">${CAR.NEGOZIO.avatar.tutti.filter((n) => CAR.possiede(K, 'avatar', n)).map((n) => `<button data-avatar="${n}" class="${n === (K.avatar || 0) ? 'on' : ''}"><img src="${ritratto(K.club, avatarNome(n), '', false, true)}" alt=""></button>`).join('')}</div><div class="seg"><button data-club="personalizza">Personalizza il club: nome, colori, disegno</button><button data-ntab="manager">Altri avatar e cornici</button><button data-ntab="stemma">Pezzi dello stemma</button></div>` : '') + `<div class="sez">Account</div>${accountHtml()}` + (K ? `<div class="sez">${esc(club(K.club).name)}</div><div class="dati">${d(CAR.divisione(K).nome, 'Divisione')}${d(K.stagione, 'Stagione')}${d(st.g, 'Partite')}${d(`${st.v}-${st.n}-${st.p}`, 'Vinte-pari-perse')}${d(`${st.gf}-${st.gs}`, 'Gol fatti-subiti')}</div>`
-    + `<div class="sez">Capocannoniere</div><p class="vuoto">${top ? `${esc(top.nome)} · ${top.gol} gol` : 'Ancora nessun gol'}</p>`
-    + `<div class="sez">Trofei</div><p class="vuoto">${K.trofei.length ? K.trofei.map((t) => `${t.tipo === 'Campionato' && t.div ? DIVISIONI[t.div - 1].nome : t.tipo} (stagione ${t.stagione})`).join(' · ') : 'Ancora nessuno'}</p>`
-    + `<div class="sez">Mercato</div><p class="vuoto">${K.movimenti.length ? K.movimenti.slice(0, 6).map((m) => (m.preso ? `Preso ${esc(m.preso)}${m.da && club(m.da) ? ` (${esc(club(m.da).name)})` : ''} per ${mon(m.costo)} monete` : `Venduto ${esc(m.ceduto)} per ${mon(-m.costo)} monete`)).join(' · ') : 'Ancora nessun movimento'}</p>` : ''));
 }
 /* --- pannelli della home nuova (docs/home-spec.md) */
 // L'avatar del manager: un busto generico disegnato dal modello 3D, scelto tra quelli del negozio (cambia il seme, quindi faccia e capelli)
@@ -544,8 +530,8 @@ function buildMenu() {
   // le schermate, ognuna col suo nome: la navigazione le apre e ci torna con Indietro (docs/navigazione.md)
   rotta('home', () => { show('#casa'); disegnaHome(); });
   rotta('carriera', () => { show('#carriera'); disegnaCarriera(); });
-  rotta('classifica', panClassifica); rotta('coppa', panCoppa); rotta('castelli', panCastelli);
-  rotta('sfide', (tab) => panSfide(tab)); rotta('percorso', () => panPercorso()); rotta('guadagna', panGuadagna);
+  rotta('classifica', panStagione); rotta('coppa', panCoppa); rotta('castelli', panCastelli);
+  rotta('sfide', (tab) => panSfide(tab)); rotta('percorso', () => panPercorso()); rotta('guadagna', panMonete);
   rotta('profilo', panProfilo); rotta('info', panInfo); rotta('impostazioni', () => { armato = false; panImp(); });
   rotta('mercato', () => panMercato()); rotta('allenamento', panAllenamento);
   rotta('club', (tab) => panClubMio(tab)); rotta('negozio', (tab) => panNegozio(tab)); rotta('personalizza', () => apriNuovo(true));
@@ -570,6 +556,10 @@ function buildMenu() {
     if (b.dataset.stab) return apri('sfide', b.dataset.stab);
     if (b.dataset.riscuoti) { const [g, id] = b.dataset.riscuoti.split(':'), r = CAR.riscuoti(K, g, id); if (r.ok) { salvaK(); apriPremio({ titolo: t('premio.riscosso'), premi: premiDa({ monete: r.monete, gemme: r.gemme, allenatori: r.allenatore ? 1 : 0, rarita: r.allenatore || 'raro', punti: r.punti }) }); } return panSfide(); }
     if (b.dataset.az === 'inArrivo') return avviso(t('inArrivo'));
+    // le schermate a pannelli: le schede di «Monete e diamanti», i pulsanti che portano altrove, «Gioca»
+    if (b.dataset.mtab) { sel.monete = b.dataset.mtab; save(); return panMonete(); }
+    if (b.dataset.vai) { const [dove, par] = b.dataset.vai.split(':'); return par ? apri(dove, par) : apri(dove); }
+    if (b.dataset.az === 'prossima') return giocaProssima();
     if (b.dataset.az === 'giocaCoppa') return giocaCoppa();
     if (b.dataset.az === 'giocaCastelli') return giocaCastelli();
     if (b.dataset.az === 'tutto') { riscuotiTutto(); return panSfide(); }
@@ -612,4 +602,4 @@ function buildMenu() {
 function caricaCarriera() { K = CAR.carica(); if (K && !club(K.club)) K = null; CAR.applica(K, CLUBS); applicaMio(); }
 
 // quello che la partita (src/game.js) prende da qui
-export { club, moduloMio, pan, mini, premioTesto, DATI, fmtTempo, ritratto, consigliato, avviso, ridisegna, maglia, show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera };
+export { club, moduloMio, pan, testoCloud, mini, premioTesto, DATI, fmtTempo, ritratto, consigliato, avviso, ridisegna, maglia, show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera };

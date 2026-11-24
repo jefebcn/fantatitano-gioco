@@ -208,6 +208,22 @@ export function classifica(C, clubs) {
   return Object.values(T).sort((x, y) => y.pt - x.pt || (y.gf - y.gs) - (x.gf - x.gs) || y.gf - x.gf || nome[x.id].localeCompare(nome[y.id], 'it'));
 }
 
+/**
+ * La forma di ogni squadra: gli ultimi `quanti` risultati di campionato, dal più vecchio al più recente, come lettere
+ * 'v' (vinta), 'n' (pari), 'p' (persa). Si ricava dai risultati salvati giornata per giornata: non c'è niente in più da
+ * salvare. Chi ha giocato meno partite ha l'elenco più corto.
+ */
+export function forma(C, quanti = 5) {
+  const out = {};
+  C.ris.forEach((giornata, r) => giornata.forEach((res, k) => {
+    if (!res) return; const [a, b] = C.cal[r][k];
+    (out[a] || (out[a] = [])).push(res[0] > res[1] ? 'v' : res[0] < res[1] ? 'p' : 'n');
+    (out[b] || (out[b] = [])).push(res[1] > res[0] ? 'v' : res[1] < res[0] ? 'p' : 'n');
+  }));
+  for (const id of Object.keys(out)) out[id] = out[id].slice(-quanti);
+  return out;
+}
+
 /* ---------- monete e diamanti ---------- */
 /**
  * Ogni entrata e ogni uscita passa di qui: cambia il saldo e la scrive nello storico (i più recenti in testa).

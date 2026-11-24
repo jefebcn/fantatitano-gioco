@@ -806,3 +806,171 @@ button.mG{cursor:pointer}
 #barraF .val.mon:has(.valFig){box-shadow:inset 0 0 0 1.5px #E8B64C}
 #barraF .val .valFig{flex:none;width:30px;height:30px;margin:-4px 0;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))}
 #barraF.s2 .val .valFig{width:26px;height:26px}
+
+/* ---------- schermate a pannelli: Monete e diamanti, Profilo, Stagione (bozze di Alex del 24/11) ---------- */
+/* Tutto sta in una schermata, sotto la barra, senza scorrere: se una parte non ci sta scorre solo dentro il suo
+   pannello. Lo sfondo è quello della home, sfocato e scurito; il contenuto sta sempre dentro pannelli. Misure e colori
+   arrivano da PANNELLI (src/config.js) come variabili --q-*. Qui il testo secondario scende fino a 10 px, come nelle bozze. */
+#pan.quadri{gap:0;background:#050A1A;padding-right:max(var(--q-margine),env(safe-area-inset-right));padding-bottom:max(var(--q-basso),env(safe-area-inset-bottom));padding-left:max(var(--q-margine),env(safe-area-inset-left))}
+body.conBarra #pan.quadri{padding-top:calc(var(--barra) + var(--q-alto))}
+#pan.quadri.illustrata::before{content:"";position:fixed;inset:calc(var(--q-sfoca) * -3);z-index:0;filter:blur(var(--q-sfoca));
+  background:image-set(url(img/illustrazioni/sfondo-home@1x.webp) 1x,url(img/illustrazioni/sfondo-home@2x.webp) 2x,url(img/illustrazioni/sfondo-home@3x.webp) 3x) center/cover}
+#pan.quadri::after{content:"";position:fixed;inset:0;z-index:0;background:var(--q-velo)}
+#pan.quadri #panT{display:none}
+#pan.quadri #panC{position:relative;z-index:1;flex:1 0 var(--q-minimo);min-height:0;width:100%;display:grid;gap:var(--q-tra);color:var(--q-testo-colore);font:800 var(--q-testo)/1.25 Montserrat,Lato,system-ui,sans-serif}
+/* pannello, titolo, tessera */
+.kPan{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;padding:12px var(--q-dentro);border-radius:var(--q-raggio);background:var(--q-fondo);border:1px solid var(--q-bordo)}
+.kTesta{flex:none;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 8px;margin-bottom:8px}
+.kTitolo{margin:0;font:400 var(--q-titolo)/1 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:var(--q-titolo-colore);white-space:nowrap}
+.kTess{position:relative;min-width:0;min-height:0;border-radius:var(--q-tess-raggio);background:var(--q-tess-fondo);border:1px solid var(--q-tess-bordo);color:#fff}
+/* i pulsanti: 28 px da vedere, 44 da toccare (il bordo trasparente tutt'intorno, ripreso dal margine negativo) */
+.kOro,.kBlu{flex:none;min-height:44px;margin:-8px;padding:0 14px;border:8px solid transparent;background-clip:padding-box;border-radius:17px;font:800 13px/1 Montserrat,sans-serif;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;color:#1B1304;background-color:var(--q-oro);transition:transform .08s,filter .08s}
+.kBlu{color:#fff;background-color:#27488F}
+.kOro:active,.kBlu:active,.uTess:active{transform:scale(.96);filter:brightness(1.2)}
+/* barra di avanzamento e premi a icone */
+.kBarra{display:block;height:9px;border-radius:5px;background:rgba(255,255,255,.14);overflow:hidden}
+.kBarra i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#3FC6FF,#7FDBFF)}
+.kBarra.verde i{background:linear-gradient(90deg,#38D468,#5BE37A)}
+.kPremi{display:inline-flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px 10px}
+.kPr{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.kPr .kPrI{flex:none;width:var(--q-mon-premio);height:var(--q-mon-premio);object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))}
+.kPr b{font:800 14px/1 Montserrat,sans-serif}
+
+/* --- Monete e diamanti: a sinistra i due saldi e il premio più vicino, a destra le schede con le tessere */
+#panC.q-monete{grid-template-columns:var(--q-mon-colonna) minmax(0,1fr)}
+.dSx{display:flex;flex-direction:column;gap:var(--q-tra);min-width:0;min-height:0}
+.dSaldo{flex:0 1 69px;min-height:50px;flex-direction:row;align-items:center;gap:12px;padding:0 var(--q-dentro);border-width:1.5px}
+.dSaldo.monete{border-color:rgba(232,182,76,.78)}
+.dSaldo.diamanti{border-color:rgba(63,198,255,.78)}
+.dSaldo .dIco{flex:none;align-self:stretch;width:var(--q-mon-icona);height:auto;min-height:0;margin:7px 0;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.dSaldo span{display:grid;min-width:0}
+.dSaldo i{font:400 15px/1 "Bebas Neue",Anton,Impact,sans-serif;font-style:normal;letter-spacing:.04em;text-transform:uppercase;color:var(--q-secondario)}
+.dSaldo b{font:400 var(--q-mon-numero)/1.08 Anton,Impact,sans-serif;white-space:nowrap}
+.dSaldo.monete b{color:var(--q-oro)}
+.dSaldo.diamanti b{color:var(--q-azzurro)}
+.dVicino{flex:1 0 auto;padding-top:10px;padding-bottom:10px}
+.dVicino .kTesta{margin-bottom:6px}
+.dVicino .kTitolo{color:var(--q-verde)}
+.dVicino .kBarra{margin:5px 0 6px}
+.dConto{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dConto i,.dFrase{font:600 var(--q-piccolo)/1.3 Montserrat,sans-serif;font-style:normal;color:var(--q-secondario)}
+.dFrase{margin:5px 0 0}
+.dVicino .kOro{margin-top:auto}
+.dDx{padding-top:10px}
+/* le schede: la pillola è alta 30, il pulsante 44 */
+.kSchede{flex:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:-7px 0}
+.kSchede button{min-width:0;height:44px;padding:0;border:7px solid transparent;border-width:7px 2px;background:none;background-clip:padding-box;border-radius:14px/16px;font:400 17px/1 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;color:var(--q-secondario)}
+.kSchede button.on{color:#1B1304;background-color:var(--q-oro)}
+.dGriglia{flex:1 1 0;min-height:0;margin-top:8px;padding-top:10px;border-top:1px solid rgba(175,192,218,.22);display:grid;grid-template-columns:repeat(var(--q-mon-riga),minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(96px,1fr);gap:var(--q-tra);overflow:hidden auto;scrollbar-width:none}
+.dTess{display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:3px;padding:8px 6px 9px;text-align:center}
+.dTess .dFig{flex:0 1 var(--q-mon-figura);min-height:22px;width:100%;height:auto;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}
+.dTess>b{font:800 var(--q-testo)/1.2 Montserrat,sans-serif}
+.dTess .kPr b{font-size:15px}
+/* sul telefono più stretto monete e diamanti di una tessera stanno su una riga sola se si avvicinano un po' */
+@media (max-width:700px){.dTess .kPremi{column-gap:5px}}
+
+/* --- Profilo: a sinistra chi sei, a destra il tuo club e l'account */
+#panC.q-profilo{grid-template-columns:min(var(--q-pro-colonna),var(--q-pro-parte)) minmax(0,1fr);grid-template-rows:minmax(0,149fr) minmax(0,163fr)}
+.uChi{grid-row:1 / 3;align-items:center;padding-top:14px;text-align:center}
+.uAvatar{flex:0 1 var(--q-pro-avatar);min-height:56px;aspect-ratio:1;box-sizing:border-box;border-radius:50%;overflow:hidden;border:2px solid var(--q-oro);background:radial-gradient(circle at 50% 30%,#1f4b8f,#081027)}
+.uAvatar img,.uScelta img{display:block;width:100%;height:100%;object-fit:cover}
+.uNome{flex:none;max-width:100%;margin-top:6px;font:400 var(--q-pro-nome)/1.05 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden}
+.uClub{flex:none;font:600 12px/1.25 Montserrat,sans-serif;font-style:normal;color:var(--q-secondario)}
+.uLivello{flex:none;align-self:stretch;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;margin-top:8px;padding:0 14px;border-radius:10px;background:rgba(8,16,42,.62)}
+.uLivello b,.uLivello i{font:800 13px/1 Montserrat,sans-serif;font-style:normal;white-space:nowrap}
+.uLivello i{color:var(--q-azzurro)}
+.uCambia{flex:none;align-self:flex-start;margin-top:14px;font-size:16px}
+.uScelta{flex:none;align-self:stretch;display:flex;gap:min(12px,calc((100% - 4 * var(--q-pro-scelta)) / 3));margin-top:4px;overflow:auto hidden;scrollbar-width:none}
+.uScelta::-webkit-scrollbar,.dGriglia::-webkit-scrollbar,.lScorre::-webkit-scrollbar{display:none}
+.uScelta button{flex:none;width:var(--q-pro-scelta);height:var(--q-pro-scelta);padding:0;border-radius:50%;overflow:hidden;border:2px solid rgba(175,192,218,.45);background:radial-gradient(circle at 50% 30%,#1f4b8f,#081027)}
+.uScelta button.on{border-color:var(--q-oro)}
+/* le tre tessere. Strette (anche dove il browser non sa misurare il pannello): icona piccola, titolo accanto, spiegazione
+   su tutta la riga, freccia in basso. Larghe, come nella bozza: icona grande, titolo in alto, freccia a metà, spiegazione in basso. */
+.uClubTuo{container-type:inline-size}
+.uTessere{flex:1 1 0;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--q-tra)}
+.uTess{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;column-gap:6px;row-gap:2px;padding:8px;text-align:left;transition:transform .08s,filter .08s}
+.uTess .uIco{width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.uTess b{font:800 12px/1.15 Montserrat,sans-serif}
+.uTess i{grid-column:1 / 3;align-self:end;padding-right:16px;font:600 10.5px/1.2 Montserrat,sans-serif;font-style:normal;color:var(--q-secondario)}
+.uTess .uVai{position:absolute;right:8px;bottom:9px;width:8px;height:13px;color:var(--q-azzurro)}
+@container (min-width:515px){
+  .uTess{column-gap:8px;padding:12px 9px}
+  .uTess .uIco{grid-row:1 / 3;align-self:center;width:40px;height:40px}
+  .uTess b{font-size:13px}
+  .uTess i{grid-column:2;padding-right:0}
+  .uTess .uVai{bottom:auto;top:50%;margin-top:-6px}
+}
+.uFrase{flex:none;margin:0 0 8px;font:600 12px/1.3 Montserrat,sans-serif;color:#DCE5F4}
+.uForm{flex:none;display:flex;align-items:center;gap:10px}
+.uForm input{flex:1 1 0;min-width:0;height:var(--q-pro-campo);padding:0 12px;border:0;border-radius:var(--q-pro-raggio);background:#EEF1F6;color:#111;font:600 16px Montserrat,sans-serif}
+.uForm .kOro,.uForm .kBlu{min-width:126px;min-height:calc(var(--q-pro-campo) + 16px);border-radius:calc(var(--q-pro-raggio) + 8px);font-size:14px}
+.uNota{flex:none;margin:6px 0 0;font:600 var(--q-piccolo)/1.3 Montserrat,sans-serif;color:var(--q-secondario)}
+.uNota:empty{display:none}
+.uNota a{font-weight:800;color:var(--q-azzurro);text-decoration:none}
+.uNota+.uForm{margin-top:10px}
+/* senza carriera resta solo il pannello dell'account, al centro (in alto a sinistra c'è la freccia per tornare) */
+#panC.q-account{grid-template-columns:minmax(0,520px);place-content:center}
+
+/* --- Stagione: la fascia in alto, gli obiettivi a sinistra, la classifica a destra */
+#panC.q-stagione{grid-template-columns:min(var(--q-sta-colonna),var(--q-sta-parte)) minmax(0,1fr);grid-template-rows:var(--q-sta-fascia) minmax(0,1fr)}
+.lFascia{grid-column:1 / 3;flex-direction:row;align-items:center;gap:12px;padding:0 var(--q-dentro)}
+.lLega{flex:0 1 auto;display:flex;align-items:center;gap:10px;min-width:0}
+.lTrofeo{flex:none;height:42px;width:auto;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.lLega>span,.lChi{display:grid;min-width:0}
+.lNome{font:400 24px/1 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:var(--q-oro);white-space:nowrap;overflow:hidden}
+.lLega i{margin-top:2px;font:600 12px/1.2 Montserrat,sans-serif;font-style:normal;color:var(--q-secondario);white-space:nowrap;overflow:hidden}
+.lPartita{flex:1 1 70px;min-width:min-content;max-width:220px;margin:0 auto;display:grid;gap:5px}
+.lPartita b{font:800 13px/1 Montserrat,sans-serif;white-space:nowrap}
+.lProssima{flex:0 1 auto;min-width:0;height:39px;display:flex;align-items:center;gap:8px;padding:0 14px 0 8px;border-radius:10px;border:1.5px solid rgba(232,182,76,.8);background:rgba(8,16,42,.5)}
+.lProssima img{flex:none;width:28px;height:28px;object-fit:contain}
+.lChi>i{font:400 13px/1 "Bebas Neue",Anton,Impact,sans-serif;font-style:normal;letter-spacing:.04em;text-transform:uppercase;color:var(--q-oro);white-space:nowrap}
+.lAvv{display:flex;align-items:baseline;gap:4px;min-width:0;font:800 var(--q-testo)/1.2 Montserrat,sans-serif;white-space:nowrap}
+.lAvv b{flex:0 1 auto;min-width:0;overflow:hidden}
+.lAvv u{flex:none;text-decoration:none}
+/* gli obiettivi: quattro tessere, due per riga */
+.lSali{font:700 var(--q-piccolo)/1 Montserrat,sans-serif;font-style:normal;color:var(--q-verde);white-space:nowrap}
+.lGriglia{flex:1 1 0;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:8px}
+.lOb{display:flex;flex-direction:column;justify-content:flex-end;padding:8px 9px;text-align:left}
+.lOb .lFig{position:absolute;left:8px;top:7px;width:auto;height:min(34px,36%);filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.lAnello{position:absolute;right:7px;top:7px;width:var(--q-sta-anello);height:var(--q-sta-anello);display:grid;place-items:center}
+.lAnello>svg:not(.ico){position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.lAnello circle{fill:none;stroke:rgba(255,255,255,.16);stroke-width:4}
+.lAnello circle.pieno{stroke:var(--q-azzurro);stroke-linecap:round}
+.lAnello.fatto circle.pieno{stroke:var(--q-verde)}
+.lAnello b{position:relative;font:800 10px/1 Montserrat,sans-serif}
+.lAnello .ico{position:relative;width:16px;height:16px;color:var(--q-verde)}
+.lOb>b{font:800 11.5px/1.2 Montserrat,sans-serif}
+.lOb>i{margin-top:2px;font:700 11px/1.2 Montserrat,sans-serif;font-style:normal;color:var(--q-azzurro)}
+.lOb.fatto>i{color:var(--q-verde)}
+/* la classifica: intestazione ferma, righe che scorrono, la nostra sempre in vista */
+.lClassifica{--forma:calc(var(--q-sta-forma) * var(--q-sta-pallino) + (var(--q-sta-forma) - 1) * 3px)}
+.lClassifica .kTesta{flex-wrap:nowrap;align-items:flex-end;margin-bottom:4px;padding-right:8px}
+.lCapo{display:grid;grid-template-columns:24px 30px 26px var(--forma);column-gap:6px}
+.lCapo i{font:800 var(--q-piccolo)/1 Montserrat,sans-serif;font-style:normal;text-transform:uppercase;text-align:center;color:var(--q-secondario)}
+.lScorre{flex:1 1 0;min-height:0;overflow:hidden auto;scrollbar-width:none;overscroll-behavior:contain;touch-action:pan-y}
+.lRiga{position:relative;display:grid;grid-template-columns:20px 22px minmax(0,1fr) 24px 30px 26px var(--forma);align-items:center;column-gap:6px;height:var(--q-sta-riga);padding:0 8px 0 9px;border-radius:7px;font:800 13px/1 Montserrat,sans-serif;text-align:center}
+.lRiga:nth-child(odd){background:rgba(255,255,255,.045)}
+.lRiga img{width:20px;height:20px;object-fit:contain}
+.lRiga .lSq{text-align:left;white-space:nowrap;overflow:hidden}
+.lRiga>i{font:600 12px/1 Montserrat,sans-serif;font-style:normal;color:var(--q-secondario)}
+.lRiga.su::before{content:"";position:absolute;left:0;top:3px;bottom:3px;width:3px;border-radius:2px;background:var(--q-verde)}
+.lRiga.io{position:sticky;top:0;bottom:0;z-index:1;background:linear-gradient(rgba(232,182,76,.2),rgba(232,182,76,.2)),#15224F;box-shadow:inset 0 0 0 1.5px var(--q-oro)}
+.lRiga.io .lSq{color:var(--q-oro)}
+.lForma{display:grid;grid-template-columns:repeat(var(--q-sta-forma),var(--q-sta-pallino));gap:3px}
+.lForma i{width:var(--q-sta-pallino);height:var(--q-sta-pallino);border-radius:50%;display:grid;place-items:center;background:rgba(175,192,218,.26);font:800 10px/1 Montserrat,sans-serif;font-style:normal;color:#06122B}
+.lForma i.v{background:var(--q-verde)}
+.lForma i.n{background:var(--q-secondario)}
+.lForma i.p{background:var(--q-rosso);color:#fff}
+/* sotto la classifica, scorrendo: i risultati dell'ultima giornata e il calendario */
+.lSez{margin:14px 0 5px;font:400 15px/1 "Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:var(--q-oro)}
+.lRis div,.lCal div{display:grid;align-items:center;gap:6px;min-height:24px;border-bottom:1px solid rgba(255,255,255,.07);font:600 12px/1.2 Montserrat,sans-serif;color:#DCE5F4}
+.lRis div{grid-template-columns:minmax(0,1fr) 38px minmax(0,1fr)}
+.lRis span:first-child{text-align:right}
+.lRis b,.lCal b{font-weight:800;text-align:center;color:#fff;white-space:nowrap}
+.lRis .io,.lCal .io span{color:var(--q-oro)}
+.lCal{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0 16px}
+.lCal div{grid-template-columns:18px minmax(0,1fr) auto}
+.lCal i{font-style:normal;text-align:right;color:var(--q-secondario)}
+.lCal u{margin-left:6px;font-size:11px;text-decoration:none;color:var(--q-secondario)}
+.lCal b.v{color:var(--q-verde)}
+.lCal b.p{color:#FF8A8A}
