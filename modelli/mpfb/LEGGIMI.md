@@ -8,7 +8,8 @@ Maschio adulto atletico, viso misto e generico (nessuna persona reale).
 1. In Blender, senza interfaccia:
    `blender -b --python scripts/blender/calciatore.py -- modelli/quaternius-scheletro.glb <cartella di uscita>`
    Crea tre corpi con gli stessi vertici (normale, snello, robusto), con gli arti nelle direzioni di riposo dello scheletro
-   del gioco; tiene corpo e occhi; fa i tre livelli di dettaglio (4.500, 1.500, 600 triangoli: `LOD` in cima allo script) e
+   del gioco; tiene corpo e occhi; fa i tre livelli di dettaglio (12.000, 1.500, 600 triangoli: `LOD` in cima allo script; il primo si vede solo entro
+   22 m dalla telecamera, `LOD.vicino` in `src/config.js`, cioè primi piani, replay ed esultanze) e
    porta su ognuno le due forme (snello, robusto: il gioco le mescola con `FORME_CORPO` in `src/config.js`) e i segni di labbra, cuoio capelluto, occhi e unghie; fa le undici capigliature dal cuoio
    capelluto. La forma si regola in cima allo script: `BASE` (età, muscoli, peso), `DETTAGLI` (spalle, vita, fianchi, gambe,
    collo, testa), `VISO` (mascella, zigomi, naso, sopracciglia; `VISO_ALLEGGERISCI` dice quanto la testa resiste
@@ -17,7 +18,8 @@ Maschio adulto atletico, viso misto e generico (nessuna persona reale).
    pantaloncini ampi, risvolto dei calzettoni, scarpini chiusi con la suola (le dita vengono tolte e la punta chiusa). Gli
    anelli degli orli non si alleggeriscono sul primo livello.
    Il risvolto dei calzettoni (8 cm, dal 23/11) sta in due posti che vanno cambiati insieme: `risvolto` in `divisa_volume` e
-   `MISURE.risvolto` in `src/divisa.js`. Le pieghe di maglia e pantaloncini non sono geometria: sono nella normal map che il
+   `MISURE.risvolto` in `src/divisa.js`. Sotto il calzettone c'è il parastinchi (`VOLUME['parastinchi']`, davanti alla tibia) con
+   due giri di nastro disegnati (`MISURE.nastri`). Le pieghe di maglia e pantaloncini non sono geometria: sono nella normal map che il
    gioco calcola da `pieghe()` in `src/divisa.js` (profondità in `PIEGHE`). Le capigliature nascono da un guscio infittito, con ciocche e
    ciuffo irregolare, e si alleggeriscono a `CAPELLI_TRI` triangoli.
    Proporzioni, divisa e viso dal riferimento di Alex del 23/11/2026 (solo struttura: niente volti veri né grafica di altri giochi).
