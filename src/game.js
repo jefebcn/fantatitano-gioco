@@ -852,7 +852,7 @@ function aiSubs() {
 const kitsFor = (mia, loro, fuori) => { if (!fuori) return pickKits(mia, loro); const [a, b, c, d, e] = pickKits(loro, mia); return [b, a, d, c, e]; };
 // Lo stato che appartiene a una sola partita: a ogni partita nuova torna com'era al caricamento. Senza, la seconda partita
 // ereditava tempi e contatori della prima (l'istante dell'ultimo tiro, l'ultimo che ha toccato palla) e non era più la stessa
-const DI_PARTITA = ['lastTouch', 'lastKicker', 'intended', 'poss', 'shotId', 'charge', 'next', 'taker', 'headId', 'wait', 'idle', 'altoT', 'calcioT', 'tiroT', 'occasioneT', 'xAltaT', 'buioT',
+const DI_PARTITA = ['lastTouch', 'lastKicker', 'intended', 'poss', 'shotId', 'charge', 'next', 'taker', 'headId', 'wait', 'idle', 'altoT', 'calcioT', 'tiroT', 'occasioneT', 'xAltaT', 'buioT', 'inizioTempo',
   'prossimo', 'prossimoT', 'rimessa', 'scorer', 'segno', 'tipoFermo', 'tocchi', 'land', 'path', 'caricaIdeale', 'caricaTipo', 'cine', 'delusoGol', 'delusoPunto', 'rivede', 'shooter', 'lastPass', 'ctrl', 'goalEnd'];
 function nuovaPartita(home, away) {
   clearMatch(); for (const k of DI_PARTITA) G[k] = G_INIZIO[k]; TIFO.tiro = -1; TIFO.gol = 0;
@@ -906,6 +906,8 @@ function partiDa(sc, iu) {
   for (const p of all()) p.dentroMin = fatti;
 }
 function kickoff(team) {
+  // il calcio d'inizio di un tempo (non quello dopo un gol): il cronometro resta fermo finché non si batte
+  G.inizioTempo = G.state !== 'goal';
   const b = G.ball; b.x = b.z = 0; b.y = BR; b.vx = b.vy = b.vz = 0; b.c = b.t = 0; b.owner = null;
   for (const t of G.teams) for (const p of t.players) {
     const f = t.form[p.i]; let kx = p.i === 0 ? -46 : Math.min(-1.5, -4 - (8 - f[0]) * .9), kz = f[1];
@@ -1910,8 +1912,10 @@ function passo(dt) {
     }
   } else if (G.state === 'half') { if (G.stateT > 2.6) { G.half = 2; G.clock = 0; for (const p of all()) { p.fondo = Math.min(1, (p.fondo || 1) + .08); p.en = Math.min(p.fondo, p.en + MOTO.FATICA.intervallo); } for (const t of G.teams) t.side = -t.side; kickoff(G.teams[1]); } } // cambio di campo
   else if (G.state === 'full') { if (G.stateT > 2 && !G.shown) { G.shown = true; showEnd(); } }
-  // a gioco fermo (palle ferme, dopo un gol, calcio d'inizio) il cronometro va più piano: RITMO.fermo invece di RITMO.gioco
-  if ((G.state === 'restart' || G.state === 'goal' || G.state === 'kickoff' || G.attesa) && !G.so && !G.rivede) G.clock = Math.min(HALF_SECS - .05, G.clock + dt * RITMO.fermo / RITMO.gioco);
+  // a gioco fermo (palle ferme, dopo un gol, calcio d'inizio) il cronometro va più piano: RITMO.fermo invece di RITMO.gioco.
+  // Prima del calcio d'inizio di un tempo non va affatto: si parte da 00:00 (e da 45:00) quando si batte
+  const daBattere = G.inizioTempo && (G.state === 'kickoff' || (!!G.attesa && G.attesa.fermi));
+  if ((G.state === 'restart' || G.state === 'goal' || G.state === 'kickoff' || G.attesa) && !G.so && !G.rivede && !daBattere) G.clock = Math.min(HALF_SECS - .05, G.clock + dt * RITMO.fermo / RITMO.gioco);
   // all'intervallo e a fine partita il pallone che esce dal campo si ferma: prima rotolava fino in tribuna
   if ((G.state === 'half' || G.state === 'full') && (Math.abs(b.z) > HW + 1.5 || Math.abs(b.x) > HL + 2.5)) { b.vx *= .8; b.vz *= .8; }
 

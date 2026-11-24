@@ -158,6 +158,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 ## Risposte di Alex del 24/11 e nuovo video (riprese-30s)
 - Tasti in difesa: A «Scivolata», B pressing e contrasto in piedi, C cambia giocatore. FATTO (vedi punto 13 qui sopra).
 - Passaggi: restano così, se ne riparla dopo averci giocato.
+- Cronometro: FATTO per il calcio d'inizio dei due tempi (fermo a 00:00 e a 45:00 finché non si batte:
+  `G.inizioTempo` in `src/game.js`, controllato da `scripts/prove/riprese.cjs`). Sulle altre riprese va ancora, più
+  piano (`RITMO.fermo`): chiesto ad Alex se fermarlo anche lì.
 - Lanci lunghi: FATTO. La telecamera sale col pallone in volo, che resta sotto `CAMERA.cielo` (altezza dello schermo).
 - Alone bianco sul bordo sinistro: FATTO. Erano ancora i riflessi dei quattro faretti d'angolo sull'erba: ora sono
   spenti (`NOTTURNA.faretti` a 0); la luce dall'alto resta uguale.
