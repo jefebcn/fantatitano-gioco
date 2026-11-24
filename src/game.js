@@ -69,7 +69,7 @@ const G_INIZIO = { ...G }; // i valori al caricamento, per azzerare lo stato a o
 const canvas = $('#c');
 const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 // risoluzione che si adatta ai fotogrammi e indicatore ?debug (src/prestazioni.js)
-const PERF = creaPrestazioni({ renderer, debug: /[?&]debug\b/.test(location.search), fps: /[?&]fps\b/.test(location.search), nota: () => `stadio ${STADIO}`, extra: () => (G.ctrl && G.state !== 'menu' ? `giocatore ${hyp(G.ctrl.vx, G.ctrl.vz).toFixed(1)} m/s${G.ball && G.ball.owner === G.ctrl ? ' (con palla)' : ''}${G.ctrl.sprint ? ' · scatto' : ''}` : ''), livello: () => QUAL.livello + (RESA && RESA.effetti() ? ' · alone' : ''), rinuncia: () => !!RESA && RESA.rinuncia() });
+const PERF = creaPrestazioni({ renderer, debug: /[?&]debug\b/.test(location.search), fps: /[?&]fps\b/.test(location.search), nota: () => `stadio ${STADIO}`, fase: fasePerf, extra: () => (G.ctrl && G.state !== 'menu' ? `giocatore ${hyp(G.ctrl.vx, G.ctrl.vz).toFixed(1)} m/s${G.ball && G.ball.owner === G.ctrl ? ' (con palla)' : ''}${G.ctrl.sprint ? ' · scatto' : ''}` : ''), livello: () => QUAL.livello + (RESA && RESA.effetti() ? ' · alone' : ''), rinuncia: () => !!RESA && RESA.rinuncia() });
 const scene = new T.Scene();
 scene.background = new T.Color(0x86b9ea);
 scene.fog = new T.Fog(0xa9cdee, 130, 330);
@@ -2945,7 +2945,7 @@ function startMatch(h, a, d) {
   // lo stadio di questa partita si costruisce qui, mentre si vede ancora la schermata delle due squadre
   setTimeout(() => {
     // prima del calcio d'inizio il giro dello stadio (non nelle prove a seme fisso, che devono restare uguali)
-    alzaStadio(tipoStadio()); G.presenta = PROVA.semi || VISTA_ALTO ? null : { t: 0 }; newMatch(H, A); scalda(); if (G.presenta) iniziaPresenta();
+    alzaStadio(tipoStadio()); G.presenta = PROVA.semi || VISTA_ALTO ? null : { t: 0 }; newMatch(H, A); scalda(); PERF.azzera(); if (G.presenta) iniziaPresenta();
     show(null); $('#hud').classList.remove('nas'); AU.amb(1);
   }, 1900);
 }
@@ -3047,6 +3047,14 @@ let last = 0, frame = 0;
 // Qualità automatica: durante la partita prima scende la risoluzione (src/prestazioni.js), se non basta, o se a pesare è il
 // processore, si alleggerisce un passo alla volta: ombre più piccole e meno morbide, poi senza ombre del sole, poi prato
 // senza normali e rugosità. I dettagli tolti non tornano da soli (niente su e giù durante la partita), la risoluzione sì.
+// Il momento della partita per il contatore di ?fps: fuori dalla partita e in pausa non conta
+function fasePerf() {
+  if (G.state === 'menu' || G.state === 'full' || G.paused || !G.teams.length) return '';
+  if (G.presenta) return 'giro';
+  const S = REGIA.S;
+  if (G.rivede || (S.on && S.rp && G.state === 'goal' && G.stateT >= S.c1)) return 'replay';
+  return G.state === 'goal' ? 'gol' : 'gioco';
+}
 const QUAL = { livello: 0 };
 // Nelle impostazioni si può scegliere: automatica (scende da sola se serve), alta (non scende mai), media e bassa (partono
 // già alleggerite). I livelli sono gli stessi dell'automatica: media = 1, bassa = 3.

@@ -224,7 +224,14 @@ con `&alto` per la vista dall'alto e `&fps` per il contatore dei fotogrammi al s
   (0,32 + 0,10 + 0,23 s) mentre la scheda grafica preparava per la prima volta una cinquantina di immagini e due
   materiali (tribune, striscioni, gente a bordo campo, numeri e stemmi dei primi piani). Ora `scalda` in `src/game.js`
   disegna tutto una volta prima del calcio d'inizio, sotto la schermata delle due squadre: al gol restano solo i
-  cartelloni e il tabellone che cambiano scritta. Da far riprovare ad Alex; manca il numero del medio.
+  cartelloni e il tabellone che cambiano scritta.
+- **Riprova di Alex (24/11, dopo `scalda` e la presentazione)**: grande, minimo 31 dopo il gol (prima 22); medio,
+  minimo 39. Cala ancora e non si sa dove: il minimo degli ultimi dieci secondi non dice se è uno scatto o una ripresa
+  pesante. Sospetti, non provati: il replay da dietro la porta, allargato nella PR #177, disegna nel grande 252
+  chiamate e 599 mila triangoli contro 169 e 345 mila del gioco; il giro da fuori 282 e 514 mila. Per saperlo il
+  contatore di `?fps` ora scrive, per giro, gioco, gol e replay, il secondo peggiore e il fotogramma più lungo
+  dall'inizio della partita (`fasePerf` in `src/game.js`, `contatore` in `src/prestazioni.js`). Serve una foto di Alex
+  dopo un gol col replay finito; solo dopo si decide cosa alleggerire.
 - **Medio, dettagli fatti**: tetti che salgono verso il campo (`tetto.sale`) con la fronte nei colori di casa, il sotto
   illuminato di notte e una fila di luci sotto il bordo; tabellone col risultato vero (`SPALTI.punteggio`, vale anche
   per i maxischermi del grande); torri faro a traliccio con la griglia dei proiettori; da fuori una fascia coi colori di

@@ -11,11 +11,13 @@
    (logica + preparazione del disegno), quanto lavora la scheda grafica dove il browser lo dice, chiamate di disegno,
    triangoli, risoluzione e livello di qualità.
    Contatore (?fps nell'indirizzo): solo i fotogrammi al secondo, scritti in grande, col minimo degli ultimi dieci
-   secondi, la risoluzione e il livello di qualità a cui il gioco è sceso per tenerli: da leggere sul telefono. */
+   secondi, la risoluzione e il livello di qualità a cui il gioco è sceso per tenerli: da leggere sul telefono.
+   Sotto, per ogni momento della partita (gioco, giro dello stadio, gol, replay), il secondo peggiore e tra parentesi
+   il fotogramma più lungo dall'inizio della partita: dice se il calo è uno scatto solo o una ripresa pesante. */
 
 export const RIS = { giu: 1 / 50, su: 1 / 57, passoGiu: 0.85, passoSu: 1.08, minimo: 0.55, attesaGiu: 1.5, attesaSu: 6, tettoPer: 25 };
 
-export function creaPrestazioni({ renderer, debug = false, fps = false, nota = () => '', livello = () => 0, rinuncia = () => false, extra = () => '' }) {
+export function creaPrestazioni({ renderer, debug = false, fps = false, nota = () => '', fase = () => '', livello = () => 0, rinuncia = () => false, extra = () => '' }) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const S = {
     max: dpr, min: Math.max(0.7, dpr * RIS.minimo), ora: dpr, media: 1 / 60, scarto: 0, cpu: 0, attesa: 3, stabile: 0, tetto: dpr, tettoT: 0,
@@ -63,9 +65,12 @@ export function creaPrestazioni({ renderer, debug = false, fps = false, nota = (
 
   // tempo della scheda grafica, dove il browser lo misura (Chrome su Android e desktop, non Safari)
   const G2 = debug ? tempoGpu(renderer.getContext()) : null;
-  const HUD = debug ? indicatore(renderer, S, livello, G2, extra) : fps ? contatore(S, livello, nota) : null;
+  const HUD = debug ? indicatore(renderer, S, livello, G2, extra) : fps ? contatore(S, livello, nota, fase) : null;
 
-  return { aggiorna, inizio, fine, scala, stato: S };
+  /** A inizio partita: i minimi per momento ripartono da capo. */
+  const azzera = () => { if (HUD && HUD.azzera) HUD.azzera(); };
+
+  return { aggiorna, inizio, fine, scala, azzera, stato: S };
 }
 
 function tempoGpu(gl) {
@@ -102,20 +107,31 @@ function indicatore(renderer, S, livello, G2, extra) {
   };
 }
 
-/** Il contatore di ?fps: una riga sola, grande, in alto al centro. Il minimo è il secondo peggiore degli ultimi dieci. */
-function contatore(S, livello, nota) {
+/** Il contatore di ?fps: grande, in alto al centro. Il minimo è il secondo peggiore degli ultimi dieci; la seconda riga
+ *  dà, per ogni momento della partita, il secondo peggiore e il fotogramma più lungo da quando è cominciata. */
+function contatore(S, livello, nota, fase) {
   const el = document.createElement('div');
   el.id = 'fps';
   el.style.cssText = 'position:fixed;left:50%;top:30px;transform:translateX(-50%);z-index:99;pointer-events:none;font:700 15px/1.3 ui-monospace,Menlo,monospace;color:#cfff6a;background:rgba(0,0,0,.7);padding:4px 10px;border-radius:6px;white-space:pre;text-align:center';
   document.body.appendChild(el);
-  let n = 0, somma = 0;
+  let n = 0, somma = 0, momenti = {}, salta = 0;
   const secondi = [];
+  const riga = () => Object.entries(momenti).map(([nome, m]) => `${nome} ${m.min < 1e9 ? m.min.toFixed(0) : '–'} (${(m.peggio * 1000).toFixed(0)} ms)`).join(' · ');
   return {
+    // i primi fotogrammi dopo l'azzeramento portano con sé il tempo di costruzione dello stadio: non contano
+    azzera() { momenti = {}; salta = 3; },
     conta(dt) {
       if (!(dt > 0)) return; n++; somma += dt;
+      const f = fase();
+      if (salta > 0) salta--;
+      else if (f) {
+        const m = momenti[f] || (momenti[f] = { n: 0, somma: 0, min: Infinity, peggio: 0 });
+        m.n++; m.somma += dt; if (dt > m.peggio) m.peggio = dt;
+        if (m.somma >= 1) { m.min = Math.min(m.min, m.n / m.somma); m.n = 0; m.somma = 0; }
+      }
       if (somma < 1) return;
-      const ora = n / somma; secondi.push(ora); if (secondi.length > 10) secondi.shift();
-      el.textContent = `${ora.toFixed(0)} fps · minimo ${Math.min(...secondi).toFixed(0)}\nrisoluzione ${S.ora.toFixed(2)}x · qualità ${livello()}${nota() ? ` · ${nota()}` : ''}`;
+      const ora = n / somma, r = riga(); secondi.push(ora); if (secondi.length > 10) secondi.shift();
+      el.textContent = `${ora.toFixed(0)} fps · minimo ${Math.min(...secondi).toFixed(0)}\n${r ? `${r}\n` : ''}risoluzione ${S.ora.toFixed(2)}x · qualità ${livello()}${nota() ? ` · ${nota()}` : ''}`;
       n = 0; somma = 0;
     },
   };
