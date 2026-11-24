@@ -49,7 +49,7 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   risvolto dei calzettoni da 4 a 8 cm (`MISURE.risvolto` 0,355 e `risvolto` in `scripts/blender/calciatore.py`).
   Stessi triangoli, nessun file nuovo. Partite: 16 su 16 identiche prima e dopo (semi 7 e 15), 0 anomalie.
   Foto: `docs/calciatore/16-18`. Da vedere su iPhone: fps con `?debug`. Non fatto: texture KTX2 (non servono).
-- FATTO (#136): più dettaglio come la foto di riferimento di Alex. Il livello vicino passa a 11.848 triangoli (si vede solo entro
+- FATTO (#171): più dettaglio come la foto di riferimento di Alex. Il livello vicino passa a 11.848 triangoli (si vede solo entro
   22 m: in partita in media 2,15 giocatori per fotogramma, al massimo 18 nelle inquadrature strette), capelli a 1.500,
   parastinchi sotto il calzettone (`VOLUME.parastinchi`), due nastri sui calzettoni (`MISURE.nastri`). Texture sempre 1024.
   Partite (semi 7 e 15, 8+8): 0 anomalie, gol e tiri uguali come media; non più identiche perché il modello nuovo ha il punto
