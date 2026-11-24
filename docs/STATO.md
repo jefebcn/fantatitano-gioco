@@ -149,12 +149,15 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   distanza e la punizione aspettava a vuoto 8 secondi (`FERMI.arrivo`) prima di dare i comandi. Ora gli avversari stanno
   mezzo metro oltre la distanza (`postoFermo`). Caso aggiunto a `scripts/prove/riprese.cjs` (limite 5 s).
   Resta lento il calcio d'angolo (si può battere dopo circa 10 s: si aspettano i saltatori): da decidere con Alex.
-- 13 A METÀ, da confermare con Alex: in difesa il tasto A ora dice «Contrasto» (prima restava «Calcio forte»). L'azione
-  non è cambiata: è la scivolata verso il pallone, che c'era già. Chiesto ad Alex se in Dream League il contrasto del
-  tasto A è la scivolata o quello in piedi (che oggi fa il Pressing del tasto B).
+- 13 FATTO (risposta di Alex del 24/11): in difesa A = «Scivolata», come in Dream League; B = pressing col contrasto
+  in piedi (c'era già); C = cambia giocatore.
 - 15 MANDATO: video rallentato (3 volte più lento) di corsa, cambio di direzione, passaggio, stop e tiro, più il video
   finale di 30 s (calcio d'inizio, punizione, rimessa: nessuna parte da sola). Si aspetta il giudizio di Alex. Visto al
   rallentatore: nel tiro il pallone sembra partire un attimo prima della gamba.
+
+## Risposte di Alex del 24/11 e nuovo video (riprese-30s)
+- Tasti in difesa: A «Scivolata», B pressing e contrasto in piedi, C cambia giocatore. FATTO (vedi punto 13 qui sopra).
+- Passaggi: restano così, se ne riparla dopo averci giocato.
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato

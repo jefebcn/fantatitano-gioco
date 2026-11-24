@@ -32,8 +32,8 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
 
   | tasto | con la palla | senza palla |
   |---|---|---|
-  | A | **Calcio forte**: tiro | **Calcio forte**: scivolata nella direzione della levetta |
-  | B | **Calcio basso**: passaggio rasoterra | **Pressing**: il giocatore va addosso al portatore e prova il contrasto in piedi |
+  | A | **Calcio forte**: tiro | **Scivolata** nella direzione della levetta (ferma: verso il pallone) |
+  | B | **Calcio basso**: passaggio rasoterra | **Pressing** (tenuto): il giocatore va addosso al portatore e fa il contrasto in piedi |
   | C | **Calcio alto**: lancio o cross | **Cambia giocatore** |
 
   «Senza palla» vale appena la squadra perde il possesso, anche con il pallone vagante dopo un nostro tiro. Mentre viaggia
