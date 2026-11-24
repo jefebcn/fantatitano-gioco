@@ -197,6 +197,27 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   `DIVISE.chiaro` (una chiara e una scura): gli ospiti passano alla seconda maglia, poi bianca o nera. Prima 147 coppie
   su 240 avevano maglie chiare quasi uguale (rosso contro blu, verde contro blu). `scripts/prove/divise.cjs` lo controlla.
 
+## Stadi per divisione (richiesta di Alex del 24/11): bozza a blocchi, in attesa del suo ok
+
+Tre stadi secondo la divisione di chi gioca in casa: **paese** (Esordienti, Borghi), **medio** (Contrade, Cadetta),
+**grande** (Sammarinese). Numeri in `STADI` (`src/config.js`); `src/grafica/spalti.js` costruisce i tre dagli stessi
+pezzi (quattro lati, anelli di gradoni, tetto) e `alzaStadio` in `src/game.js` cambia stadio sotto la schermata delle
+due squadre. Prova: `?stadio=paese|medio|grande` nell'indirizzo, con `&alto` per la vista dall'alto.
+
+- **La divisione non arriva ancora dalla home**: chiesta in `docs/ponte-partita.md` §11 (campo `stadio` nella
+  richiesta). Finché manca si gioca nel medio.
+- **Telecamera**: il muretto sta alla stessa distanza dalle linee in tutti e tre (`STADI.dist`) e il primo anello non è
+  mai più ripido di prima, quindi le regole di `CAMERA.spalle` e `zMax` valgono uguali. Le tribune non sono state
+  avvicinate: per farlo vanno spostati cartelloni e panchine e rifatta la misura dell'inquadratura.
+- **Dalla telecamera di gioco gli stadi si somigliano**: guarda in giù, e della tribuna di fronte entrano solo le
+  prime file (2-5 m). La differenza si vede nei replay, nei calci d'angolo, nelle esultanze e nella luce di notte.
+- Stadio grande: 63 mila tifosi disegnati su 75 mila dichiarati. In vista di gioco 176 chiamate di disegno e 527 mila
+  triangoli, contro 138 e 347 mila del medio: da misurare su iPhone prima di unire (`?debug`), e se serve spezzare le
+  sagome a tratti perché quelle fuori schermo non si disegnino.
+- Fatto solo a blocchi: tetti piatti, tabellone e maxischermi come riquadri colorati, alberi a cono, palchi come una
+  fascia di vetro. I dettagli dopo l'ok di Alex, uno stadio per PR, iniziando dal grande. I riflessi dell'ambiente di
+  notte (`src/grafica/resa.js`) usano ancora i fari dello stadio costruito all'avvio.
+
 ## Prova di Alex su iPhone (21/11): punti in ordine
 - 1 e 2 FATTI (PR #82): niente gioco girato a forza, schermata «Ruota il telefono», tastiera e aree sicure, barra di stato
   nascosta (l'app va tolta e rimessa nella Home), levetta che non resta incastrata.
