@@ -17,18 +17,44 @@ strato della maglia colorata. Si rifanno con `scripts/ritratti_gemini.py` (ricet
 prima: mai due facce uguali nella stessa rosa) e dà il file intero di `img/ritratti-carte/`; la carta lo mostra così
 com'è, senza ritagliarlo e senza comporlo con la maglia (niente più strato «sopra»): dove sta e quanto è grande lo dice
 `CARTA.ritratto` in `src/config.js` (`docs/carte-giocatori.md`). Le carte larghe almeno 80 punti prendono il file da 512,
-le altre quello da 256. Se un file non arriva resta il ritratto ripreso dal modello 3D. I file di `public/img/ritratti/`
-(teste e maglie di Blender, 12,5 MB) non servono più al gioco: si possono togliere quando Alex ha visto che tutto
-funziona; `src/dati/volti.json` resta l'elenco dei volti.
+le altre quello da 256.
 
-## Ritratti composti da Blender (prima versione, 21-22/11)
+**Pulizia del 24/11 (decisa da Alex)**: i ritratti delle carte sono solo quelli di Gemini.
+- La cartella `public/img/ritratti/` (teste, maglie e strati «sopra» di Blender: 908 file, 12,5 MB) è stata tolta.
+- `src/dati/volti.json` è l'elenco dei volti (265 veri, 150 condivisi) e lo scrive `node scripts/volti.mjs` leggendo i
+  file `<id>-512.webp` di `public/img/ritratti-carte/`. La voce «sopra» non c'è più.
+- Non c'è più il ritratto di ripiego disegnato dal modello 3D: se a gioco acceso un file non c'è o non arriva, la carta
+  resta con la sagoma neutra, senza errori.
+- Per questo `npm run prova` (in `scripts/prova-dati.mjs`) controlla che ogni volto dell'elenco abbia i suoi due file,
+  da 512 e da 256, e che nella cartella non ci siano file che l'elenco non conosce: se manca qualcosa la prova fallisce.
+- Blender resta solo per i giocatori 3D della partita. L'avatar del manager è ancora disegnato dal modello 3D.
+
+## Chi ha quale volto
+- **Giocatori veri**: ognuno ha il suo ritratto, `squadra-nome` (per esempio `trefiori-nardi`). Lo tiene anche se cambia
+  squadra, maglia compresa (è stampata nel ritratto).
+- **Giocatori inventati e del mercato**: prendono uno dei 150 volti condivisi (`volto-001` … `volto-150`), scelto dal
+  nome. La regola di Alex, **mai due facce uguali nella stessa rosa o nella stessa partita**, è in `voltoDi`:
+  - nella mia rosa il volto di ogni giocatore resta scritto nella carriera (`volti`), così non cambia mai faccia, ed è
+    sempre diverso da quello dei compagni;
+  - ogni altra squadra ha volti tutti diversi tra loro e diversi da quelli della mia rosa: così in partita non ci sono
+    doppioni. Se compro un giocatore, in un'altra squadra qualcuno può cambiare volto.
+
+# Storia: i ritratti composti da Blender (21-22/11)
+
+Da qui in giù è storia: racconta la prima versione dei ritratti, resi con Blender e composti dal gioco a strati (testa,
+maglia colorata, capelli davanti). Alex l'ha scartata per le carte il 23/11 e i suoi file sono stati tolti il 24/11.
+Resta scritta perché spiega le scelte e perché gli strumenti ci sono ancora (`scripts/aspetti.mjs`,
+`scripts/blender/render_ritratti.py`, `scripts/blender/tutti.sh`, `scripts/ritratti_webp.py`), ma **non servono più a
+fare i ritratti delle carte**: la cartella in cui scrivevano non esiste più e il gioco non la legge.
+
+## Ritratti composti da Blender (prima versione)
 
 Stato (22/11): **Alex ha approvato il terzo foglio di prova** e tutti i volti sono generati (265 giocatori veri + 150
 condivisi); la home li usa dappertutto. Se un ritratto manca o non si carica resta quello vecchio, disegnato al momento
 dal modello 3D della partita. I ritratti sono resi a 800 punti di lato, come il foglio approvato (nel gioco servono a
 512 e a 256).
 
-## Decisioni di Alex (21/11)
+## Decisioni di Alex del 21/11 (sui ritratti di Blender)
 - **Maglia neutra, colorata dal gioco**: con il mercato i giocatori cambiano squadra, una maglia «stampata» nel ritratto
   sarebbe sbagliata metà delle volte.
 - **Quanti volti**: un ritratto per ogni giocatore vero (265) e circa 150 volti condivisi per inventati e mercato, con
@@ -100,28 +126,16 @@ rispetto agli occhi). Va letta punto per punto, senza sfumare.
   n'è uno suo, debole. Il cielo attorno è grigio: se è azzurro si specchia negli occhi e li fa sembrare tutti grigi.
 - **Render**: Cycles, 256 campioni con riduzione del rumore, 800 × 800 PNG con sfondo trasparente; poi WebP a 512 e 256.
 
-## Chi ha quale volto
-- **Giocatori veri**: ognuno ha il suo ritratto, `squadra-nome` (per esempio `trefiori-nardi`). Lo tiene anche se cambia
-  squadra: cambia solo la maglia.
-- **Giocatori inventati e del mercato**: prendono uno dei 150 volti condivisi (`volto-001` … `volto-150`), scelto dal
-  nome. La regola di Alex, **mai due facce uguali nella stessa rosa o nella stessa partita**, è in `voltoDi`:
-  - nella mia rosa il volto di ogni giocatore resta scritto nella carriera (`volti`), così non cambia mai faccia, ed è
-    sempre diverso da quello dei compagni;
-  - ogni altra squadra ha volti tutti diversi tra loro e diversi da quelli della mia rosa: così in partita non ci sono
-    doppioni. Se compro un giocatore, in un'altra squadra qualcuno può cambiare volto.
-- L'aspetto di ogni volto (età, pelle, capelli, colore, barba) esce da numeri tirati dal nome del file, in
-  `scripts/aspetti.mjs`: nome e nazionalità del giocatore vero non contano.
-
-## Come si rifanno
+## Come si rifacevano
 1. Blender e MPFB (una volta): scaricare Blender 4.2 LTS, poi
    `blender --command extension install-file -r user_default --enable add-on-mpfb-v2.0.18.zip`.
 2. Pacchetti (una volta): scompattare i tre zip in `~/.config/blender/4.2/extensions/.user/user_default/mpfb/data/`.
    Il sito di MakeHuman è lento con una connessione sola: conviene scaricare a pezzi in parallelo.
 3. Aspetti: `node scripts/aspetti.mjs` scrive `scripts/blender/aspetti.json` (i giocatori veri di `public/data.js` più
    i volti condivisi). Va rifatto se cambiano le rose vere.
-4. Tutti i ritratti che mancano: `scripts/blender/tutti.sh <blender> <cartella di lavoro> [minuti] [lato]`. Rende a
-   blocchi, scrive i file del gioco in `public/img/ritratti/` e si può fermare e rilanciare: riparte da dove era.
-5. Elenco per il gioco: `node scripts/volti.mjs` scrive `src/dati/volti.json` dai file che ci sono; poi `npm run build`.
+4. Tutti i ritratti che mancano: `scripts/blender/tutti.sh <blender> <cartella di lavoro> [minuti] [lato]`. Rendeva a
+   blocchi e scriveva i file in `public/img/ritratti/`, la cartella tolta il 24/11.
+5. Elenco per il gioco: `node scripts/volti.mjs` (oggi legge `public/img/ritratti-carte/`, vedi in cima).
 6. Un ritratto solo, o un foglio di controllo:
    `blender -b --python scripts/blender/render_ritratti.py -- aspetti.json uscita [campioni] [lato] [id,id]` (tra gli id,
    `maglia` rifà i file delle maglie) e `python3 scripts/ritratti_webp.py uscita cartella foglio.jpg aspetti.json`.
