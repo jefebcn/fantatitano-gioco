@@ -19,6 +19,7 @@ import { apriPremio, premiDa } from './premio.js';
 import { ECONOMIA } from '../config.js';
 import { t } from './testi.js';
 import { apri, ridisegna, indietro } from './nav.js';
+import { quandoCambiaMisura } from './schermo.js';
 
 document.getElementById('vs').insertAdjacentHTML('beforebegin', '<div id="sfida" class="scr nas"></div>');
 const radice = document.getElementById('sfida');
@@ -76,7 +77,7 @@ export function disegnaSfida(partita) {
   adatta(radice); prontaCarte(radice);
 }
 radice.addEventListener('load', () => adatta(radice), true);
-addEventListener('resize', () => { if (S && !radice.classList.contains('nas')) disegnaSfida(); });
+quandoCambiaMisura(() => { if (S && !radice.classList.contains('nas')) disegnaSfida(); });
 
 radice.addEventListener('click', (e) => {
   const b = e.target.closest('button[data-az]'); if (!b) return;

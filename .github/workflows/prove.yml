@@ -42,5 +42,7 @@ jobs:
         run: node scripts/prove/ponte.cjs
       - name: Inquadratura al calcio d'inizio (misure di riferimento, margine 2 punti)
         run: node scripts/prove/inquadratura.cjs
+      - name: Telefono che si gira (Home, barra e Squadra riprendono le misure senza l'evento «resize»)
+        run: node scripts/prove/gira.cjs
       - name: Musica della home (primo tocco, muto e volumi, cambio in dissolvenza, partita e ritorno)
         run: node scripts/prove/musica.cjs

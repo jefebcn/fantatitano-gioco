@@ -13,6 +13,7 @@ import { carta, adatta, attrNome } from './carte.js';
 import { cartaGiocatore, prontaCarte } from './giocatore.js';
 import { t } from './testi.js';
 import { apri } from './nav.js';
+import { quandoCambiaMisura } from './schermo.js';
 
 document.getElementById('vs').insertAdjacentHTML('beforebegin', '<div id="casa" class="scr nas"></div>');
 const radice = document.getElementById('casa');
@@ -26,7 +27,7 @@ radice.addEventListener('click', (e) => {
 });
 // quando arriva un'immagine (lo stemma, il ritratto) o cambia la misura dello schermo i posti si spostano: i testi si riadattano
 radice.addEventListener('load', () => adatta(radice), true);
-addEventListener('resize', () => { if (!radice.classList.contains('nas')) { adatta(radice); prontaCarte(radice); } });
+quandoCambiaMisura(() => { if (!radice.classList.contains('nas')) { adatta(radice); prontaCarte(radice); } });
 
 // una riga della carta Carriera: il trofeo della competizione (o la sua icona, se manca l'illustrazione), il suo nome e a
 // che punto si è; se non ci sta, solo il punto

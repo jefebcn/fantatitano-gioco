@@ -255,6 +255,12 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   un velo scuro sopra (30% in alto, 50% in basso). Con l'immagine non si disegnano più i due fasci di luce né la sagoma
   delle torri; i pulsanti scuri di sinistra hanno il fondo blu scuro semitrasparente. Nell'immagine le torri sono al
   centro in alto, quindi restano coperte dal campo.
+- **Telefono che si gira (24/11, screenshot di Alex)**: nella Home le carte del capitano e del mercato uscivano dal
+  riquadro, enormi, e la barra restava stretta. Su iPhone l'evento «resize» arriva con le misure vecchie e non ne segue
+  un altro: la Home prendeva le misure in quel momento e restava così. Ora le schermate della home (Home, barra,
+  Carriera, Sfida, Squadra, scheda) non ascoltano più «resize»: `src/casa/schermo.js` osserva la grandezza vera della
+  pagina e le avvisa quando cambia. Prova: `node scripts/prove/gira.cjs` (anche nel controllo automatico), coi margini
+  della tacca dell'iPhone.
 - **Resta da fare**: aspetto nuovo di Mercato (passo 9), Il mio club (10) e Sfide (11); «sotto il 60% di energia cala
   prima la velocità» (sessione della partita); il limite dei moduli nella pausa della partita; l'esultanza del capitano
   (servono animazioni); il listino del database.

@@ -23,6 +23,7 @@ import { finestra } from './finestra.js';
 import { t } from './testi.js';
 import { apri } from './nav.js';
 import { pronta } from './immagini.js';
+import { schermo, quandoCambiaMisura } from './schermo.js';
 
 document.getElementById('vs').insertAdjacentHTML('beforebegin', '<div id="squadra" class="scr nas"></div>');
 const radice = document.getElementById('squadra');
@@ -38,7 +39,7 @@ const dopoCambio = () => { applicaMio(); salvaK(); };
 // merli. Servono solo se manca lo sfondo dipinto dello stadio, che le torri le ha già sulla collina
 const TORRI = '<svg class="qTorri" viewBox="0 0 64 64" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path d="M2 60 14 40l8 6 10-20 10 20 8-6 12 20z" opacity=".55"/><path d="M10 40V26h2v-3h2v3h2v-3h2v3h2v14zM27 30V10h2V7h2v3h2V7h2v3h2v20zM44 40V26h2v-3h2v3h2v-3h2v3h2v14z"/></svg>';
 // quanto è larga una carta: una parte fissa della larghezza dello schermo, uguale in campo e tra i sostituti
-const larga = () => Math.round(innerWidth * SQUADRA.carta);
+const larga = () => Math.round(schermo()[0] * SQUADRA.carta);
 
 // tutta la rosa con scheda ed energia: prima i titolari nell'ordine dei posti, poi gli altri
 function rosa(c) { return c.xi.concat(c.pan || []).map((x) => ({ x, sc: DATI.scheda(x, c.id), energia: CAR.energiaDi(K, x[0]) })); }
@@ -101,7 +102,7 @@ function panchina(c) {
     return cartaGiocatore(DATI.scheda(x, c.id), { club: c.id, larga: larga(), energia: CAR.energiaDi(K, x[0]), migliorato: !!(K.crescita || {})[x[0]], ferma: true, dati: `data-g="pan:${da + k}"${scelto === `pan:${da + k}` ? ' data-scelto' : ''}` });
   }).join('');
 }
-addEventListener('resize', () => { if (K && !radice.classList.contains('nas')) disegnaSquadra(); });
+quandoCambiaMisura(() => { if (K && !radice.classList.contains('nas')) disegnaSquadra(); });
 
 // due giocatori si scambiano di posto; in porta va solo un portiere
 function scambia(a, b) {
