@@ -852,7 +852,7 @@ function aiSubs() {
 const kitsFor = (mia, loro, fuori) => { if (!fuori) return pickKits(mia, loro); const [a, b, c, d, e] = pickKits(loro, mia); return [b, a, d, c, e]; };
 // Lo stato che appartiene a una sola partita: a ogni partita nuova torna com'era al caricamento. Senza, la seconda partita
 // ereditava tempi e contatori della prima (l'istante dell'ultimo tiro, l'ultimo che ha toccato palla) e non era più la stessa
-const DI_PARTITA = ['lastTouch', 'lastKicker', 'intended', 'poss', 'shotId', 'charge', 'next', 'taker', 'headId', 'wait', 'idle', 'altoT', 'calcioT', 'tiroT', 'occasioneT', 'xAltaT', 'buio', 'inizioTempo', 'piazza',
+const DI_PARTITA = ['lastTouch', 'lastKicker', 'intended', 'poss', 'shotId', 'charge', 'next', 'taker', 'headId', 'wait', 'idle', 'altoT', 'calcioT', 'tiroT', 'occasioneT', 'xAltaT', 'buio', 'inizioTempo', 'piazza', 'fantasma', 'rivediT',
   'prossimo', 'prossimoT', 'rimessa', 'scorer', 'segno', 'tipoFermo', 'tocchi', 'land', 'path', 'caricaIdeale', 'caricaTipo', 'cine', 'delusoGol', 'delusoPunto', 'rivede', 'shooter', 'lastPass', 'ctrl', 'goalEnd'];
 function nuovaPartita(home, away) {
   clearMatch(); for (const k of DI_PARTITA) G[k] = G_INIZIO[k]; TIFO.tiro = -1; TIFO.gol = 0;
@@ -1896,6 +1896,8 @@ function passo(dt) {
       if (fk && fk.pos) for (const [o, q] of fk.pos) if (hyp(o.x - q[0], o.z - q[1]) > 1) return false;
       return !k.team.opp.players.some((o) => !(fk && fk.wall && fk.wall.some((w) => w.p === o)) && hyp(o.x - b.x, o.z - b.z) < far); };
     const sposta = (o, x, z) => { if (hyp(o.x - x, o.z - z) < .45) { o.x = x; o.z = z; o.vx = o.vz = 0; } };
+    // il replay rimandato a quando il pallone ha finito di uscire. Se non può partire, su rimessa e angolo c'è lo stacco
+    if (G.rivediT != null && G.t >= G.rivediT) { G.rivediT = null; if (!REGIA.rivedi() && G.piazza >= 0) { G.buio = { da: G.t, stacco: false }; G.piazza = G.stateT + FERMI.buio / 2; } }
     if (G.piazza >= 0 && G.stateT >= G.piazza) { G.piazza = -1; piazzaFermi(); }
     if (G.stateT > G.wait && (pronti() || (G.stateT > G.wait + (G.fk && G.fk.pen ? FERMI.rigore : FERMI.arrivo) && accanto()) || G.stateT > G.wait + 15)) { // dopo 15 s si batte comunque
       const k = G.taker, fk = G.fk, q = postoBattitore(k, b); k.x = q[0]; k.z = q[1]; k.vx = k.vz = 0; if (G.rimessa) k.dir = Math.atan2(0, -sgn(b.z)); // la rimessa: rivolto verso il campo
@@ -2045,7 +2047,7 @@ function nellaMano(p) {
   return prima && G.t - prima.t < .05 ? { x: q.x * 2 - prima.x, y: Math.max(BR, q.y * 2 - prima.y), z: q.z * 2 - prima.z } : q;
 }
 function moveBall(dt) {
-  const b = G.ball;
+  const b = G.ball; fantasma(dt);
   if (G.state === 'play') { calciCaricati(dt); if (b.owner && b.owner.i && !G.rimessa && !b.owner.carica) prevediTocco(b.owner, b); else if (!b.owner) prevediStop(b); } // i gesti con la palla, a tempo col tocco
   else for (const p of all()) p.carica = null; // a gioco fermo nessun calcio resta in sospeso
   // chi ha la palla lo si legge dopo i calci caricati: se il calcio è appena partito non c'è più nessuno da far condurre
@@ -2180,12 +2182,23 @@ function contacts(dt) {
     }
   }
 }
+/** Il pallone uscito dal campo si vede ancora per FERMI.uscita secondi mentre va fuori: dietro la porta, contro la rete da
+    fuori, fino ai cartelloni. È solo da vedere (G.fantasma): quello vero è già sul punto di battuta. Prima spariva sulla
+    linea, e un tiro a un palmo dal palo o appena sopra la traversa sembrava un gol seguito dalla rimessa dal fondo. */
+function esce() { G.fantasma = { ...FIS.copia(G.ball), fino: G.t + FERMI.uscita }; }
+function fantasma(dt) {
+  const f = G.fantasma; if (!f) return;
+  if (G.t >= f.fino || G.rivede || G.state === 'play' || G.state === 'goal') { G.fantasma = null; return; }
+  const [cx, cz, rimb] = FERMI.cartelloni;
+  FIS.passo(f, dt); for (const p of PORTE) p.urtaFuori(f, BR);
+  if (Math.abs(f.x) > HL + cx) { const e = sgn(f.x); f.x = e * (HL + cx); if (f.vx * e > 0) f.vx *= -rimb; }
+  if (Math.abs(f.z) > HW + cz) { const e = sgn(f.z); f.z = e * (HW + cz); if (f.vz * e > 0) f.vz *= -rimb; }
+}
 function bounds() {
   // il portiere col pallone in mano e chi batte la rimessa laterale da dietro la riga non lo portano fuori
   const b = G.ball; if (b.owner && (b.owner.i === 0 || (G.rimessa && G.rimessa.chi === b.owner))) return;
   if (Math.abs(b.x) > HL) {
     const e = sgn(b.x), az = Math.abs(b.z);
-    if (az > GH && az < GH + 1.4 && b.y < GT + .4) for (const p of PORTE) if (p.d === e) p.colpoFuori(b); // sfiora l'esterno della rete uscendo sul fondo
     if (az < GH + .28 && b.y < GT + .3 && (az > GH - .05 || b.y > GT - .05) && Math.abs(b.x) < HL + .8 && !b.owner) { // palo o traversa
       AU.palo(hyp(b.vx, b.vz)); if (G.shooter) { AU.ooh(1); G.occasioneT = G.t; G.stats.pali[G.shooter.team.idx]++; } b.x = e * (HL - .15); b.vx *= -.55; b.vz += sgn(b.z) * 2; b.vy *= .6; return;
     }
@@ -2193,12 +2206,12 @@ function bounds() {
     if (G.so) return soEsito(false);
     if (G.shooter && az < GH + 3.5 && b.y < GT + 2) AU.ooh(.75); // tiro fuori di poco
     if (G.shooter && az < GH + FERMI.fuori && b.y < GT + 1.5) G.occasioneT = G.t; // grande occasione: replay prima della rimessa dal fondo
-    const def = G.teams.find((t) => t.side === -e);
+    const def = G.teams.find((t) => t.side === -e); esce();
     if (G.lastTouch && G.lastTouch.team === def) corner(def.opp, e * (HL - .6), sgn(b.z) * (HW - .6));
     else restart(def, e * (HL - 6), 0, 'fondo', def.players[0]);
   } else if (Math.abs(b.z) > HW) {
     if (G.so) return soEsito(false);
-    const t = G.lastTouch ? G.lastTouch.team.opp : G.teams[0];
+    const t = G.lastTouch ? G.lastTouch.team.opp : G.teams[0]; esce();
     restart(t, clamp(b.x, -HL + 1.5, HL - 1.5), sgn(b.z) * (HW - .5), 'laterale');
   }
 }
@@ -2214,13 +2227,22 @@ function restart(team, x, z, tipo, taker) {
   if (team.human) setCtrl(G.taker); else setCtrl(nearestTo(G.teams[0], x, z));
   setState('restart'); G.tipoFermo = tr('partita.fermo')[tipo] || ''; const fi = { punizione: 'fallo', fuorigioco: 'fuorigioco' }[tipo]; if (fi) AU.fischio(fi); // rimesse, angoli e fondo: l'arbitro non fischia
   G.rimessa = tipo === 'laterale' && G.taker ? { chi: G.taker } : null;
-  // dopo una grande occasione (parata, tiro deviato, palo, tiro fuori di poco): prima il replay breve, poi la palla ferma
-  const replay = G.t - (G.occasioneT ?? -99) < FERMI.occasione && REGIA.rivedi(); G.occasioneT = -99;
+  // dopo una grande occasione (parata, tiro deviato, palo, tiro fuori di poco): prima il replay breve, poi la palla ferma.
+  // Se il pallone è appena uscito il replay parte quando ha finito di uscire (G.rivediT), così lo si vede andare fuori
+  // dal vivo e poi nel replay; `replay` qui dice solo che ci sarà, e lo stacco è il suo.
+  const f = G.fantasma && G.t < G.fantasma.fino ? G.fantasma : null; if (!f) G.fantasma = null;
+  const occasione = G.t - (G.occasioneT ?? -99) < FERMI.occasione; G.occasioneT = -99; G.rivediT = null;
+  let replay = false;
+  if (occasione && f && !G.auto && !G.noRegia) { replay = true; G.rivediT = f.fino; } else if (occasione) replay = REGIA.rivedi();
   // Rimessa laterale e calcio d'angolo come Dream League: dissolvenza scura e, a metà, stacco della telecamera sul punto
   // di battuta. Nello stesso istante ognuno viene messo al suo posto (vedi piazzaFermi): non si vede, e non si aspetta
   // più che ci arrivino camminando. I comandi tornano dopo FERMI.comandi secondi. Dopo un replay lo stacco è il suo.
   G.piazza = -1;
-  if (tipo === 'laterale' || tipo === 'angolo') { G.wait = FERMI.comandi; G.piazza = replay ? 0 : FERMI.buio / 2; if (!G.auto && !replay) G.buio = { da: G.t, stacco: false }; }
+  if (tipo === 'laterale' || tipo === 'angolo') {
+    G.wait = FERMI.comandi; G.piazza = G.rivediT != null ? G.rivediT - G.t : replay ? 0 : FERMI.buio / 2; if (!G.auto && !replay) G.buio = { da: G.t, stacco: false };
+    // senza replay il pallone che esce si vede fino al nero dello stacco
+    if (f && !replay) f.fino = Math.min(f.fino, G.t + FERMI.buio / 2);
+  }
 }
 /** Lo stacco di rimessa laterale e calcio d'angolo: tutti al loro posto di palla ferma (quello di postoFermo), fermi e
     rivolti al pallone. Succede a schermo scuro, mentre cambia l'inquadratura. */
@@ -2581,10 +2603,11 @@ function disegna(dt) {
   if (b) {
     if (!REGIA.figure()) for (const p of all()) { allinea(p, dt); pose(p, dt); inclina(p, dt); if (p.fig.skinned && !G.senzaPiedi) bloccaPiedi(p.fig, dt, !!p.fig.piediAttivi, /^(passa|calcia|lancia|tiro)/.test(p.fx || '')); } // durante il replay le figure le mette in posa la regia
     else for (const p of all()) p.fig.root.rotation.x = p.fig.root.rotation.z = 0;
-    const sp = hyp(b.vx, b.vz);
-    // il pallone si disegna dove sarà tra un attimo (il tempo non ancora simulato), come i giocatori: restano insieme
-    const ar = b.resto || 0, bxd = b.x + b.vx * ar, bzd = b.z + b.vz * ar, byd = Math.max(BR, b.y + b.vy * ar);
-    mettiPalla(bxd, byd, bzd); if (sp > .3) { ballMesh.rotation.z -= b.vx * dt / BR * .6; ballMesh.rotation.x += b.vz * dt / BR * .6; ballMesh.rotation.y += (b.c || 0) * dt * 25; }
+    // il pallone si disegna dove sarà tra un attimo (il tempo non ancora simulato), come i giocatori: restano insieme.
+    // Appena uscito dal campo si disegna quello che va fuori (G.fantasma), non quello vero già sul punto di battuta
+    const v = G.fantasma || b, sp = hyp(v.vx, v.vz);
+    const ar = v.resto || 0, bxd = v.x + v.vx * ar, bzd = v.z + v.vz * ar, byd = Math.max(BR, v.y + v.vy * ar);
+    mettiPalla(bxd, byd, bzd); if (sp > .3) { ballMesh.rotation.z -= v.vx * dt / BR * .6; ballMesh.rotation.x += v.vz * dt / BR * .6; ballMesh.rotation.y += (v.c || 0) * dt * 25; }
     // segni sopra le teste come Dream League (li disegna la regia): niente anello ai piedi né freccia della levetta
     const c = G.ctrl; G.segno = !!c && !G.auto && G.state !== 'full'; ring.visible = arrow.visible = freccia.visible = false;
     // in difesa: il compagno che si prenderebbe con «Cambia giocatore» (segnalino grigio), ricalcolato ogni tanto
