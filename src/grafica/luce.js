@@ -4,7 +4,7 @@
    accese (pannelli luminosi, alone, fasci di luce visibili e quattro faretti che danno i riflessi su erba e linee), ombre
    corte e morbide che vengono dall'alto. Si sceglie prima della partita. */
 
-export function creaAtmosfera(T, { scene, hemi, sun, sole, fari, sfondo, campo, tribune = [], resa = null, notturna = { fasci: [.16, 1], hemi: .35, sole: .95, faretti: 1 } }) {
+export function creaAtmosfera(T, { scene, hemi, sun, sole, fari, sfondo, campo, tribune = [], cartelloni = [], resa = null, notturna = { fasci: [.16, 1], hemi: .35, sole: .95, faretti: 1, cartelloni: 1 } }) {
   const notte = { fasci: [], aloni: [], faretti: [] };
   const alone = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,250,230,1)'); g.addColorStop(0.35, 'rgba(255,240,200,.45)'); g.addColorStop(1, 'rgba(255,240,200,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new T.CanvasTexture(c); })();
   // il fascio è più visibile vicino alla torre e sfuma verso il campo (alphaMap a gradiente lungo il cono)
@@ -21,8 +21,8 @@ export function creaAtmosfera(T, { scene, hemi, sun, sole, fari, sfondo, campo, 
     const sp = new T.SpotLight(0xf6f4ff, 0, 0, 0.55, 0.65, 0); sp.position.copy(p); sp.target.position.copy(bersaglio); scene.add(sp, sp.target); notte.faretti.push(sp);
   }
   const ORE = {
-    giorno: { cielo: 0x86b9ea, nebbia: [0xa9cdee, 130, 330], hemi: [0xffffff, 0x47703a, 0.7], sole: [0xfff0d4, 3.7], dir: [14, 39, -37], morbide: .6, fari: 0.15, faretti: 0, sfondo: 0x4d6f9c, ruvido: 1, tribune: 0xffffff },
-    notte: { cielo: 0x060a18, nebbia: [0x0a1022, 110, 320], hemi: [0x34436e, 0x0b130c, notturna.hemi], sole: [0xf3f6ff, notturna.sole], dir: [6, 95, 14], morbide: 4, fari: 2.6, faretti: notturna.faretti, sfondo: 0x111a30, ruvido: 0.7, tribune: 0x5c6378 },
+    giorno: { cielo: 0x86b9ea, nebbia: [0xa9cdee, 130, 330], hemi: [0xffffff, 0x47703a, 0.7], sole: [0xfff0d4, 3.7], dir: [14, 39, -37], morbide: .6, fari: 0.15, faretti: 0, sfondo: 0x4d6f9c, ruvido: 1, tribune: 0xffffff, cartelloni: 1 },
+    notte: { cielo: 0x060a18, nebbia: [0x0a1022, 110, 320], hemi: [0x34436e, 0x0b130c, notturna.hemi], sole: [0xf3f6ff, notturna.sole], dir: [6, 95, 14], morbide: 4, fari: 2.6, faretti: notturna.faretti, sfondo: 0x111a30, ruvido: 0.7, tribune: 0x5c6378, cartelloni: notturna.cartelloni },
   };
   let ora = 'giorno';
   function applica(nome) {
@@ -34,6 +34,8 @@ export function creaAtmosfera(T, { scene, hemi, sun, sole, fari, sfondo, campo, 
     const n = ora === 'notte'; for (const f of notte.fasci) f.visible = n; for (const s of notte.aloni) s.visible = n; for (const sp of notte.faretti) { sp.intensity = o.faretti; sp.visible = n; } // di giorno i faretti sono spenti del tutto: non costano niente
     if (sfondo) sfondo.color.set(o.sfondo);
     for (const m of tribune) m.color.set(o.tribune); // di notte il pubblico resta in penombra, il campo sotto i fari
+    // di notte i cartelloni LED sono un po' meno accesi: sotto la soglia dell'alone, che sulle scritte piccole sfarfalla
+    for (const c of cartelloni) c.material.color.setScalar(o.cartelloni);
     if (campo && campo.material) campo.material.roughness = o.ruvido; // di notte l'erba (e le linee) luccicano un po' sotto i fari
     if (resa) resa.imposta(ora); // riflessi dall'ambiente e alone delle luci (src/grafica/resa.js)
   }

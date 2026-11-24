@@ -132,7 +132,10 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - 8 FATTO: in notturna ogni giocatore ha l'ombra corta e morbida sotto i piedi più quattro ombre leggere a croce, una
   per faro (`NOTTURNA.croce`, `dettagliFigure` in `src/game.js`: una sola chiamata di disegno). I cunei erano i fasci
   di luce del punto 7, non ombre dello stadio.
-- Restano: 10 cartelloni, 11 telecamera vicino alla linea, 12 nomi sovrapposti, 13 tasto A in difesa (chiedere),
+- 10 FATTO: i cartelloni si disegnano su una tela doppia (`LED.tela`), filtrata al massimo, e di notte sono un po' meno
+  accesi (`NOTTURNA.cartelloni`): senza l'alone luminoso le scritte piccole che scorrono non sfarfallano più.
+  Da confermare sull'iPhone di Alex: qui si vede solo la foto ferma.
+- Restano: 11 telecamera vicino alla linea, 12 nomi sovrapposti, 13 tasto A in difesa (chiedere),
   14 maglie simili, 15 animazioni (video rallentato dei 5 gesti).
 
 ## Prova di Alex su iPhone (21/11): punti in ordine

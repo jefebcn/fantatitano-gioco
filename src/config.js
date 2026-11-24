@@ -202,10 +202,13 @@ export const PRATO = { tinta: [.8, 1.04, .7], strisce: [.74, 1.18], rilievo: .8,
 // `faretti`: la forza dei quattro faretti d'angolo, che danno i riflessi su erba e linee. A 1 lasciavano grandi chiazze
 // biancastre sul prato: ora sono deboli e la luce la dà quella dall'alto, uguale su tutto il campo (`sole`). `croce`: le
 // quattro ombre leggere che ogni persona ha sotto i fari, una per torre: quanto sono scure, larghe (m) e lunghe (da, a).
-export const NOTTURNA = { fasci: [.1, .3], hemi: .45, sole: 1.25, faretti: .35, croce: { forza: .24, largo: .7, lungo: [1.3, 2.8] } };
+// `cartelloni`: quanto sono accesi i cartelloni LED di notte. Con 1 sono come di giorno, sotto 0,78 non fanno alone.
+export const NOTTURNA = { fasci: [.1, .3], hemi: .45, sole: 1.25, faretti: .35, croce: { forza: .24, largo: .7, lungo: [1.3, 2.8] }, cartelloni: .72 };
 export const LOD = { vicino: 22, lontano: 62 };
-// Cartelloni LED a bordo campo: scorrono piano di continuo (frazione di tutta la striscia al secondo: 4 pannelli)
-export const LED = { scorre: .02 };
+// Cartelloni LED a bordo campo: scorrono piano di continuo (frazione di tutta la striscia al secondo: 4 pannelli).
+// `tela`: i punti della striscia disegnata, larghezza e altezza (potenze di due: servono le versioni rimpicciolite, che
+// tolgono lo sfarfallio delle scritte lontane)
+export const LED = { scorre: .02, tela: [4096, 128] };
 
 /* ---------------------------------------------------------------- replay e stacchi */
 // Replay automatico e breve (da confermare con DLS): dopo un gol e alla prima palla ferma dopo una grande occasione rivede gli
