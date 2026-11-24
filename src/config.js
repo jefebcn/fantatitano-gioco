@@ -214,7 +214,7 @@ export const STADI = {
       luce: { hemi: 2, fari: 1.45, colore: 0xffffff, tribune: 0x8d93a6, tetto: .5 },
       fuori: { terreno: 'città', margine: 30, strade: 4, parcheggi: 6, parcheggio: [90, 48], pieno: .9, lampioni: 30, palo: 10, palazzi: 90, finestre: 14, colline: 0 },
       alto: [0, 175, 135, 0, 0, -8, 60],
-      giro: [[2, [-150, 110, 190, 0, 5, 0, 50], [-70, 130, 215, 0, 5, 0, 50]], [2.4, [-46, 16, 22, 30, 14, -45, 60], [-18, 12, 26, 38, 14, -45, 60]]],
+      giro: [[2, [-62, 138, 84, 0, 0, -4, 52], [-18, 148, 90, 0, 0, -4, 52]], [2.4, [-46, 16, 22, 30, 14, -45, 60], [-18, 12, 26, 38, 14, -45, 60]]],
     },
   },
 };
