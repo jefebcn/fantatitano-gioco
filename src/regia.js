@@ -438,11 +438,14 @@ export function creaRegia(X) {
       if (replay) {
         const bp = ballMesh.position, d = S.porta, gx = d * HL;
         if (Number.isNaN(S.guarda.x)) S.guarda.copy(bp); else S.guarda.lerp(bp, 1 - Math.exp(-9 * dt));
-        if (S.var) cam.position.set(gx + d * 8, 6.2, 6.5);   // da dietro la porta, sopra la traversa
+        const P = RIVEDI.porta;
+        if (S.var) cam.position.set(gx + d * P.dietro, P.alto, P.lato);   // da dietro la porta, poco sopra la traversa
         else cam.position.set(gx - d * 17, 2.4, -(HW + 2));   // bassa, dal lato opposto alla telecamera di gioco
         // lo zoom segue la distanza: attorno al pallone si vede sempre più o meno la stessa fetta di campo
-        const lontano = cam.position.distanceTo(S.guarda); cam.fov = clamp(2 * Math.atan((S.var ? 8 : 6.5) / lontano) * 180 / Math.PI, 15, 40) * (stretto ? 1.5 : 1);
-        cam.lookAt(S.guarda.x, Math.max(.9, S.guarda.y * .8), S.guarda.z); cam.updateProjectionMatrix();
+        const lontano = cam.position.distanceTo(S.guarda); cam.fov = clamp(2 * Math.atan((S.var ? 8 : 6.5) / lontano) * 180 / Math.PI, 15, S.var ? P.apre : 40) * (stretto ? 1.5 : 1);
+        // da dietro la porta, col pallone vicino, punta un po' sopra il pallone: in alto si vede la tribuna di fronte
+        const su = S.var ? P.mira * clamp(1.6 - lontano / 20, 0, 1) : 0;
+        cam.lookAt(S.guarda.x, Math.max(.9, S.guarda.y * .8) + su, S.guarda.z); cam.updateProjectionMatrix();
       } else if (t >= S.c0) {
         // primo piano come Dream League: telecamera bassa (GOLSEQ.camAlt) a pochi metri dal punto dell'esultanza, che avanza appena;
         // tra lei e il marcatore, un po' di lato, il difensore deluso (messo lì allo stacco, quando nessuno lo vede)

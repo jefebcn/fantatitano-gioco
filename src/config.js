@@ -125,6 +125,13 @@ export const CAMERA = { alto: 12.5, dietro: 36.8, inclina: 21.75, fovOriz: 58.7,
 // Vista dall'alto di tutto lo stadio, solo per controlli: si accende con ?alto nell'indirizzo. [x, y, z della telecamera,
 // x, y, z del punto guardato, FOV verticale]
 export const CAMERA_ALTO = [0, 95, 40, 0, 0, 0, 55];
+// Presentazione dello stadio prima del calcio d'inizio, come in Dream League (richiesta di Alex): la telecamera fa un
+// giro e poi scende al suo posto di gioco. Le inquadrature di ogni stadio stanno in STADI.tipi.*.giro: secondi, poi la
+// telecamera all'inizio e alla fine, scritte come CAMERA_ALTO; tra una e l'altra c'è uno stacco. L'ultima è uguale per
+// tutti, `discesa`: in `t` secondi dalla telecamera di gioco spostata di `su` metri in alto e `dietro` metri indietro
+// fino al suo posto. Un tocco sullo schermo la salta, ma non prima di `salta` secondi (il dito che ha fatto partire la
+// partita può essere ancora giù). Nelle prove a seme fisso non c'è.
+export const PRESENTA = { salta: .5, discesa: { t: 1.6, su: 9, dietro: 15 } };
 /* ---------------------------------------------------------------- stadi */
 // Tre stadi, secondo la divisione della squadra di casa: lo dice `divisioni`, e `senza` è quello usato finché la home
 // non manda la divisione (docs/ponte-partita.md §11). Il campo e la telecamera di gioco sono gli stessi in tutti e tre:
@@ -181,6 +188,7 @@ export const STADI = {
       alberi: { quanti: 90, alti: [6, 11] },
       fuori: { terreno: 'prato', margine: 10, strade: 1, parcheggi: 1, parcheggio: [40, 26], pieno: .45, lampioni: 46, palo: 7, colline: 3 },
       alto: [0, 62, 78, 0, 0, -4, 55],
+      giro: [[2, [-95, 22, 85, 0, 3, -10, 50], [-55, 26, 100, 0, 3, -10, 50]], [2.4, [-36, 5, 16, 15, 4, -40, 55], [-14, 4, 20, 22, 4, -40, 55]]],
     },
     medio: {
       posti: 10000, folla: 10000,
@@ -195,6 +203,7 @@ export const STADI = {
       luce: { hemi: 1.7, fari: 1.2, colore: 0xf3f6ff, tribune: 0x7a8196, tetto: .3 },
       fuori: { terreno: 'prato', margine: 20, strade: 2, parcheggi: 4, parcheggio: [70, 40], pieno: .7, lampioni: 34, palo: 9, colline: 2 },
       alto: [0, 100, 92, 0, 0, -4, 55],
+      giro: [[2, [120, 38, 120, 0, 8, 0, 50], [70, 45, 140, 0, 8, 0, 50]], [2.4, [-40, 9, 20, 25, 8, -42, 58], [-15, 7, 24, 35, 8, -42, 58]]],
     },
     grande: {
       posti: 75000, folla: 75000, chiuso: { raggio: 7, spicchi: 8 },
@@ -205,6 +214,7 @@ export const STADI = {
       luce: { hemi: 2, fari: 1.45, colore: 0xffffff, tribune: 0x8d93a6, tetto: .5 },
       fuori: { terreno: 'città', margine: 30, strade: 4, parcheggi: 6, parcheggio: [90, 48], pieno: .9, lampioni: 30, palo: 10, palazzi: 90, finestre: 14, colline: 0 },
       alto: [0, 175, 135, 0, 0, -8, 60],
+      giro: [[2, [-150, 110, 190, 0, 5, 0, 50], [-70, 130, 215, 0, 5, 0, 50]], [2.4, [-46, 16, 22, 30, 14, -45, 60], [-18, 12, 26, 38, 14, -45, 60]]],
     },
   },
 };
@@ -320,7 +330,10 @@ export const LED = { scorre: .02, tela: [4096, 128] };
 // Replay automatico e breve (da confermare con DLS): dopo un gol e alla prima palla ferma dopo una grande occasione rivede gli
 // ultimi `secs` secondi registrati a velocità `vel` (circa 3,5 s veri), tra due stacchi col logo di `stacco` secondi. Si salta
 // toccando lo schermo o il pulsante in basso a destra. Sotto `min` secondi registrati non parte
-export const RIVEDI = { secs: 3, vel: .85, stacco: .3, min: 1.5 };
+// `porta`: la telecamera del replay da dietro la porta, perché si veda anche lo stadio (richiesta di Alex): metri dietro la
+// linea di fondo, altezza, metri di lato dal centro della porta; `mira` metri sopra il pallone a cui punta quando il pallone
+// le è vicino (così in alto resta la tribuna di fronte) e `apre` l'apertura massima in gradi.
+export const RIVEDI = { secs: 3, vel: .85, stacco: .3, min: 1.5, porta: { dietro: 8, alto: 4.6, lato: 6.5, mira: 2.2, apre: 48 } };
 
 
 /* ---------------------------------------------------------------- IA col pallone, passaggi, scatti */

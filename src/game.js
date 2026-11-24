@@ -24,7 +24,7 @@ import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { PRATO, NOTTURNA, STADI, DIVISE, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { PRATO, NOTTURNA, STADI, PRESENTA, DIVISE, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -984,7 +984,9 @@ function kickoff(team) {
   }
   G.taker = team.players.find((p) => p.i === 9) || nearestTo(team, 0, 0); G.taker.x = -.7 * team.side; G.taker.z = 0; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.attesa = null;
   G.next = team; G.poss = team; G.lastTouch = G.taker; G.intended = null;
-  setState('kickoff'); banner(G.half === 1 && G.clock === 0 ? tr('partita.calcioInizio') : '', '', 1100); AU.fischio(G.clock === 0 ? 'inizio' : 'ripresa');
+  setState('kickoff');
+  // durante la presentazione dello stadio la striscia e il fischio aspettano: li dà finePresenta
+  if (!G.presenta) { banner(G.half === 1 && G.clock === 0 ? tr('partita.calcioInizio') : '', '', 1100); AU.fischio(G.clock === 0 ? 'inizio' : 'ripresa'); }
   if (team.human) setCtrl(G.taker); else setCtrl(nearestTo(G.teams[0], 0, 0));
 }
 function setState(s) { G.state = s; G.stateT = 0; }
@@ -1943,6 +1945,8 @@ function draw(dt) { return colSeme('grafica', () => disegna(dt)); }
 /* ------------------------------------------------------------------ passo di simulazione */
 function passo(dt) {
   G.t += dt; G.stateT += dt; const b = G.ball; if (!b) return;
+  // presentazione dello stadio: il tempo passa (il pubblico si muove), la partita aspetta
+  if (G.presenta) { G.stateT = 0; G.presenta.t += dt; $('#hud').classList.add('cine'); if (G.presenta.t >= G.presenta.durata) finePresenta(); return; }
   if (G.state === 'play') {
     if (G.charge >= 0) { if (G.ball.owner !== G.ctrl) G.charge = -1; else { G.charge += dt; if (G.charge > CARICA.max) rilascia(); } } // persa la palla, la carica si annulla
     if (G.so) soStep(dt);
@@ -2618,7 +2622,37 @@ function inquadratura() {
 }
 const VISTA_ALTO = /[?&]alto\b/.test(location.search);
 const _qCam = new T.Quaternion(), _mCam = new T.Matrix4(), _vCam = new T.Vector3(), _asseX = new T.Vector3(1, 0, 0);
+// Presentazione dello stadio (PRESENTA in src/config.js): le inquadrature del giro, una dopo l'altra, e per ultima la
+// discesa fino alla telecamera di gioco. Finché dura il gioco non parte: passo() aspetta
+const _daP = new T.Vector3(), _aP = new T.Vector3(), _daL = new T.Vector3(), _aL = new T.Vector3();
+function iniziaPresenta() {
+  const P = G.presenta, D = PRESENTA.discesa;
+  // dove deve arrivare: la telecamera di gioco sul calcio d'inizio, presa da updateCamera
+  P.t = 0; G.presenta = null; updateCamera(9); G.presenta = P;
+  const dir = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion), arrivo = cam.position.clone(), guarda = arrivo.clone().addScaledVector(dir, 40);
+  const fine = [arrivo.x, arrivo.y, arrivo.z, guarda.x, guarda.y, guarda.z, cam.fov];
+  P.tappe = [...(STADI.tipi[STADIO].giro || []), [D.t, [arrivo.x, arrivo.y + D.su, arrivo.z + D.dietro, guarda.x, guarda.y + D.su, guarda.z + D.dietro, cam.fov], fine, true]];
+  P.durata = P.tappe.reduce((n, q) => n + q[0], 0);
+  $('#hud').classList.add('cine'); $('#salta').classList.add('su');
+}
+function finePresenta() {
+  if (!G.presenta) return;
+  G.presenta = null; $('#hud').classList.remove('cine'); $('#salta').classList.remove('su');
+  if (G.teams.length && G.state === 'kickoff') { setState('kickoff'); banner(tr('partita.calcioInizio'), '', 1100); AU.fischio('inizio'); updateCamera(9); }
+}
+function cameraPresenta() {
+  const P = G.presenta; let t = P.t, q = P.tappe[P.tappe.length - 1];
+  for (const tappa of P.tappe) { if (t < tappa[0]) { q = tappa; break; } t -= tappa[0]; }
+  // parte e arriva piano
+  const k = clamp(t / q[0], 0, 1), e = k * k * (3 - 2 * k), [, da, a] = q;
+  _daP.set(da[0], da[1], da[2]); _aP.set(a[0], a[1], a[2]); _daL.set(da[3], da[4], da[5]); _aL.set(a[3], a[4], a[5]);
+  cam.position.lerpVectors(_daP, _aP, e); cam.lookAt(_daL.lerp(_aL, e));
+  const fov = da[6] + (a[6] - da[6]) * e; if (Math.abs(cam.fov - fov) > .01) { cam.fov = fov; cam.updateProjectionMatrix(); }
+  // la tribuna sotto la telecamera di gioco si toglie solo nella discesa finale
+  P.spalle = !!q[3]; SPALTI.spalle(P.spalle);
+}
 function updateCamera(dt) {
+  if (G.presenta && G.presenta.tappe) { cameraPresenta(); return; }
   const b = G.ball; let fx = 0, fz = 0;
   if (b) { fx = b.x; fz = b.z; if (G.state === 'goal' && G.scorer && G.stateT > .9) { fx = G.scorer.x; fz = G.scorer.z; } }
   let px, py, pz, lx, lz, fov, gioco = false;
@@ -2678,7 +2712,7 @@ function folla(dt) {
   if (h && G.goals.length !== TIFO.gol) { TIFO.gol = G.goals.length; if (G.scorer) SPALTI.esulta(G.scorer.team.idx, 1, 6); } // gol: salti e braccia al cielo
   // il brusio: quanta gente c'è e quanto è vicina la palla alla porta (ultimi 25 metri)
   if (h && G.ball) AU.pubblico(TIFO.base, G.state === 'play' ? clamp((Math.abs(G.ball.x) - (HL - 25)) / 12, 0, 1) : G.state === 'goal' ? 1 : 0);
-  SPALTI.spalle(!G.dbgCam && !VISTA_ALTO && cam.position.z > HW + CAMERA.spalle); SPALTI.muovi(dt, G.t);
+  SPALTI.spalle(G.presenta ? !!G.presenta.spalle : !G.dbgCam && !VISTA_ALTO && cam.position.z > HW + CAMERA.spalle); SPALTI.muovi(dt, G.t);
 }
 // Prima del calcio d'inizio, sotto la schermata delle due squadre, lo stadio e i giocatori si disegnano una volta tutti
 // interi: dall'alto, con ogni tribuna in vista e ogni figura coi dettagli dei primi piani. La scheda grafica prepara
@@ -2705,7 +2739,7 @@ function disegna(dt) {
     const ar = v.resto || 0, bxd = v.x + v.vx * ar, bzd = v.z + v.vz * ar, byd = Math.max(BR, v.y + v.vy * ar);
     mettiPalla(bxd, byd, bzd); if (sp > .3) { ballMesh.rotation.z -= v.vx * dt / BR * .6; ballMesh.rotation.x += v.vz * dt / BR * .6; ballMesh.rotation.y += (v.c || 0) * dt * 25; }
     // segni sopra le teste come Dream League (li disegna la regia): niente anello ai piedi né freccia della levetta
-    const c = G.ctrl; G.segno = !!c && !G.auto && G.state !== 'full'; ring.visible = arrow.visible = freccia.visible = false;
+    const c = G.ctrl; G.segno = !!c && !G.auto && G.state !== 'full' && !G.presenta; ring.visible = arrow.visible = freccia.visible = false;
     // in difesa: il compagno che si prenderebbe con «Cambia giocatore» (segnalino grigio), ricalcolato ogni tanto
     if (!G.segno || modoAttacco() || G.state !== 'play') G.prossimo = null;
     else if (G.t >= (G.prossimoT || 0)) { G.prossimoT = G.t + SEGNI.cambio; const m = migliorDifensore(G.teams[0], c); G.prossimo = m ? m.p : null; }
@@ -2839,6 +2873,9 @@ function comandiPartita() {
   // in campo: le frecce ai lati del riquadro sotto la minimappa cambiano mentalità
   for (const f of document.querySelectorAll('#ment button')) f.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); sel.ment = clamp(sel.ment + +f.dataset.d, -1, 1); tactics(); });
   $('#replay').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); }); // pulsante replay in alto a destra: per ora solo segnaposto
+  // la presentazione dello stadio si salta toccando lo schermo o con un tasto: non subito e non dai pulsanti di pausa e audio
+  const saltaGiro = (e) => { if (G.presenta && !G.paused && G.presenta.t > PRESENTA.salta && !(e.target.closest && e.target.closest('#pausa,#audio'))) finePresenta(); };
+  window.addEventListener('pointerdown', saltaGiro); window.addEventListener('keydown', saltaGiro);
   // l'icona della maglia a palla ferma: pausa e subito le sostituzioni; da lì «Fatto» porta alla pausa, dove c'è il modulo
   $('#icoMaglia').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); pause(true); if (G.paused && !$('#apriCambi').classList.contains('nas')) $('#apriCambi').onclick(); });
   $('#apriCambi').onclick = () => { cOut = null; cIn = -1; drawCambi(); show('#cambi'); }; $('#cambiOk').onclick = () => show('#stop'); $('#cambiL').addEventListener('click', tapCambi);
@@ -2906,7 +2943,11 @@ function startMatch(h, a, d) {
   $('#vsH').src = img(H.id); $('#vsA').src = img(A.id); $('#vsHn').textContent = H.name; $('#vsAn').textContent = A.name;
   show('#vs'); $('#hud').classList.add('nas'); G.state = 'menu';
   // lo stadio di questa partita si costruisce qui, mentre si vede ancora la schermata delle due squadre
-  setTimeout(() => { alzaStadio(tipoStadio()); newMatch(H, A); scalda(); show(null); $('#hud').classList.remove('nas'); AU.amb(1); }, 1900);
+  setTimeout(() => {
+    // prima del calcio d'inizio il giro dello stadio (non nelle prove a seme fisso, che devono restare uguali)
+    alzaStadio(tipoStadio()); G.presenta = PROVA.semi || VISTA_ALTO ? null : { t: 0 }; newMatch(H, A); scalda(); if (G.presenta) iniziaPresenta();
+    show(null); $('#hud').classList.remove('nas'); AU.amb(1);
+  }, 1900);
 }
 // Schermata delle sostituzioni: si tocca chi esce e chi entra
 let cOut = null, cIn = -1;
@@ -2926,7 +2967,7 @@ function tapCambi(e) {
   drawCambi(p ? tr('cambi.fatto', p.name, esce.name) : tr(ruoli ? 'cambi.portiere' : 'cambi.no')); hud();
 }
 function pause(v) { if (G.state === 'menu' || G.state === 'full') return; G.paused = v; show(v ? '#stop' : null); AU.pausa(v); $('#apriCambi').classList.toggle('nas', !G.teams[0] || !!G.so); } // sempre: lì si vede anche l'energia
-function toMenu() { G.state = 'menu'; clearMatch(); G.ball = null; G.ctrl = null; ballMesh.visible = ballShadow.visible = ring.visible = arrow.visible = freccia.visible = false; $('#hud').classList.add('nas'); casa(); AU.amb(0); AU.pausa(false); AU.musica(true); }
+function toMenu() { G.state = 'menu'; finePresenta(); clearMatch(); G.ball = null; G.ctrl = null; ballMesh.visible = ballShadow.visible = ring.visible = arrow.visible = freccia.visible = false; $('#hud').classList.add('nas'); casa(); AU.amb(0); AU.pausa(false); AU.musica(true); }
 function vote(p) {
   const t = p.team, s = p.s, V = VOTE, conc = t.opp.score;
   let v = 6 + s.g * V.g + s.a * V.a + s.kp * V.kp + (s.sot - s.g) * V.sot + s.tk * V.tk + s.int * V.int + s.sv * V.sv + (s.pa > 3 ? (s.pc / s.pa - .7) * V.pass : 0)
