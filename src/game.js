@@ -2599,9 +2599,9 @@ function hud() {
   const m = ((G.half - 1) + Math.min(1, G.clock / HALF_SECS)) * 45, txt = `${String(Math.floor(m)).padStart(2, '0')}:${String(Math.floor(m % 1 * 60)).padStart(2, '0')}`;
   if (txt !== lastClock) { $('#sbT').textContent = txt; lastClock = txt; }
   if (G.ctrl !== lastChi) { lastChi = G.ctrl; $('#chi').innerHTML = G.ctrl ? `<i>${G.ctrl.num}</i>${G.ctrl.name.replace(/[<>&]/g, '')}` : ''; }
-  // le scritte dei tre tasti cambiano col possesso (A tiro o contrasto in scivolata, B passaggio o pressing, C lancio o cambio)
+  // le scritte dei tre tasti cambiano col possesso (A tiro o scivolata, B passaggio o pressing col contrasto in piedi, C lancio o cambio)
   const att = modoAttacco();
-  if (att !== lastAtt) { lastAtt = att; $('#bA textPath').textContent = tr(att ? 'tasti.calcioBasso' : 'tasti.pressing'); $('#bB textPath').textContent = tr(att ? 'tasti.calcioForte' : 'tasti.contrasto'); $('#bD textPath').textContent = tr(att ? 'tasti.calcioAlto' : 'tasti.cambia'); $('#bD .nome').style.fontSize = att ? '' : '9.5px'; $('#hud').classList.toggle('difesa', !att); }
+  if (att !== lastAtt) { lastAtt = att; $('#bA textPath').textContent = tr(att ? 'tasti.calcioBasso' : 'tasti.pressing'); $('#bB textPath').textContent = tr(att ? 'tasti.calcioForte' : 'tasti.scivolata'); $('#bD textPath').textContent = tr(att ? 'tasti.calcioAlto' : 'tasti.cambia'); $('#bD .nome').style.fontSize = att ? '' : '9.5px'; $('#hud').classList.toggle('difesa', !att); }
   if (G.ctrl) $('#en').firstElementChild.style.width = `${G.ctrl.en * 100}%`;
   // palle ferme: la scritta col tipo sotto il tabellone, comandi nascosti (tornano quando si può battere). Sui calci piazzati le
   // tre icone in alto a destra (per ora solo lo spazio)
