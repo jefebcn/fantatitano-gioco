@@ -37,7 +37,16 @@ circa 20 cm è il contatto giusto: è quello dei calci, che il pallone al piede 
 - **Da proporre ad Alex: difensori che vanno sul portatore.** I contrasti sono pochi (circa uno a partita, obiettivo
   4-30, erano 2,2 prima del tocco col piede) perché i difensori del computer arrivano raramente a portata: è l'IA della
   difesa, non il piede.
-- **Da fare: calci rimasti col piede lontano.** Il «calcia» (tiro non forte) con il pallone ancora lontano o in aria.
+- **Calci: FATTO.** Due casi rimasti. I piazzati del computer (angoli, punizioni dirette, rigori) chiamavano il calcio
+  direttamente: il pallone partiva subito e il gesto arrivava dopo, col piede ancora lontano; ora passano da `prepara`
+  come gli altri calci (chi batte sta già a mezzo metro, dove le clip da fermo colpiscono). Il tiro su un pallone alzato
+  da un rimbalzo faceva saltare il pallone giù al piede: ora il calcio aspetta che scenda a `CARICO.aria`. Partita
+  registrata col seme 15: nessun calcio col piede oltre 55 cm (prima uno a partita) e nessuno senza gesto; restano
+  segnalate solo le rimesse laterali, che si battono con le mani.
+- **Partita ferma per sempre: CORRETTO** (difetto vecchio, emerso misurando). Sulle punizioni e sui rigori chi batte
+  veniva scelto prima delle sostituzioni automatiche di `restart`: se usciva proprio lui il pallone andava a un giocatore
+  non più in campo, nessuno lo muoveva e, col cronometro fermo durante la palla ferma, la partita non finiva più. Ora,
+  se chi doveva battere è uscito, batte il compagno più vicino.
 
 ## Piano "fluido come DLS" (deciso con Alex il 20/11, una PR per punto)
 1. Animazioni di passaggio senza palla — FATTO (PR #53).
