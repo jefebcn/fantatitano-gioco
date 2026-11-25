@@ -277,8 +277,9 @@ export const SEGNI = { x: 1.1, alto: 1.6, cambio: .2, rosso: .8, scala: .12, gri
 // In conduzione il pallone sta fino a un metro e mezzo davanti: il calcio aspetta che il piede ci arrivi. Dove il piede
 // lo colpisce lo dice la clip del gesto. Per i gesti che non lo dicono: `portata` metri davanti al corpo e `lato` metri
 // dalla parte del piede che calcia. `chiude`: a quanti metri al secondo il giocatore gli arriva sopra in quell'attesa.
-// `attesa`: quanto si aspetta al massimo, in secondi.
-export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: .15, chiude: 6, attesa: .18 };
+// `attesa`: quanto si aspetta al massimo, in secondi. `aria`: col pallone alzato da un rimbalzo il calcio aspetta che
+// scenda a quell'altezza in metri, se ci arriva entro tanti secondi (prima saltava giù di colpo al piede)
+export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: .15, chiude: 6, attesa: .18, aria: [.45, .7] };
 
 /* ---------------------------------------------------------------- palle ferme e sequenza del gol (come Dream League) */
 // Palle ferme: su rimessa laterale e calcio d'angolo i comandi tornano `comandi` secondi dopo che il pallone è uscito; la

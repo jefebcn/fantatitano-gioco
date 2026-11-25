@@ -381,11 +381,13 @@ function prepara(p, tipo, bx, bz, calcio, forte = false) {
   const nome = tipo === 'calcia' && forte && hasFx('tiro') && v >= 1.2 ? 'tiro' : tipo + variante + (sx ? '_sx' : ''), carico = nome === 'tiro' ? GESTI.tiro.tocco : CARICO[tipo];
   // In corsa il pallone è più avanti del piede: il calcio parte quando il giocatore gli è arrivato sopra (CARICO), e nel
   // frattempo il pallone viene portato davanti al piede (moveBall). Il gesto comincia per ultimo, a `carico` secondi dal colpo.
-  const b = G.ball, vv = hyp(p.vx, p.vz);
-  if (vv > FIS.COND.fermo && b.y < .5 && hasFx(nome)) {
+  const b = G.ball, vv = hyp(p.vx, p.vz), [hAria, tAria] = CARICO.aria;
+  // pallone alzato da un rimbalzo: fra quanto scende all'altezza del piede (0 se è già basso, o se ci mette troppo)
+  const giu = b.y >= .5 ? (b.vy + Math.sqrt(Math.max(0, b.vy * b.vy + 2 * GRAV * (b.y - hAria)))) / GRAV : 0, aria = giu > 0 && giu <= tAria;
+  if (((vv > FIS.COND.fermo && b.y < .5) || aria) && hasFx(nome)) {
     // dove sta il pallone quando il piede lo colpisce: davanti e di lato (positivo: alla sua sinistra), dalla clip del gesto
     const i = GESTI[nome], alt = p.fig.alt || 1, dove = i && i.palla ? [i.palla[2] * alt, i.palla[0] * alt] : [CARICO.portata, (sx || nome === 'tiro' ? -1 : 1) * CARICO.lato];
-    const av = ((b.x - p.x) * p.vx + (b.z - p.z) * p.vz) / vv, fra = clamp((av - dove[0]) / CARICO.chiude, carico, CARICO.attesa);
+    const av = vv > .5 ? ((b.x - p.x) * p.vx + (b.z - p.z) * p.vz) / vv : dove[0], fra = aria ? Math.max(giu, carico) : clamp((av - dove[0]) / CARICO.chiude, carico, CARICO.attesa);
     // se c'è tempo il gesto parte dall'inizio della clip (si vede tutta la rincorsa), se no dagli ultimi `carico` secondi
     const anticipo = Math.min(fra, Math.max(carico, i && i.tocco ? i.tocco / ritmoGesto(i, vv / alt) : carico));
     p.carica = { t: fra, calcio, nome, anticipo, guida: true, av: dove[0], lato: dove[1] };
@@ -1800,14 +1802,16 @@ function conduzione(p, pressato) {
 /* Come batte il computer le palle ferme, quando è finita l'attesa (vedi aspetta). Ognuna calcia una volta sola: se non
    trova a chi darla non fa niente e si riprende a giocare. */
 // punizione diretta: tiro sopra la barriera
-function battiPunizione(p) { shoot(p, sgn(rnd(-1, 1)) * GH * rnd(.5, .9), rnd(.62, .8), diffOf(p).err); G.fkId = G.shotId; }
+// i piazzati del computer passano da prepara come gli altri calci: il gesto parte e il pallone parte quando il piede lo
+// colpisce (prima il pallone partiva subito e il gesto arrivava dopo)
+function battiPunizione(p) { const tz = sgn(rnd(-1, 1)) * GH * rnd(.5, .9), pow = rnd(.62, .8), err = diffOf(p).err; prepara(p, 'calcia', p.team.side * HL, tz, () => { shoot(p, tz, pow, err); G.fkId = G.shotId; }, true); }
 // rimessa laterale: lancia con le mani al compagno migliore entro RIMESSA.max metri
 function battiRimessa(p) {
   let m = bestPass(p); if (!m || hyp(m.x - p.x, m.z - p.z) > RIMESSA.max) { let bd = 1e9; for (const o of p.team.players) { if (o === p || o.i === 0) continue; const d = hyp(o.x - p.x, o.z - p.z), sc = d - Math.min(openness(o), 6) * 2; if (d > 4 && d < RIMESSA.max && sc < bd) { bd = sc; m = o; } } }
   if (m) lanciaRimessa(p, m);
 }
 // calcio d'angolo: traversone in area, o passaggio se non c'è nessuno
-function battiAngolo(p) { const m = crossTarget(p) || bestPass(p); if (m) (canCross(p) && m.x * p.team.side > HL - 19 ? cross : pass)(p, m); }
+function battiAngolo(p) { const m = crossTarget(p) || bestPass(p); if (!m) return; const alto = canCross(p) && m.x * p.team.side > HL - 19; prepara(p, alto ? 'lancia' : 'passa', m.x, m.z, () => (alto ? cross : pass)(p, m)); }
 // calcio d'inizio, punizione lontana dalla porta, fuorigioco: passaggio al compagno migliore
 function battiPassaggio(p) { const m = bestPass(p); if (m) prepara(p, 'passa', m.x, m.z, () => pass(p, m)); }
 function ownerThink(p, dt) {
@@ -1997,7 +2001,7 @@ function passo(dt) {
       const k = G.taker, fk = G.fk, q = postoBattitore(k, b); k.x = q[0]; k.z = q[1]; k.vx = k.vz = 0; if (G.rimessa) k.dir = Math.atan2(0, -sgn(b.z)); // la rimessa: rivolto verso il campo
       if (fk && fk.pen) { // rigore: tutti fuori dall'area, portiere sulla linea
         for (const o of all()) if (o !== k) { const q = penSpot(o); sposta(o, q[0], q[1]); }
-        aspetta(k, () => shoot(k, sgn(rnd(-1, 1)) * GH * rnd(.5, .88), rnd(.58, .78), diffOf(k).err * .8), true); k.shield = 9; G.pen = true;
+        aspetta(k, () => { const tz = sgn(rnd(-1, 1)) * GH * rnd(.5, .88), pow = rnd(.58, .78), err = diffOf(k).err * .8; prepara(k, 'calcia', k.team.side * HL, tz, () => shoot(k, tz, pow, err), true); }, true); k.shield = 9; G.pen = true;
         if (userDrives(k)) banner('', tr('partita.miraRigore'), 2200);
       } else {
         const far = fk ? FOUL.wall : 6;
@@ -2162,6 +2166,8 @@ function moveBall(dt) {
     const q = tecnica(o) * (o.sbil > 0 ? .4 : 1), verso = { x: o.tx - o.x, z: o.tz - o.z }, tc = o.tocca;
     // il tocco lo dà il piede: col gesto del tocco partito, la spinta arriva quando il piede della clip è sul pallone, e
     // intanto il pallone va dove il piede lo colpirà. Senza gesto (figure senza animazioni) tocca la fisica da sola, come prima
+    // sta per calciare un pallone ancora in aria: nessun tocco, il pallone scende da solo verso il piede
+    if (o.carica) { if (FIS.conduci(b, o, dt, q, Math.random, verso, 'aspetta') === 'perso') { b.owner = null; G.lastTouch = o; } FIS.passo(b, dt); return; }
     const piede = tc && o.fx === tc.nome && b.y < .5; if (!piede) o.tocca = null;
     if (piede && G.t < tc.quando - dt / 2) {
       if (FIS.conduci(b, o, dt, q, Math.random, verso, 'aspetta') === 'perso') { b.owner = null; G.lastTouch = o; o.tocca = null; }
@@ -2378,7 +2384,9 @@ function restart(team, x, z, tipo, taker) {
   const b = G.ball; b.owner = null; b.x = x; b.z = z; b.y = BR; b.vx = b.vy = b.vz = 0; b.c = b.t = 0; G.charge = -1;
   G.fk = null; G.wait = 1.1; G.offs = null; G.noOff = true; G.pen = false; G.attesa = null; G.fermoN = (G.fermoN || 0) + 1;
   aiSubs();
-  G.next = team; G.poss = team; G.intended = null; G.taker = taker || nearestTo(team, x, z);
+  // chi batte lo sceglie chi chiama, prima delle sostituzioni: se è appena uscito batte il compagno più vicino (prima il
+  // pallone andava a chi non era più in campo, nessuno lo muoveva e la partita restava ferma)
+  G.next = team; G.poss = team; G.intended = null; G.taker = taker && team.players.includes(taker) ? taker : nearestTo(team, x, z);
   if (team.human) setCtrl(G.taker); else setCtrl(nearestTo(G.teams[0], x, z));
   setState('restart'); G.tipoFermo = tr('partita.fermo')[tipo] || ''; const fi = { punizione: 'fallo', fuorigioco: 'fuorigioco' }[tipo]; if (fi) AU.fischio(fi); // rimesse, angoli e fondo: l'arbitro non fischia
   G.rimessa = tipo === 'laterale' && G.taker ? { chi: G.taker } : null;
