@@ -260,7 +260,9 @@ export const CONTRASTO = { portata: .45, manca: .6, lato: 55, fermo: 2, scatto: 
 // `incontro`: chi riceve va da solo sul pallone. La levetta sposta il punto d'incontro solo di questi metri, per ricevere
 // già girato dove si vuole andare. Deve restare sotto la distanza a cui si prende il pallone (1,05 m): a 1,4 m chi
 // teneva la levetta gli correva accanto senza toccarlo.
-export const PASSAGGIO = { assistito: true, dosa: .15, arrivo: [6, .15, 6.5, 10.5], inCorsa: [5.5, 8, 16], incontro: .5 };
+// `piede`: con lo stop il pallone si controlla quando arriva a tanti metri dal piede più vicino, o quando smette di
+// avvicinarsi. Prima si fermava appena entrava a 1,05 m dal corpo, a circa un metro dal piede.
+export const PASSAGGIO = { assistito: true, dosa: .15, arrivo: [6, .15, 6.5, 10.5], inCorsa: [5.5, 8, 16], incontro: .5, piede: .3 };
 // Cambio automatico del giocatore comandato a palla libera (un passaggio nostro, un rimpallo, una respinta: non il passaggio
 // degli avversari in viaggio): il comando passa al compagno che arriva sul pallone prima, se ci arriva almeno `margine`
 // secondi prima di chi è comandato adesso. Dopo un cambio, automatico o col tasto, per `pausa` secondi non si ricambia.

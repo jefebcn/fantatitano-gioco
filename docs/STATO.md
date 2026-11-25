@@ -178,10 +178,16 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Da dove ripartire: i tiri in più sono tutti colpi di testa (da 1,4 a 4,6 a partita), quelli di piede sono rimasti 4,3:
   servono palloni rasoterra a chi si inserisce e meno tiri da 20 metri ribattuti; poi difesa meno perfetta (ritardo 0,2–0,3 s sui
   passaggi, linea meno compatta, anticipi sul corto tra 9 e 12 su 100).
-- Difetti ancora aperti, nell'ordine deciso: 1) giravolta di scatto (corpo che gira di oltre 120° in un fotogramma,
-  `poseSkinned`: «oltre i 150° si gira subito»); 2) parate a distanza (pallone fermato a più di un metro dai guanti);
-  3) chi riceve si lascia sfilare il pallone a 1,2–1,4 m (gesto di stop laterale, ma la presa arriva a 1,05 m);
-  4) piedi che strisciano nel passo laterale e nei cambi di direzione, portieri che arretrano di corsa.
+- Difetti della lista, nell'ordine deciso (aggiornato il 25/11, misure sulla partita registrata col seme 7):
+  1) giravolta di scatto: FATTO (#194, #195). Il corpo non resta più girato al contrario dopo un'inversione ripensata
+  e oltre i 150 gradi gira svelto ma non di colpo (`MOVI.corpo`); chi passa si gira mentre carica il calcio. Girate di
+  colpo da 32 a 22, oltre 90 gradi da 12 a 0. 2) parate a distanza: FATTO (#196), il pallone rimbalza quando arriva
+  alle mani (`PARATA.mani`, `PARATA.manca`); gol da 2,13 a 2,41. Restano le prese e i pugni sui cross, che passano da
+  un'altra strada. 3) chi riceve si lascia sfilare il pallone: lo stop scattava a 1,05 m dal corpo, a circa un metro dal
+  piede; ora aspetta che il pallone arrivi al piede (`PASSAGGIO.piede`) e il gesto parte in tempo per quel punto.
+  Distanza piede-pallone alla presa da 0,96 a 0,50 m (0,37 col gesto di stop); su 32 partite gol da 2,19 a 2,47.
+  4) piedi che strisciano nel passo laterale e nei cambi di direzione: da fare. Portieri che arretrano di corsa: FATTO
+  (#193, `PORTIERE.gira`), da 9 corse all'indietro a 1.
 - In sospeso da Alex: riprese rapide sì o no (tolgono 11 s di attesa, non danno tiri); tiro lontano o di spalle (segue
   la levetta o va sempre in porta?); cambio automatico del giocatore in difesa; calcio d'inizio che aspetta il passaggio.
 - Strumenti: `scripts/prove/diagnosi.cjs`, `tiri.cjs`, `registra.cjs`, `rivedi.cjs`, `analisi-partita.py` (righe in

@@ -459,9 +459,9 @@ function prevediStop(b) {
   let p = G.intended;
   if (!p) { let bd = 4; for (const q of all()) { const d = hyp(q.x - b.x, q.z - b.z); if (q.i && d < bd) { bd = d; p = q; } } }
   if (!p || !p.i || !libero(p) || !p.fig.skinned || p.cool > 0 || p.st !== 'run') return;
-  const rx = b.x - p.x, rz = b.z - p.z, d = hyp(rx, rz); if (d > 6 || d < 1.05) return;
+  const rx = b.x - p.x, rz = b.z - p.z, d = hyp(rx, rz); if (d > 6) return;
   const chiude = -(rx * (b.vx - p.vx) + rz * (b.vz - p.vz)) / d; if (chiude < .8) return;
-  const fra = (d - 1.05) / chiude, vr = hyp(p.vx, p.vz) / (p.fig.alt || 1);
+  const vr = hyp(p.vx, p.vz) / (p.fig.alt || 1);
   // quale stop: se dopo il controllo andrà da un'altra parte (la levetta, o la porta) lo stop è già col giro, da quella
   // parte, se il pallone gli taglia la strada di lato lo stop è laterale, altrimenti quello dritto col piede dalla parte della palla
   const lento = vr <= 1.6, vc = versoControllo(p), giro = vc ? giroVerso(p.dir, Math.atan2(vc.x, vc.z)) : 0, ag = Math.abs(giro) * 180 / Math.PI, parte = giro > 0 ? '_sx' : '_dx';
@@ -469,7 +469,9 @@ function prevediStop(b) {
   const sx = rx * Math.cos(p.dir) - rz * Math.sin(p.dir) > 0;
   const nome = ag > 112 ? (lento ? 'stop_gira135_fermo' : 'stop_gira135') + parte : ag > 55 && lento ? 'stop_gira90_fermo' + parte
     : !lento && Math.abs(bl) > .8 ? (bl > 0 ? 'stop_lato_dx' : 'stop_lato_sx') : (lento ? 'stop_fermo' : 'stop') + (sx ? '_sx' : ''), i = GESTI[nome]; if (!i) return;
-  const anticipo = i.tocco / ritmoGesto(i, vr);
+  // il piede della clip arriva sul pallone quando il pallone è a questa distanza dal corpo, dove lo colpisce la clip
+  const tocca = i.palla ? hyp(i.palla[0], i.palla[2]) * (p.fig.alt || 1) : 1.05; if (d < tocca) return;
+  const fra = (d - tocca) / chiude, anticipo = i.tocco / ritmoGesto(i, vr);
   if (fra <= anticipo && fra > anticipo - .06) gesto(p, nome, fra);
 }
 const b64 = (t) => Uint8Array.from(atob(t), (c) => c.charCodeAt(0)).buffer;
@@ -2148,8 +2150,11 @@ function traLeMani(p) {
   return { x: (_mL.x + _mR.x) / 2 + fx, y: Math.max(BR, (_mL.y + _mR.y) / 2), z: (_mL.z + _mR.z) / 2 + fz };
 }
 /** Quanto è lontano il punto x, y, z dalla mano più vicina del portiere, se la sua posa è aggiornata; se no null. */
-function manoVicina(p, x, y, z) {
-  const f = p.fig, L = f.bones && f.bones.hand_l, R = f.bones && f.bones.hand_r; if (!L || !R || !(G.t - (f.posaT || -9) < .15)) return null;
+function manoVicina(p, x, y, z) { return ossoVicino(p, 'hand_l', 'hand_r', x, y, z); }
+/** Quanto è lontano il punto x, y, z dal piede più vicino, se la posa è aggiornata; se no null. */
+function piedeVicino(p, x, y, z) { return ossoVicino(p, 'foot_l', 'foot_r', x, y, z); }
+function ossoVicino(p, sx, dx, x, y, z) {
+  const f = p.fig, L = f.bones && f.bones[sx], R = f.bones && f.bones[dx]; if (!L || !R || !(G.t - (f.posaT || -9) < .15)) return null;
   L.getWorldPosition(_mL); R.getWorldPosition(_mR);
   return Math.min(Math.hypot(_mL.x - x, _mL.y - y, _mL.z - z), Math.hypot(_mR.x - x, _mR.y - y, _mR.z - z));
 }
@@ -2324,6 +2329,12 @@ function contacts(dt) {
       }
       const nx = (b.x - p.x) / (bd || 1), nz = (b.z - p.z) / (bd || 1), dot = b.vx * nx + b.vz * nz;
       b.vx = (b.vx - 2 * dot * nx) * .35 + rnd(-1, 1); b.vz = (b.vz - 2 * dot * nz) * .35 + rnd(-1, 1); b.vy = rnd(1, 4); p.cool = .4; G.lastTouch = p; AU.calcio(10, 'tocco'); return;
+    }
+    // con lo stop il pallone lo ferma il piede: si aspetta che ci arrivi, o che smetta di avvicinarsi, vedi PASSAGGIO.piede.
+    // Anche il destinatario del passaggio aspetta: intanto parte lo stop, che prima arrivava sempre troppo tardi
+    if (!gk && (/^stop/.test(p.fx || '') || (p === G.intended && libero(p))) && b.y < .6) {
+      const pv = piedeVicino(p, b.x, b.y, b.z), poi = pv === null ? null : piedeVicino(p, b.x + b.vx * dt, b.y + b.vy * dt, b.z + b.vz * dt);
+      if (pv !== null && pv > PASSAGGIO.piede && poi < pv) return;
     }
     return gain(p);
   }
