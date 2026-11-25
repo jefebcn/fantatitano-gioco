@@ -2043,9 +2043,11 @@ function passo(dt) {
   if (G.state === 'play' && G.ctrl && !G.auto && b.owner !== G.ctrl) {
     const c = G.ctrl, l = hyp(G.in.jx, G.in.jy); G.idle = l > .2 ? 0 : G.idle + dt;
     if (G.idle > 1.2 && hyp(c.x - b.x, c.z - b.z) > 22 && G.intended !== c) { const m = migliorDifensore(G.teams[0]); if (m && m.p !== c) setCtrl(m.p); }
-    // palla libera (non il passaggio degli avversari in viaggio): il comando va a chi la può prendere prima, vedi CAMBIO
+    // palla libera (non il passaggio degli avversari in viaggio): il comando va a chi la può prendere prima, vedi CAMBIO.
+    // Non mentre il nostro passaggio va al giocatore comandato: appena calciato il pallone è ancora vicino a chi ha passato,
+    // e il comando tornava a lui (video di Alex del 25/11). Se il passaggio viene deviato G.intended non è più lui
     G.cambioT = (G.cambioT || 0) - dt;
-    if (!b.owner && G.cambioT <= 0 && !(G.intended && G.intended.team !== c.team)) {
+    if (!b.owner && G.cambioT <= 0 && !(G.intended && G.intended.team !== c.team) && G.intended !== c) {
       const m = migliorDifensore(G.teams[0]); if (m && m.p !== G.ctrl && m.voto(G.ctrl) - m.t > CAMBIO.margine) { setCtrl(m.p); G.cambioT = CAMBIO.pausa; }
     }
   }
