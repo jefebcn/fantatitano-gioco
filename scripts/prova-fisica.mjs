@@ -78,7 +78,9 @@ function corsa(sprint, giro = false, q = .6) {
 {
   const n = corsa(false), s = corsa(true), g = corsa(false, true);
   assert.ok(!n.perso && !s.perso && !g.perso, 'non la perde da solo ' + JSON.stringify([n, s, g]));
-  assert.ok(n.tocchi >= 5 && n.tocchi <= 20, `tocchi ${n.tocchi}`); assert.ok(n.max > .9 && n.max < COND.perde, `lontana ${n.max}`);
+  // non incollata: va oltre la suola. Soglia da 0,9 a 0,7 m il 25/11, coi tocchi più corti presi dal video di Dream
+  // League di Alex, dove in corsa il pallone sta a 0,8-1 m davanti ai piedi; qui il giocatore corre a 7 m/s senza passo
+  assert.ok(n.tocchi >= 5 && n.tocchi <= 20, `tocchi ${n.tocchi}`); assert.ok(n.max > .7 && n.max < COND.perde, `lontana ${n.max}`);
   assert.ok(s.max > n.max, 'in scatto la palla va più lontano');
   out.push(`conduzione: in 6 s ${n.tocchi} tocchi, palla tra ${n.min.toFixed(2)} e ${n.max.toFixed(2)} m; in scatto fino a ${s.max.toFixed(2)} m; girata a 90° senza perderla`);
 }

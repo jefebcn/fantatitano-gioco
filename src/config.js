@@ -427,7 +427,8 @@ export const FIS = {
  * Il tocco è più lungo in scatto e per chi ha meno tecnica: la palla resta più a lungo lontana dal piede e un avversario
  * può arrivarci prima. Da fermo (o quasi) la palla resta sotto la suola.
  *  vicino:  sotto questa distanza "davanti al piede" scatta il tocco successivo
- *  passo:   tocco normale = velocità di corsa · passo; scatto: passoScatto
+ *  passo:   tocco normale = velocità di corsa · passo; scatto: passoScatto. Tarati sul video di Dream League di Alex del
+ *           25/11: in corsa il pallone sta a 0,8-1 m davanti ai piedi, un tocco ogni mezzo secondo circa
  *  perde:   oltre questa distanza dal giocatore la palla non è più sua
  *  guinzaglio: in conduzione la palla non va mai più lontano di così (Alex, 21/11: circa 1,5 m)
  *  fermo:   sotto questa velocità si tiene la palla sotto la suola
@@ -439,7 +440,7 @@ export const FIS = {
  *  guida:   quando parte il gesto del tocco il pallone va, nell'ultimo istante, dove lo colpisce il piede della clip: rispetto
  *           al giocatore non scivola mai più svelto di così, in m/s (richiesta di Alex del 25/11: il piede sul pallone)
  */
-export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.15, vicino: 0.5, passo: 1.22, passoScatto: 1.3, guinzaglio: 1.5, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6, guida: 5 };
+export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.15, vicino: 0.5, passo: 1.12, passoScatto: 1.2, guinzaglio: 1.5, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6, guida: 5 };
 
 /* ---------------------------------------------------------------- fisica dei giocatori */
 export const CORPO = {
