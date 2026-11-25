@@ -2565,10 +2565,17 @@ function poseSkinned(p, dt) {
   const mi = MOV.test(p.fx || '') && p.movA !== undefined ? GESTI[p.fx] : null, mk = mi ? clamp(p.fxT * (p.fxSp || 1) / mi.durata, 0, 1) : 0;
   // finito il gesto il corpo resta girato dove è arrivato finché la direzione del corpo fisico (che gira solo quando la
   // velocità si è invertita) non lo raggiunge: se no tornerebbe indietro per un attimo, coi piedi che strisciano
+  // Se intanto il giocatore ha cambiato idea e vuole tornare dall'altra parte, il corpo non resta girato: prima correva
+  // all'indietro anche per un secondo e poi si rigirava di colpo di 180 gradi
+  const spostato = f.dove ? hyp(p.x - f.dove[0], p.z - f.dove[1]) > MOVI.salto : true; f.dove = [p.x, p.z];
   if (mi) { f.vdir = p.movDa + p.movA * mk * mk * (3 - 2 * mk); p.movTieni = p.movA !== 0; }
   else {
-    if (p.movTieni && !(dt > 0 && Math.abs(da) > .35 && G.t < (p.movT || 0) + .6 && p.st === 'run')) p.movTieni = false;
-    if (!p.movTieni) f.vdir = Math.abs(da) > 2.6 || dt <= 0 ? p.dir : (f.vdir ?? p.dir) + da * Math.min(1, dt * 20);
+    // vuole ancora andare dove guarda il corpo: si aspetta che la corsa lo raggiunga
+    const w = hyp(p.wx || 0, p.wz || 0), verso = w < MOVI.fermo || Math.cos(Math.atan2(p.wx, p.wz) - (f.vdir ?? p.dir)) > 0;
+    if (p.movTieni && !(dt > 0 && Math.abs(da) > .35 && G.t < (p.movT || 0) + .6 && p.st === 'run' && verso)) p.movTieni = false;
+    // oltre 150 gradi di differenza il corpo gira svelto ma non di colpo, se non dopo uno spostamento, vedi MOVI.corpo
+    const molto = Math.abs(da) > 2.6, passo = molto ? clamp(da, -MOVI.corpo * dt, MOVI.corpo * dt) : da * Math.min(1, dt * 20);
+    if (!p.movTieni) f.vdir = dt <= 0 || (molto && spostato) ? p.dir : (f.vdir ?? p.dir) + passo;
   }
   f.root.rotation.y = f.vdir;
   if (G.dbgFx && hasFx(G.dbgFx.name)) { // per le prove: tutti fermi su un fotogramma di una clip
