@@ -381,7 +381,9 @@ function prepara(p, tipo, bx, bz, calcio, forte = false) {
   const nome = tipo === 'calcia' && forte && hasFx('tiro') && v >= 1.2 ? 'tiro' : tipo + variante + (sx ? '_sx' : ''), carico = nome === 'tiro' ? GESTI.tiro.tocco : CARICO[tipo];
   // In corsa il pallone è più avanti del piede: il calcio parte quando il giocatore gli è arrivato sopra (CARICO), e nel
   // frattempo il pallone viene portato davanti al piede (moveBall). Il gesto comincia per ultimo, a `carico` secondi dal colpo.
-  const b = G.ball, vv = hyp(p.vx, p.vz), [hAria, tAria] = CARICO.aria;
+  // `verso`: dove va il pallone. Mentre carica il calcio il corpo si gira da quella parte, così al colpo non scatta di
+  // colpo verso il passaggio (anche 156 gradi in un fotogramma sui passaggi all'indietro)
+  const b = G.ball, vv = hyp(p.vx, p.vz), [hAria, tAria] = CARICO.aria, verso = Math.atan2(bx - p.x, bz - p.z);
   // pallone alzato da un rimbalzo: fra quanto scende all'altezza del piede (0 se è già basso, o se ci mette troppo)
   const giu = b.y >= .5 ? (b.vy + Math.sqrt(Math.max(0, b.vy * b.vy + 2 * GRAV * (b.y - hAria)))) / GRAV : 0, aria = giu > 0 && giu <= tAria;
   if (((vv > FIS.COND.fermo && b.y < .5) || aria) && hasFx(nome)) {
@@ -390,11 +392,11 @@ function prepara(p, tipo, bx, bz, calcio, forte = false) {
     const av = vv > .5 ? ((b.x - p.x) * p.vx + (b.z - p.z) * p.vz) / vv : dove[0], fra = aria ? Math.max(giu, carico) : clamp((av - dove[0]) / CARICO.chiude, carico, CARICO.attesa);
     // se c'è tempo il gesto parte dall'inizio della clip (si vede tutta la rincorsa), se no dagli ultimi `carico` secondi
     const anticipo = Math.min(fra, Math.max(carico, i && i.tocco ? i.tocco / ritmoGesto(i, vv / alt) : carico));
-    p.carica = { t: fra, calcio, nome, anticipo, guida: true, av: dove[0], lato: dove[1] };
+    p.carica = { t: fra, calcio, nome, anticipo, guida: true, av: dove[0], lato: dove[1], verso };
     return;
   }
   if (!gesto(p, nome, carico)) return calcio();
-  p.carica = { t: carico, calcio };
+  p.carica = { t: carico, calcio, verso };
 }
 /** A ogni passo di fisica: il calcio caricato parte quando il piede arriva sulla palla. */
 function calciCaricati(dt) {
@@ -2127,7 +2129,8 @@ function corri(p, dt) {
     const v = hyp(p.vx, p.vz); let want = p.dir;
     // il portiere guarda la palla anche quando si sposta di lato. Se il suo posto è lontano e il pallone pure, si gira e
     // ci va correndo in avanti, vedi PORTIERE.gira
-    if (p.i === 0 && !owner && G.state === 'play' && !gkGira(p)) want = Math.atan2(b.x - p.x, b.z - p.z);
+    if (p.carica && p.carica.verso !== undefined) want = p.carica.verso; // chi sta per calciare si gira verso dove calcia
+    else if (p.i === 0 && !owner && G.state === 'play' && !gkGira(p)) want = Math.atan2(b.x - p.x, b.z - p.z);
     else if (v > .7 && !p.jock) want = Math.atan2(p.vx, p.vz); else if (!owner) want = Math.atan2(b.x - p.x, b.z - p.z); // anche chi temporeggia guarda il pallone
     MOTO.ruota(p, want, h, v, (.85 + .15 * fm.lat) * aiuto);
     MOTO.stanca(p, h, v, p.maxV, scatto);
@@ -2163,8 +2166,9 @@ function moveBall(dt) {
   // palla ferma pronta: il pallone resta sul punto finché non parte il gesto di chi batte
   if (G.attesa && o === G.attesa.chi && o.i !== 0 && !G.rimessa && !o.carica) { b.vx = b.vy = b.vz = 0; return; }
   if (o && o.i !== 0 && G.state === 'play' && o.carica && o.carica.guida && b.y < .5) {
-    // sta per calciare: niente tocchi di conduzione, il pallone arriva davanti al piede che calcia proprio al momento del colpo
-    const v = hyp(o.vx, o.vz), ux = v > .5 ? o.vx / v : Math.sin(o.dir), uz = v > .5 ? o.vz / v : Math.cos(o.dir), t = Math.max(o.carica.t, dt);
+    // sta per calciare: niente tocchi di conduzione, il pallone arriva davanti al piede che calcia proprio al momento del colpo.
+    // Il punto lo dice la clip rispetto al corpo: col corpo che si gira verso il calcio vale la sua direzione, non la corsa
+    const v = hyp(o.vx, o.vz), corpo = o.carica.verso !== undefined || v <= .5, ux = corpo ? Math.sin(o.dir) : o.vx / v, uz = corpo ? Math.cos(o.dir) : o.vz / v, t = Math.max(o.carica.t, dt);
     const av = o.carica.av, lato = o.carica.lato; o.tocca = null;
     const rx = (o.x + o.vx * t + ux * av + uz * lato - b.x) / t - o.vx, rz = (o.z + o.vz * t + uz * av - ux * lato - b.z) / t - o.vz;
     const k = Math.min(1, CARICO.chiude * 2 / (hyp(rx, rz) || 1)); // rispetto al giocatore non va mai più svelto del doppio di `chiude`
