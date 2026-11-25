@@ -10,6 +10,27 @@
   e ora i movimenti senza palla (partenze col perno, inversioni, frenata dallo scatto: `movimento`/`MOVI`).
 - Piedi piantati (src/grafica/piedi.js, IK a due ossa), si spegne a qualità ≥2.
 
+## Pallone al piede (richiesta di Alex del 25/11): conduzione, calci, contrasti
+Alex: «calibrare bene il pallone quando è attaccato al piede; guarda come si muove anche quando viene calciato o c'è un
+intervento». Misurato su una partita registrata (seme 7, 200 s) con `scripts/prove/registra.cjs` e un'analisi apposta
+(piede più vicino al pallone nell'istante in cui il pallone accelera in avanti; il «piede» è la caviglia, quindi
+circa 20 cm è il contatto giusto: è quello dei calci, che il pallone al piede lo portano già).
+- **Conduzione: FATTO il tocco col piede.** Prima la fisica spingeva il pallone quando decideva lei e il gesto provava a
+  indovinare l'istante: piede a 41 cm in mediana, metà dei tocchi oltre 40 cm, 13 spinte senza nessun gesto e 9 nei
+  cambi di direzione col piede a un metro. Ora la spinta parte quando il piede della clip arriva sul pallone
+  (`o.tocca`, `avviaTocco`, `guidaTocco` in `src/game.js`; `modo` di `FIS.conduci` in `src/fisica/pallone.js`) e
+  nell'ultimo decimo di secondo il pallone va dove lo colpisce la clip (`GESTI[nome].palla`), senza scivolare più
+  svelto di `COND.guida`. Dopo: 28 cm in mediana, 10 tocchi su 63 oltre 40 cm, nessuno nei cambi di direzione. Di
+  riflesso anche i calci: col piede oltre 55 cm da 14 a 4 (due sono rimesse con le mani), senza gesto da 9 a 1.
+  Effetto sul gioco, 16 partite (semi 7 e 15): tiri da 7,0 a 9,25, gol da 2,4 a 2,6, **contrasti vinti da 2,2 a 1,1**
+  (il pallone più vicino al piede si ruba meno), nessuna anomalia. Da ritarare nel passo dei contrasti.
+- **Da chiedere ad Alex**: quanto deve stare lontano il pallone in conduzione. Oggi in corsa normale (4,5-6 m/s) sta a
+  circa 1 m davanti al corpo (fino a 1,6) con un tocco ogni 0,9 s; camminando a 30-70 cm.
+- **Da fare: contrasti.** Il contrasto in piedi (`contacts` in `src/game.js`) dà il pallone al difensore che è entro
+  1,15 m senza nessun gesto: il pallone cambia padrone da lontano. Va fatto col gesto e col piede sul pallone, e
+  ritarata la frequenza (già sotto l'obiettivo, 4-30 a partita).
+- **Da fare: calci rimasti col piede lontano.** Il «calcia» (tiro non forte) con il pallone ancora lontano o in aria.
+
 ## Piano "fluido come DLS" (deciso con Alex il 20/11, una PR per punto)
 1. Animazioni di passaggio senza palla — FATTO (PR #53).
 2. Portiere completo — FATTO: pallone al petto, rialzarsi col pallone, prese per altezza (tuffi in 6 zone c'erano già).
