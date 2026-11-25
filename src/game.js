@@ -2147,6 +2147,12 @@ function traLeMani(p) {
   L.getWorldPosition(_mL); R.getWorldPosition(_mR); const fx = Math.sin(f.vdir ?? p.dir) * .12, fz = Math.cos(f.vdir ?? p.dir) * .12;
   return { x: (_mL.x + _mR.x) / 2 + fx, y: Math.max(BR, (_mL.y + _mR.y) / 2), z: (_mL.z + _mR.z) / 2 + fz };
 }
+/** Quanto è lontano il punto x, y, z dalla mano più vicina del portiere, se la sua posa è aggiornata; se no null. */
+function manoVicina(p, x, y, z) {
+  const f = p.fig, L = f.bones && f.bones.hand_l, R = f.bones && f.bones.hand_r; if (!L || !R || !(G.t - (f.posaT || -9) < .15)) return null;
+  L.getWorldPosition(_mL); R.getWorldPosition(_mR);
+  return Math.min(Math.hypot(_mL.x - x, _mL.y - y, _mL.z - z), Math.hypot(_mR.x - x, _mR.y - y, _mR.z - z));
+}
 /** Durante il lancio con le mani il pallone sta nella mano che lancia (la destra, nella clip): sulle nocche, verso le dita. */
 function nellaMano(p) {
   const f = p.fig, H = f.bones && f.bones.hand_r, K = f.bones && f.bones.middle_01_r; if (!H || !K || !(G.t - (f.posaT || -9) < .15)) return null;
@@ -2281,7 +2287,14 @@ function contacts(dt) {
       presaPortiere(p, b.y); return gain(p);
     }
     if (gk && sp > 13 && tiro && G.lastKicker && G.lastKicker.team !== p.team) {
-      if (p.saveId === G.shotId) return; p.saveId = G.shotId;
+      if (p.saveId === G.shotId) return;
+      // nel gesto della parata il pallone si tocca con le mani: si aspetta che ci arrivi, o che smetta di avvicinarsi
+      const mano = manoVicina(p, b.x, b.y, b.z), poi = mano === null ? null : manoVicina(p, b.x + b.vx * dt, b.y + b.vy * dt, b.z + b.vz * dt);
+      const gestoParata = mano !== null && /^(para_|presa_)/.test(p.fx || '');
+      if (gestoParata && mano > PARATA.mani && poi < mano) return;
+      p.saveId = G.shotId;
+      // la mano gli passa lontano: il pallone prosegue
+      if (gestoParata && mano > PARATA.manca) { p.cool = .6; return; }
       // la parata dipende da quanto il pallone passa lontano dal corpo (rispetto a dove arriva tuffandosi), da quanto è veloce e alto
       const rx = b.x - p.x, rz = b.z - p.z, tv = Math.max(0, -(rx * b.vx + rz * b.vz) / (sp * sp || 1)), passa = hyp(rx + b.vx * tv, rz + b.vz * tv); // dove il pallone gli passa più vicino
       const raggio = p.st === 'dive' ? 2 : 1.3, lontano = clamp(passa / raggio, 0, 1), s2 = p.team.side;
