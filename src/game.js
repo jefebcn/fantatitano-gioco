@@ -733,7 +733,10 @@ function makeSkinned(kit, seed, num, clubId, nome, opz = {}) {
   const sh = new T.Mesh(GEO.shadow, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; sh.scale.setScalar(1); root.add(sh);
   const mixer = new T.AnimationMixer(obj), A = {}, w = {};
   const base = { idle: MODEL.fx.idle, walk: MODEL.fx.walk, run: MODEL.fx.run, jog: MODEL.fx.jog, esulta: MODEL.fx.esulta, gkIdle: kit.gloves ? MODEL.fx.gkIdle : null, passoS: MODEL.fx.passoS, passoD: MODEL.fx.passoD }; // i passi laterali servono anche a chi difende guardando la palla
-  for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = rnd(base[n].duration); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; w[n] = n === 'idle' ? 1 : 0; }
+  // da dove parte ogni andatura dipende solo da chi è il giocatore: col numero casuale comune cambiava con le cose già
+  // preparate nella partita prima (divise, capelli), e con la posa cambiava la partita, che entra nel gioco (mani, piedi)
+  const fase = generatore(seed % 2147483000 + 1); fase();
+  for (const n in base) if (base[n]) { const a = mixer.clipAction(base[n]); a.play(); a.time = fase() * base[n].duration; a.setEffectiveWeight(n === 'idle' ? 1 : 0); A[n] = a; w[n] = n === 'idle' ? 1 : 0; }
   if (kit.gloves && MODEL.braccia) { const a = mixer.clipAction(MODEL.braccia); a.play(); a.setEffectiveWeight(0); A.braccia = a; w.braccia = 0; }
   const fig = { root, body, mixer, A, bones, w, act: null, old: null, fxW: 0, oldW: 0, skinned: true, sporco: u.uSporco.value, alt, metri, vicini, ombra: sh, dettagli: true, lod, lodOra: 0 };
   FIGURE.add(fig); return fig;
@@ -2151,17 +2154,8 @@ function traLeMani(p) {
 }
 /** Quanto è lontano il punto x, y, z dalla mano più vicina del portiere, se la sua posa è aggiornata; se no null. */
 function manoVicina(p, x, y, z) { return ossoVicino(p, 'hand_l', 'hand_r', x, y, z); }
-/**
- * Quanto è lontano il punto x, y, z dal piede che ferma il pallone: il punto dove lo tocca la clip dello stop in corso
- * (GESTI[nome].palla), o quello dello stop dritto se il gesto non è ancora partito. Si calcola dalla simulazione e non
- * dalle ossa del piede: la posa disegnata cambia di qualche decimo di millimetro da una partita all'altra e la partita
- * rigiocata non finiva più uguale.
- */
-function piedeVicino(p, x, y, z) {
-  const c = GESTI[/^stop/.test(p.fx || '') ? p.fx : 'stop'], q = c && c.palla; if (!q) return null;
-  const alt = p.fig.alt || 1, ux = Math.sin(p.dir), uz = Math.cos(p.dir), av = q[2] * alt, lato = /^stop/.test(p.fx || '') ? q[0] * alt : 0;
-  return Math.hypot(p.x + ux * av + uz * lato - x, q[1] * alt - y, p.z + uz * av - ux * lato - z);
-}
+/** Quanto è lontano il punto x, y, z dal piede più vicino, se la posa è aggiornata; se no null. */
+function piedeVicino(p, x, y, z) { return ossoVicino(p, 'foot_l', 'foot_r', x, y, z); }
 function ossoVicino(p, sx, dx, x, y, z) {
   const f = p.fig, L = f.bones && f.bones[sx], R = f.bones && f.bones[dx]; if (!L || !R || !(G.t - (f.posaT || -9) < .15)) return null;
   L.getWorldPosition(_mL); R.getWorldPosition(_mR);
