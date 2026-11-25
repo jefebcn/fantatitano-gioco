@@ -236,6 +236,15 @@ export const ANDATURA = { morta: .15, cammina: .3, corsetta: .62, piena: .78 };
 // Senza palla: «Pressing» (tasto B tenuto) porta il giocatore addosso al portatore, puntando dove sarà fra `anticipo`
 // secondi; a meno di `vicino` metri rallenta e prova il contrasto in piedi. «Calcio forte» è una scivolata verso la levetta
 export const PRESSIONE = { anticipo: .25, vicino: 1.6 };
+// Contrasto in piedi col gesto (richiesta di Alex del 25/11: il pallone non deve cambiare padrone da lontano). Quando il
+// difensore prova l'intervento parte la clip (da fermo, di lato, in corsa, in scatto) e l'esito si decide nel fotogramma
+// in cui il piede arriva: riesce se il pallone è a meno di `portata` metri dalla gamba, dal corpo al punto dove la clip
+// colpisce. Se va a vuoto il difensore non riprova per `manca` secondi. `lato`: gradi oltre cui il pallone è di lato,
+// e da fermo l'intervento è laterale. `fermo` e `scatto`: m/s sotto cui l'intervento è da fermo e sopra cui è in scatto.
+// `prova`: a meno di tanti metri dal pallone il difensore può tentare l'intervento. Parte solo se dove sarà il pallone
+// all'arrivo del piede è entro `portata` per `mira` dalla gamba: se no aspetta il momento buono. `ritmo`: quanti tentativi
+// in più di prima, quando il pallone passava subito senza gesto
+export const CONTRASTO = { portata: .45, manca: .6, lato: 55, fermo: 2, scatto: 5, prova: 1.4, mira: .8, ritmo: 4 };
 // Passaggio (Calcio basso), da confermare con DLS: con `assistito` va al compagno nella direzione della levetta e la durata
 // della pressione cambia solo un po' la velocità (± `dosa`, da un tocco a tutta carica). Senza, la potenza decide anche quanto
 // lontano si passa (DIST)

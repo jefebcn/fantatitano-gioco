@@ -24,7 +24,7 @@ import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { PRATO, NOTTURNA, STADI, PRESENTA, DIVISE, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { PRATO, NOTTURNA, STADI, PRESENTA, CONTRASTO, DIVISE, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -2200,8 +2200,43 @@ function moveBall(dt) {
     if (Math.abs(b.x) > HL + 3) { b.x = sgn(b.x) * (HL + 3); b.vx = 0; } // sicurezza: oltre la sacca della rete non si va
   }
 }
+/** Quanto dista il pallone (x, z) dalla gamba del contrasto: dal corpo (dx, dz) al punto dove la clip colpisce, guardando verso dir. */
+function gambaContrasto(dx, dz, dir, palla, alt, x, z) {
+  const ux = Math.sin(dir), uz = Math.cos(dir), av = palla[2] * alt, la = palla[0] * alt, px = ux * av + uz * la, pz = uz * av - ux * la;
+  const t = clamp(((x - dx) * px + (z - dz) * pz) / (px * px + pz * pz || 1), 0, 1);
+  return hyp(dx + px * t - x, dz + pz * t - z);
+}
+/**
+ * Contrasto in piedi col gesto (CONTRASTO in src/config.js): parte la clip e `esito` si decide quando il piede arriva.
+ * Parte solo se in quel momento il pallone, dove sarà, è a portata della gamba: se no ritorna false e si riprova dopo.
+ * Senza clip (figure senza animazioni) l'esito è subito, come prima.
+ */
+function avviaContrasto(d, own, esito) {
+  const b = G.ball, C = CONTRASTO, v = hyp(d.vx, d.vz), vr = v / (d.fig.alt || 1), alt = d.fig.alt || 1;
+  const a = giroVerso(d.dir, Math.atan2(b.x - d.x, b.z - d.z)), sinistra = a > 0, lato = Math.abs(a) * 180 / Math.PI > C.lato && v < C.fermo;
+  const base = lato ? 'contrasto_lato' : v < C.fermo ? 'contrasto_fermo' : vr > C.scatto ? 'contrasto_scatto' : 'contrasto', nome = base + (sinistra ? '_sx' : ''), i = GESTI[nome];
+  if (!i || !i.palla || !d.fig.skinned || !hasFx(nome)) { esito(); return true; }
+  if (!libero(d)) return false;
+  // dove saranno pallone e difensore quando il piede arriva; davanti si gira verso il pallone, di lato allunga la gamba
+  const fra = i.tocco / ritmoGesto(i, vr), bx = b.x + b.vx * fra, bz = b.z + b.vz * fra, dx = d.x + d.vx * fra, dz = d.z + d.vz * fra;
+  const dir = lato ? d.dir : Math.atan2(bx - dx, bz - dz);
+  if (gambaContrasto(dx, dz, dir, i.palla, alt, bx, bz) > C.portata * C.mira) return false;
+  d.dir = dir;
+  if (!gesto(d, nome, fra)) return false;
+  d.contrasto = { quando: G.t + fra, chi: own, esito, palla: i.palla }; d.cool = Math.max(d.cool, fra + .05);
+  return true;
+}
+/** Il piede del contrasto è arrivato: riesce se il pallone è ancora del portatore e vicino alla gamba (dal corpo al punto del contatto). */
+function piedeContrasto(d) {
+  const c = d.contrasto, b = G.ball; d.contrasto = null;
+  if (b.owner !== c.chi || G.state !== 'play') return;
+  const dist = gambaContrasto(d.x, d.z, d.dir, c.palla, d.fig.alt || 1, b.x, b.z);
+  if (dist < CONTRASTO.portata) c.esito(); else d.cool = Math.max(d.cool, CONTRASTO.manca);
+}
 function contacts(dt) {
   const b = G.ball, own = b.owner;
+  // i contrasti partiti: quando il piede arriva si vede se ha preso il pallone
+  for (const p of all()) if (p.contrasto && G.t >= p.contrasto.quando - dt / 2) piedeContrasto(p);
   if (!own) {
     const sp = hyp(b.vx, b.vz); let best = null, bd = 9;
     for (const p of all()) {
@@ -2268,24 +2303,36 @@ function contacts(dt) {
     const db = hyp(d.x - b.x, d.z - b.z); if (db > .9 || db > lontana - .15) continue;
     const forza = userDrives(d) ? 1.3 : (d.team.human ? MATE.steal : G.diff.steal) / 1.25, rapporto = clamp(URTO.forza(d) / URTO.forza(own), .4, 1.6); // chi è più forte copre la palla col corpo
     if (rnd() > rapporto * rapporto * .8) { d.cool = .5; continue; } // il portatore lo tiene lontano col corpo
-    if (rnd() < .5 * forza) { own.cool = .5; G.lastPass = null; gain(d); d.s.tk++; AU.calcio(7, 'tocco'); if (own.i) sbilancia(own, d); return; } // la prende lui
-    b.owner = null; const k = 4 + rnd(3); b.vx = (b.x - d.x) / (db || 1) * k + rnd(-1.5, 1.5); b.vz = (b.z - d.z) / (db || 1) * k + rnd(-1.5, 1.5); b.vy = rnd(.5); // la tocca via: palla contesa
-    d.cool = .3; own.cool = .3; G.lastTouch = d; G.lastPass = null; G.offs = null; AU.calcio(6, 'tocco'); return;
+    // la prende lui o la tocca via (palla contesa): si decide adesso, succede quando il piede arriva sul pallone
+    const prende = rnd() < .5 * forza, k = 4 + rnd(3), ex = rnd(-1.5, 1.5), ez = rnd(-1.5, 1.5);
+    if (!avviaContrasto(d, own, () => {
+      if (prende) { own.cool = .5; G.lastPass = null; gain(d); d.s.tk++; AU.calcio(7, 'tocco'); if (own.i) sbilancia(own, d); return; }
+      const nx = b.x - d.x, nz = b.z - d.z, n = hyp(nx, nz) || 1;
+      b.owner = null; b.vx = nx / n * k + ex; b.vz = nz / n * k + ez; b.vy = rnd(.5);
+      d.cool = .3; own.cool = .3; G.lastTouch = d; G.lastPass = null; G.offs = null; AU.calcio(6, 'tocco');
+    })) continue;
+    return;
   }
   for (const d of own.team.opp.players) {
     if (d.stun > 0 || d.st === 'down' || d.cool > 0) continue;
     const dist = hyp(d.x - b.x, d.z - b.z), dBody = hyp(d.x - own.x, d.z - own.z);
     if (own.i === 0) continue;
     if (d.st === 'slide') continue; // la scivolata la decide scivolate()
-    if (dist < 1.15 || dBody < .95) {
+    if (dist < CONTRASTO.prova || dBody < .95) {
       let r = (userDrives(d) ? 2.6 : (d.team.human ? MATE.steal : G.diff.steal) * (d.i === 0 ? 1.6 : 1)) * clamp(URTO.forza(d) / URTO.forza(own), .6, 1.7); // chi è più forte e fresco vince più contrasti
       const rel = ((d.x - own.x) * fx + (d.z - own.z) * fz) / (dBody || 1), vo = hyp(own.vx, own.vz), vd = hyp(d.vx, d.vz);
       const affiancati = rel > -.6 && rel < .5 && vo > 3 && vd > 3 && (own.vx * d.vx + own.vz * d.vz) / (vo * vd) > .5; // corrono fianco a fianco: la spallata è regolare
       const dietro = rel < (affiancati ? -.6 : .2); if (dietro) r *= .3;
       if (d.i !== 0 && rnd() < FOUL.rate[dietro ? 1 : 0] * (affiancati ? .2 : 1) * dt) return foul(d, own, false, dietro); // spinta o trattenuta
-      if (rnd() < r * dt) {
-        if (rnd() < FOUL.stand[dietro ? 1 : 0] * (d.i === 0 ? .5 : 1) * (affiancati ? .5 : 1)) return foul(d, own, false, dietro);
-        own.stun = .5; own.cool = .8; G.lastPass = null; gain(d); d.s.tk++; AU.calcio(8, 'tocco'); if (own.i) sbilancia(own, d); return;
+      if (rnd() < r * CONTRASTO.ritmo * dt) {
+        // il contrasto parte: fallo o pallone preso si decidono adesso, ma succedono quando il piede arriva (e se il pallone
+        // nel frattempo è scappato, l'intervento va a vuoto)
+        const fallo = rnd() < FOUL.stand[dietro ? 1 : 0] * (d.i === 0 ? .5 : 1) * (affiancati ? .5 : 1);
+        if (!avviaContrasto(d, own, () => {
+          if (fallo) return foul(d, own, false, dietro);
+          own.stun = .5; own.cool = .8; G.lastPass = null; gain(d); d.s.tk++; AU.calcio(8, 'tocco'); if (own.i) sbilancia(own, d);
+        })) continue;
+        return;
       }
     }
   }
