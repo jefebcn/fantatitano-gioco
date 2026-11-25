@@ -275,8 +275,10 @@ export const DIST = { pass: [5, 45], cross: [12, 30], lancio: [15, 40] };
 // `cambio` secondi. La barra della potenza diventa rossa da `rosso` (parte della carica piena). `scala`: grandezza dei segni
 // sopra le teste (parte dell'altezza dello schermo). `grigio`: il segnalino grigio si disegna o no (Alex, 23/11: un solo
 // segnalino, sul giocatore comandato). `largo`: la parte della larghezza del suo riquadro che un nome occupa: il nome
-// dell'avversario col pallone si nasconde quando finirebbe sopra quello del giocatore comandato.
-export const SEGNI = { x: 1.1, alto: 1.6, cambio: .2, rosso: .8, scala: .12, grigio: false, largo: .8 };
+// dell'avversario col pallone si nasconde quando finirebbe sopra quello del giocatore comandato. `sopra`: metri tra la
+// testa e la punta del segnalino verde. Prima la punta stava più in alto di un pezzo fisso di schermo: col giocatore
+// lontano sembrava staccata e attaccata ai cartelloni, nel video di Alex del 25/11. In Dream League sta a mezzo metro
+export const SEGNI = { x: 1.1, alto: 1.6, cambio: .2, rosso: .8, scala: .12, grigio: false, largo: .8, sopra: .45 };
 // Secondi tra l'inizio del gesto e il momento in cui il piede colpisce il pallone (passaggio, tiro, lancio).
 // In conduzione il pallone sta fino a un metro e mezzo davanti: il calcio aspetta che il piede ci arrivi. Dove il piede
 // lo colpisce lo dice la clip del gesto. Per i gesti che non lo dicono: `portata` metri davanti al corpo e `lato` metri

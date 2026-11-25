@@ -109,7 +109,8 @@ export function creaRegia(X) {
   // quello grigio sul compagno che si prenderebbe con «Cambia giocatore» si accende solo con SEGNI.grigio.
   const tela2 = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; return [c, c.getContext('2d'), t]; };
   const sprite = (t, cy) => { const s = new Sprite(new SpriteMaterial({ map: t, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false })); s.center.set(.5, cy); s.renderOrder = 50; s.visible = false; scene.add(s); return s; };
-  const [pc, px, ptex] = tela2(256, 160), pin = sprite(ptex, 4 / 160);
+  // il punto di ancoraggio del segnalino è la punta della goccia, 22 pixel sopra il fondo della tela (vedi pinNome)
+  const [pc, px, ptex] = tela2(256, 160), pin = sprite(ptex, 22 / 160);
   const [ac, ax, atex] = tela2(256, 48), pinAvv = sprite(atex, 0);
   const [gc, gx, gtex] = tela2(64, 80), pinGrigio = sprite(gtex, 2 / 80);
   const nomeCorto = (p) => { let n = p.name.length <= 13 ? p.name : p.name.split(' ').slice(-1)[0]; if (n.length > 13) n = n.slice(0, 12) + '.'; return n; };
@@ -153,7 +154,7 @@ export function creaRegia(X) {
     const sc = cam.aspect < 1 ? SEGNI.scala * .55 : SEGNI.scala;
     const c = G.ctrl, b = G.ball, h = 2 * Math.tan(cam.fov * Math.PI / 360) * sc, on = !!G.segno && !cine;
     pin.visible = on && !!c;
-    if (pin.visible) { pinNome(c, X.potenza()); pin.scale.set(h * 2, h * 1.25, 1); sopraTesta(pin, c, .3 + Math.sin(G.t * 6) * .05); }
+    if (pin.visible) { pinNome(c, X.potenza()); pin.scale.set(h * 2, h * 1.25, 1); pin.position.set(c.x, ((c.fig && c.fig.metri) || 1.8) + SEGNI.sopra + Math.sin(G.t * 6) * .03, c.z); }
     const o = b && b.owner; pinAvv.visible = on && !!o && o.team !== G.teams[0] && G.state === 'play';
     if (pinAvv.visible) { nomeAvv(o); pinAvv.scale.set(h * 2, h * .375, 1); sopraTesta(pinAvv, o, .35); if (pin.visible && sopraIlNome(sc)) pinAvv.visible = false; }
     const g = G.prossimo; pinGrigio.visible = SEGNI.grigio && on && !!g && g !== c && G.state === 'play';
