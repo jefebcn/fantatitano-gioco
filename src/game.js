@@ -1409,8 +1409,8 @@ function switchCtrl() { const m = migliorDifensore(G.teams[0], G.ctrl); if (m) {
 
 /* comandi dell'utente */
 /** La levetta nel verso del campo. In gioco la telecamera guarda sempre dalla stessa parte e levetta e campo coincidono;
-    con un'inquadratura girata che lo chiede (`gira`: il calcio d'angolo, da dietro chi batte) la levetta segue lo schermo:
-    in su è dove guarda la telecamera, cioè verso l'area. */
+    con un'inquadratura girata che lo chiede (`gira`: calcio d'angolo, rigore e punizione con la barriera, da dietro chi
+    batte) la levetta segue lo schermo: in su è dove guarda la telecamera, cioè verso l'area o la porta. */
 function inputWorld() {
   const q = G.inquadra, jx = G.in.jx, jy = G.in.jy; if (!q || !q.gira) return [jx, jy];
   const fx = q.l[0] - q.p[0], fz = q.l[2] - q.p[2], d = hyp(fx, fz) || 1, ux = fx / d, uz = fz / d;
@@ -2608,7 +2608,8 @@ function mettiPalla(x, y, z) {
   ballShadow.position.set(x, .04, z); ballShadow.scale.setScalar(k * O[0] * (1 + su * O[2])); ballShadow.material.opacity = Math.max(O[4], O[1] / (1 + su * O[3]));
 }
 // Inquadrature dei piazzati, finché non si calcia: angolo dall'alto alle spalle della bandierina verso l'area, punizione da
-// dietro il pallone verso la porta, rigore alle spalle di chi tira. null quando si gioca.
+// dietro il pallone verso la porta, rigore alle spalle di chi tira. null quando si gioca. In tutte e tre la levetta segue
+// lo schermo (`gira`), come in Dream League (risposta di Alex del 25/11): in su è verso la porta, di lato è il palo scelto.
 function inquadratura() {
   const b = G.ball, fk = G.fk; if (!b || !fk || !(G.state === 'restart' || G.attesa) || REGIA.figure()) return null;
   // calcio d'angolo: dietro chi batte, sulla linea che va dal punto dell'area al pallone. `gira`: la levetta segue lo schermo
@@ -2616,8 +2617,8 @@ function inquadratura() {
     const A = ANGOLO_CAM, sx = sgn(b.x), sz = sgn(b.z), dx = b.x - sx * (HL - A.mira[0]), dz = b.z - sz * A.mira[1], d = hyp(dx, dz) || 1, ux = dx / d, uz = dz / d;
     return { p: [b.x + ux * A.dietro, A.alto, b.z + uz * A.dietro], l: [b.x - ux * A.avanti, 0, b.z - uz * A.avanti], fov: A.fov, gira: true };
   }
-  if (fk.pen) { const s = sgn(b.x); return { p: [b.x - s * 10, 4.2, b.z * .3], l: [s * HL, 0, 0], fov: 30 }; }
-  if (fk.wall || fk.direct) { const t = G.next, gx = t ? t.side * HL : sgn(b.x) * HL, dx = b.x - gx, dz = b.z, d = hyp(dx, dz) || 1; return { p: [b.x + dx / d * 10, 5, b.z + dz / d * 10], l: [gx, 0, 0], fov: 34 }; }
+  if (fk.pen) { const s = sgn(b.x); return { p: [b.x - s * 10, 4.2, b.z * .3], l: [s * HL, 0, 0], fov: 30, gira: true }; }
+  if (fk.wall || fk.direct) { const t = G.next, gx = t ? t.side * HL : sgn(b.x) * HL, dx = b.x - gx, dz = b.z, d = hyp(dx, dz) || 1; return { p: [b.x + dx / d * 10, 5, b.z + dz / d * 10], l: [gx, 0, 0], fov: 34, gira: true }; }
   return null;
 }
 const VISTA_ALTO = /[?&]alto\b/.test(location.search);

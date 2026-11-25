@@ -168,14 +168,14 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Passaggi: restano così, se ne riparla dopo averci giocato.
 - Cronometro: FATTO per il calcio d'inizio dei due tempi (fermo a 00:00 e a 45:00 finché non si batte:
   `G.inizioTempo` in `src/game.js`, controllato da `scripts/prove/riprese.cjs`). Sulle altre riprese va ancora, più
-  piano (`RITMO.fermo`): chiesto ad Alex se fermarlo anche lì.
+  piano (`RITMO.fermo`: 3,5 volte il tempo vero contro 22,5 in gioco). Alex il 25/11: «anche le altre, ma non
+  totalmente fermo»: è già così, resta com'è. Punto chiuso.
 - Calcio d'angolo e rimessa laterale: FATTO. Dissolvenza scura e stacco sul punto di battuta; a metà, a schermo nero,
   ognuno viene messo al suo posto (`piazzaFermi` in `src/game.js`), poi si batte: comandi dopo 2 s (prima 10,5 s
   sull'angolo e 5,2 s sulla rimessa), il computer dopo 3. La dissolvenza ora segue il tempo di gioco (`buio`), così il
   nero coincide con lo spostamento anche se il telefono rallenta. `scripts/prove/riprese.cjs` controlla i 3 s e che
   dopo lo stacco nessuno salti da un punto all'altro.
-  Da chiedere ad Alex: com'è inquadrato l'angolo in Dream League (oggi dal lato lontano la telecamera guarda al
-  contrario di quella di gioco, e la levetta risulta girata).
+  La telecamera dell'angolo va bene così (Alex, 25/11).
 - Lanci lunghi: FATTO. La telecamera sale col pallone in volo, che resta sotto `CAMERA.cielo` (altezza dello schermo).
 - Alone bianco sul bordo sinistro: FATTO. Erano ancora i riflessi dei quattro faretti d'angolo sull'erba: ora sono
   spenti (`NOTTURNA.faretti` a 0); la luce dall'alto resta uguale.
@@ -191,8 +191,11 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   `FERMI.uscita` secondi (`G.fantasma`, solo disegno), la rete da fuori si muove solo se toccata (`Porta.urtaFuori`), il
   replay parte dopo e lo mostra uscire. Da chiedere ad Alex se era questo, o se il tabellone aveva segnato il gol.
 - Calcio d'angolo: FATTO. Telecamera bassa dietro chi batte (`ANGOLO_CAM`), si vedono lui, bandierina, area e porta; la
-  levetta segue lo schermo (in su è verso l'area), anche dall'angolo sul lato lontano. Da chiedere se in Dream League
-  rigore e punizione hanno la levetta allo stesso modo (oggi no).
+  levetta segue lo schermo (in su è verso l'area), anche dall'angolo sul lato lontano.
+- Levetta su rigore e punizione: FATTO (Alex il 25/11: in Dream League è come sull'angolo). Anche lì segue lo schermo
+  (`gira` in `inquadratura`, `src/game.js`): in su è verso la porta, a destra e a sinistra si sceglie il palo. Vale per
+  il rigore, per i calci di rigore finali e per la punizione con la barriera; le altre punizioni restano con la
+  telecamera di gioco. `scripts/prove/rigori.cjs` lo controlla nei due tempi.
 - Divise troppo simili: FATTO. Oltre alla distanza di colore, le due maglie devono differire in chiarezza di almeno
   `DIVISE.chiaro` (una chiara e una scura): gli ospiti passano alla seconda maglia, poi bianca o nera. Prima 147 coppie
   su 240 avevano maglie chiare quasi uguale (rosso contro blu, verde contro blu). `scripts/prove/divise.cjs` lo controlla.
@@ -263,6 +266,7 @@ con `&alto` per la vista dall'alto e `&fps` per il contatore dei fotogrammi al s
   conca, come ha chiesto Alex: da più lontano la foschia lo sbiadisce (la nebbia di giorno parte a 130 m).
 - **Stadio nei replay dei gol**: il replay basso di lato lo mostrava già; quello da dietro la porta è stato abbassato e
   allargato (`RIVEDI.porta`), così sopra la porta resta la tribuna di fronte invece della sola erba.
+- Monte Titano sullo sfondo del grande: resta com'è, Alex non lo vuole più in vista (25/11).
 - I riflessi dell'ambiente di notte (`src/grafica/resa.js`) usano ancora i fari dello stadio costruito all'avvio.
 
 ## Prova di Alex su iPhone (21/11): punti in ordine
