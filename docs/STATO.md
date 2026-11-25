@@ -24,8 +24,16 @@ circa 20 cm è il contatto giusto: è quello dei calci, che il pallone al piede 
   riflesso anche i calci: col piede oltre 55 cm da 14 a 4 (due sono rimesse con le mani), senza gesto da 9 a 1.
   Effetto sul gioco, 16 partite (semi 7 e 15): tiri da 7,0 a 9,25, gol da 2,4 a 2,6, **contrasti vinti da 2,2 a 1,1**
   (il pallone più vicino al piede si ruba meno), nessuna anomalia. Da ritarare nel passo dei contrasti.
-- **Da chiedere ad Alex**: quanto deve stare lontano il pallone in conduzione. Oggi in corsa normale (4,5-6 m/s) sta a
-  circa 1 m davanti al corpo (fino a 1,6) con un tocco ogni 0,9 s; camminando a 30-70 cm.
+- **Distanza del pallone in conduzione: tarata sul video di Dream League di Alex (25/11).** Misurato nel video (scala:
+  le strisce dell'erba, circa 5,2 m, verificate col cerchio di centrocampo e col pallone): in corsa il pallone sta a
+  0,8-1 m davanti ai piedi, a 25-35 cm quando viene toccato, un tocco ogni 0,4-0,6 s; chi conduce va a circa 5 m/s in
+  campo aperto, 3 m/s col difensore addosso; chi lo insegue a 4-6 m/s. Da noi il pallone arrivava a 1,5-1,6 m con un
+  tocco ogni 0,9-1,1 s: `COND.passo` da 1,22 a 1,12 e `passoScatto` da 1,3 a 1,2. Dopo, in corsa: 0,77 m in mediana,
+  9 su 10 sotto 1,17 m, un tocco ogni 0,55 s. Le velocità (`VELOCITA`, `RITMO.conduzione`) sono già in linea col video
+  entro il margine della misura (circa 20%): non cambiate. Gioco, 32 partite: nessuna anomalia, contrasti vinti da
+  1,13 a 1,38, passaggi in avanti riusciti da 9,9 a 11,0, tiri da 8,0 a 7,7, gol da 2,34 a 1,97 (al limite del
+  rumore: da tenere d'occhio, l'obiettivo è 4-6). La prova 8 di `scripts/prova-fisica.mjs` voleva il pallone oltre
+  0,9 m a 7 m/s: soglia portata a 0,7 m (incollato vorrebbe dire sotto la suola, 0,55 m).
 - **Contrasti in piedi: FATTO col gesto.** Prima il pallone passava al difensore entro 1,15 m senza nessun gesto. Ora
   quattro clip di GameplayFootball (`interfere`: da fermo davanti e di lato, in corsa allungando la gamba, in scatto,
   col destro e col sinistro, `contrasto*` in `public/anim-gf.js`, aggiunte con `scripts/gfootball.mjs` senza rigenerare
