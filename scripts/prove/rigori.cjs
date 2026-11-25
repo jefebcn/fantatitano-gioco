@@ -1,6 +1,6 @@
 /* Rigori fischiati a comando, sei volte e con i giocatori sparsi per il campo: chi lo batte e gli altri devono arrivare al
    loro posto correndo (nessuno può spostarsi più di 60 cm in un fotogramma), il tiro deve partire entro 16 secondi e il
-   gioco riprendere. Uso: npm run build && node scripts/prove/rigori.cjs (serve Playwright, come partita.cjs). */
+   gioco riprendere. Poi la levetta sui piazzati: su rigore e punizione con la barriera deve seguire lo schermo. Uso: npm run build && node scripts/prove/rigori.cjs (serve Playwright, come partita.cjs). */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
 
@@ -40,7 +40,34 @@ srv.listen(0, async () => {
     }
     return out;
   });
+  // La levetta sui piazzati segue lo schermo (come Dream League): rigore e punizione con la barriera, nei due tempi (si
+  // attacca da una parte e poi dall'altra). Levetta a destra: il tiro va verso la destra dello schermo; a sinistra, a sinistra.
+  const levetta = await pg.evaluate(() => {
+    const g = window.__g, G = g.G, out = [];
+    for (const [nome, tempo, jx] of [['rigore', 1, 1], ['rigore', 1, -1], ['rigore', 2, 1], ['rigore', 2, -1], ['punizione', 1, 1], ['punizione', 1, -1], ['punizione', 2, 1], ['punizione', 2, -1]]) {
+      let sd = 31; Math.random = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+      G.paused = true; G.shown = true; G.t = 0; G.diff = g.DIFF.normale;
+      g.newMatch(window.CLUBS[0], window.CLUBS[6]); G.auto = true;
+      for (let i = 0; i < 300; i++) { g.step(1 / 60); g.draw(1 / 60); }
+      const t = G.teams[0]; if (tempo === 2) for (const q of G.teams) q.side = -q.side;
+      G.auto = false; G.in.jx = G.in.jy = 0;
+      if (nome === 'rigore') g.penalty(t); else g.freeKick(t, t.side * (g.CFG.HL - 22), 4, 'punizione');
+      let n = 0; while (n++ < 20 * 60 && !(G.attesa && G.state === 'play' && G.attesa.chi.team === t)) { g.step(1 / 60); g.draw(1 / 60); }
+      const k = G.attesa && G.attesa.chi, b = G.ball; if (!k) { out.push({ nome, tempo, jx, lato: null }); continue; }
+      // la destra dello schermo nel mondo, dalla telecamera del piazzato
+      const destra = g.cam.position.clone().set(1, 0, 0).applyQuaternion(g.cam.quaternion), gira = !!(G.inquadra && G.inquadra.gira);
+      G.in.jx = jx; g.pressB(true); for (let i = 0; i < 20; i++) { g.step(1 / 60); g.draw(1 / 60); } g.pressB(false);
+      n = 0; while (n++ < 3 * 60 && b.owner === k) { g.step(1 / 60); g.draw(1 / 60); }
+      G.in.jx = 0;
+      out.push({ nome, tempo, jx, gira, lato: b.owner === k ? null : +(b.vx * destra.x + b.vz * destra.z).toFixed(1) });
+    }
+    return out;
+  });
   let male = 0;
+  for (const e of levetta) {
+    const ok = e.lato !== null && e.gira && Math.sign(e.lato) === e.jx; if (!ok) male++;
+    console.log(`${ok ? '✓' : '✗'} levetta a ${e.jx > 0 ? 'destra' : 'sinistra'}, ${e.nome}, ${e.tempo}° tempo: ${e.lato === null ? 'non ha calciato' : `il pallone va a ${e.lato > 0 ? 'destra' : 'sinistra'} dello schermo (${e.lato} m/s)`}`);
+  }
   for (const e of esiti) {
     const ok = e.tiro !== null && e.salto <= .6; if (!ok) male++;
     console.log(`${ok ? '✓' : '✗'} rigore ${e.k + 1}: tiro dopo ${e.tiro === null ? '—' : e.tiro.toFixed(1) + ' s'}, spostamento massimo in un fotogramma ${e.salto} m (${e.chi})`);
