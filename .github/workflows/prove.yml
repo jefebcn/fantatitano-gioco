@@ -41,6 +41,8 @@ jobs:
         run: node scripts/prove/vagante.cjs
       - name: Gli avversari vanno sul portatore di chi gioca (vicino alla metà campo, entro 8 secondi)
         run: node scripts/prove/pressing.cjs
+      - name: Dopo un passaggio il comando resta al compagno che riceve
+        run: node scripts/prove/comando.cjs
       - name: Divise che si distinguono (gli ospiti non hanno addosso il colore della maglia di casa)
         run: node scripts/prove/divise.cjs
       - name: Ponte tra home e partita (una partita avviata da una richiesta, esito alla fine)
