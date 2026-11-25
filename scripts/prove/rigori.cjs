@@ -1,6 +1,6 @@
-/* Rigori fischiati a comando, sei volte e con i giocatori sparsi per il campo: chi lo batte e gli altri devono arrivare al
-   loro posto correndo (nessuno può spostarsi più di 60 cm in un fotogramma), il tiro deve partire entro 16 secondi e il
-   gioco riprendere. Poi la levetta sui piazzati: su rigore e punizione con la barriera deve seguire lo schermo. Uso: npm run build && node scripts/prove/rigori.cjs (serve Playwright, come partita.cjs). */
+/* Rigori fischiati a comando, sei volte e con i giocatori sparsi per il campo: come Dream League tutti vengono messi al
+   loro posto nella dissolvenza scura (Alex, 25/11). Finita la dissolvenza nessuno può più spostarsi di più di 60 cm in un
+   fotogramma, il tiro deve partire entro 6 secondi e il gioco riprendere. Poi la levetta sui piazzati: su rigore e punizione con la barriera deve seguire lo schermo. Uso: npm run build && node scripts/prove/rigori.cjs (serve Playwright, come partita.cjs). */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
 
@@ -30,7 +30,8 @@ srv.listen(0, async () => {
       for (let n = 1; n <= 16 * 60 && !tiro; n++) {
         const st = G.state; g.step(1 / 60); g.draw(1 / 60);
         for (const p of G.teams[0].players.concat(G.teams[1].players)) {
-          const pp = prima.get(p), d = pp ? hyp(p.x - pp[0], p.z - pp[1]) : 0;
+          // nella dissolvenza scura lo spostamento non si vede: conta da quando finisce
+          const pp = prima.get(p), d = pp && n / 60 > g.FERMI.buio ? hyp(p.x - pp[0], p.z - pp[1]) : 0;
           if (d > salto) { salto = d; chi = p.name; }
           prima.set(p, [p.x, p.z]);
         }
@@ -69,7 +70,7 @@ srv.listen(0, async () => {
     console.log(`${ok ? '✓' : '✗'} levetta a ${e.jx > 0 ? 'destra' : 'sinistra'}, ${e.nome}, ${e.tempo}° tempo: ${e.lato === null ? 'non ha calciato' : `il pallone va a ${e.lato > 0 ? 'destra' : 'sinistra'} dello schermo (${e.lato} m/s)`}`);
   }
   for (const e of esiti) {
-    const ok = e.tiro !== null && e.salto <= .6; if (!ok) male++;
+    const ok = e.tiro !== null && e.tiro <= 6 && e.salto <= .6; if (!ok) male++;
     console.log(`${ok ? '✓' : '✗'} rigore ${e.k + 1}: tiro dopo ${e.tiro === null ? '—' : e.tiro.toFixed(1) + ' s'}, spostamento massimo in un fotogramma ${e.salto} m (${e.chi})`);
   }
   if (errori.length) console.log('Errori nella pagina:', [...new Set(errori)].slice(0, 5));
