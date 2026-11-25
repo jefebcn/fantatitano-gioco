@@ -1619,7 +1619,7 @@ function chase(p, own, dt) {
     const go = threat < DEF.danger + (t.ment < 0 ? MENT.guard : 0) || t.jT > D.wait * (1 - MENT.press * Math.max(t.ment, 0)) || own.stun > 0 || (c && hyp(c.x - own.x, c.z - own.z) < 5.5);
     if (!go) { p.tx = own.x + own.vx * .3 + ux * DEF.hold; p.tz = own.z + own.vz * .3 + uz * DEF.hold; p.jock = true; return; }
   }
-  p.tx = own.x + own.vx * .25 + (gx - own.x) * .05; p.tz = own.z + own.vz * .25 - own.z * .04; p.sprint = d > 3 || beaten;
+  p.tx = own.x + own.vx * .25 + ux * DEF.porta; p.tz = own.z + own.vz * .25 + uz * DEF.porta; p.sprint = d > 3 || beaten;
 }
 /** Palla ferma: dove va ciascuno (chi batte sul pallone, la barriera, i posti sull'angolo e sul rigore, gli altri al loro
     posto di formazione, gli avversari alla distanza giusta). L'andatura la decide corri: al passo, senza scatto. */
@@ -1665,7 +1665,7 @@ function think(p, dt) {
   } else if (own.team !== t) {
     // NON POSSESSO. Pressing: da dove si va sul portatore lo decide la mentalità (offensiva ovunque e in due, equilibrata
     // dalla metà campo, difensiva solo vicino alla propria area); più in là il primo uomo lo accompagna a distanza senza buttarsi
-    const gx = -s * HL, bxT = own.x * s, pressa = t.ment > 0 || (t.ment < 0 ? bxT < -10 : bxT < PRESSING.da);
+    const gx = -s * HL, bxT = own.x * s, pressa = t.ment > 0 || (t.ment < 0 ? bxT < -10 : bxT < (userDrives(own) ? PRESSING.utente : PRESSING.da));
     p.stato = 'posizione';
     if (p === t.chaser && (!t.human || G.auto || t.chaserD < 15)) {
       if (pressa || t.chaserD < 4) { p.stato = 'pressing'; return chase(p, own, dt); }

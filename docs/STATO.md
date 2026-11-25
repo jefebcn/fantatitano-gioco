@@ -50,6 +50,20 @@ circa 20 cm è il contatto giusto: è quello dei calci, che il pallone al piede 
   nessuna più contrasti, alcune meno. Scelto `PRESSING.da` 10: il primo uomo va sul portatore anche nei primi 10 m
   della metà avversaria, non solo dalla metà campo. 32 partite: nessuna anomalia, portatore libero dal 43% al 40%,
   contrasti vinti da 1,38 a 1,47, falli da 0,56 a 0,81, tiri da 7,7 a 6,8, gol da 1,97 a 2,16.
+- **Avversari che vanno sul pallone: CORRETTO** (video di Alex del 25/11 sera: «gli avversari non attaccano mai il
+  pallone», «deve funzionare come Dream League»). Due cause. Col pallone nella metà di chi attacca il primo uomo lo
+  accompagnava a 6,5 m e basta: ora, se il portatore è il giocatore comandato da chi gioca, il computer va sul pallone
+  in tutto il campo (`PRESSING.utente`). E chi andava sul pallone non puntava il portatore ma un punto spostato verso la
+  propria porta del 5% della distanza dalla porta, tre metri a metà campo: il difensore restava lì e non arrivava mai
+  (`chase` in `src/game.js`). Ora lo spostamento è fisso, `DEF.porta` 0,8 m. Era questa la causa dei pochi contrasti
+  (il difensore a portata solo l'1,5% del tempo). Prova del video, portatore di lato vicino a metà campo: prima nessun
+  intervento in 8 s, avversario fermo a 6-7 m; dopo un intervento in tutte le prove (`scripts/prove/pressing.cjs`, ora
+  anche nella CI). 32 partite computer contro computer: contrasti vinti da 1,47 a 3,97, falli da 0,81 a 1,84, tiri da
+  6,8 a 8,3, possessi da 25 a 29, gol 2,2 uguali, nessuna anomalia.
+- **Altri problemi del video, confermati da Alex, da fare uno per PR**: segnalino col nome troppo in alto sopra la
+  testa; dopo un passaggio il segnalino resta su chi ha passato (anche fuori schermo) finché il pallone non arriva;
+  punizione con levetta e tasti nascosti per circa 3 s mentre i giocatori si mettono in posizione; inquadratura che,
+  col pallone vicino alla linea laterale lontana, lascia l'azione schiacciata in alto.
 - **Calci: FATTO.** Due casi rimasti. I piazzati del computer (angoli, punizioni dirette, rigori) chiamavano il calcio
   direttamente: il pallone partiva subito e il gesto arrivava dopo, col piede ancora lontano; ora passano da `prepara`
   come gli altri calci (chi batte sta già a mezzo metro, dove le clip da fermo colpiscono). Il tiro su un pallone alzato

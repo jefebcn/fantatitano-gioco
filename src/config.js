@@ -45,8 +45,10 @@ export const INSERIMENTO = { ogni: .5, avanti: 26, raggio: 40, ingombro: [.3, 15
 // `oneTwo`: probabilità del dai e vai dopo un passaggio
 export const RUN = { oneTwo: .35 };
 // Difesa a tre distanze dal portatore: oltre `far` ci si avvicina, fino a `near` si temporeggia, sotto si va sul pallone.
-// `danger` è la distanza dalla propria porta sotto cui non si aspetta più; `slide` l'intervallo utile per la scivolata
-export const DEF = { far: 8.5, near: 2.4, hold: 2.3, danger: 24, slide: [1.6, 3.4] };
+// `danger` è la distanza dalla propria porta sotto cui non si aspetta più; `slide` l'intervallo utile per la scivolata.
+// `porta`: andando sul pallone si punta un po' dalla parte della propria porta, sempre di tanti metri (prima era il 5%
+// della distanza dalla porta: a metà campo tre metri, e il difensore restava lì senza mai arrivare al pallone)
+export const DEF = { far: 8.5, near: 2.4, hold: 2.3, danger: 24, slide: [1.6, 3.4], porta: .8 };
 // Falli: probabilità che un contrasto riuscito in piedi sia fallo [di fronte, da dietro], in scivolata lo decide la gamba tesa. Falli al secondo mentre si sta addosso
 // al portatore [di fronte, da dietro]; probabilità del giallo [in piedi, in scivolata];
 // distanza della barriera; quanto para il portiere su rigore rispetto a un tiro normale; quante volte l'arbitro lascia correre
@@ -101,8 +103,9 @@ for (const f of Object.values(FORMS)) f.pos = f.pos.map(([x, z]) => [x * HL / 50
 // Più avanti il primo uomo lo accompagna soltanto, come fa il computer in Dream League. Era zero, cioè dalla metà campo:
 // dieci dal 25/11 (Alex: «un po' di più sul portatore, non eccessivamente»)
 // Il secondo uomo raddoppia quando il primo è a meno di `primo` metri dal portatore e lui a meno di `raggio`, stringendo a
-// `stretto` metri
-export const PRESSING = { da: 10, primo: 3.5, raggio: 16, stretto: 2.2 };
+// `stretto` metri. `utente`: quando la palla ce l'ha il giocatore comandato da chi gioca, il computer va sul portatore fin
+// da qui, cioè da tutto il campo, come in Dream League (Alex, 25/11: «gli avversari non attaccano mai il pallone»)
+export const PRESSING = { da: 10, primo: 3.5, raggio: 16, stretto: 2.2, utente: 60 };
 export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['In difesa', 'Equilibrata', 'In attacco'], push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
 
 /* ---------------------------------------------------------------- telecamera di gioco */
