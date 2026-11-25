@@ -98,10 +98,11 @@ for (const f of Object.values(FORMS)) f.pos = f.pos.map(([x, z]) => [x * HL / 50
 // (con la difensiva rientrano), quanto spesso ci si inserisce, quanto prima si va sul pallone con l'offensiva;
 // con la difensiva: a quanti metri dal portatore sta il secondo uomo in copertura, quanti metri prima si smette di temporeggiare
 // Pressing senza palla: da dove (metri dalla metà campo verso la porta avversaria, mentalità equilibrata) si va sul portatore.
-// Zero vuol dire dalla metà campo: più avanti il primo uomo lo accompagna soltanto, come fa il computer in Dream League.
+// Più avanti il primo uomo lo accompagna soltanto, come fa il computer in Dream League. Era zero, cioè dalla metà campo:
+// dieci dal 25/11 (Alex: «un po' di più sul portatore, non eccessivamente»)
 // Il secondo uomo raddoppia quando il primo è a meno di `primo` metri dal portatore e lui a meno di `raggio`, stringendo a
 // `stretto` metri
-export const PRESSING = { da: 0, primo: 3.5, raggio: 16, stretto: 2.2 };
+export const PRESSING = { da: 10, primo: 3.5, raggio: 16, stretto: 2.2 };
 export const MENT = { names: ['Difensiva', 'Equilibrata', 'Offensiva'], hud: ['In difesa', 'Equilibrata', 'In attacco'], push: 4, stay: 6, runs: .3, press: .4, cover: 12, guard: 3, hold: 14, back: 9 };
 
 /* ---------------------------------------------------------------- telecamera di gioco */

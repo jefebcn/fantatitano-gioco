@@ -42,9 +42,14 @@ circa 20 cm è il contatto giusto: è quello dei calci, che il pallone al piede 
   `CONTRASTO`). Frequenza scelta su 32 partite per variante: con `ritmo` 2 i contrasti vinti scendevano da 1,03 a
   0,59 e i gol da 2,6 a 2,1; con 4 contrasti 0,88, gol 2,59 (uguali), tiri 7,8 invece di 8,8, interventi a segno 58%;
   con 6 contrasti 1,16 ma un intervento su due a vuoto.
-- **Da proporre ad Alex: difensori che vanno sul portatore.** I contrasti sono pochi (circa uno a partita, obiettivo
-  4-30, erano 2,2 prima del tocco col piede) perché i difensori del computer arrivano raramente a portata: è l'IA della
-  difesa, non il piede.
+- **Difensori un po' più sul portatore: FATTO** (Alex il 25/11: «poco, non eccessivamente»). Contati fotogramma per
+  fotogramma su 16 partite: chi ha la palla la tiene 1500 s, un difensore è a portata d'intervento solo per 23 s
+  (1,5%); lì l'intervento parte spesso e va a segno tre volte su quattro. Il limite è arrivare a portata, e più
+  pressione non lo allunga: il portatore passa prima. Provate su 32 partite (o 16) e scartate: attesa del primo uomo un
+  quarto più corta (`wait`), distanza a cui si temporeggia 2,0 e 1,8 m (`DEF.hold`), accompagnare a 4,5 m invece di 6,5:
+  nessuna più contrasti, alcune meno. Scelto `PRESSING.da` 10: il primo uomo va sul portatore anche nei primi 10 m
+  della metà avversaria, non solo dalla metà campo. 32 partite: nessuna anomalia, portatore libero dal 43% al 40%,
+  contrasti vinti da 1,38 a 1,47, falli da 0,56 a 0,81, tiri da 7,7 a 6,8, gol da 1,97 a 2,16.
 - **Calci: FATTO.** Due casi rimasti. I piazzati del computer (angoli, punizioni dirette, rigori) chiamavano il calcio
   direttamente: il pallone partiva subito e il gesto arrivava dopo, col piede ancora lontano; ora passano da `prepara`
   come gli altri calci (chi batte sta già a mezzo metro, dove le clip da fermo colpiscono). Il tiro su un pallone alzato
