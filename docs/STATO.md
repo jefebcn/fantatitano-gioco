@@ -185,7 +185,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   alle mani (`PARATA.mani`, `PARATA.manca`); gol da 2,13 a 2,41. Restano le prese e i pugni sui cross, che passano da
   un'altra strada. 3) chi riceve si lascia sfilare il pallone: lo stop scattava a 1,05 m dal corpo, a circa un metro dal
   piede; ora aspetta che il pallone arrivi al piede (`PASSAGGIO.piede`) e il gesto parte in tempo per quel punto.
-  Distanza piede-pallone alla presa da 0,96 a 0,50 m (0,37 col gesto di stop); su 32 partite gol da 2,19 a 2,47.
+  Distanza piede-pallone alla presa da 0,96 a 0,51 m (0,40 col gesto di stop); su 32 partite gol da 2,19 a 2,53, tiri
+  da 7,28 a 7,94. Le andature di ogni figura partono da un punto che dipende solo da chi è (`fase` in `makeSkinned`):
+  prima la posa cambiava con la partita giocata prima e la partita rigiocata non finiva uguale.
   4) piedi che strisciano nel passo laterale e nei cambi di direzione: da fare. Portieri che arretrano di corsa: FATTO
   (#193, `PORTIERE.gira`), da 9 corse all'indietro a 1.
 - In sospeso da Alex: riprese rapide sì o no (tolgono 11 s di attesa, non danno tiri); tiro lontano o di spalle (segue
