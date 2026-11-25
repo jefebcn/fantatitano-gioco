@@ -26,9 +26,17 @@ circa 20 cm è il contatto giusto: è quello dei calci, che il pallone al piede 
   (il pallone più vicino al piede si ruba meno), nessuna anomalia. Da ritarare nel passo dei contrasti.
 - **Da chiedere ad Alex**: quanto deve stare lontano il pallone in conduzione. Oggi in corsa normale (4,5-6 m/s) sta a
   circa 1 m davanti al corpo (fino a 1,6) con un tocco ogni 0,9 s; camminando a 30-70 cm.
-- **Da fare: contrasti.** Il contrasto in piedi (`contacts` in `src/game.js`) dà il pallone al difensore che è entro
-  1,15 m senza nessun gesto: il pallone cambia padrone da lontano. Va fatto col gesto e col piede sul pallone, e
-  ritarata la frequenza (già sotto l'obiettivo, 4-30 a partita).
+- **Contrasti in piedi: FATTO col gesto.** Prima il pallone passava al difensore entro 1,15 m senza nessun gesto. Ora
+  quattro clip di GameplayFootball (`interfere`: da fermo davanti e di lato, in corsa allungando la gamba, in scatto,
+  col destro e col sinistro, `contrasto*` in `public/anim-gf.js`, aggiunte con `scripts/gfootball.mjs` senza rigenerare
+  le altre); l'intervento parte solo se, all'arrivo del piede, il pallone sarà a portata della gamba, e l'esito si
+  decide nel fotogramma del contatto (`avviaContrasto`, `piedeContrasto`, `gambaContrasto` in `src/game.js`, valori in
+  `CONTRASTO`). Frequenza scelta su 32 partite per variante: con `ritmo` 2 i contrasti vinti scendevano da 1,03 a
+  0,59 e i gol da 2,6 a 2,1; con 4 contrasti 0,88, gol 2,59 (uguali), tiri 7,8 invece di 8,8, interventi a segno 58%;
+  con 6 contrasti 1,16 ma un intervento su due a vuoto.
+- **Da proporre ad Alex: difensori che vanno sul portatore.** I contrasti sono pochi (circa uno a partita, obiettivo
+  4-30, erano 2,2 prima del tocco col piede) perché i difensori del computer arrivano raramente a portata: è l'IA della
+  difesa, non il piede.
 - **Da fare: calci rimasti col piede lontano.** Il «calcia» (tiro non forte) con il pallone ancora lontano o in aria.
 
 ## Piano "fluido come DLS" (deciso con Alex il 20/11, una PR per punto)

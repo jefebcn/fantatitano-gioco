@@ -153,6 +153,11 @@ Object.assign(ELENCO, { esulta: 'celebration/happy_normal/000.anim', esulta_cors
   testa_contesa: 'interfere/idle/000_header_jump.anim', scivola: 'sliding/sprint/000.anim', scivola_sx: 'sliding/sprint/000.anim:specchio', scivola_corta: 'sliding/walk/000.anim',
   cade: 'trip/trip_t3/sprint/000.anim', cade_lato: 'trip/trip_t3/sprint/045.anim', cade_lato_dx: 'trip/trip_t3/sprint/045.anim:specchio', cade_cammina: 'trip/trip_t3/walk/000_000.anim',
   cartellino: 'special/000_showcard.anim', tiene_palla: 'movement_special/idle/special/000_holdball.anim', cammina_palla: 'movement_special/dribble/special/000_holdball.anim' });
+// contrasti in piedi (il piede che arriva sul pallone del portatore): da fermo davanti e di lato, in corsa allungando la
+// gamba, in scatto. Le sorgenti toccano col destro, «_sx» col sinistro
+Object.assign(ELENCO, { contrasto_fermo: 'interfere/idle/000_front.anim', contrasto_lato: 'interfere/idle/000_side.anim',
+  contrasto: 'interfere/walk/000_stretch.anim', contrasto_scatto: 'interfere/sprint/000_reach.anim' });
+for (const k of ['contrasto_fermo', 'contrasto_lato', 'contrasto', 'contrasto_scatto']) ELENCO[`${k}_sx`] = `${ELENCO[k]}:specchio`;
 // passaggi, tiri e lanci anche col sinistro
 for (const k of ['passa_fermo', 'passa', 'passa_scatto', 'calcia_fermo', 'calcia', 'lancia_fermo', 'lancia']) ELENCO[`${k}_sx`] = `${ELENCO[k]}:specchio`;
 const SCAMBIO = Object.fromEntries(Object.keys(GF).map((n) => [n, n.startsWith('left_') ? n.replace('left_', 'right_') : n.startsWith('right_') ? n.replace('right_', 'left_') : n]));
