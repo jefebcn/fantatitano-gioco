@@ -1894,6 +1894,11 @@ function comandaPortiere(tipo) {
   const [jx, jz] = inputWorld(), l = hyp(jx, jz), dir = l > .3 ? [jx / l, jz / l] : null, sc = scegliRinvio(p, tipo, dir);
   p.rinvio = { ...sc, quando: p.hold + (sc.tipo === 'mano' ? RINVIO.braccio : RINVIO.piede), anim: false }; return true;
 }
+/** Il portiere va al suo posto correndo in avanti invece che all'indietro: posto lontano e pallone lontano dalla sua porta. */
+function gkGira(p) {
+  const b = G.ball, gx = -p.team.side * HL, [lontano, palla] = PORTIERE.gira;
+  return hyp(p.tx - p.x, p.tz - p.z) > lontano && hyp(b.x - gx, b.z) > palla;
+}
 function gkThink(p, dt) {
   const b = G.ball, t = p.team, s = t.side, gx = -s * HL, own = b.owner;
   if (own === p) return gkTiene(p, dt);
@@ -2120,7 +2125,9 @@ function corri(p, dt) {
     p.restoC -= h;
     MOTO.spingi(p, wx, wz, h, sp, o);
     const v = hyp(p.vx, p.vz); let want = p.dir;
-    if (p.i === 0 && !owner && G.state === 'play') want = Math.atan2(b.x - p.x, b.z - p.z); // il portiere guarda sempre la palla, anche quando si sposta di lato
+    // il portiere guarda la palla anche quando si sposta di lato. Se il suo posto è lontano e il pallone pure, si gira e
+    // ci va correndo in avanti, vedi PORTIERE.gira
+    if (p.i === 0 && !owner && G.state === 'play' && !gkGira(p)) want = Math.atan2(b.x - p.x, b.z - p.z);
     else if (v > .7 && !p.jock) want = Math.atan2(p.vx, p.vz); else if (!owner) want = Math.atan2(b.x - p.x, b.z - p.z); // anche chi temporeggia guarda il pallone
     MOTO.ruota(p, want, h, v, (.85 + .15 * fm.lat) * aiuto);
     MOTO.stanca(p, h, v, p.maxV, scatto);
