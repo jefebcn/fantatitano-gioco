@@ -2151,8 +2151,17 @@ function traLeMani(p) {
 }
 /** Quanto è lontano il punto x, y, z dalla mano più vicina del portiere, se la sua posa è aggiornata; se no null. */
 function manoVicina(p, x, y, z) { return ossoVicino(p, 'hand_l', 'hand_r', x, y, z); }
-/** Quanto è lontano il punto x, y, z dal piede più vicino, se la posa è aggiornata; se no null. */
-function piedeVicino(p, x, y, z) { return ossoVicino(p, 'foot_l', 'foot_r', x, y, z); }
+/**
+ * Quanto è lontano il punto x, y, z dal piede che ferma il pallone: il punto dove lo tocca la clip dello stop in corso
+ * (GESTI[nome].palla), o quello dello stop dritto se il gesto non è ancora partito. Si calcola dalla simulazione e non
+ * dalle ossa del piede: la posa disegnata cambia di qualche decimo di millimetro da una partita all'altra e la partita
+ * rigiocata non finiva più uguale.
+ */
+function piedeVicino(p, x, y, z) {
+  const c = GESTI[/^stop/.test(p.fx || '') ? p.fx : 'stop'], q = c && c.palla; if (!q) return null;
+  const alt = p.fig.alt || 1, ux = Math.sin(p.dir), uz = Math.cos(p.dir), av = q[2] * alt, lato = /^stop/.test(p.fx || '') ? q[0] * alt : 0;
+  return Math.hypot(p.x + ux * av + uz * lato - x, q[1] * alt - y, p.z + uz * av - ux * lato - z);
+}
 function ossoVicino(p, sx, dx, x, y, z) {
   const f = p.fig, L = f.bones && f.bones[sx], R = f.bones && f.bones[dx]; if (!L || !R || !(G.t - (f.posaT || -9) < .15)) return null;
   L.getWorldPosition(_mL); R.getWorldPosition(_mR);
