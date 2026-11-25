@@ -167,13 +167,17 @@ export function controlla(b, p, q = 0.5, caso = Math.random, verso = null) {
  * così chi corre in una direzione e ne vuole un'altra sposta la palla col primo tocco utile.
  * `caso` è una funzione che dà numeri tra 0 e 1 (per le prove si passa una sequenza fissa).
  */
-export function conduci(b, p, dt, q = 0.5, caso = Math.random, verso = null) {
+// Il modo. Senza: come sempre. Con 'aspetta' il piede sta arrivando e non c'è tocco, solo guinzaglio e perdita della palla.
+// Con 'chiedi', quando il tocco servirebbe, risponde 'vuole' senza toccare: così il gioco fa partire prima il gesto.
+// Con 'ora' il piede è arrivato e il tocco parte subito
+export function conduci(b, p, dt, q = 0.5, caso = Math.random, verso = null, modo = null) {
   let rx = b.x - p.x, rz = b.z - p.z, d = hyp(rx, rz);
   if (d > COND.perde) return 'perso';
   // il guinzaglio: in conduzione la palla non si allontana mai più di così dal portatore (la perde solo un contrasto o un
   // calcio). Se ci arriva, resta a quella distanza e prende la sua velocità, finché il tocco dopo non la rimette davanti
   if (d > COND.guinzaglio && b.y < 0.9) { const k = COND.guinzaglio / d; b.x = p.x + rx * k; b.z = p.z + rz * k; b.vx = p.vx; b.vz = p.vz; rx *= k; rz *= k; d = COND.guinzaglio; }
   p.tocco = (p.tocco || 0) - dt;
+  if (modo === 'aspetta') return null;
   const v = hyp(p.vx, p.vz), fx = Math.sin(p.dir), fz = Math.cos(p.dir);
   if (b.y > 0.9) return null; // palla alta: prima deve scendere
   if (v < COND.fermo) { // da fermo: la tiene sotto la suola, davanti a sé
@@ -189,12 +193,15 @@ export function conduci(b, p, dt, q = 0.5, caso = Math.random, verso = null) {
   const raggiunta = avanti < (rit === true ? COND.vicino + COND.ritmo : COND.vicino) || (storta && d < 1.15);
   // la palla è rimasta un po' indietro o di lato (il giocatore ha accelerato o girato): la riprende con la suola e se la
   // rimette davanti, invece di lasciarla lì e tornare a prenderla
-  if ((avanti < -0.1 || lato > 0.9) && d < COND.riprendi) {
+  if (modo !== 'ora' && (avanti < -0.1 || lato > 0.9) && d < COND.riprendi) {
     const tx = p.x + ux * COND.suola * 1.2, tz = p.z + uz * COND.suola * 1.2, k = 1 - Math.exp(-10 * dt);
     b.vx += ((tx - b.x) * 7 + p.vx - b.vx) * k; b.vz += ((tz - b.z) * 7 + p.vz - b.vz) * k; return null;
   }
-  if (!raggiunta || p.tocco > 0 || d > 1.3 || lato > 0.9) return null;
-  if (rit === false && !storta && avanti > COND.forza) return null; // aspetta il passo giusto
+  if (modo !== 'ora') {
+    if (!raggiunta || p.tocco > 0 || d > 1.3 || lato > 0.9) return null;
+    if (rit === false && !storta && avanti > COND.forza) return null; // aspetta il passo giusto
+    if (modo === 'chiedi') return 'vuole';
+  }
   const e = (caso() * 2 - 1) * COND.errore * (1.15 - q), c = Math.cos(e), s = Math.sin(e);
   const vc = Math.max(v * Math.max(0, (p.vx * ux + p.vz * uz) / v), Math.min(3.5, v + 1), Math.min(p.vVoluta || 0, v + 2.2)); // se sta girando, il tocco è corto: deve ancora prendere velocità; se accelera, la palla va dove arriverà lui
   const sp = vc * (p.sprint ? COND.passoScatto : COND.passo) * (p.pressato ? COND.stretto : 1) * (1.08 - 0.16 * q), dx = ux * c - uz * s, dz = ux * s + uz * c;

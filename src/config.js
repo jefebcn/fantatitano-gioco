@@ -426,8 +426,10 @@ export const FIS = {
  *  stretto: con un avversario addosso (p.pressato) il tocco si accorcia: la palla resta più vicina al piede
  *  ritmo:   col passo (p.ritmo, vedi corpo.js) il tocco parte quando un piede sta per scendere, anche un po' prima (fino a
  *           vicino + ritmo); tra un passo e l'altro aspetta, a meno che la palla non sia già sotto i piedi (forza)
+ *  guida:   quando parte il gesto del tocco il pallone va, nell'ultimo istante, dove lo colpisce il piede della clip: rispetto
+ *           al giocatore non scivola mai più svelto di così, in m/s (richiesta di Alex del 25/11: il piede sul pallone)
  */
-export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.15, vicino: 0.5, passo: 1.22, passoScatto: 1.3, guinzaglio: 1.5, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6 };
+export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.15, vicino: 0.5, passo: 1.22, passoScatto: 1.3, guinzaglio: 1.5, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6, guida: 5 };
 
 /* ---------------------------------------------------------------- fisica dei giocatori */
 export const CORPO = {
