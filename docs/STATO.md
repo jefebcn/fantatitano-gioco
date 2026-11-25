@@ -60,10 +60,18 @@ circa 20 cm è il contatto giusto: è quello dei calci, che il pallone al piede 
   intervento in 8 s, avversario fermo a 6-7 m; dopo un intervento in tutte le prove (`scripts/prove/pressing.cjs`, ora
   anche nella CI). 32 partite computer contro computer: contrasti vinti da 1,47 a 3,97, falli da 0,81 a 1,84, tiri da
   6,8 a 8,3, possessi da 25 a 29, gol 2,2 uguali, nessuna anomalia.
-- **Altri problemi del video, confermati da Alex, da fare uno per PR**: segnalino col nome troppo in alto sopra la
-  testa; dopo un passaggio il segnalino resta su chi ha passato (anche fuori schermo) finché il pallone non arriva;
-  punizione con levetta e tasti nascosti per circa 3 s mentre i giocatori si mettono in posizione; inquadratura che,
-  col pallone vicino alla linea laterale lontana, lascia l'azione schiacciata in alto.
+- **Altri problemi del video di Alex del 25/11 sera**, uno per PR:
+  - Segnalino: FATTO. Ora la sua punta è l'ancoraggio e sta `SEGNI.sopra` (0,45 m) sopra la testa a ogni distanza;
+    prima 0,6 m da lontano e 0,47 da vicino. Differenza piccola: in Dream League è circa mezzo metro; nel video sembrava
+    staccato soprattutto perché dietro la testa c'erano subito i cartelloni.
+  - Comando dopo un passaggio: FATTO. Il passaggio dava il comando al destinatario, ma il cambio automatico a palla
+    libera lo riportava subito a chi aveva passato (il pallone gli era ancora vicino). Ora non interviene mentre il
+    nostro passaggio va al giocatore comandato (`scripts/prove/comando.cjs`, anche nella CI).
+  - Punizione: FATTO. Come angoli e rimesse: dissolvenza, tutti al loro posto, comandi dopo 1,9 s; prima 2,7-5,2 s
+    camminando. Vale anche per il fuorigioco. 29 partite: nessuna anomalia, numeri come prima. Il rigore aspetta
+    ancora 7-12 s che tutti escano dall'area camminando: da chiedere ad Alex.
+  - Inquadratura vicino alla linea lontana: NON cambiata. Nel video di Dream League di Alex, col gioco vicino alla
+    linea lontana il pallone sta al 15% dell'altezza dello schermo; da noi al massimo al 30% (`CAMERA.fascia`).
 - **Calci: FATTO.** Due casi rimasti. I piazzati del computer (angoli, punizioni dirette, rigori) chiamavano il calcio
   direttamente: il pallone partiva subito e il gesto arrivava dopo, col piede ancora lontano; ora passano da `prepara`
   come gli altri calci (chi batte sta già a mezzo metro, dove le clip da fermo colpiscono). Il tiro su un pallone alzato

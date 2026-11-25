@@ -2399,11 +2399,12 @@ function restart(team, x, z, tipo, taker) {
   const occasione = G.t - (G.occasioneT ?? -99) < FERMI.occasione; G.occasioneT = -99; G.rivediT = null;
   let replay = false;
   if (occasione && f && !G.auto && !G.noRegia) { replay = true; G.rivediT = f.fino; } else if (occasione) replay = REGIA.rivedi();
-  // Rimessa laterale e calcio d'angolo come Dream League: dissolvenza scura e, a metà, stacco della telecamera sul punto
-  // di battuta. Nello stesso istante ognuno viene messo al suo posto (vedi piazzaFermi): non si vede, e non si aspetta
-  // più che ci arrivino camminando. I comandi tornano dopo FERMI.comandi secondi. Dopo un replay lo stacco è il suo.
+  // Rimessa laterale, calcio d'angolo e punizione come Dream League: dissolvenza scura e, a metà, stacco della telecamera
+  // sul punto di battuta. Nello stesso istante ognuno viene messo al suo posto, barriera compresa (vedi piazzaFermi): non
+  // si vede, e non si aspetta più che ci arrivino camminando. I comandi tornano dopo FERMI.comandi secondi. Dopo un replay
+  // lo stacco è il suo. Le punizioni aspettavano che tutti arrivassero camminando: 3-5 secondi coi comandi nascosti
   G.piazza = -1;
-  if (tipo === 'laterale' || tipo === 'angolo') {
+  if (tipo === 'laterale' || tipo === 'angolo' || tipo === 'punizione' || tipo === 'fuorigioco') {
     G.wait = FERMI.comandi; G.piazza = G.rivediT != null ? G.rivediT - G.t : replay ? 0 : FERMI.buio / 2; if (!G.auto && !replay) G.buio = { da: G.t, stacco: false };
     // senza replay il pallone che esce si vede fino al nero dello stacco
     if (f && !replay) f.fino = Math.min(f.fino, G.t + FERMI.buio / 2);
