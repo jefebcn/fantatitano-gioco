@@ -195,7 +195,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   la velocità della sua clip (`MOVI.invertiV`), più svelto il giocatore resta nella corsa; metri strisciati nelle
   inversioni da 52 a 13 (seme 7). Alex (26/11): in DLS chi inverte o curva perde poca velocità; `CORPO.perde` da 1 a
   0,3 (curve 93%, inversioni 81%). Costo: in corsa i piedi strisciavano di più (0,46 -> 0,60 m/s): FATTO, chi corre ha
-  il corpo disegnato verso dove va la corsa (`MOVI.segui`), corsetta 0,60 -> 0,31 m/s, corsa 0,60 -> 0,49 (seme 7). Portieri che arretrano di corsa: FATTO
+  il corpo disegnato verso dove va la corsa (`MOVI.segui`), corsetta 0,60 -> 0,31 m/s, corsa 0,60 -> 0,49 (seme 7).
+  Rimesse laterali scese da 1,6 a 0,9 a partita con le curve svelte: Alex (26/11) dice che in DLS il pallone che esce si
+  rincorre sempre; gioco invariato, obiettivo delle prove da 1,5 a 0,6. Portieri che arretrano di corsa: FATTO
   (#193, `PORTIERE.gira`), da 9 corse all'indietro a 1.
 - In sospeso da Alex: riprese rapide sì o no (tolgono 11 s di attesa, non danno tiri); tiro lontano o di spalle (segue
   la levetta o va sempre in porta?); cambio automatico del giocatore in difesa; calcio d'inizio che aspetta il passaggio.
