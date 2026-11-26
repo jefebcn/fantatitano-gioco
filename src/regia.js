@@ -335,7 +335,8 @@ export function creaRegia(X) {
     // il marcatore corre una decina di metri verso la bandierina più vicina e lì esulta
     const cx = sgn(sc.x || 1) * (HL - 7), cz = sgn(sc.z || 1) * (HW - 7), d = hyp(cx - sc.x, cz - sc.z) || 1, m = Math.min(d, 10);
     G.cine = { fx: sc.x + (cx - sc.x) / d * m, fz: sc.z + (cz - sc.z) / d * m };
-    S.a0 = Math.atan2(cx - sc.x, cz - sc.z) + .4;
+    // la telecamera dalla parte del campo (GOLSEQ.lato), rivolta verso la tribuna: dietro al marcatore si vede il pubblico
+    S.a0 = Math.atan2(cx - sc.x, cz - sc.z) + GOLSEQ.lato;
     golc.querySelector('img').src = X.img(t.club.id);
     golc.querySelector('.r1 span').textContent = tr(auto ? 'regia.autogol' : 'regia.gol'); golc.querySelector('.r1 i').textContent = `${g.min}'`;
     golc.querySelector('.nm').textContent = auto ? (g.chi && g.chi.name) || tr('regia.autogol') : sc.name;
@@ -352,9 +353,21 @@ export function creaRegia(X) {
     d.x = C.fx + ux * k + uz * l; d.z = C.fz + uz * k - ux * l; d.vx = d.vz = 0; d.dir = Math.atan2(ux, uz); d.deluso = -1; d.fx = null;
     G.delusoGol = d; G.delusoPunto = [d.x, d.z];
   }
+  // I compagni più vicini al marcatore (GOLSEQ.compagni) messi allo stacco a pochi metri da lui, dalla parte della telecamera
+  // ma fuori dal centro dell'inquadratura: arrivano correndo e festeggiano con lui. Prima ci andavano tutti e dieci, anche da
+  // cinquanta metri, e nel primo piano non arrivava nessuno
+  function compagniVicini(C, a) {
+    const sc = G.scorer; if (!sc) return; const [n, da] = GOLSEQ.compagni;
+    const vicini = sc.team.players.filter((o) => o !== sc && o.i && o.st === 'run').sort((p, q) => hyp(p.x - sc.x, p.z - sc.z) - hyp(q.x - sc.x, q.z - sc.z)).slice(0, n);
+    vicini.forEach((o, k) => {
+      if (hyp(o.x - C.fx, o.z - C.fz) > da) { const b = a + (k - (n - 1) / 2) * 1.1 + Math.PI * .5 * (k % 2 ? 1 : -1); o.x = C.fx + Math.sin(b) * da; o.z = C.fz + Math.cos(b) * da; o.vx = o.vz = 0; o.dir = Math.atan2(C.fx - o.x, C.fz - o.z); o.fx = null; }
+    });
+    // si fermano ai lati e dietro di lui, visti dalla telecamera (GOLSEQ.posti): davanti lo coprivano
+    G.compagniGol = vicini; vicini.lato = a;
+  }
   function fine() {
     if (S.salvato) recLeggi(REC.vivo, 0, REC.vivo, 0, 0); // le ossa tornano com'erano prima del replay, se no le animazioni ripartono storte
-    S.on = S.salvato = false; G.cine = null; G.goalEnd = 0; G.delusoGol = null; S.scatto = true; REC.len = 0;
+    S.on = S.salvato = false; G.cine = null; G.goalEnd = 0; G.delusoGol = null; G.compagniGol = null; S.scatto = true; REC.len = 0;
     hud.classList.remove('cine'); golc.classList.remove('su'); salta.classList.remove('su'); rep.classList.remove('su');
     tabelloniNormali();
   }
@@ -452,7 +465,7 @@ export function creaRegia(X) {
         // primo piano come Dream League: telecamera bassa (GOLSEQ.camAlt) a pochi metri dal punto dell'esultanza, che avanza appena;
         // tra lei e il marcatore, un po' di lato, il difensore deluso (messo lì allo stacco, quando nessuno lo vede)
         const sc = G.scorer, u = t - S.c0, C = G.cine || { fx: sc.x, fz: sc.z }, a = S.a0 + u * .05, R = GOLSEQ.camDist + .6 - Math.min(u, 2) * .3;
-        if (!S.cut) { S.cut = true; delusoDavanti(C, S.a0); }
+        if (!S.cut) { S.cut = true; delusoDavanti(C, S.a0); compagniVicini(C, S.a0); }
         cam.position.set(C.fx + Math.sin(a) * R, GOLSEQ.camAlt, C.fz + Math.cos(a) * R); cam.fov = stretto ? 52 : 34;
         cam.lookAt(sc.x, ((sc.fig && sc.fig.metri) || 1.8) * .7, sc.z); cam.updateProjectionMatrix();
       }

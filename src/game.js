@@ -973,7 +973,7 @@ const kitsFor = (mia, loro, fuori) => { if (!fuori) return pickKits(mia, loro); 
 // Lo stato che appartiene a una sola partita: a ogni partita nuova torna com'era al caricamento. Senza, la seconda partita
 // ereditava tempi e contatori della prima (l'istante dell'ultimo tiro, l'ultimo che ha toccato palla) e non era più la stessa
 const DI_PARTITA = ['lastTouch', 'lastKicker', 'intended', 'poss', 'shotId', 'charge', 'next', 'taker', 'headId', 'wait', 'idle', 'altoT', 'calcioT', 'tiroT', 'occasioneT', 'xAltaT', 'buio', 'inizioTempo', 'piazza', 'fantasma', 'rivediT',
-  'prossimo', 'prossimoT', 'rimessa', 'scorer', 'segno', 'tipoFermo', 'tocchi', 'land', 'path', 'caricaIdeale', 'caricaTipo', 'cine', 'delusoGol', 'delusoPunto', 'rivede', 'shooter', 'lastPass', 'ctrl', 'goalEnd'];
+  'prossimo', 'prossimoT', 'rimessa', 'scorer', 'segno', 'tipoFermo', 'tocchi', 'land', 'path', 'caricaIdeale', 'caricaTipo', 'cine', 'delusoGol', 'delusoPunto', 'compagniGol', 'rivede', 'shooter', 'lastPass', 'ctrl', 'goalEnd'];
 function nuovaPartita(home, away) {
   clearMatch(); for (const k of DI_PARTITA) G[k] = G_INIZIO[k]; TIFO.tiro = -1; TIFO.gol = 0;
   const fuori = !!(G.comp && G.comp.fuori), [kh, ka, g1, g2, arb] = kitsFor(home, away, fuori); G.arbKit = arb;
@@ -1709,7 +1709,7 @@ function think(p, dt) {
   if (G.state !== 'play') {
     if (G.state === 'goal') {
       const sc = G.scorer;
-      if (sc && t === sc.team && p.i !== 0) { if (p === sc) { const c = G.cine; p.tx = c ? c.fx : sgn(sc.x) * (HL - 7); p.tz = c ? c.fz : sgn(sc.z || 1) * (HW - 7); } else { p.tx = sc.x - s * 1.5 + Math.sin(p.i * 2) * 1.6; p.tz = sc.z + Math.cos(p.i * 2) * 1.6; } p.sprint = true; }
+      if (sc && t === sc.team && p.i !== 0) { if (p === sc) { const c = G.cine; p.tx = c ? c.fx : sgn(sc.x) * (HL - 7); p.tz = c ? c.fz : sgn(sc.z || 1) * (HW - 7); } else if (G.compagniGol && G.compagniGol.includes(p)) { const k = G.compagniGol.indexOf(p), a = G.compagniGol.lato + Math.PI + GOLSEQ.posti[k % GOLSEQ.posti.length], r = GOLSEQ.compagni[2]; p.tx = sc.x + Math.sin(a) * r; p.tz = sc.z + Math.cos(a) * r; } else if (G.compagniGol) { const h = homeOf(p); p.tx = h[0]; p.tz = h[1]; } else { p.tx = sc.x - s * 1.5 + Math.sin(p.i * 2) * 1.6; p.tz = sc.z + Math.cos(p.i * 2) * 1.6; } p.sprint = p === sc || !G.compagniGol || G.compagniGol.includes(p); }
       else if (p === G.delusoGol) { [p.tx, p.tz] = G.delusoPunto; } // il difensore deluso del primo piano resta dov'è
       else if (sc && t !== sc.team && G.stateT < GOLSEQ.fermi) { p.tx = p.x; p.tz = p.z; } // chi ha subito il gol si ferma: mani in testa
       else { const h = homeOf(p); p.tx = h[0]; p.tz = h[1]; }
@@ -2708,8 +2708,12 @@ function poseSkinned(p, dt) {
   if (G.state === 'goal' && G.scorer && p.i !== 0 && !p.fx && hasFx('esulta') && v < 1.5 && !REGIA.figure()) {
     const ng = G.goals.length;
     if (p.team === G.scorer.team) {
-      const scatenata = p === G.scorer && p.esultaGol !== ng && hasFx('esulta_corsa');
-      clipGF(p, scatenata ? 'esulta_corsa' : 'esulta', 0, p === G.scorer ? 1 : .85 + (p.i % 4) * .08); if (p === G.scorer) p.esultaGol = ng;
+      // le esultanze nuove di Mixamo (GOLSEQ.esultanze), se Alex le ha scaricate: chi segna ne fa una diversa a ogni gol,
+      // i compagni a turno; senza i file restano quelle di GameplayFootball
+      const nuove = (l) => l.filter(hasFx), mia = nuove(GOLSEQ.esultanze.marcatore), loro = nuove(GOLSEQ.esultanze.compagni);
+      const prima = p === G.scorer && p.esultaGol !== ng, scatenata = prima && hasFx('esulta_corsa');
+      const nome = prima && mia.length ? mia[ng % mia.length] : scatenata ? 'esulta_corsa' : p !== G.scorer && loro.length && (p.i + ng) % 3 ? loro[(p.i + ng) % loro.length] : 'esulta';
+      clipGF(p, nome, 0, p === G.scorer ? 1 : .85 + (p.i % 4) * .08); if (p === G.scorer) p.esultaGol = ng;
     }
     // chi ha subito il gol: mani sopra la testa (clip Mixamo `mani_testa` quando c'è, se no la delusione di GameplayFootball)
     else if (p.deluso !== ng && (hasFx('mani_testa') || hasFx('delusione'))) { p.deluso = ng; if (hasFx('mani_testa')) clipGF(p, 'mani_testa', 0, 1); else clipGF(p, 'delusione', 0, .7); }
