@@ -309,7 +309,10 @@ export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: 
 // chi è aspettato: chi batte, la barriera, chi ha un posto in area, gli avversari troppo vicini al pallone; chi batte scatta se è a più di `scatto` metri dal pallone); arrivato a `fermo` metri dal posto
 // resta dov'è. Chi ha un posto (barriera, area) viene aspettato al massimo `arrivo` secondi,
 // `rigore` sul rigore, poi si batte lo stesso. Il calcio d'inizio aspetta `inizio` secondi dal fischio prima dei comandi.
-export const FERMI = { comandi: 2, buio: .5, scuro: 1, uscita: .9, cartelloni: [5, 4, .3], occasione: 4, fuori: 2.5, corto: [7, 7], cpu: 1, passo: [1.9, .6, 3.6], scatto: 12, fermo: .35, arrivo: 8, rigore: 10, inizio: 1.2 };
+// Riprese rapide, tenute da Alex il 26/11: i comandi tornano 0,6 secondi dopo lo stacco (erano 2), il computer batte
+// dopo 0,4 secondi (era 1), il calcio d'inizio parte 0,5 secondi dopo il fischio (era 1,2). Il portiere rimette prima,
+// vedi RINVIO.attesa
+export const FERMI = { comandi: .6, buio: .5, scuro: 1, uscita: .9, cartelloni: [5, 4, .3], occasione: 4, fuori: 2.5, corto: [7, 7], cpu: .4, passo: [1.9, .6, 3.6], scatto: 12, fermo: .35, arrivo: 8, rigore: 10, inizio: .5 };
 // Gol, in secondi veri dal pallone in rete: da `lento` per `durataLento` secondi un leggero rallentatore (a velocità `vel`),
 // con gli avversari fermi a disperarsi per `fermi` secondi e l'arbitro che indica il centro; a `stacco` la telecamera passa
 // al primo piano del marcatore: alta `camAlt` metri, a `camDist` metri da lui, con un difensore deluso in primo piano
@@ -403,7 +406,8 @@ export const PORTIERE = { linea: .9, area: 16.5, palo: [2.4, 1.5], reazione: [.1
 // l'animazione del lancio e del rinvio. corto: fin dove lancia con le mani, in metri. limite: quanto può avanzare dalla linea.
 // Il lancio con le mani: `mano` è la velocità media in m/s. Oltre `vicino` metri la palla tocca terra a `rimbalzo` della
 // distanza (0,7: a sette decimi della strada) e arriva al compagno di rimbalzo. Più vicino gliela dà sui piedi.
-export const RINVIO = { attesa: [1.3, 2.1], braccio: .63, piede: .3, corto: 30, limite: 14, mano: 17, vicino: 9, rimbalzo: .7 };
+// margine: il lancio arriva almeno tanti secondi dopo l'inizio del gesto del rinvio, che comincia col portiere in piedi
+export const RINVIO = { attesa: [.4, .7], braccio: .63, piede: .3, corto: 30, limite: 14, mano: 17, vicino: 9, rimbalzo: .7, margine: .05 };
 /** Portiere col pallone in mano. peso: quanto le braccia che lo tengono contano rispetto alla corsa (9 = nove decimi). */
 export const MANO = { peso: 9 };
 
