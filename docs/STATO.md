@@ -192,7 +192,8 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   il pallone solo sotto i 2,4-2,9 m/s, più svelto si gira e corre (`DEF.laterale`): appoggio di lato da 27,7 a 6,3 s,
   metri strisciati da 59 a 14 (seme 7). Cambi di direzione FATTI: l'inversione col perno parte solo fino a 1,4 volte
   la velocità della sua clip (`MOVI.invertiV`), più svelto il giocatore resta nella corsa; metri strisciati nelle
-  inversioni da 52 a 13 (seme 7). Resta da chiedere ad Alex se in DLS chi inverte a tutta velocità frena di più. Portieri che arretrano di corsa: FATTO
+  inversioni da 52 a 13 (seme 7). Alex (26/11): in DLS chi inverte o curva perde poca velocità; `CORPO.perde` da 1 a
+  0,3 (curve 93%, inversioni 81%). Costo: in corsa i piedi strisciano di più (0,46 -> 0,60 m/s), da sistemare. Portieri che arretrano di corsa: FATTO
   (#193, `PORTIERE.gira`), da 9 corse all'indietro a 1.
 - In sospeso da Alex: riprese rapide sì o no (tolgono 11 s di attesa, non danno tiri); tiro lontano o di spalle (segue
   la levetta o va sempre in porta?); cambio automatico del giocatore in difesa; calcio d'inizio che aspetta il passaggio.

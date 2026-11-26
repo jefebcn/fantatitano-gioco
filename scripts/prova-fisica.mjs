@@ -106,11 +106,12 @@ const tempoFino = (p, cond, wx, wz, max = 5, o) => { let t = 0; while (t < max &
   assert.ok(a > .8 && a < 1.25, `partenza ${a}`); assert.ok(tf > .25 && tf < .5 && f.x < 1.6, `frenata ${tf} ${f.x}`);
   out.push(`corpo: da fermo a 6,65 m/s in ${a.toFixed(2)} s; frena da 7 in ${tf.toFixed(2)} s (${f.x.toFixed(1)} m)`);
 }
-{ // cambi di direzione: si perde velocità in proporzione all'angolo, circa metà su un'inversione
+{ // cambi di direzione: si perde velocità in proporzione all'angolo, poca (Alex, 26/11: in Dream League chi inverte la corsa
+  // perde poco, e chi curva altrettanto poco): sull'inversione resta circa l'80%
   const resta = (gradi, v = 5) => { const p = gioc({ vx: v }), a = gradi * Math.PI / 180, wx = Math.cos(a) * v, wz = Math.sin(a) * v; let min = v, t = 0; while (t < 1.2) { spingi(p, wx, wz, H, v, {}); min = Math.min(min, hyp(p.vx, p.vz)); t += H; if ((p.vx * wx + p.vz * wz) / (hyp(p.vx, p.vz) * v || 1) > .999) break; } return [min / v, t]; };
   const [r45] = resta(45), [r90] = resta(90), [r180, t180] = resta(179);
   assert.ok(r45 > r90 && r90 > r180, `più si gira più si perde: ${r45} ${r90} ${r180}`);
-  assert.ok(r180 > .45 && r180 < .62, `inversione: resta ${r180}`); assert.ok(r90 > .65 && r90 < .8 && r45 > .8, `curve: ${r45} ${r90}`);
+  assert.ok(r180 > .75 && r180 < .9, `inversione: resta ${r180}`); assert.ok(r90 > .88 && r90 < .98 && r45 > .95, `curve: ${r45} ${r90}`);
   assert.ok(t180 > .25 && t180 < .6, `tempo dell'inversione ${t180}`);
   out.push(`cambi di direzione a 5 m/s: a 45° resta il ${Math.round(r45 * 100)}% della velocità, a 90° il ${Math.round(r90 * 100)}%, sull'inversione il ${Math.round(r180 * 100)}% (in ${t180.toFixed(2)} s)`);
   // in scatto la curva è più larga: per girare di 90° si avanza di più

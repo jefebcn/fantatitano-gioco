@@ -471,7 +471,9 @@ export const CORPO = {
   frena: 20, // frenata massima (m/s²)
   gira: 9, // quanto in fretta la corsa cambia direzione andando piano (rad/s): mezzo giro in un terzo di secondo
   giraScatto: 5, // e in pieno scatto: la curva si allarga
-  perde: 1, // quanta velocità costa girare, in proporzione all'angolo: a 90° ne resta il 72%, su un'inversione completa circa metà
+  // quanta velocità costa girare, in proporzione all'angolo. Alex, 26/11: in Dream League chi inverte la corsa perde poco, e
+  // chi curva altrettanto poco. In partita le curve tengono il 93% della velocità, le inversioni l'81% (prima 76% e 53%)
+  perde: 0.3,
   latScatto: 0.75, // in scatto si gira ancora un po' più piano
   giro: 13, // velocità massima di rotazione del busto da fermo (rad/s)
   giroCorsa: 7.5, // e a piena corsa
