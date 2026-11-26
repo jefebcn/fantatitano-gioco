@@ -377,7 +377,7 @@ function guidaTocco(o, b, t) {
  * non si può fare, il calcio parte subito come prima.
  */
 // il tiro potente resta quello di Mixamo, più ampio: il destro colpisce a 0,067 s dall'inizio della clip (misurato sul piede)
-GESTI.tiro = GESTI.tiro || { v: 0, tocco: .067, durata: .733 };
+GESTI.tiro = GESTI.tiro || { v: 0, tocco: .067, durata: .733, palla: CARICO.tiro };
 function prepara(p, tipo, bx, bz, calcio, forte = false) {
   if (G.state !== 'play' || G.ball.owner !== p || !p.fig.skinned || p.carica) return calcio();
   const v = hyp(p.vx, p.vz) / (p.fig.alt || 1), sx = (bx - p.x) * Math.cos(p.dir) - (bz - p.z) * Math.sin(p.dir) < 0; // il bersaglio è alla sua destra
@@ -408,8 +408,15 @@ function calciCaricati(dt) {
     const c = p.carica; if (!c) continue;
     c.t -= dt;
     // il gesto del calcio che aspettava il pallone comincia adesso: il piede arriva quando arriva il pallone. Se sta ancora
-    // finendo un tocco di conduzione ci riprova al passo dopo
-    if (c.nome && c.t <= c.anticipo && G.ball.owner === p && G.state === 'play' && gesto(p, c.nome, Math.max(c.t, 0))) c.nome = null;
+    // finendo un gesto che non si può interrompere ci riprova al passo dopo.
+    // Il calcio ha la precedenza su un tocco di conduzione, uno stop o un taglio che non sono ancora arrivati al pallone:
+    // mentre carica il calcio quei tocchi non spingono più niente. Prima il gesto del tiro, che ha solo 4 fotogrammi per
+    // partire, restava bloccato quasi sempre: al colpo partiva la clip dall'inizio e il pallone volava via 3 fotogrammi
+    // prima che arrivasse il piede
+    if (c.nome && c.t <= c.anticipo && G.ball.owner === p && G.state === 'play') {
+      if (!libero(p) && /^(tocco|stop|taglio)/.test(p.fx || '')) p.fx = null;
+      if (gesto(p, c.nome, Math.max(c.t, 0))) c.nome = null;
+    }
     if (c.t <= 0) { p.carica = null; if (G.ball.owner === p && G.state === 'play') c.calcio(); }
   }
 }
