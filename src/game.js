@@ -2132,11 +2132,13 @@ function corri(p, dt) {
     p.restoC -= h;
     MOTO.spingi(p, wx, wz, h, sp, o);
     const v = hyp(p.vx, p.vz); let want = p.dir;
+    p.corsaJock = p.jock && v > DEF.laterale[p.corsaJock ? 0 : 1];
     // il portiere guarda la palla anche quando si sposta di lato. Se il suo posto è lontano e il pallone pure, si gira e
     // ci va correndo in avanti, vedi PORTIERE.gira
     if (p.carica && p.carica.verso !== undefined) want = p.carica.verso; // chi sta per calciare si gira verso dove calcia
     else if (p.i === 0 && !owner && G.state === 'play' && !gkGira(p)) want = Math.atan2(b.x - p.x, b.z - p.z);
-    else if (v > .7 && !p.jock) want = Math.atan2(p.vx, p.vz); else if (!owner) want = Math.atan2(b.x - p.x, b.z - p.z); // anche chi temporeggia guarda il pallone
+    // anche chi temporeggia guarda il pallone, ma solo finché va piano: più svelto si gira e corre, vedi DEF.laterale
+    else if (v > .7 && (!p.jock || p.corsaJock)) want = Math.atan2(p.vx, p.vz); else if (!owner) want = Math.atan2(b.x - p.x, b.z - p.z);
     MOTO.ruota(p, want, h, v, (.85 + .15 * fm.lat) * aiuto);
     MOTO.stanca(p, h, v, p.maxV, scatto);
     if (MOTO.cammina(p, h, v / (p.fig.alt || 1))) p.ritmo = true; // un piede sta per toccare terra: il momento del tocco di palla (lo consuma moveBall)
