@@ -22,6 +22,7 @@ import { creaAudio } from './audio.js';
 import { creaPrestazioni } from './prestazioni.js';
 import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
+import { disegnaPallone } from './grafica/pallone.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
 import { PRATO, NOTTURNA, STADI, PRESENTA, CONTRASTO, DIVISE, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
@@ -893,13 +894,13 @@ const PALLONI = {
   arancio: ['#FF8A1F', ['#111', '#111', '#fafafa', '#111', '#111', '#fafafa']],
 };
 const ballMesh = (() => {
-  const [c, x] = cv(256, 128), m = new T.Mesh(new T.SphereGeometry(BR, 18, 14), new T.MeshLambertMaterial({ map: ctex(c) })); m.visible = false; m.castShadow = true; scene.add(m);
+  // il disegno vero del pallone (src/grafica/pallone.js) su una tela grande, e una sfera più liscia di prima (era 18×14)
+  const W = PALLA_VISTA.disegno.tela, [c, x] = cv(W, W / 2), m = new T.Mesh(new T.SphereGeometry(BR, 32, 24), new T.MeshLambertMaterial({ map: ctex(c) })); m.visible = false; m.castShadow = true; scene.add(m);
   // chiaro anche lontano dai fari: la stessa immagine fa anche da luce propria (i pentagoni restano scuri)
   m.material.emissive = new T.Color(0xffffff); m.material.emissiveMap = m.material.map; m.material.emissiveIntensity = PALLA_VISTA.luce;
   m.userData.colora = (nome) => {
-    if (m.userData.nome === nome) return; m.userData.nome = nome; const [fondo, cols] = PALLONI[nome] || PALLONI.classico; x.fillStyle = fondo; x.fillRect(0, 0, 256, 128);
-    for (let i = 0; i < 12; i++) { x.fillStyle = cols[i % cols.length]; x.beginPath(); const px = (i % 6) * 43 + 20 + (i > 5 ? 21 : 0), py = i > 5 ? 88 : 38; for (let k = 0; k < 5; k++) { const a = k * 1.2566 - 1.57; x.lineTo(px + Math.cos(a) * 13, py + Math.sin(a) * 15); } x.fill(); }
-    m.material.map.needsUpdate = true;
+    if (m.userData.nome === nome) return; m.userData.nome = nome; const [fondo, cols] = PALLONI[nome] || PALLONI.classico;
+    disegnaPallone(x, W, W / 2, fondo, cols, PALLA_VISTA.disegno); m.material.map.needsUpdate = true;
   };
   m.userData.colora('classico');
   return m;
