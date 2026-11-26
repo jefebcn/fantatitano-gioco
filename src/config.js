@@ -48,7 +48,10 @@ export const RUN = { oneTwo: .35 };
 // `danger` è la distanza dalla propria porta sotto cui non si aspetta più; `slide` l'intervallo utile per la scivolata.
 // `porta`: andando sul pallone si punta un po' dalla parte della propria porta, sempre di tanti metri (prima era il 5%
 // della distanza dalla porta: a metà campo tre metri, e il difensore restava lì senza mai arrivare al pallone)
-export const DEF = { far: 8.5, near: 2.4, hold: 2.3, danger: 24, slide: [1.6, 3.4], porta: .8 };
+// `laterale`: chi temporeggia guarda il pallone e si sposta coi passi laterali finché va piano; più svelto del secondo
+// numero (m/s) si gira e corre, sotto il primo torna a guardare il pallone. A 3,5 m/s di lato i passi della clip non ce la
+// facevano e il piede in appoggio strisciava di un metro al secondo
+export const DEF = { far: 8.5, near: 2.4, hold: 2.3, danger: 24, slide: [1.6, 3.4], porta: .8, laterale: [2.4, 2.9] };
 // Falli: probabilità che un contrasto riuscito in piedi sia fallo [di fronte, da dietro], in scivolata lo decide la gamba tesa. Falli al secondo mentre si sta addosso
 // al portatore [di fronte, da dietro]; probabilità del giallo [in piedi, in scivolata];
 // distanza della barriera; quanto para il portiere su rigore rispetto a un tiro normale; quante volte l'arbitro lascia correre

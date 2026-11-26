@@ -188,7 +188,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   Distanza piede-pallone alla presa da 0,96 a 0,51 m (0,40 col gesto di stop); su 32 partite gol da 2,19 a 2,53, tiri
   da 7,28 a 7,94. Le andature di ogni figura partono da un punto che dipende solo da chi è (`fase` in `makeSkinned`):
   prima la posa cambiava con la partita giocata prima e la partita rigiocata non finiva uguale.
-  4) piedi che strisciano nel passo laterale e nei cambi di direzione: da fare. Portieri che arretrano di corsa: FATTO
+  4) piedi che strisciano nel passo laterale e nei cambi di direzione: il passo laterale FATTO, chi temporeggia guarda
+  il pallone solo sotto i 2,4-2,9 m/s, più svelto si gira e corre (`DEF.laterale`): appoggio di lato da 27,7 a 6,3 s,
+  metri strisciati da 59 a 14 (seme 7). Restano i cambi di direzione (`inverti_*`, circa 2,5 m/s di strisciata). Portieri che arretrano di corsa: FATTO
   (#193, `PORTIERE.gira`), da 9 corse all'indietro a 1.
 - In sospeso da Alex: riprese rapide sì o no (tolgono 11 s di attesa, non danno tiri); tiro lontano o di spalle (segue
   la levetta o va sempre in porta?); cambio automatico del giocatore in difesa; calcio d'inizio che aspetta il passaggio.
