@@ -32,7 +32,9 @@ const OBIETTIVI = {
   'passaggi per squadra': [30, 45],
   'passaggi riusciti %': [70, 90],
   angoli: [.3, 3],
-  'rimesse laterali': [1.5, 12],
+  // Alex, 26/11: in Dream League i giocatori del computer rincorrono sempre il pallone che sta per uscire, anche quando la
+  // rimessa toccherebbe a loro. Con le curve svelte (#200) ci arrivano quasi sempre: circa 0,9 rimesse a partita
+  'rimesse laterali': [.6, 12],
   'rimesse dal fondo': [.7, 8],
   falli: [.5, 6],
   fuorigioco: [.05, 1.5],

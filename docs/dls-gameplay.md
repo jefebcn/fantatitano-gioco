@@ -75,6 +75,9 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
 - **Cambi di direzione** (Alex, 26/11: in DLS chi inverte la corsa perde poco, e chi curva altrettanto poco): la corsa
   gira subito e perde poca velocità; in partita le curve tengono circa il 93%, le inversioni l'81% (prima 76% e 53%);
   finché non si è girati non si accelera (`CORPO.gira`, `giraScatto`, `perde`).
+- **Pallone che sta per uscire di lato** (Alex, 26/11): in DLS i giocatori del computer lo rincorrono sempre, anche quando
+  la rimessa toccherebbe alla loro squadra. Qui fanno lo stesso: con le curve svelte ci arrivano quasi sempre, circa 0,9
+  rimesse laterali a partita (obiettivo delle prove abbassato a 0,6).
 - Le animazioni di camminata, corsetta e corsa girano alla velocità vera del giocatore (la clip della corsa copre anche
   lo scatto), e si fondono in base alla velocità: il piede in appoggio non scivola.
 - **Pallone al piede** (`COND` in `src/config.js`, `conduci` in `src/fisica/pallone.js`): in conduzione la palla non è
