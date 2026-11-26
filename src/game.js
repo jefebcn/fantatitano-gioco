@@ -3088,7 +3088,8 @@ function startMatch(h, a, d) {
   setTimeout(() => {
     // prima del calcio d'inizio il giro dello stadio (non nelle prove a seme fisso, che devono restare uguali)
     alzaStadio(tipoStadio()); G.presenta = PROVA.semi || VISTA_ALTO ? null : { t: 0 }; newMatch(H, A); scalda(); PERF.azzera(); if (G.presenta) iniziaPresenta();
-    show(null); $('#hud').classList.remove('nas'); AU.amb(1);
+    // si gioca: il pubblico e il suo coro (AUDIO.partita)
+    show(null); $('#hud').classList.remove('nas'); AU.amb(1); AU.coro(true);
   }, 1900);
 }
 // Schermata delle sostituzioni: si tocca chi esce e chi entra
@@ -3108,8 +3109,8 @@ function tapCambi(e) {
   const esce = cOut, p = sostituisci(t, esce, cIn), ruoli = (esce.i === 0) !== (t.bench[cIn].role === 'P'); cOut = null; cIn = -1;
   drawCambi(p ? tr('cambi.fatto', p.name, esce.name) : tr(ruoli ? 'cambi.portiere' : 'cambi.no')); hud();
 }
-function pause(v) { if (G.state === 'menu' || G.state === 'full') return; G.paused = v; show(v ? '#stop' : null); AU.pausa(v); $('#apriCambi').classList.toggle('nas', !G.teams[0] || !!G.so); } // sempre: lì si vede anche l'energia
-function toMenu() { G.state = 'menu'; finePresenta(); clearMatch(); G.ball = null; G.ctrl = null; ballMesh.visible = ballShadow.visible = ring.visible = arrow.visible = freccia.visible = false; $('#hud').classList.add('nas'); casa(); AU.amb(0); AU.pausa(false); AU.musica(true); }
+function pause(v) { if (G.state === 'menu' || G.state === 'full') return; G.paused = v; show(v ? '#stop' : null); AU.pausa(v); AU.coro(!v); $('#apriCambi').classList.toggle('nas', !G.teams[0] || !!G.so); } // sempre: lì si vede anche l'energia
+function toMenu() { G.state = 'menu'; finePresenta(); clearMatch(); G.ball = null; G.ctrl = null; ballMesh.visible = ballShadow.visible = ring.visible = arrow.visible = freccia.visible = false; $('#hud').classList.add('nas'); casa(); AU.amb(0); AU.pausa(false); AU.coro(false); AU.musica(true); }
 function vote(p) {
   const t = p.team, s = p.s, V = VOTE, conc = t.opp.score;
   let v = 6 + s.g * V.g + s.a * V.a + s.kp * V.kp + (s.sot - s.g) * V.sot + s.tk * V.tk + s.int * V.int + s.sv * V.sv + (s.pa > 3 ? (s.pc / s.pa - .7) * V.pass : 0)
@@ -3146,7 +3147,7 @@ function showEnd() {
   $('#pagL').innerHTML = rows.map((r, k) => `<div><h4>${G.teams[k].club.short}</h4>${r.map(({ p, v }) => `<p><b>${fmt(v)}</b> ${esc(p.name)}${p.s.g ? ` <u>${p.s.g > 1 ? tr('fine.nGol', p.s.g) : tr('fine.gol')}</u>` : ''}${p.s.a ? ` <u>${tr('fine.assist')}</u>` : ''}${p.red ? '<i class="r"></i>' : p.yel ? '<i class="g"></i>' : ''}</p>`).join('')}</div>`).join('');
   $('#tH').textContent = G.stats.shots[0]; $('#tA').textContent = G.stats.shots[1]; $('#pH').textContent = `${ph}%`; $('#pA').textContent = `${100 - ph}%`;
   $('#fTito').src = img(w ? 'saluta' : l ? 'braccia' : 'indica');
-  $('#hud').classList.add('nas'); show('#fine'); AU.amb(0); AU.pausa(false); AU.musica(true); // fine partita: torna la musica
+  $('#hud').classList.add('nas'); show('#fine'); AU.amb(0); AU.pausa(false); AU.coro(false); AU.musica(true); // fine partita: torna la musica
 }
 
 /* ------------------------------------------------------------------ avvio */
