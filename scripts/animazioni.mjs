@@ -38,6 +38,13 @@ const CLIP = {
   // col braccio teso in avanti verso il centro del campo (cercare «pointing» o «point»)
   mani_testa: ['mani in testa', 0, 0, 'facoltativa'],
   indica: ['indica', 0, 0, 'facoltativa'],
+  // esultanze di chi segna e dei compagni (facoltative, scaricate da Alex: elenco e parole da cercare in docs/dls-gameplay.md)
+  vittoria: ['vittoria', 0, 0, 'facoltativa'],
+  pugno: ['pugno', 0, 0, 'facoltativa'],
+  ginocchio: ['ginocchio', 0, 0, 'facoltativa'],
+  braccia_larghe: ['braccia larghe', 0, 0, 'facoltativa'],
+  applauso: ['applauso', 0, 0, 'facoltativa'],
+  tifo: ['tifo', 0, 0, 'facoltativa'],
 };
 // osso Mixamo -> osso del calciatore
 const OSSA = { Hips: 'pelvis', Spine: 'spine_01', Spine1: 'spine_02', Spine2: 'spine_03', Neck: 'neck_01', Head: 'Head',

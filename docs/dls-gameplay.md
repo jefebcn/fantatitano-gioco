@@ -295,6 +295,13 @@ arancione sotto il 70%, rossa sotto il 40%); in panchina sono freschi.
 Su mixamo.com, col personaggio «X Bot» e le stesse impostazioni delle clip del Soccer Game Pack (FBX, 30 fps):
 - «disappointed», «defeated» o «frustrated»: quella con **entrambe le mani sopra la testa** → file `mani in testa.fbx`;
 - «pointing» o «point»: **braccio teso in avanti** → file `indica.fbx`.
+- **Esultanze** (Alex, 26/11: più esultanze diverse), per chi segna:
+  - «victory» o «cheering» con **le braccia al cielo** → `vittoria.fbx`;
+  - «fist pump» → `pugno.fbx`;
+  - «knee slide» (scivolata in ginocchio; se non c'è, «kneeling» o «praying») → `ginocchio.fbx`;
+  - «airplane» o «flying» (corsa o posa a braccia larghe) → `braccia larghe.fbx`;
+  e per i compagni: «clapping» → `applauso.fbx`; «jumping» o «excited» (salta di gioia) → `tifo.fbx`.
+  Nel gioco sono già previste (`GOLSEQ.esultanze`): appena ci sono i file, chi segna ne fa una diversa a ogni gol.
 Vanno nella **stessa cartella degli FBX del Soccer Game Pack** (quella con `X Bot.fbx`), sul computer, non nel repository
 (gli FBX di Mixamo non si ridistribuiscono). Poi `node scripts/animazioni.mjs <quella cartella>` rigenera `public/anim.js`
 (le clip sono già in `CLIP`, facoltative: se un file manca si salta). Se preferisci, colleghi la cartella a una sessione e

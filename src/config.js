@@ -325,7 +325,14 @@ export const FERMI = { comandi: .6, buio: .5, scuro: 1, uscita: .9, cartelloni: 
 // Il deluso sta a `deluso` = [parte della distanza dalla telecamera, metri di lato]
 // `riquadro`: per quanti secondi si vede la striscia in fondo allo schermo col nome di chi ha segnato (scelta di Alex:
 // piccola, sottile, 2 secondi, in dissolvenza, senza coprire chi esulta). 0 = mai, come in Dream League.
-export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.7, camDist: 4.6, deluso: [.55, 1.7], riquadro: 2 };
+// Esultanze, chieste da Alex il 26/11. `lato` è l'angolo in radianti della telecamera del primo piano rispetto alla
+// direzione della bandierina, dalla parte del campo, così dietro al marcatore c'è il pubblico. `compagni` sono tre numeri:
+// quanti dei più vicini vanno da lui, a quanti metri li si mette allo stacco, a quanti metri gli si fermano attorno.
+// Gli altri tornano al loro posto. `posti`: dove si fermano attorno a lui, in radianti, rispetto al lato opposto alla
+// telecamera (0 è proprio dietro di lui)
+// `esultanze`: le clip Mixamo facoltative (scripts/animazioni.mjs, elenco in docs/dls-gameplay.md) per chi segna e per i
+// compagni: si usano quelle che ci sono
+export const GOLSEQ = { lento: .5, durataLento: .7, vel: .45, fermi: 2.4, stacco: 1.3, camAlt: 1.6, camDist: 4.3, deluso: [.55, 1.7], riquadro: 2, lato: 2.5, compagni: [3, 5, 1.3], posti: [-1.1, 1.1, 1.9], esultanze: { marcatore: ['vittoria', 'pugno', 'ginocchio', 'braccia_larghe'], compagni: ['applauso', 'tifo'] } };
 
 // Livelli di dettaglio del calciatore: sotto `vicino` metri dalla telecamera il corpo pieno (circa 4.300 triangoli: primi
 // piani, replay, esultanze), fino a `lontano` quello medio (1.500: la telecamera di gioco), oltre quello leggero (600)
