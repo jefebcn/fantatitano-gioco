@@ -426,6 +426,30 @@ function parata(p, tt, dz, y) {
   }
   return gesto(p, `presa_${altezzaPresa(y)}`, tt, true);
 }
+/**
+ * Presa sui cross e sui lanci alti: il gesto parte in tempo perché le mani arrivino sul pallone, all'altezza a cui ci
+ * arriverà. Prima partiva solo al contatto, a 1,3 m, già dal fotogramma in cui le mani toccano: il pallone saltava nelle
+ * mani da mezzo metro a quasi due. Vale per il portiere della squadra che non ha calciato, nella sua area, se il pallone
+ * gli passa a portata (PARATA.portata) e non è un tiro.
+ */
+function prevediPresa(b) {
+  const k = G.lastKicker; if (!k || b.y <= PARATA.uscita || (G.tiroT || -1) >= (G.calcioT || 0) - 1e-6) return;
+  const p = k.team.opp.players.find((q) => q.i === 0); if (!p || !p.fig.skinned || !libero(p) || p.cool > 0 || p.st !== 'run' || /^presa_/.test(p.fx || '') || p.presaDi === G.calcioT) return;
+  if (!(Math.abs(p.x) > HL - 17 && Math.abs(p.z) < 20.5)) return;
+  const rx = b.x - p.x, rz = b.z - p.z, ux = b.vx - p.vx, uz = b.vz - p.vz, d = hyp(rx, rz), u2 = ux * ux + uz * uz; if (u2 < 1) return;
+  const chiude = -(rx * ux + rz * uz) / (d || 1); if (chiude < 1) return;
+  // dove il pallone gli passa più vicino: fuori portata non si prepara niente
+  const tv = -(rx * ux + rz * uz) / u2; if (hyp(rx + ux * tv, rz + uz * tv) > PARATA.portata) return;
+  // all'altezza a cui il pallone arriverà, la clip giusta e il punto delle sue mani
+  // la clip con le mani più vicine all'altezza a cui arriva il pallone
+  let fra = Math.max(0, d - .5) / chiude, y = b.y + b.vy * fra - GRAV / 2 * fra * fra, nome = null, meglio = 9;
+  for (const n of ['presa_terra', 'presa_ginocchio', 'presa_busto', 'presa_alta']) { const g = GESTI[n]; if (g && g.palla && Math.abs(g.palla[1] * (p.fig.alt || 1) - y) < meglio) { meglio = Math.abs(g.palla[1] * (p.fig.alt || 1) - y); nome = n; } }
+  const i = GESTI[nome]; if (!i) return;
+  fra = Math.max(0, d - hyp(i.palla[0], i.palla[2]) * (p.fig.alt || 1)) / chiude; y = b.y + b.vy * fra - GRAV / 2 * fra * fra;
+  if (y > PARATA.portataAlta || y < PARATA.uscita * .5) return;
+  // il gesto rallenta fino a PARATA.rallenta per arrivare in tempo: parte quando il contatto è a portata di quel ritmo
+  if (fra <= (i.tocco || 0) / PARATA.rallenta && gesto(p, nome, fra, true)) p.presaDi = G.calcioT;
+}
 /** Presa senza parata preparata (cross, tiro addosso): la clip all'altezza del pallone, dal momento in cui le mani lo toccano. */
 function presaPortiere(p, y) {
   const nome = `presa_${altezzaPresa(y)}`, i = GESTI[nome];
@@ -2177,7 +2201,7 @@ function nellaMano(p) {
 }
 function moveBall(dt) {
   const b = G.ball; fantasma(dt);
-  if (G.state === 'play') { calciCaricati(dt); if (b.owner && b.owner.i && !G.rimessa && !b.owner.carica) prevediTocco(b.owner, b); else if (!b.owner) prevediStop(b); } // i gesti con la palla, a tempo col tocco
+  if (G.state === 'play') { calciCaricati(dt); if (b.owner && b.owner.i && !G.rimessa && !b.owner.carica) prevediTocco(b.owner, b); else if (!b.owner) { prevediStop(b); prevediPresa(b); } } // i gesti con la palla, a tempo col tocco
   else for (const p of all()) p.carica = null; // a gioco fermo nessun calcio resta in sospeso
   // chi ha la palla lo si legge dopo i calci caricati: se il calcio è appena partito non c'è più nessuno da far condurre
   // (prima il passatore dava un tocco di conduzione al pallone appena calciato e il passaggio finiva lento e di lato)
@@ -2294,10 +2318,17 @@ function contacts(dt) {
     }
     if (!best) return; const p = best, gk = p.i === 0;
     const tiro = (G.tiroT || -1) >= (G.calcioT || 0) - 1e-6; // l'ultimo pallone calciato era un tiro (non un cross o un lancio)
+    // con la presa preparata (prevediPresa) il pallone lo fermano le mani: si aspetta che ci arrivi, o che smetta di avvicinarsi
+    if (gk && !tiro && /^presa_/.test(p.fx || '') && G.state === 'play') {
+      const mano = manoVicina(p, b.x, b.y, b.z), poi = mano === null ? null : manoVicina(p, b.x + b.vx * dt, b.y + b.vy * dt, b.z + b.vz * dt);
+      if (mano !== null && mano > PARATA.mani && poi < mano) return;
+    }
     if (gk && !tiro && b.y > PARATA.uscita && G.lastKicker && G.lastKicker.team !== p.team && G.state === 'play') { // cross o lancio alto: presa in uscita, o pugno se c'è un attaccante addosso
       const conteso = p.team.opp.players.some((o) => o.i && hyp(o.x - p.x, o.z - p.z) < 1.5);
       if (conteso && rnd() < .65) { const s2 = p.team.side; b.vx = s2 * rnd(8, 13); b.vz = rnd(-6, 6); b.vy = rnd(4, 7); b.c = b.t = 0; G.lastTouch = p; p.cool = .5; G.intended = null; AU.calcio(12, 'presa'); azione(p, 'testa'); return; }
-      presaPortiere(p, b.y); return gain(p);
+      // la presa preparata è già nelle mani; senza, parte la clip dal momento del contatto
+      if (!/^presa_/.test(p.fx || '')) presaPortiere(p, b.y);
+      return gain(p);
     }
     if (gk && sp > 13 && tiro && G.lastKicker && G.lastKicker.team !== p.team) {
       if (p.saveId === G.shotId) return;
