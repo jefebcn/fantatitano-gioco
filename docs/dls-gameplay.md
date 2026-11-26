@@ -72,8 +72,9 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
   corsa senza palla ~**5 m/s**, scatto ~**7 m/s**, conduzione ~**4,5 m/s** (misurata su Dream League), scatto con palla
   ~**6 m/s**. La quotazione sposta la corsa di qualche decimo.
 - **Accelerazione**: da fermo allo scatto in circa **un secondo**; frenata rapida (da 7 m/s a fermo in 0,36 s).
-- **Cambi di direzione**: la corsa gira subito ma perde velocità in proporzione all'angolo: a 90° resta il 72%, su
-  un'inversione circa metà; finché non si è girati non si accelera (`CORPO.gira`, `giraScatto`, `perde`).
+- **Cambi di direzione** (Alex, 26/11: in DLS chi inverte la corsa perde poco, e chi curva altrettanto poco): la corsa
+  gira subito e perde poca velocità; in partita le curve tengono circa il 93%, le inversioni l'81% (prima 76% e 53%);
+  finché non si è girati non si accelera (`CORPO.gira`, `giraScatto`, `perde`).
 - Le animazioni di camminata, corsetta e corsa girano alla velocità vera del giocatore (la clip della corsa copre anche
   lo scatto), e si fondono in base alla velocità: il piede in appoggio non scivola.
 - **Pallone al piede** (`COND` in `src/config.js`, `conduci` in `src/fisica/pallone.js`): in conduzione la palla non è
