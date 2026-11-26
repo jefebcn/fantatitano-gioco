@@ -2325,7 +2325,8 @@ function contacts(dt) {
     }
     if (gk && !tiro && b.y > PARATA.uscita && G.lastKicker && G.lastKicker.team !== p.team && G.state === 'play') { // cross o lancio alto: presa in uscita, o pugno se c'è un attaccante addosso
       const conteso = p.team.opp.players.some((o) => o.i && hyp(o.x - p.x, o.z - p.z) < 1.5);
-      if (conteso && rnd() < .65) { const s2 = p.team.side; b.vx = s2 * rnd(8, 13); b.vz = rnd(-6, 6); b.vy = rnd(4, 7); b.c = b.t = 0; G.lastTouch = p; p.cool = .5; G.intended = null; AU.calcio(12, 'presa'); azione(p, 'testa'); return; }
+      // il pugno: il pallone riparte dalle mani della presa preparata (prima partiva il colpo di testa, con le mani già sul pallone)
+      if (conteso && rnd() < .65) { const s2 = p.team.side; b.vx = s2 * rnd(8, 13); b.vz = rnd(-6, 6); b.vy = rnd(4, 7); b.c = b.t = 0; G.lastTouch = p; p.cool = .5; G.intended = null; AU.calcio(12, 'presa'); if (!/^presa_/.test(p.fx || '')) presaPortiere(p, b.y); return; }
       // la presa preparata è già nelle mani; senza, parte la clip dal momento del contatto
       if (!/^presa_/.test(p.fx || '')) presaPortiere(p, b.y);
       return gain(p);
