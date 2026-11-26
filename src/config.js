@@ -295,8 +295,11 @@ export const SEGNI = { x: 1.1, alto: 1.6, cambio: .2, rosso: .8, scala: .12, gri
 // lo colpisce lo dice la clip del gesto. Per i gesti che non lo dicono: `portata` metri davanti al corpo e `lato` metri
 // dalla parte del piede che calcia. `chiude`: a quanti metri al secondo il giocatore gli arriva sopra in quell'attesa.
 // `attesa`: quanto si aspetta al massimo, in secondi. `aria`: col pallone alzato da un rimbalzo il calcio aspetta che
-// scenda a quell'altezza in metri, se ci arriva entro tanti secondi (prima saltava giù di colpo al piede)
-export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: .15, chiude: 6, attesa: .18, aria: [.45, .7] };
+// scenda a quell'altezza in metri, se ci arriva entro tanti secondi (prima saltava giù di colpo al piede).
+// `tiro`: dove sta il pallone quando il collo del piede lo colpisce nella clip del tiro forte di Mixamo, che non lo dice:
+// [di lato, altezza, avanti], in altezze del giocatore, misurato sulle dita del piede destro (26/11). Prima valeva la
+// regola generale, 15 cm di lato, e il piede passava 10 cm più in fuori del centro del pallone
+export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: .15, chiude: 6, attesa: .18, aria: [.45, .7], tiro: [-.233, .11, .39] };
 
 /* ---------------------------------------------------------------- palle ferme e sequenza del gol (come Dream League) */
 // Palle ferme: su rimessa laterale e calcio d'angolo i comandi tornano `comandi` secondi dopo che il pallone è uscito; la

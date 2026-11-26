@@ -255,7 +255,13 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   in piedi (c'era già); C = cambia giocatore.
 - 15 MANDATO: video rallentato (3 volte più lento) di corsa, cambio di direzione, passaggio, stop e tiro, più il video
   finale di 30 s (calcio d'inizio, punizione, rimessa: nessuna parte da sola). Si aspetta il giudizio di Alex. Visto al
-  rallentatore: nel tiro il pallone sembra partire un attimo prima della gamba.
+  rallentatore: nel tiro il pallone sembra partire un attimo prima della gamba. FATTO il 26/11: il gesto del tiro ha solo 4 fotogrammi
+  per partire e un tocco di conduzione, uno stop o un taglio non ancora arrivati al pallone lo bloccavano: al colpo partiva
+  la clip dall'inizio, 3 fotogrammi indietro. Ora il calcio li interrompe (`calciCaricati`), e il pallone del tiro sta dove
+  passa il collo del piede nella clip (`CARICO.tiro`). Dita del piede dal pallone nel tiro: da 22 a 9 cm; nessun passaggio
+  usa più la clip di riserva. 32 partite: gol 1,97 -> 2,00, tiri 7,75 uguali, 0 anomalie. Prova: `scripts/prove/contatto.cjs`.
+  Resta il passaggio corto da palla ferma: chi batte sta dietro il pallone verso la porta avversaria e si gira verso il
+  compagno, il pallone gli resta 55 cm di lato e il piede lo manca di 25 cm. Da chiedere ad Alex come fa Dream League.
 
 ## Risposte di Alex del 24/11 e nuovo video (riprese-30s)
 - Tasti in difesa: A «Scivolata», B pressing e contrasto in piedi, C cambia giocatore. FATTO (vedi punto 13 qui sopra).
