@@ -2596,7 +2596,11 @@ function poseSkinned(p, dt) {
   // il corpo segue la direzione con una molla rapida: tiri, passaggi e scivolate girano p.dir di colpo, il bacino no
   // (oltre i 150° o dopo un salto di posizione, come a un calcio d'inizio, si gira subito)
   if (dt > 0) movimento(p, v);
-  const da = Math.atan2(Math.sin(p.dir - (f.vdir ?? p.dir)), Math.cos(p.dir - (f.vdir ?? p.dir)));
+  // Chi corre (senza gesto, senza temporeggiare guardando il pallone) ha il corpo disegnato verso dove va davvero: in curva
+  // la corsa gira prima della direzione del corpo fisico, e col corpo girato di 30-70 gradi il piede in appoggio strisciava
+  // di 1,5-3 m/s. Solo grafica, vedi MOVI.segui
+  const vc = Math.atan2(p.vx, p.vz), segue = p.i !== 0 && v > MOVI.segui[0] && p.st === 'run' && !p.fx && !p.carica && !(p.jock && !p.corsaJock) && Math.abs(giroVerso(p.dir, vc)) < MOVI.segui[1] * Math.PI / 180;
+  const meta = segue ? vc : p.dir, da = Math.atan2(Math.sin(meta - (f.vdir ?? meta)), Math.cos(meta - (f.vdir ?? meta)));
   // durante un movimento senza palla il corpo gira col gesto, dalla direzione di partenza a quella voluta
   const mi = MOV.test(p.fx || '') && p.movA !== undefined ? GESTI[p.fx] : null, mk = mi ? clamp(p.fxT * (p.fxSp || 1) / mi.durata, 0, 1) : 0;
   // finito il gesto il corpo resta girato dove è arrivato finché la direzione del corpo fisico (che gira solo quando la
@@ -2611,7 +2615,7 @@ function poseSkinned(p, dt) {
     if (p.movTieni && !(dt > 0 && Math.abs(da) > .35 && G.t < (p.movT || 0) + .6 && p.st === 'run' && verso)) p.movTieni = false;
     // oltre 150 gradi di differenza il corpo gira svelto ma non di colpo, se non dopo uno spostamento, vedi MOVI.corpo
     const molto = Math.abs(da) > 2.6, passo = molto ? clamp(da, -MOVI.corpo * dt, MOVI.corpo * dt) : da * Math.min(1, dt * 20);
-    if (!p.movTieni) f.vdir = dt <= 0 || (molto && spostato) ? p.dir : (f.vdir ?? p.dir) + passo;
+    if (!p.movTieni) f.vdir = dt <= 0 || (molto && spostato) ? meta : (f.vdir ?? meta) + passo;
   }
   f.root.rotation.y = f.vdir;
   if (G.dbgFx && hasFx(G.dbgFx.name)) { // per le prove: tutti fermi su un fotogramma di una clip
