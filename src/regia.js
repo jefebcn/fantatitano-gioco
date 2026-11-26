@@ -152,7 +152,8 @@ export function creaRegia(X) {
   }
   function segni(cine) {
     const sc = cam.aspect < 1 ? SEGNI.scala * .55 : SEGNI.scala;
-    const c = G.ctrl, b = G.ball, h = 2 * Math.tan(cam.fov * Math.PI / 360) * sc, on = !!G.segno && !cine;
+    // il portiere di chi gioca col pallone in mano lo comanda chi gioca (rinvio con i tasti): il segno va sopra di lui
+    const b = G.ball, gk = b && b.owner && b.owner.i === 0 && b.owner.team === G.teams[0] ? b.owner : null, c = gk || G.ctrl, h = 2 * Math.tan(cam.fov * Math.PI / 360) * sc, on = !!G.segno && !cine;
     pin.visible = on && !!c;
     if (pin.visible) { pinNome(c, X.potenza()); pin.scale.set(h * 2, h * 1.25, 1); pin.position.set(c.x, ((c.fig && c.fig.metri) || 1.8) + SEGNI.sopra + Math.sin(G.t * 6) * .03, c.z); }
     const o = b && b.owner; pinAvv.visible = on && !!o && o.team !== G.teams[0] && G.state === 'play';
