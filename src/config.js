@@ -299,7 +299,11 @@ export const SEGNI = { x: 1.1, alto: 1.6, cambio: .2, rosso: .8, scala: .12, gri
 // `tiro`: dove sta il pallone quando il collo del piede lo colpisce nella clip del tiro forte di Mixamo, che non lo dice:
 // [di lato, altezza, avanti], in altezze del giocatore, misurato sulle dita del piede destro (26/11). Prima valeva la
 // regola generale, 15 cm di lato, e il piede passava 10 cm più in fuori del centro del pallone
-export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: .15, chiude: 6, attesa: .18, aria: [.45, .7], tiro: [-.233, .11, .39] };
+// `passaFermo`: il passaggio da fermo di GameplayFootball dice tocco a 0,35 s col pallone a 45 cm, ma nel nostro scheletro
+// il piede destro arriva più avanti possibile a 0,42 s, a 36 cm davanti e di lato quanto basta perché l'interno del piede
+// prenda il pallone: [secondi della clip, di lato, altezza, avanti] (26/11). Col tocco della clip il pallone partiva 5
+// fotogrammi prima del piede
+export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: .15, chiude: 6, attesa: .18, aria: [.45, .7], tiro: [-.233, .11, .39], passaFermo: [.42, -.14, .11, .34] };
 
 /* ---------------------------------------------------------------- palle ferme e sequenza del gol (come Dream League) */
 // Palle ferme: su rimessa laterale e calcio d'angolo i comandi tornano `comandi` secondi dopo che il pallone è uscito; la
@@ -320,8 +324,12 @@ export const CARICO = { passa: .1, calcia: .14, lancia: .14, portata: .4, lato: 
 // `rigore` sul rigore, poi si batte lo stesso. Il calcio d'inizio aspetta `inizio` secondi dal fischio prima dei comandi.
 // Riprese rapide, tenute da Alex il 26/11: i comandi tornano 0,6 secondi dopo lo stacco (erano 2), il computer batte
 // dopo 0,4 secondi (era 1), il calcio d'inizio parte 0,5 secondi dopo il fischio (era 1,2). Il portiere rimette prima,
-// vedi RINVIO.attesa
-export const FERMI = { comandi: .6, buio: .5, scuro: 1, uscita: .9, cartelloni: [5, 4, .3], occasione: 4, fuori: 2.5, corto: [7, 7], cpu: .4, passo: [1.9, .6, 3.6], scatto: 12, fermo: .35, arrivo: 8, rigore: 10, inizio: .5 };
+// vedi RINVIO.attesa.
+// Palla ferma battuta corta (Alex, 26/11: in Dream League chi batte calcia da fermo, già sistemato): chi batte gira attorno
+// al pallone fino al posto giusto per il passaggio da fermo, `giro` gradi al massimo per volta; gli ultimi `vicino` metri
+// li fa scivolando a `scivola` metri al secondo; è a posto entro `posto` metri; il computer aspetta di esserlo al massimo `sistema` secondi oltre `cpu`. Chi gioca mira con la levetta, quando è
+// inclinata più di `mira`
+export const FERMI = { comandi: .6, buio: .5, scuro: 1, uscita: .9, cartelloni: [5, 4, .3], occasione: 4, fuori: 2.5, corto: [7, 7], cpu: .4, passo: [1.9, .6, 3.6], scatto: 12, fermo: .35, arrivo: 8, rigore: 10, inizio: .5, giro: 60, posto: .08, vicino: .2, scivola: .6, sistema: .6, mira: .3 };
 // Gol, in secondi veri dal pallone in rete: da `lento` per `durataLento` secondi un leggero rallentatore (a velocità `vel`),
 // con gli avversari fermi a disperarsi per `fermi` secondi e l'arbitro che indica il centro; a `stacco` la telecamera passa
 // al primo piano del marcatore: alta `camAlt` metri, a `camDist` metri da lui, con un difensore deluso in primo piano
