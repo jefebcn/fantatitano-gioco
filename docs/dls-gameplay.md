@@ -46,6 +46,10 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
 - Dopo un passaggio il controllo passa subito al compagno che riceve, già mentre la palla viaggia.
 - Nel codice: `modoAttacco`, `pressA` (B), `pressB` (A), `pressD` (C), `userThink` (pressing), `bindInput` (levetta fissa).
 
+- **Levetta su passaggio e tiro** (Alex, 26/11): il passaggio normale è sempre rasoterra, il cross e il pallonetto solo col
+  passaggio alto; con la levetta inclinata e nessun compagno da quella parte il pallone va nello spazio (`LEVETTA.vuoto`);
+  il tiro con la levetta lontana dalla porta (oltre `LEVETTA.tiroCono` gradi) va dove punta.
+
 ## 2. Segni in campo
 - Giocatore controllato: nome e segnalino verde sopra la testa (niente anello ai piedi).
 - Avversario con la palla: solo il nome, in bianco.
