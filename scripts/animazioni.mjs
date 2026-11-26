@@ -1,5 +1,7 @@
 // Prepara public/anim.js: tutte le animazioni del gioco, già adattate allo scheletro del calciatore (modelli/calciatore.glb).
 // Uso: node scripts/animazioni.mjs /cartella/con/gli/fbx/di/Mixamo
+//      node scripts/animazioni.mjs /cartella aggiungi   (solo le clip facoltative che ci sono nella cartella, aggiunte a
+//      quelle già in public/anim.js: basta X Bot.fbx più i file nuovi, senza il Soccer Game Pack)
 //
 // Sorgenti: gli FBX del «Soccer Game Pack» di Mixamo (non stanno nel repository) e modelli/animazioni-base.glb
 // (attesa, camminata e corsa del manichino di three.js). Hanno tutti lo scheletro di Mixamo; il calciatore ne ha un altro,
@@ -56,7 +58,7 @@ const SRC = Object.keys(OSSA), B = SRC.length;
 // ossa lunghe: se le due pose a T non coincidono (braccia o gambe un po' più aperte) si corregge la differenza
 const FIGLIO = { LeftArm: 'LeftForeArm', LeftForeArm: 'LeftHand', RightArm: 'RightForeArm', RightForeArm: 'RightHand', LeftUpLeg: 'LeftLeg', LeftLeg: 'LeftFoot', RightUpLeg: 'RightLeg', RightLeg: 'RightFoot' };
 
-const dir = process.argv[2]; if (!dir) { console.error('manca la cartella degli FBX di Mixamo'); process.exit(1); }
+const dir = process.argv[2], aggiungi = process.argv[3] === 'aggiungi'; if (!dir) { console.error('manca la cartella degli FBX di Mixamo'); process.exit(1); }
 const ab = (f) => { const b = readFileSync(f); return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength); };
 const senza = (n) => n.replace(/^mixamorig:?/, '');
 const ossaDi = (root) => { const m = {}; root.traverse((o) => { const n = senza(o.name); if (o.isBone && !m[n]) m[n] = o; }); return m; }; // negli FBX di Mixamo ogni osso compare due volte: conta il primo
@@ -84,8 +86,11 @@ console.log('differenza tra le pose a T (gradi):', Object.keys(FIGLIO).map((b) =
 const SCAMBIO = SRC.map((b) => SRC.indexOf(b.startsWith('Left') ? b.replace('Left', 'Right') : b.startsWith('Right') ? b.replace('Right', 'Left') : b));
 const _e = new T.Euler(), _q = new T.Quaternion();
 
-const out = { fps: FPS, bacino: 'pelvis', ossa: SRC.map((s) => OSSA[s]), clip: {} };
+// aggiungendo si parte dalle clip che ci sono già: cambiano solo quelle facoltative trovate nella cartella
+const gia = aggiungi ? JSON.parse(readFileSync('public/anim.js', 'utf8').match(/window\.ANIMS=(.*);\s*$/s)[1]) : null;
+const out = gia || { fps: FPS, bacino: 'pelvis', ossa: SRC.map((s) => OSSA[s]), clip: {} };
 for (const [nome, [da_dove, da, a, opz]] of Object.entries(CLIP)) {
+  if (aggiungi && opz !== 'facoltativa') continue;
   if (opz === 'facoltativa' && !existsSync(`${dir}/${da_dove}.fbx`)) { console.log(`manca ${da_dove}.fbx: salto ${nome}`); continue; }
   const s = da_dove.startsWith('base:') ? sorgenti.base : sorgenti.fbx;
   const clip = s === sorgenti.base ? base.animations.find((c) => c.name === da_dove.slice(5)) : fbx.parse(ab(`${dir}/${da_dove}.fbx`), '').animations[0];

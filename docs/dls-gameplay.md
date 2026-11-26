@@ -79,6 +79,8 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
 - **Cambi di direzione** (Alex, 26/11: in DLS chi inverte la corsa perde poco, e chi curva altrettanto poco): la corsa
   gira subito e perde poca velocità; in partita le curve tengono circa il 93%, le inversioni l'81% (prima 76% e 53%);
   finché non si è girati non si accelera (`CORPO.gira`, `giraScatto`, `perde`).
+- **Cambio del giocatore in difesa** (Alex, 26/11): in DLS, con la palla agli avversari, si cambia solo col tasto. Qui è
+  così: il cambio automatico vale solo a palla libera (`CAMBIO`), in difesa si cambia con «Cambia giocatore».
 - **Pallone che sta per uscire di lato** (Alex, 26/11): in DLS i giocatori del computer lo rincorrono sempre, anche quando
   la rimessa toccherebbe alla loro squadra. Qui fanno lo stesso: con le curve svelte ci arrivano quasi sempre, circa 0,9
   rimesse laterali a partita (obiettivo delle prove abbassato a 0,6).
@@ -302,6 +304,7 @@ Su mixamo.com, col personaggio «X Bot» e le stesse impostazioni delle clip del
   - «airplane» o «flying» (corsa o posa a braccia larghe) → `braccia larghe.fbx`;
   e per i compagni: «clapping» → `applauso.fbx`; «jumping» o «excited» (salta di gioia) → `tifo.fbx`.
   Nel gioco sono già previste (`GOLSEQ.esultanze`): appena ci sono i file, chi segna ne fa una diversa a ogni gol.
+  Per aggiungerle basta `X Bot.fbx` più i file nuovi: `node scripts/animazioni.mjs <cartella> aggiungi`.
 Vanno nella **stessa cartella degli FBX del Soccer Game Pack** (quella con `X Bot.fbx`), sul computer, non nel repository
 (gli FBX di Mixamo non si ridistribuiscono). Poi `node scripts/animazioni.mjs <quella cartella>` rigenera `public/anim.js`
 (le clip sono già in `CLIP`, facoltative: se un file manca si salta). Se preferisci, colleghi la cartella a una sessione e

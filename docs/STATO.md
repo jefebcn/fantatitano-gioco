@@ -201,7 +201,7 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   (#193, `PORTIERE.gira`), da 9 corse all'indietro a 1.
 - Risposte di Alex del 26/11: riprese rapide sì (`FERMI.comandi`, `FERMI.cpu`, `FERMI.inizio`, `RINVIO.attesa`); tiro e
   passaggio seguono sempre la levetta, il cross solo col passaggio alto; il calcio d'inizio aspetta chi gioca (lo fa già).
-  Ancora da chiarire: cambio automatico del giocatore in difesa.
+  Cambio del giocatore in difesa: solo col tasto, come già fa il gioco.
 - Grafica e flusso del 26/11: segno sopra il portiere col pallone in mano; pallone nuovo (icosaedro troncato, 1,3×);
   esultanze: i 3 compagni più vicini vanno dal marcatore, primo piano verso il pubblico (`GOLSEQ.lato`, `compagni`,
   `posti`), esultanze Mixamo facoltative in `GOLSEQ.esultanze` (file da scaricare: elenco in docs/dls-gameplay.md).
