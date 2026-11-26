@@ -424,7 +424,9 @@ export const DOWN = { pl: .38, gk: .5, fall: .7 };
 // corpo: quanto gira al massimo il corpo disegnato, in radianti al secondo, quando resta indietro rispetto alla corsa di
 // oltre 150 gradi. Prima si girava di colpo in un fotogramma. salto: oltre quanti metri in un fotogramma il giocatore è
 // stato spostato, come al calcio d'inizio, e il corpo si gira subito.
-export const MOVI = { fermo: .6, parte: 2, giro: 35, corsa: 2.4, inverti: -.35, scatto: 5.3, pausa: .3, passo: .2, attesa: .35, corsaAttesa: 1.2, corpo: 12, salto: 1 };
+// `invertiV`: l'inversione parte solo fino a tante volte la velocità della sua clip (a 4,5 m/s, il doppio, il piede di perno
+// strisciava di due metri e mezzo al secondo)
+export const MOVI = { fermo: .6, parte: 2, giro: 35, corsa: 2.4, inverti: -.35, scatto: 5.3, pausa: .3, passo: .2, attesa: .35, corsaAttesa: 1.2, corpo: 12, salto: 1, invertiV: 1.4 };
 
 /* ---------------------------------------------------------------- fisica del pallone */
 export const FIS = {
