@@ -720,6 +720,9 @@ export const AUDIO = {
   // il coro del pubblico durante la partita (Alex, 26/11: «Alé Fantatitano», da Suno): sotto il gioco, `livello` rispetto
   // alla musica della home; si ripete da sé, sfuma in pausa e a fine partita
   partita: { cartella: 'audio/', brani: ['coro-partita-ale-fantatitano'], livello: .45, entra: 2, esce: 1.2 },
+  // il brusio continuo del pubblico (rumore filtrato fatto al momento): 1 com'era, 0 spento. Alex, 26/11: copriva il coro,
+  // spento. Il boato del gol e gli «ooh» sulle occasioni restano
+  brusio: 0,
 };
 // Le schermate a pannelli (src/casa/quadri.js), sulle bozze di Alex del 24/11: Monete e diamanti, Profilo, Stagione.
 // Misure in punti, colori come li legge lo stile: diventano le variabili --q-* della pagina.

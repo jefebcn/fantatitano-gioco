@@ -3,8 +3,8 @@
    - Effetti della partita: calci (più cupi e forti sui tiri carichi, morbidi su passaggi e stop), rimbalzi sull'erba,
      pali e traverse che risuonano, la rete che fruscia, scivolate, spallate, il fischietto dell'arbitro (diverso per
      inizio e fine tempo, fallo, fuorigioco, rigore e gol).
-   - Il pubblico: un brusio che dipende da quanta gente c'è sugli spalti, cresce quando la palla è negli ultimi 25 metri,
-     esplode al gol e fa "ooooh" sui tiri fuori di poco e sulle parate.
+   - Il pubblico: esplode al gol e fa "ooooh" sui tiri fuori di poco e sulle parate. Il brusio continuo (che dipende da
+     quanta gente c'è e cresce quando la palla è negli ultimi 25 metri) è spento da AUDIO.brusio: copriva il coro.
    - La musica della home: brani veri (public/audio, elenco in AUDIO.musica di src/config.js; fonti in docs/crediti.md)
      che girano in tutte le schermate fuori dalla partita, si ripetono con una dissolvenza, sfumano quando comincia la
      partita e riprendono da dov'erano quando si torna alla home.
@@ -168,9 +168,10 @@ export function creaAudio(opz = {}) {
     const lfo = x.createOscillator(), pr = x.createGain(); lfo.frequency.value = .17; pr.gain.value = 260; lfo.connect(pr); pr.connect(a.voci.fl.frequency); lfo.start();
     a.boatoG = strato(760, .35, 'rosa');
   }
-  // il livello del brusio: affluenza e tensione (palla negli ultimi 25 metri), zero in pausa o fuori dalla partita
+  // il livello del brusio: affluenza e tensione (palla negli ultimi 25 metri), zero in pausa o fuori dalla partita, e
+  // per quanto dice AUDIO.brusio (spento: c'è il coro vero)
   function aggiornaFolla(t = .5) {
-    if (!A.ctx) return; const F = A.folla, k = F.attiva && !F.pausa ? F.affluenza : 0, c = ora();
+    if (!A.ctx) return; const F = A.folla, k = F.attiva && !F.pausa ? F.affluenza * AUDIO.brusio : 0, c = ora();
     A.brusio.g.gain.setTargetAtTime(k * (.2 + .2 * F.tensione), c, t); A.voci.g.gain.setTargetAtTime(k * (.06 + .14 * F.tensione), c, t);
   }
   /** Ogni fotogramma in partita: affluenza (0..1, quanta gente sugli spalti) e tensione (0..1). */
