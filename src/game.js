@@ -1355,13 +1355,14 @@ function pass(p, m, pow = null, rivisto = false, molt = 1) {
   const o = piede(p), pt = puntoIncontro(p, m); let dx = pt.x - o.x, dz = pt.z - o.z; const d = hyp(dx, dz) || 1;
   if (avversarioAddosso(p, o, dx / d, dz / d)) {
     if (!rivisto && !userDrives(p)) { const m2 = bestPass(p); if (m2 && m2 !== m) { const p2 = puntoIncontro(p, m2), d2 = hyp(p2.x - o.x, p2.z - o.z) || 1; if (!avversarioAddosso(p, o, (p2.x - o.x) / d2, (p2.z - o.z) / d2)) return pass(p, m2, pow, true, molt); } }
-    if (d < 30) { // pallonetto corto sopra la gamba: scende sui piedi del compagno
+    // chi gioca passa sempre rasoterra: il pallonetto, e il cross, solo col passaggio alto (Alex, 26/11)
+    if (d < 30 && !userDrives(p)) { // pallonetto corto sopra la gamba: scende sui piedi del compagno
       const T = clamp(d / 13, .55, 1.6), v = FIS.mira(o, { x: pt.x, y: .3, z: pt.z }, T, 0, -.2); v.vy = Math.max(v.vy, PASSA.scavalca);
       kick(p, v.vx, v.vy, v.vz, 'passaggio', 0, -.2); G.intended = m; if (p.team.human) setCtrl(m); p.s.pa++; G.lastPass = p; return;
     }
   }
   { const e = rnd(-1, 1) * .035 * qf(p) * (userDrives(p) ? .6 : diffOf(p).err) * (pt.spazio ? 1.25 : 1), c = Math.cos(e), n = Math.sin(e), x = dx * c - dz * n; dz = dx * n + dz * c; dx = x; } // imprecisione (un po' di più sul filtrante)
-  const lob = d > 18 && laneBlocked(p, m, pt.x, pt.z);
+  const lob = d > 18 && !userDrives(p) && laneBlocked(p, m, pt.x, pt.z);
   if (lob) { // a scavalcare, con un po' di rotazione all'indietro; se lui corre, la palla scende dove arriverà
     const T = clamp(d / 17, .85, 1.7), vm = hyp(m.vx, m.vz), run = m.run || vm > 2.5, L = run ? hyp(m.run ? m.run.x - m.x : m.vx, m.run ? m.run.z - m.z : m.vz) || 1 : 1;
     const ux = run ? (m.run ? m.run.x - m.x : m.vx) / L : 0, uz = run ? (m.run ? m.run.z - m.z : m.vz) / L : 0, k = run ? corsaIn(m, ux, uz, T + .25, true) : 0;
@@ -1489,12 +1490,32 @@ function pressA(down = true) {
   if (down) { if (comandaPortiere('mano')) return; if (b.owner === c) caricaInizio('pass'); else if (!modoAttacco()) G.in.pressing = true; return; }
   if (G.charge < 0 || G.caricaTipo !== 'pass') return; const t = G.charge; G.charge = -1; if (b.owner !== c || c.carica) return;
   const [ix, iz] = direzioneUtente(c), pow = t < CARICA.tocco ? null : potenza();
+  // Il passaggio segue sempre la levetta (Alex, 26/11): con la levetta inclinata e nessun compagno da quella parte, il pallone
+  // va nello spazio in quella direzione. Solo a levetta ferma si cerca chi è davanti, poi il migliore
+  const [jx, jz] = inputWorld(), leva = hyp(jx, jz) > .3;
   if (PASSAGGIO.assistito) { // assistito: il compagno nella direzione della levetta, la pressione cambia solo un po' la velocità
-    const m = bestPass(c, ix, iz) || bestPass(c, Math.sin(c.dir), Math.cos(c.dir)) || bestPass(c), k = 1 + (Math.min(1, t / CARICA.piena) - .5) * 2 * PASSAGGIO.dosa;
-    if (m) prepara(c, 'passa', m.x, m.z, () => pass(c, m, null, false, k)); return;
+    const m = bestPass(c, ix, iz) || (leva ? null : bestPass(c, Math.sin(c.dir), Math.cos(c.dir)) || bestPass(c)), k = 1 + (Math.min(1, t / CARICA.piena) - .5) * 2 * PASSAGGIO.dosa;
+    if (m) prepara(c, 'passa', m.x, m.z, () => pass(c, m, null, false, k)); else if (leva) passaVuoto(c, ix, iz, pow);
+    return;
   }
-  const dd = pow === null ? undefined : distDa('pass', pow), m = bestPass(c, ix, iz, dd) || bestPass(c, Math.sin(c.dir), Math.cos(c.dir), dd) || bestPass(c); // nessuno nella direzione: chi è davanti, poi il migliore
-  if (m) prepara(c, 'passa', m.x, m.z, () => pass(c, m, pow));
+  const dd = pow === null ? undefined : distDa('pass', pow), m = bestPass(c, ix, iz, dd) || (leva ? null : bestPass(c, Math.sin(c.dir), Math.cos(c.dir), dd) || bestPass(c)); // nessuno nella direzione: chi è davanti, poi il migliore
+  if (m) prepara(c, 'passa', m.x, m.z, () => pass(c, m, pow)); else if (leva) passaVuoto(c, ix, iz, pow);
+}
+/** Tiro nella direzione (ux, uz) e non in porta: forte e un po' alto, come un tiro, ma non conta tra i tiri. */
+function tiroVerso(c, ux, uz, pow) {
+  const tx = c.x + ux * 25, tz = c.z + uz * 25;
+  prepara(c, 'calcia', tx, tz, () => {
+    if (G.ball.owner !== c) return; const o = piede(c), sp = 19 + 15 * pow, v = FIS.mira(o, { x: o.x + ux * 25, y: .35 + pow * 1.85, z: o.z + uz * 25 }, 25 / sp / .94, 0, 0);
+    kick(c, v.vx, clamp(v.vy, 0, 15), v.vz, 'tiro'); G.intended = null; G.lastPass = null;
+  }, pow > .65);
+}
+/** Passaggio rasoterra nello spazio, nella direzione (ix, iz): LEVETTA.vuoto metri, o quanti ne dice la potenza caricata. */
+function passaVuoto(c, ix, iz, pow) {
+  const d = pow === null ? LEVETTA.vuoto : distDa('pass', pow), tx = clamp(c.x + ix * d, -HL - 2, HL + 2), tz = clamp(c.z + iz * d, -HW - 2, HW + 2);
+  prepara(c, 'passa', tx, tz, () => {
+    if (G.ball.owner !== c) return; const o = piede(c), dx = tx - o.x, dz = tz - o.z, l = hyp(dx, dz) || 1, sp = daTabella(RASO.v, l);
+    kick(c, dx / l * sp, 0, dz / l * sp, 'passaggio'); G.intended = null; G.lastPass = c; c.s.pa++;
+  });
 }
 // Cross: traversone se c'è un compagno in area, altrimenti lancio lungo nella direzione della levetta. La potenza decide
 // quanto lontano: poca sul primo palo, tanta sul secondo (o un lancio più lungo)
@@ -1525,7 +1546,11 @@ function pressB(down) {
 // la carica arriva in fondo: parte da sola
 function rilascia() { if (G.caricaTipo === 'pass') pressA(false); else if (G.caricaTipo === 'cross') pressD(false); else pressB(false); }
 function userShoot(pow) {
-  const c = G.ctrl, [, iz] = inputWorld(); const gk = c.team.opp.players[0];
+  const c = G.ctrl, [jx, iz] = inputWorld(); const gk = c.team.opp.players[0];
+  // Il tiro segue la levetta (Alex, 26/11): se punta lontano dalla porta (oltre LEVETTA.tiroCono gradi) il pallone va da
+  // quella parte, anche di spalle o da lontano. Verso la porta la levetta sceglie l'angolo
+  const gx = c.team.side * HL, lg = hyp(gx - c.x, -c.z) || 1, lj = hyp(jx, iz);
+  if (lj > .3 && (jx * (gx - c.x) - iz * c.z) / (lj * lg) < Math.cos(LEVETTA.tiroCono * Math.PI / 180)) return tiroVerso(c, jx / lj, iz / lj, pow);
   const tz = Math.abs(iz) > .25 ? iz * GH * 1.06 : (gk.z > 0 ? -1 : 1) * GH * .68;
   prepara(c, 'calcia', c.team.side * HL, tz, () => shoot(c, tz, pow, .9), pow > .65);
 }

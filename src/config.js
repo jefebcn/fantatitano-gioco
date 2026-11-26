@@ -236,7 +236,10 @@ export const ANGOLO_CAM = { dietro: 11, alto: 6, avanti: 5, mira: [9, 2], fov: 3
 // La levetta: base fissa (un cerchio di `raggio` px), la levetta si muove dentro. Poco inclinata si cammina, poi si corre;
 // oltre `scatto` (parte del raggio) si scatta da soli: non c'è un tasto per lo scatto. Sulla tastiera le frecce sono la levetta
 // tutta inclinata (scatto): tenendo Maiusc si corre senza scattare, a `tastieraCorsa`.
-export const LEVETTA = { raggio: 52, scatto: .87, tastieraCorsa: .8 };
+// `vuoto`: con la levetta inclinata e nessun compagno da quella parte, il passaggio va nello spazio, a tanti metri.
+// `tiroCono`: se la levetta punta a più di tanti gradi dalla porta, il tiro va dove punta (Alex, 26/11: tiro e passaggio
+// seguono sempre la levetta)
+export const LEVETTA = { raggio: 52, scatto: .87, tastieraCorsa: .8, vuoto: 14, tiroCono: 60 };
 // Andatura dalla levetta: sotto `morta` fermi, poi si cammina, a metà si corricchia, da `piena` si corre (prima dello scatto).
 // Tra un'andatura e l'altra il passaggio è morbido, così si può dosare la velocità vicino all'avversario.
 export const ANDATURA = { morta: .15, cammina: .3, corsetta: .62, piena: .78 };
