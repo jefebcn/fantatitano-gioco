@@ -182,8 +182,8 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   1) giravolta di scatto: FATTO (#194, #195). Il corpo non resta più girato al contrario dopo un'inversione ripensata
   e oltre i 150 gradi gira svelto ma non di colpo (`MOVI.corpo`); chi passa si gira mentre carica il calcio. Girate di
   colpo da 32 a 22, oltre 90 gradi da 12 a 0. 2) parate a distanza: FATTO (#196), il pallone rimbalza quando arriva
-  alle mani (`PARATA.mani`, `PARATA.manca`); gol da 2,13 a 2,41. Restano le prese e i pugni sui cross, che passano da
-  un'altra strada. 3) chi riceve si lascia sfilare il pallone: lo stop scattava a 1,05 m dal corpo, a circa un metro dal
+  alle mani (`PARATA.mani`, `PARATA.manca`); gol da 2,13 a 2,41. Prese sui cross FATTE: la presa parte in anticipo (`prevediPresa`, `PARATA.portata`) e il pallone
+  si ferma quando arriva alle mani; su 20 cross di prova da 1,14 a 0,48 m dalle mani. Restano i pugni. 3) chi riceve si lascia sfilare il pallone: lo stop scattava a 1,05 m dal corpo, a circa un metro dal
   piede; ora aspetta che il pallone arrivi al piede (`PASSAGGIO.piede`) e il gesto parte in tempo per quel punto.
   Distanza piede-pallone alla presa da 0,96 a 0,51 m (0,40 col gesto di stop); su 32 partite gol da 2,19 a 2,53, tiri
   da 7,28 a 7,94. Le andature di ogni figura partono da un punto che dipende solo da chi è (`fase` in `makeSkinned`):
