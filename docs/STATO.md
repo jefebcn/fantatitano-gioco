@@ -199,8 +199,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   Rimesse laterali scese da 1,6 a 0,9 a partita con le curve svelte: Alex (26/11) dice che in DLS il pallone che esce si
   rincorre sempre; gioco invariato, obiettivo delle prove da 1,5 a 0,6. Portieri che arretrano di corsa: FATTO
   (#193, `PORTIERE.gira`), da 9 corse all'indietro a 1.
-- In sospeso da Alex: riprese rapide sì o no (tolgono 11 s di attesa, non danno tiri); tiro lontano o di spalle (segue
-  la levetta o va sempre in porta?); cambio automatico del giocatore in difesa; calcio d'inizio che aspetta il passaggio.
+- Risposte di Alex del 26/11: riprese rapide sì (`FERMI.comandi`, `FERMI.cpu`, `FERMI.inizio`, `RINVIO.attesa`); tiro e
+  passaggio seguono sempre la levetta, il cross solo col passaggio alto; il calcio d'inizio aspetta chi gioca (lo fa già).
+  Ancora da chiarire: cambio automatico del giocatore in difesa.
 - Strumenti: `scripts/prove/diagnosi.cjs`, `tiri.cjs`, `registra.cjs`, `rivedi.cjs`, `analisi-partita.py` (righe in
   `docs/RICETTE.md`).
 

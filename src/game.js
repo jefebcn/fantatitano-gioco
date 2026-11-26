@@ -1895,7 +1895,9 @@ function gkTiene(p, dt) {
   const t = p.team, s = t.side, gx = -s * HL;
   // sulla rimessa dal fondo il portiere di chi gioca aspetta il comando (Passa o Cross, vedi comandaPortiere)
   const comando = G.attesa && G.attesa.chi === p && t.human && !G.auto;
-  if (!p.rinvio) p.rinvio = { ...scegliRinvio(p), quando: comando ? Infinity : rnd(...RINVIO.attesa) * (t.human ? 1.3 : 1), anim: false };
+  // il gesto del rinvio parte RINVIO.braccio (o piede) secondi prima del lancio: il lancio non arriva mai prima, se no il gesto
+  // partiva subito, col portiere ancora a terra dopo il tuffo, e restava fermo finché non si rialzava
+  if (!p.rinvio) { const sc = scegliRinvio(p), ant = sc.tipo === 'mano' ? RINVIO.braccio : RINVIO.piede; p.rinvio = { ...sc, quando: comando ? Infinity : Math.max(ant + RINVIO.margine, rnd(...RINVIO.attesa) * (t.human ? 1.3 : 1)), anim: false }; }
   // finché è a terra (presa in tuffo) e mentre si rialza il tempo non corre: il rinvio sopra la posa sdraiata la mescolava
   // a quella in piedi e il corpo finiva mezzo metro sotto l'erba (e veniva sollevato di altrettanto)
   const r = p.rinvio; if (p.st !== 'down' && p.st !== 'dive' && !A_TERRA_GF.test(p.fx || '')) p.hold += dt;
