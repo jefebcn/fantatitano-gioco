@@ -220,7 +220,7 @@ fotogrammi e primi piani dei momenti sospetti. Trovati, in ordine di quanto si v
 3. Parate a distanza: il pallone si ferma a più di un metro dai guanti (1–3 a partita). CORRETTO il 25/11: si aspetta che arrivi alle mani (`PARATA.mani`, `PARATA.manca`).
 4. Giravolta di scatto: il corpo gira di oltre 120° in un fotogramma (7–25 a partita). CORRETTO il 25/11: oltre 90 gradi da 12 a 0 (`MOVI.corpo`, `verso` in `prepara`).
 5. Chi riceve si lascia sfilare il pallone a 1,2–1,4 metri e lo rincorre (4–9 a partita). CORRETTO il 25/11: lo stop aspetta il pallone al piede (`PASSAGGIO.piede`).
-6. Piedi che strisciano nel passo laterale: CORRETTO il 26/11 (`DEF.laterale`, chi temporeggia veloce si gira e corre). Nei cambi di direzione stretti: da fare. Portieri che arretrano di corsa: CORRETTO il 25/11 (`PORTIERE.gira`).
+6. Piedi che strisciano nel passo laterale: CORRETTO il 26/11 (`DEF.laterale`, chi temporeggia veloce si gira e corre). Nei cambi di direzione stretti: CORRETTO il 26/11 (`MOVI.invertiV`). Portieri che arretrano di corsa: CORRETTO il 25/11 (`PORTIERE.gira`).
 
 Il prezzo della correzione dei calci, su 32 partite (semi 7–38, nessuna anomalia): gol da 2,09 a 1,34, tiri da 7,59 a
 7,16, passaggi riusciti da 75 a 74 su 100, falli da 0,59 a 0,88. Con attese più lunghe (0,3 secondi) i passaggi

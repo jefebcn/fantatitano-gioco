@@ -190,7 +190,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   prima la posa cambiava con la partita giocata prima e la partita rigiocata non finiva uguale.
   4) piedi che strisciano nel passo laterale e nei cambi di direzione: il passo laterale FATTO, chi temporeggia guarda
   il pallone solo sotto i 2,4-2,9 m/s, più svelto si gira e corre (`DEF.laterale`): appoggio di lato da 27,7 a 6,3 s,
-  metri strisciati da 59 a 14 (seme 7). Restano i cambi di direzione (`inverti_*`, circa 2,5 m/s di strisciata). Portieri che arretrano di corsa: FATTO
+  metri strisciati da 59 a 14 (seme 7). Cambi di direzione FATTI: l'inversione col perno parte solo fino a 1,4 volte
+  la velocità della sua clip (`MOVI.invertiV`), più svelto il giocatore resta nella corsa; metri strisciati nelle
+  inversioni da 52 a 13 (seme 7). Resta da chiedere ad Alex se in DLS chi inverte a tutta velocità frena di più. Portieri che arretrano di corsa: FATTO
   (#193, `PORTIERE.gira`), da 9 corse all'indietro a 1.
 - In sospeso da Alex: riprese rapide sì o no (tolgono 11 s di attesa, non danno tiri); tiro lontano o di spalle (segue
   la levetta o va sempre in porta?); cambio automatico del giocatore in difesa; calcio d'inizio che aspetta il passaggio.

@@ -312,6 +312,9 @@ function movimento(p, v) {
   } else if (v > ((p.movAsp || 0) > G.t ? M.corsaAttesa : M.corsa) && w > 1.5 && (p.wx * p.vx + p.wz * p.vz) / (w * v) < M.inverti) {
     verso = Math.atan2(p.wx, p.wz); const a = giroVerso(Math.atan2(p.vx, p.vz), verso), g = Math.abs(a) * 180 / Math.PI;
     nome = (vr > M.scatto ? 'inverti_scatto_135' : g < 157 ? 'inverti_135' : 'inverti_180') + (a > 0 ? '_sx' : '_dx');
+    // la clip fa perno su un piede alla sua velocità: chi inverte molto più svelto (il gioco lo fa curvare senza quasi
+    // frenare) striscerebbe sul piede di perno, e resta nella corsa, vedi MOVI.invertiV
+    if (GESTI[nome] && vr > GESTI[nome].v * M.invertiV) return;
   } else if (vr > M.scatto && w < 1) nome = 'frena_scatto';
   if (!nome || !GESTI[nome]) return;
   const giu = (p.passo || 0) < .5 ? 'dx' : 'sx', ap = GESTI[nome].appoggio;
