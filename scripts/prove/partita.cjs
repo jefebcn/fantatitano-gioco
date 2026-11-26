@@ -88,7 +88,8 @@ function partita([seme, diffi, casa, ospiti, modulo]) {
         const pp = prima.get(p);
         if (pp && hyp(p.x - pp[0], p.z - pp[1]) > .6) nota('giocatore teletrasportato', `${p.name} ${hyp(p.x - pp[0], p.z - pp[1]).toFixed(1)} m`);
         if (p.st === 'down' || p.stun > 0) { aTerra.set(p, (aTerra.get(p) || 0) + 1 / 60); if (Math.abs(aTerra.get(p) - 3) < .009) nota('giocatore a terra 3 s', p.name); } else aTerra.set(p, 0);
-        if (p.fx) { const k = gestoDa.get(p); if (k && k[0] === p.fx) { k[1] += 1 / 60; if (Math.abs(k[1] - 2.5) < .009) nota('gesto bloccato 2,5 s', `${p.name} ${p.fx}`); } else gestoDa.set(p, [p.fx, 0]); } else gestoDa.delete(p);
+        // lo stesso gesto ripartito da capo (due rinvii di fila del portiere) non è un gesto bloccato: si ricomincia a contare
+        if (p.fx) { const k = gestoDa.get(p), t = p.fxT || 0; if (k && k[0] === p.fx && t >= k[2]) { k[1] += 1 / 60; k[2] = t; if (Math.abs(k[1] - 2.5) < .009) nota('gesto bloccato 2,5 s', `${p.name} ${p.fx}`); } else gestoDa.set(p, [p.fx, 0, t]); } else gestoDa.delete(p);
         if (p.fig && p.fig.root && Math.abs(p.fig.body.position.y) > .5) nota('corpo sollevato o affondato', `${p.name} ${p.fig.body.position.y.toFixed(2)} ${p.fx || p.st}`);
       }
     } else if (tiene) { tenute.push(tiene.t); tiene = null; }
