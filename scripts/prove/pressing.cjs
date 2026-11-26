@@ -37,22 +37,25 @@ srv.listen(0, async () => {
       b.x = p.x + avanti * .5; b.z = p.z; b.y = .11; b.vx = avanti * 4; b.vz = 0; b.vy = 0; g.gain(p); G.ctrl = p;
       // di lato e un po' indietro, verso il centro; alla linea si torna
       G.in.jx = -avanti * .25; G.in.jy = (z0 > 0 ? -1 : 1) * .6;
-      let intervento = null, min = 99;
+      // anche il fallo è un intervento: chi va sul pallone e trattiene o sgambetta l'ha attaccato
+      let intervento = null, min = 99, come = '';
+      const falli0 = G.stats.fouls[o.idx];
       for (let i = 0; i < 60 * 8 && intervento === null; i++) {
         g.step(1 / 60); g.draw(1 / 60);
         if (Math.abs(p.z) > HW - 2) G.in.jy = -G.in.jy;
-        for (const q of o.players) { if (q.i === 0) continue; min = Math.min(min, Math.hypot(q.x - p.x, q.z - p.z)); if ((q.fx && /^contrasto/.test(q.fx)) || q.st === 'slide') intervento = i / 60; }
-        if (G.ball.owner !== p && G.ball.owner && G.ball.owner.team === o) intervento = intervento ?? i / 60;
+        for (const q of o.players) { if (q.i === 0) continue; min = Math.min(min, Math.hypot(q.x - p.x, q.z - p.z)); if ((q.fx && /^contrasto/.test(q.fx)) || q.st === 'slide') { intervento = i / 60; come = 'contrasto'; } }
+        if (intervento === null && G.ball.owner !== p && G.ball.owner && G.ball.owner.team === o) { intervento = i / 60; come = 'pallone preso'; }
+        if (intervento === null && G.stats.fouls[o.idx] > falli0) { intervento = i / 60; come = 'fallo'; }
       }
       G.in.jx = G.in.jy = 0;
-      out.push({ k, da: `${x0},${z0}`, intervento, min: +min.toFixed(1) });
+      out.push({ k, da: `${x0},${z0}`, intervento, come, min: +min.toFixed(1) });
     }
     return out;
   });
   let male = 0;
   for (const e of esiti) {
     const ok = e.intervento !== null; if (!ok) male++;
-    console.log(`${ok ? '✓' : '✗'} prova ${e.k + 1}, partenza ${e.da}: ${ok ? `intervento dopo ${e.intervento.toFixed(1)} s` : `nessun intervento in 8 s (avversario più vicino a ${e.min} m)`}`);
+    console.log(`${ok ? '✓' : '✗'} prova ${e.k + 1}, partenza ${e.da}: ${ok ? `intervento (${e.come}) dopo ${e.intervento.toFixed(1)} s` : `nessun intervento in 8 s (avversario più vicino a ${e.min} m)`}`);
   }
   if (errori.length) console.log('Errori nella pagina:', [...new Set(errori)].slice(0, 5));
   await br.close(); srv.close();
