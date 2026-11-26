@@ -94,7 +94,16 @@ srv.listen(0, async () => {
   vero('all\'avvio della partita la musica sta sfumando (non si taglia di colpo)', !s.vuole && s.sfuma < 1 && s.sfuma > .05 && !s.l.fermo, { sfuma: s.sfuma });
   await tra(2200); s = await stato(pg); const tPartita = s.l.t;
   vero('in partita la musica è zitta e ferma', s.sfuma < .05 && !s.suona && s.l.fermo, { sfuma: s.sfuma, t: tPartita });
-  await tra(1500); await pg.evaluate(() => window.__g.toMenu()); await tra(2600); s = await stato(pg);
+  // si gioca: parte il coro del pubblico (AUDIO.partita), col suo lettore
+  const coro = () => pg.evaluate(() => { const A = window.__g.AU, el = A.coroLettore; return { suona: A.coroSuona, file: el ? el.currentSrc.split('/').pop() : '', fermo: el ? el.paused : true, t: el ? +el.currentTime.toFixed(1) : 0 }; });
+  let c = await coro(); for (let i = 0; i < 40 && !(c.suona && !c.fermo && c.t > .5); i++) { await tra(500); c = await coro(); }
+  vero('in partita, dopo la presentazione, suona il coro del pubblico', c.suona && !c.fermo && /^coro-partita/.test(c.file), c);
+  await pg.evaluate(() => window.__g.pause(true)); await tra(2000); c = await coro();
+  vero('in pausa il coro si ferma', !c.suona && c.fermo, c);
+  await pg.evaluate(() => window.__g.pause(false)); await tra(1500); c = await coro();
+  vero('tolta la pausa il coro riprende', c.suona && !c.fermo, c);
+  await pg.evaluate(() => window.__g.toMenu()); await tra(2600); s = await stato(pg); c = await coro();
+  vero('tornati alla home il coro è fermo', !c.suona && c.fermo, c);
   vero('tornati alla home riprende in dissolvenza da dov\'era', s.vuole && s.suona && !s.l.fermo && s.sfuma > .9 && s.l.t >= tPartita && s.l.t < tPartita + 4, { fermata: tPartita, ora: s.l.t, sfuma: s.sfuma });
 
   console.log('7. Gioco in secondo piano');

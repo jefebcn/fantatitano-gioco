@@ -8,6 +8,8 @@
    - La musica della home: brani veri (public/audio, elenco in AUDIO.musica di src/config.js; fonti in docs/crediti.md)
      che girano in tutte le schermate fuori dalla partita, si ripetono con una dissolvenza, sfumano quando comincia la
      partita e riprendono da dov'erano quando si torna alla home.
+   - Il coro della partita: un brano vero cantato dal pubblico (AUDIO.partita), più basso, sotto il gioco. Ha il suo
+     lettore: la musica della home intanto resta ferma dov'era.
 
    Il contesto audio nasce solo al primo tocco (o tasto): i browser, iOS e Android in testa, bloccano l'audio partito
    da solo. Volumi di musica ed effetti e il tasto muto restano salvati sul dispositivo. */
@@ -27,8 +29,16 @@ export function creaAudio(opz = {}) {
   const A = {
     ctx: null, on: true, vol: { musica: .6, effetti: .9 }, sbloccato: false,
     folla: { affluenza: .55, tensione: 0, attiva: false, pausa: false },
-    lettore: null, brano: 0, suona: false, timer: null, ultimaSpallata: -9,
+    ultimaSpallata: -9,
   };
+  // le due musiche, ognuna col suo lettore: la home (AUDIO.musica) e il coro della partita (AUDIO.partita)
+  const pista = (cfg) => ({ cfg, lettore: null, brano: 0, suona: false, timer: null, spegni: null, nomeBrano: '', fade: null, vuole: false });
+  const HOME = pista(AUDIO.musica), CORO = pista(AUDIO.partita);
+  // i nomi di prima, letti dalle prove: sono quelli della musica della home
+  Object.defineProperties(A, {
+    lettore: { get: () => HOME.lettore }, suona: { get: () => HOME.suona }, voglioMusica: { get: () => HOME.vuole }, fadeM: { get: () => HOME.fade },
+    coroLettore: { get: () => CORO.lettore }, coroSuona: { get: () => CORO.suona },
+  });
   try { const v = JSON.parse(localStorage.getItem(SALVA) || '{}'); if (typeof v.on === 'boolean') A.on = v.on; for (const k of ['musica', 'effetti']) if (typeof v[k] === 'number') A.vol[k] = clamp(v[k], 0, 1); } catch (e) { /* senza memoria valgono i valori di partenza */ }
   const salva = () => { try { localStorage.setItem(SALVA, JSON.stringify({ on: A.on, musica: A.vol.musica, effetti: A.vol.effetti })); } catch (e) { /* niente memoria: pazienza */ } };
 
@@ -47,7 +57,10 @@ export function creaAudio(opz = {}) {
       this.comp = x.createDynamicsCompressor(); this.comp.threshold.value = -3; this.comp.knee.value = 0; this.comp.ratio.value = 20; this.comp.attack.value = .003; this.comp.release.value = .15; this.comp.connect(x.destination);
       this.master = x.createGain(); this.master.gain.value = this.on ? 1 : 0; this.master.connect(this.comp);
       this.busM = x.createGain(); this.busM.gain.value = this.vol.musica * AUDIO.musica.livello; this.busM.connect(this.master);
-      this.fadeM = x.createGain(); this.fadeM.gain.value = 0; this.fadeM.connect(this.busM);
+      HOME.fade = x.createGain(); HOME.fade.gain.value = 0; HOME.fade.connect(this.busM);
+      // il coro passa dallo stesso volume della musica, più basso di quanto dice AUDIO.partita.livello
+      const coro = x.createGain(); coro.gain.value = AUDIO.partita.livello / AUDIO.musica.livello; coro.connect(this.busM);
+      CORO.fade = x.createGain(); CORO.fade.gain.value = 0; CORO.fade.connect(coro);
       this.busE = x.createGain(); this.busE.gain.value = this.vol.effetti; this.busE.connect(this.master);
       creaFolla(this);
       if (opz.contesto) return;
@@ -55,7 +68,7 @@ export function creaAudio(opz = {}) {
       const s = x.createBufferSource(); s.buffer = x.createBuffer(1, 1, x.sampleRate); s.connect(x.destination); s.start(0);
       if (x.resume) x.resume().catch(() => {});
       // gioco in secondo piano: tutto fermo, musica compresa; quando torna, riprende
-      document.addEventListener('visibilitychange', () => { if (!this.ctx) return; if (document.hidden) { fermaMusica(); this.ctx.suspend().catch(() => {}); } else if (this.sbloccato) { this.ctx.resume().catch(() => {}); aggiornaMusica(); } });
+      document.addEventListener('visibilitychange', () => { if (!this.ctx) return; if (document.hidden) { fermaMusica(HOME); fermaMusica(CORO); this.ctx.suspend().catch(() => {}); } else if (this.sbloccato) { this.ctx.resume().catch(() => {}); aggiornaMusica(); } });
     } catch (e) { this.ctx = null; }
   };
   // al primo tocco o tasto, ovunque: crea o riprende il contesto, poi se il contesto gira smette di ascoltare
@@ -183,61 +196,62 @@ export function creaAudio(opz = {}) {
     rumore(this.busE, { buf: 'rosa', f: 500, q: .6, vol: .12 * k, att: .3, dur: 1.6 });
   };
 
-  /* ------------------------------------------------------------ la musica della home */
-  // I brani sono file veri: OGG dove il browser lo sa leggere, MP3 altrimenti. Li suona un lettore solo, nel modo più
-  // semplice che c'è, perché deve andare uguale su ogni telefono: con un brano solo è il lettore stesso a farlo
+  /* ------------------------------------------------------------ la musica della home e il coro della partita */
+  // I brani sono file veri: OGG dove il browser lo sa leggere, MP3 altrimenti. Ogni musica ha un lettore solo, nel modo
+  // più semplice che c'è, perché deve andare uguale su ogni telefono: con un brano solo è il lettore stesso a farlo
   // ricominciare quando finisce, e la dissolvenza tra la fine e l'inizio è già nel file. Con più brani, finito uno
   // parte il successivo. Il lettore passa dal contesto audio, così volume della musica, muto e dissolvenze valgono anche
   // per lui: su iPhone il volume di un lettore non si cambia in altro modo. Il file si scarica solo quando la musica
   // deve suonare davvero.
-  const MU = AUDIO.musica;
   const estensione = () => { try { return new Audio().canPlayType('audio/ogg; codecs="vorbis"') ? '.ogg' : '.mp3'; } catch (e) { return '.mp3'; } };
   // porta un volume a `v` in circa `sec` secondi, da dovunque sia
   const verso = (g, v, sec) => { const c = ora(); g.cancelScheduledValues(c); g.setTargetAtTime(v, c, sec / 3); };
   // mette nel lettore il brano di turno; se è l'unico, il lettore lo ripete da sé
-  function carica() {
-    const el = A.lettore, nome = MU.cartella + MU.brani[A.brano] + A.estensione;
-    if (A.nomeBrano !== nome) { A.nomeBrano = nome; el.src = nome; }
-    el.loop = MU.brani.length === 1;
+  function carica(P) {
+    const el = P.lettore, nome = P.cfg.cartella + P.cfg.brani[P.brano] + A.estensione;
+    if (P.nomeBrano !== nome) { P.nomeBrano = nome; el.src = nome; }
+    el.loop = P.cfg.brani.length === 1;
   }
   // il lettore nasce dentro un tocco: su iPhone può ripartire da solo, più tardi, solo se la prima volta è partito così
-  function prepara() {
-    if (A.lettore) return;
-    const el = A.lettore = new Audio(); el.preload = 'auto'; A.estensione = estensione();
-    A.ctx.createMediaElementSource(el).connect(A.fadeM); el.addEventListener('ended', dopo); carica();
+  function prepara(P) {
+    if (P.lettore) return;
+    const el = P.lettore = new Audio(); el.preload = 'auto'; A.estensione = A.estensione || estensione();
+    A.ctx.createMediaElementSource(el).connect(P.fade); el.addEventListener('ended', () => dopo(P)); carica(P);
   }
   // Finito un brano parte il prossimo dell'elenco, da capo. Con un brano solo di norma non si arriva qui, perché il
   // lettore lo ripete da sé: se non lo facesse, riparte da qui
-  function dopo() {
-    if (!A.suona) return;
-    A.brano = (A.brano + 1) % MU.brani.length; carica(); A.lettore.currentTime = 0; A.lettore.play().catch(() => {});
+  function dopo(P) {
+    if (!P.suona) return;
+    P.brano = (P.brano + 1) % P.cfg.brani.length; carica(P); P.lettore.currentTime = 0; P.lettore.play().catch(() => {});
   }
   // Il guardiano, una volta al secondo: se la musica deve suonare ma il lettore è fermo (arrivato in fondo senza
   // ripartire, o fermato dal telefono per una chiamata o una notifica), lo rimette in moto
-  function guardiano() {
-    const el = A.lettore; if (!A.suona) return;
-    if (el.ended) dopo(); else if (el.paused) el.play().catch(() => {});
+  function guardiano(P) {
+    const el = P.lettore; if (!P.suona) return;
+    if (el.ended) dopo(P); else if (el.paused) el.play().catch(() => {});
   }
-  function avviaMusica() {
-    prepara(); if (A.suona) return; A.suona = true; A.timer = setInterval(guardiano, 1000);
+  function avviaMusica(P) {
+    prepara(P); if (P.suona) return; P.suona = true; P.timer = setInterval(() => guardiano(P), 1000);
     // riprende da dov'era. Se il browser non la lascia partire (nessun tocco ancora valido), ci riprova al prossimo tocco
-    A.lettore.play().catch(() => { fermaMusica(); document.addEventListener('pointerdown', aggiornaMusica, { once: true, capture: true }); });
+    P.lettore.play().catch(() => { fermaMusica(P); document.addEventListener('pointerdown', aggiornaMusica, { once: true, capture: true }); });
   }
-  function fermaMusica() {
-    clearTimeout(A.spegni); if (!A.suona) return;
-    A.suona = false; clearInterval(A.timer); A.timer = null; A.lettore.pause();
+  function fermaMusica(P) {
+    clearTimeout(P.spegni); if (!P.suona) return;
+    P.suona = false; clearInterval(P.timer); P.timer = null; P.lettore.pause();
   }
-  // La musica deve suonare? Solo se la schermata la vuole, l'audio non è muto, il volume della musica non è a zero e
-  // il gioco è in primo piano. Tutto quello che cambia una di queste cose passa di qui: sfuma in entrata o in uscita,
-  // e a musica spenta ferma il lettore, che così non scarica e non consuma
-  function aggiornaMusica() {
-    if (!A.ctx) return;
-    const deve = !!A.voglioMusica && A.on && A.vol.musica > 0 && !document.hidden;
-    verso(A.fadeM.gain, deve ? 1 : 0, deve ? MU.entra : MU.esce); clearTimeout(A.spegni);
-    if (deve) avviaMusica(); else if (A.suona) A.spegni = setTimeout(fermaMusica, MU.esce * 1000 + 150);
+  // Una musica deve suonare? Solo se la vuole la schermata (o la partita), l'audio non è muto, il volume della musica non
+  // è a zero e il gioco è in primo piano. Tutto quello che cambia una di queste cose passa di qui: sfuma in entrata o in
+  // uscita, e a musica spenta ferma il lettore, che così non scarica e non consuma
+  function aggiornaPista(P) {
+    const deve = P.vuole && A.on && A.vol.musica > 0 && !document.hidden;
+    verso(P.fade.gain, deve ? 1 : 0, deve ? P.cfg.entra : P.cfg.esce); clearTimeout(P.spegni);
+    if (deve) avviaMusica(P); else if (P.suona) P.spegni = setTimeout(() => fermaMusica(P), P.cfg.esce * 1000 + 150);
   }
+  function aggiornaMusica() { if (!A.ctx) return; aggiornaPista(HOME); aggiornaPista(CORO); }
   /** Musica sì o no: sì in tutte le schermate della home, no in partita. Sfuma in entrata e in uscita. */
-  A.musica = function (on) { this.voglioMusica = on; aggiornaMusica(); };
+  A.musica = function (on) { HOME.vuole = !!on; aggiornaMusica(); };
+  /** Il coro del pubblico sì o no: sì mentre si gioca la partita. Sfuma in entrata e in uscita. */
+  A.coro = function (on) { CORO.vuole = !!on; aggiornaMusica(); };
 
   /* ------------------------------------------------------------ compatibilità con le chiamate di prima */
   A.kick = (v) => A.calcio(v, 'tocco');

@@ -47,6 +47,17 @@ Le fonti dei modelli e delle animazioni della partita sono nel README; quelle de
 - Preparazione nostra: dissolvenza in entrata di 0,4 secondi e in uscita di 3, volume portato a −16 LUFS, salvata in OGG
   e in MP3 a 128 kbps.
 
+### «Alé Fantatitano», il coro della partita
+- Cosa: `public/audio/coro-partita-ale-fantatitano.ogg` e `.mp3` (gli originali in `assets/arrivo/audio/`): coro da
+  stadio cantato in italiano dal pubblico, 1 minuto e 54. Suona mentre si gioca, sotto i suoni della partita
+  (`AUDIO.partita` di `src/config.js`, `A.coro` in `src/audio.js`); si ferma in pausa e a fine partita.
+- Da dove: generata con **Suno** (https://suno.com) dall'account di Alex, piano Pro come «Rise Up» (uso commerciale
+  consentito dai termini di Suno al momento della generazione). Consegnata da Alex il 26 novembre 2026.
+- Testo: **originale, scritto per Fantatitano** («Alé, alé, Fantatitano! Tutti in piedi, in alto le mani…»). Nessun
+  nome di squadre vere, nessun coro o melodia di altri.
+- Preparazione nostra: dissolvenza in entrata di 0,4 secondi e in uscita di 3, volume portato a −16 LUFS, salvata in OGG
+  (q4) e in MP3 a 128 kbps a 44,1 kHz.
+
 Tutti gli altri suoni del gioco (calci, pali, rete, fischietto, pubblico) non vengono da file: li genera `src/audio.js`
 al momento.
 
