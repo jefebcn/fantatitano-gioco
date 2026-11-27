@@ -269,9 +269,8 @@ export const CONTRASTO = { portata: .45, manca: .6, lato: 55, fermo: 2, scatto: 
 // `incontro`: chi riceve va da solo sul pallone. La levetta sposta il punto d'incontro solo di questi metri, per ricevere
 // già girato dove si vuole andare. Deve restare sotto la distanza a cui si prende il pallone (1,05 m): a 1,4 m chi
 // teneva la levetta gli correva accanto senza toccarlo.
-// `piede`: con lo stop il pallone si controlla quando arriva a tanti metri dal piede più vicino, o quando smette di
-// avvicinarsi. Prima si fermava appena entrava a 1,05 m dal corpo, a circa un metro dal piede.
-export const PASSAGGIO = { assistito: true, dosa: .15, arrivo: [6, .15, 6.5, 10.5], inCorsa: [5.5, 8, 16], incontro: .5, piede: .3 };
+// Lo stop: il pallone basso si prende solo col piede a COND.piede (vedi contacts e avviaStop in game.js).
+export const PASSAGGIO = { assistito: true, dosa: .15, arrivo: [6, .15, 6.5, 10.5], inCorsa: [5.5, 8, 16], incontro: .5 };
 // Cambio automatico del giocatore comandato a palla libera (un passaggio nostro, un rimpallo, una respinta: non il passaggio
 // degli avversari in viaggio): il comando passa al compagno che arriva sul pallone prima, se ci arriva almeno `margine`
 // secondi prima di chi è comandato adesso. Dopo un cambio, automatico o col tasto, per `pausa` secondi non si ricambia.
@@ -504,11 +503,12 @@ export const FIS = {
  *  miraGiro: quanto si accorcia quel tempo girando (a 90 gradi o più: mira per 1 - miraGiro)
  *  allunga:  negli ultimi secondi prima del contatto il piede si allunga fino al pallone, e dopo ci mette tanto a tornare
  *  allungaMax, portata: di quanto al massimo (m), e fin dove: il punto del piede a tanto dal centro del pallone (m)
+ *  smorza:   lo stop di un pallone preso lontano dal piede lo smorza quando il piede ci arriva, o al più dopo tanti secondi
  *  sotto:    da fermi la suola tiene il pallone solo se è già a meno di così dal suo punto (m)
  *  frena:    dal taglio di tanti gradi in su si frena al passo del gesto
  *  insegue:  chi conduce va prima sul pallone se è fuori dalla strada verso dove vuole andare (coseno dell'angolo, vedi corri)
  */
-export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.15, vicino: 0.5, passo: 1.12, passoScatto: 1.2, guinzaglio: 1.5, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6, piede: 0.3, finestra: 0.12, largo: 0.45, taglia: 50, subito: 0.05, mira: 0.6, miraGiro: 0.5, allunga: 0.12, allungaMax: 0.3, portata: 0.13, sotto: 0.25, insegue: 0.88, frena: 90 };
+export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.15, vicino: 0.5, passo: 1.12, passoScatto: 1.2, guinzaglio: 1.5, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6, piede: 0.3, finestra: 0.12, largo: 0.45, taglia: 50, subito: 0.05, mira: 0.6, miraGiro: 0.5, allunga: 0.12, allungaMax: 0.3, portata: 0.13, smorza: 0.25, sotto: 0.25, insegue: 0.88, frena: 90 };
 
 /* ---------------------------------------------------------------- fisica dei giocatori */
 export const CORPO = {

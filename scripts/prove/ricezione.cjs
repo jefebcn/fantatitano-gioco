@@ -12,7 +12,7 @@ srv.listen(0, async () => {
   const br = await chromium.launch(), pg = await br.newPage({ viewport: { width: 844, height: 390 } });
   await pg.goto(`http://localhost:${srv.address().port}/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
   await pg.waitForFunction(() => window.__g && !document.querySelector('#carica'), null, { timeout: 90000 });
-  const tot = { ricevuti: 0, conGesto: 0, scatti: 0, scattoMax: 0, spinteSenza: 0, impulsoSenza: 0, allaPresa: [], esempi: [] };
+  const tot = { ricevuti: 0, conGesto: 0, scatti: 0, scattoMax: 0, spinteSenza: 0, impulsoSenza: 0, allaPresa: [], esempi: [], smorza: [0, 0] };
   for (let k = 0; k < N; k++) {
     const r = await pg.evaluate(([seme, TOCCO]) => {
       window.requestAnimationFrame = () => 0; const g = window.__g, G = g.G; g.renderer.render = () => {};
@@ -25,11 +25,17 @@ srv.listen(0, async () => {
       const out = { ricevuti: 0, conGesto: 0, scatti: 0, scattoMax: 0, spinteSenza: 0, impulsoSenza: 0, allaPresa: [], esempi: [] };
       let prima = null, ownerPrima = null, lpPrima = null, finestra = null, n = 0;
       while (G.state !== 'full' && n++ < 60000) {
+        // il piede di chi è vicino al pallone nella posa che il gioco vede quando decide la presa (quella di prima del passo),
+        // col pallone dove è arrivato
+        const prima0 = new Map(); if (!G.ball.owner) for (const t of G.teams) for (const p of t.players) if (Math.hypot(p.x - G.ball.x, p.z - G.ball.z) < 2) {
+          const ossa = []; for (const n of ['foot_l', 'foot_r', 'ball_l', 'ball_r']) { const o = p.fig.bones && p.fig.bones[n]; if (o) { tmp = tmp || o.position.clone(); o.getWorldPosition(tmp); ossa.push([tmp.x, tmp.y, tmp.z]); } }
+          prima0.set(p, ossa);
+        }
         g.step(1 / 60); draw(1 / 60);
         const b = G.ball, o = b.owner, ora = { x: b.x, z: b.z, vx: b.vx, vz: b.vz };
         if (G.state === 'play' && o && !ownerPrima && lpPrima && lpPrima.team === o.team && lpPrima !== o && o.i) {
           out.ricevuti++; if (/^stop/.test(o.fx || '')) out.conGesto++;
-          out.allaPresa.push(+piede(o, b).toFixed(2)); finestra = { p: o, fino: G.t + 1, t0: G.t };
+          out.allaPresa.push(+(prima0.has(o) ? Math.min(9, ...prima0.get(o).map(([x, y, z]) => Math.hypot(x - b.x, y - b.y, z - b.z))) : piede(o, b)).toFixed(2)); finestra = { p: o, fino: G.t + 1, t0: G.t };
         }
         if (finestra && (G.t > finestra.fino || G.state !== 'play' || (o && o !== finestra.p))) finestra = null;
         if (finestra && prima && b.y < .5) {
@@ -41,14 +47,17 @@ srv.listen(0, async () => {
         }
         prima = ora; ownerPrima = o; lpPrima = G.lastPass || (o ? null : lpPrima);
       }
-      out.impulsoSenza = +out.impulsoSenza.toFixed(1); return out;
+      out.impulsoSenza = +out.impulsoSenza.toFixed(1); out.smorza = (G.stats.smorza || [0, 0]).slice(); return out;
     }, [SEME + k, TOCCO]);
     for (const kk of ['ricevuti', 'conGesto', 'scatti', 'spinteSenza', 'impulsoSenza']) tot[kk] += r[kk];
+    tot.smorza[0] += r.smorza[0]; tot.smorza[1] += r.smorza[1];
     tot.scattoMax = Math.max(tot.scattoMax, r.scattoMax); tot.allaPresa.push(...r.allaPresa); tot.esempi.push(...r.esempi);
   }
   const a = tot.allaPresa.sort((x, y) => x - y), med = a[a.length >> 1] || 0, lontani = a.filter((x) => x > TOCCO).length;
-  console.log(`passaggi ricevuti ${tot.ricevuti}: stop col gesto ${tot.conGesto} (${Math.round(tot.conGesto / Math.max(1, tot.ricevuti) * 100)}%) · piede dal pallone alla presa: mediana ${med} m, oltre ${TOCCO} m ${lontani} (${Math.round(lontani / Math.max(1, a.length) * 100)}%)`);
+  console.log(`passaggi ricevuti ${tot.ricevuti}: stop col gesto ${tot.conGesto} (${Math.round(tot.conGesto / Math.max(1, tot.ricevuti) * 100)}%) · piede dal pallone alla presa: mediana ${med} m (3/4 sotto ${a[Math.floor(a.length * .75)] || 0}, 9/10 sotto ${a[Math.floor(a.length * .9)] || 0}), oltre ${TOCCO} m ${lontani} (${Math.round(lontani / Math.max(1, a.length) * 100)}%)`);
   console.log(`nel secondo dopo: scatti ${tot.scatti} (max ${tot.scattoMax} m) · spinte senza piede ${tot.spinteSenza} (${(tot.spinteSenza / Math.max(1, tot.ricevuti)).toFixed(1)} a passaggio, ${tot.impulsoSenza} m/s in tutto)`);
+  // presi lontano dal piede (vedi smorza in game.js): quanti il piede li ha poi raggiunti, quanti no (li riprende il tocco di conduzione)
+  console.log(`presi lontano dal piede: smorzati col piede ${tot.smorza[0]}, non raggiunti e ripresi col tocco di conduzione ${tot.smorza[1]}`);
   for (const e of tot.esempi) console.log('   ' + e);
   await br.close(); srv.close();
 });
