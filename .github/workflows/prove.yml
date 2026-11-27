@@ -43,6 +43,8 @@ jobs:
         run: node scripts/prove/retropassaggio.cjs
       - name: In conduzione il pallone si muove solo col piede (sei modi di condurre)
         run: node scripts/prove/calamita.cjs
+      - name: Collaudo (?collaudo) - nessun problema finto in una partita intera, segnalazione e rapporto da condividere
+        run: node scripts/prove/collaudo.cjs
       - name: Gli avversari vanno sul portatore di chi gioca (vicino alla metà campo, entro 8 secondi)
         run: node scripts/prove/pressing.cjs
       - name: Dopo un passaggio il comando resta al compagno che riceve
