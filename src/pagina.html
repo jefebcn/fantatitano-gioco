@@ -67,6 +67,14 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
 .scr .h,.scr .btn{font-family:"Bebas Neue",Anton,Impact,sans-serif;letter-spacing:.05em}
 #avviso{position:fixed;left:50%;bottom:16px;transform:translate(-50%,30px);opacity:0;transition:.25s;background:var(--lime);color:var(--ink);font:800 13px Montserrat;padding:9px 16px;border-radius:99px;z-index:50;pointer-events:none;max-width:90%;text-align:center}
 #avviso.su{opacity:1;transform:translate(-50%,0)}
+/* collaudo: i due pulsanti in pausa e la schermata «Segnala un problema» */
+/* in pausa i due pulsanti stanno negli angoli in alto, ai lati della scritta: sotto il menu sui telefoni non c'è posto */
+#stop .coll{position:absolute;top:calc(env(safe-area-inset-top,0px) + 8px);left:calc(env(safe-area-inset-left,0px) + 8px);right:calc(env(safe-area-inset-right,0px) + 8px);display:flex;justify-content:space-between;pointer-events:none}
+#stop .coll .btn{pointer-events:auto;font-size:12px;padding:7px 11px;min-width:0;box-shadow:0 3px 0 rgba(0,0,0,.5)}#stop .coll.nas{display:none}
+#segnalaS{justify-content:center;gap:12px;padding:16px;background:rgba(6,10,28,.92)}#segnalaS p{max-width:560px;text-align:center;font-size:14px;margin:0}
+#segArg{max-width:620px}#segArg button.on{background:var(--viola);box-shadow:0 0 0 2px var(--lime) inset}
+#segTesto{width:min(560px,100%);font:16px Montserrat,sans-serif;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;resize:none}
+#segnalaS .az{display:flex;gap:10px}
 .tatt{display:flex;flex-direction:column;gap:6px;align-items:center}.seg.ora{padding-left:12px;border-left:1px solid rgba(255,255,255,.2)}.seg{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
 .seg button{background:rgba(255,255,255,.08);border-radius:99px;padding:7px 13px;font-size:12px;font-weight:900;letter-spacing:.05em;text-transform:uppercase}.basso .tatt{flex-direction:row;gap:14px}
 #ment{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;pointer-events:auto;font:900 10px Lato;letter-spacing:.08em;text-transform:uppercase;color:var(--lime);background:rgba(10,10,12,.72);padding:2px 3px;border-radius:99px;z-index:6;white-space:nowrap}
@@ -202,6 +210,16 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
   <button class="btn sec nas" id="apriCambi" data-t="pausa.sostituzioni"></button>
   <button class="btn" id="riprendi" data-t="pausa.riprendi"></button>
   <button class="btn sec" id="esci" data-t="pausa.esci"></button>
+  <div class="coll nas"><button class="btn sec" id="segnala" data-t="collaudo.segnala"></button><button class="btn sec" id="manda" data-t="collaudo.manda"></button></div>
+</div>
+
+<!-- collaudo (src/collaudo.js): chi prova il gioco scrive cosa non va; il gioco aggiunge la scena e una foto del campo -->
+<div id="segnalaS" class="scr nas">
+  <div class="h" data-t="collaudo.titolo"></div>
+  <p data-t="collaudo.spiega"></p>
+  <div class="seg" id="segArg"></div>
+  <textarea id="segTesto" maxlength="500" rows="3" data-t-placeholder="collaudo.scrivi"></textarea>
+  <div class="az"><button class="btn" id="segOk" data-t="collaudo.salva"></button><button class="btn sec" id="segNo" data-t="collaudo.annulla"></button></div>
 </div>
 
 <div id="cambi" class="scr nas">
@@ -221,7 +239,7 @@ input{user-select:text;-webkit-user-select:text;touch-action:auto}
   <div id="mvp"></div>
   <details id="pag"><summary data-t="fine.pagelle"></summary><div id="pagL"></div></details>
   <img class="tito" id="fTito" alt="Tito">
-  <div class="az"><button class="btn nas" id="continua" data-t="fine.continua"></button><button class="btn" id="rivincita" data-t="fine.rivincita"></button><button class="btn sec" id="cambia" data-t="fine.cambia"></button></div>
+  <div class="az"><button class="btn nas" id="continua" data-t="fine.continua"></button><button class="btn" id="rivincita" data-t="fine.rivincita"></button><button class="btn sec" id="cambia" data-t="fine.cambia"></button><button class="btn sec nas coll" id="mandaF" data-t="collaudo.manda"></button></div>
 </div>
 
 <div id="avviso"></div>

@@ -867,3 +867,24 @@ export const METEO = {
   cieli: ['sereno', 'sereno', 'pocoNuvoloso', 'nuvoloso'],
   gradi: [8, 26],
 };
+
+/* ---------------------------------------------------------------- collaudo (src/collaudo.js, ?collaudo nell'indirizzo) */
+// Quello che il gioco segnala da solo nel rapporto del collaudo. Sono le stesse soglie delle prove (scripts/prove/diagnosi.cjs).
+//  scatto:   un fotogramma più lungo di tanti secondi è uno scatto
+//  pausa:    un fotogramma più lungo di così non conta: il telefono era fermo, con lo schermo spento
+//  lento, lentoPer: sotto tanti fotogrammi al secondo per tanti secondi di fila è «gioco lento»
+//  teletrasporto: un giocatore che si sposta più svelto di così (m/s di gioco) è teletrasportato
+//  aTerra, gesto, ferma, ripresa: secondi di gioco a terra, con lo stesso gesto, col pallone fermo e libero, con una
+//            ripresa del computer che non parte
+//  lontano:  metri oltre le linee; sotto: metri sotto terra; sollevato: metri del corpo sopra o sotto il suo posto
+//  rete:     quanto è profonda la porta (m, come in src/grafica/stadio.js)
+//  esempi:   quante volte per ogni problema si scrive la scena; vicini: quanti giocatori nella scena
+//  scia, sciaOgni: il pallone negli ultimi tanti secondi, un punto ogni tanti
+//  partite:  quante partite tiene il rapporto; foto: quante foto; lunghezza: lettere al massimo di una segnalazione
+//  fotoLarga, fotoQualita: la foto del campo, larga tanti pixel, con la qualità JPEG da 0 a 1
+//  avviso:   per quanti secondi resta la scritta in basso
+export const COLLAUDO = {
+  scatto: 0.1, pausa: 1, lento: 40, lentoPer: 3, teletrasporto: 36, aTerra: 3, gesto: 2.5, ferma: 2, ripresa: 8,
+  lontano: 12, sotto: -0.05, sollevato: 0.5, rete: 2.2, esempi: 3, vicini: 3, scia: 3, sciaOgni: 0.5, partite: 6, foto: 6, lunghezza: 500,
+  fotoLarga: 720, fotoQualita: 0.7, avviso: 2.8,
+};

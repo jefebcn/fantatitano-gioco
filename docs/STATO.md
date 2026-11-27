@@ -10,6 +10,19 @@
   e ora i movimenti senza palla (partenze col perno, inversioni, frenata dallo scatto: `movimento`/`MOVI`).
 - Piedi piantati (src/grafica/piedi.js, IK a due ossa), si spegne a qualità ≥2.
 
+## Collaudo con un amico (Alex, 27/11: «un link per un mio amico che lo testa, e ci vengono scritte le problematiche»)
+- **FATTO.** Link: https://fantatitano-gioco.vercel.app/?collaudo (resta acceso anche dall'icona sul telefono; si spegne
+  aprendo una volta `?collaudo=0`). Codice in `src/collaudo.js`, valori in `COLLAUDO` (`src/config.js`), prova
+  `scripts/prove/collaudo.cjs` (in CI). Le segnalazioni arrivano su WhatsApp (scelta di Alex): niente server.
+- Il gioco controlla da solo, durante la partita, le stesse cose di `diagnosi.cjs` (pallone impossibile, sotto terra,
+  lontanissimo, fermo senza nessuno; giocatori teletrasportati, a terra, gesto bloccato, corpo sollevato) più il pallone
+  che entra o esce dalla porta attraverso la rete, le riprese del computer che non partono, gli scatti, il gioco lento e
+  gli errori nella pagina. In pausa «Segnala un problema» (argomento, due righe, foto del campo) e «Manda il rapporto»
+  (anche a fine partita): Condividi del telefono con `rapporto.txt` e le foto. Ogni voce ha la scena: pallone, chi ce
+  l'ha, i tre giocatori più vicini e cosa fanno, il pallone negli ultimi 3 secondi.
+- Su 8 partite intere col collaudo acceso nessun problema finto. Il rapporto resta sul telefono finché non si manda
+  (le foto solo finché la pagina è aperta). Nessun dato personale: telefono, browser, schermo, fotogrammi.
+
 ## Pallone al piede (richiesta di Alex del 25/11): conduzione, calci, contrasti
 Alex: «calibrare bene il pallone quando è attaccato al piede; guarda come si muove anche quando viene calciato o c'è un
 intervento». Misurato su una partita registrata (seme 7, 200 s) con `scripts/prove/registra.cjs` e un'analisi apposta

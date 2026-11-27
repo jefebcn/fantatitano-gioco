@@ -20,12 +20,13 @@ import { creaDintorni } from './grafica/dintorni.js';
 import { creaBordoCampo } from './grafica/bordocampo.js';
 import { creaAudio } from './audio.js';
 import { creaPrestazioni } from './prestazioni.js';
+import { collaudoAcceso, creaCollaudo } from './collaudo.js';
 import { creaResa } from './grafica/resa.js';
 import { creaPiedi } from './grafica/piedi.js';
 import { disegnaPallone } from './grafica/pallone.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { PRATO, NOTTURNA, STADI, PRESENTA, CONTRASTO, DIVISE, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI } from './config.js';
+import { PRATO, NOTTURNA, STADI, PRESENTA, CONTRASTO, DIVISE, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI, COLLAUDO } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -3192,14 +3193,32 @@ function bindInput() {
     const x = (keys.has('ArrowRight') || keys.has('d') ? 1 : 0) - (keys.has('ArrowLeft') || keys.has('a') ? 1 : 0), y = (keys.has('ArrowDown') || keys.has('s') ? 1 : 0) - (keys.has('ArrowUp') || keys.has('w') ? 1 : 0);
     const l = hyp(x, y) || 1, k = (keys.has('Shift') || keys.has('l') ? LEVETTA.tastieraCorsa : 1) / l; G.in.jx = x * k; G.in.jy = y * k;
   };
+  // chi scrive (la segnalazione del collaudo, i nomi nella home) non comanda il giocatore
+  const scrive = (e) => e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName);
   window.addEventListener('keydown', (e) => {
+    if (scrive(e)) return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; if (e.repeat) return;
     if (k.startsWith('Arrow') || k === ' ') e.preventDefault();
     keys.add(k); axis();
     if (k === 'x' || k === 'k') pressA(true); else if (k === 'c' || k === 'i') pressD(true); else if (k === ' ' || k === 'j') pressB(true); else if (k === 'p' || k === 'Escape') pause(!G.paused); else if (k === 'o') DBG_IA.alterna();
   });
-  window.addEventListener('keyup', (e) => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; keys.delete(k); axis(); if (k === ' ' || k === 'j') pressB(false); else if (k === 'x' || k === 'k') pressA(false); else if (k === 'c' || k === 'i') pressD(false); });
+  window.addEventListener('keyup', (e) => { if (scrive(e)) return; const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; keys.delete(k); axis(); if (k === ' ' || k === 'j') pressB(false); else if (k === 'x' || k === 'k') pressA(false); else if (k === 'c' || k === 'i') pressD(false); });
   window.addEventListener('contextmenu', (e) => e.preventDefault());
+}
+
+/** Un avviso in basso per qualche secondo (lo stesso della home). */
+function avvisoPartita(t) { const el = $('#avviso'); el.textContent = t; el.classList.add('su'); clearTimeout(avvisoPartita.t); avvisoPartita.t = setTimeout(() => el.classList.remove('su'), COLLAUDO.avviso * 1000); }
+function comandiCollaudo() {
+  for (const e of document.querySelectorAll('.coll')) e.classList.remove('nas');
+  const args = tr('collaudo.argomenti'); let scelto = args[0];
+  $('#segArg').innerHTML = args.map((a, i) => `<button data-a="${i}" class="${i ? '' : 'on'}">${esc(a)}</button>`).join('');
+  $('#segArg').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; scelto = args[+b.dataset.a]; for (const x of $('#segArg').children) x.classList.toggle('on', x === b); };
+  const chiudi = () => { $('#segTesto').blur(); $('#segnalaS').classList.add('nas'); show('#stop'); };
+  $('#segnala').onclick = () => { $('#segTesto').value = ''; $('#stop').classList.add('nas'); $('#segnalaS').classList.remove('nas'); };
+  $('#segOk').onclick = () => { COLL.segnala(scelto, $('#segTesto').value); chiudi(); avvisoPartita(tr('collaudo.salvata')); };
+  $('#segNo').onclick = chiudi;
+  const manda = async () => { const r = await COLL.manda(); if (r !== 'annullato') avvisoPartita(tr(r === 'mandato' ? 'collaudo.mandato' : r === 'copiato' ? 'collaudo.copiato' : 'collaudo.nonsiPuo')); };
+  $('#manda').onclick = manda; $('#mandaF').onclick = manda;
 }
 
 /* ------------------------------------------------------------------ schermate */
@@ -3216,6 +3235,8 @@ function tactics() {
 // I comandi che valgono durante la partita: frecce della mentalità, pausa, sostituzioni, uscita e audio.
 // Il resto dei pulsanti (menu e home) lo collega buildMenu, in src/casa/casa.js.
 function comandiPartita() {
+  // collaudo: i pulsanti in pausa e a fine partita e la schermata della segnalazione (src/collaudo.js)
+  if (COLL) comandiCollaudo();
   // in campo: le frecce ai lati del riquadro sotto la minimappa cambiano mentalità
   for (const f of document.querySelectorAll('#ment button')) f.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); sel.ment = clamp(sel.ment + +f.dataset.d, -1, 1); tactics(); });
   $('#replay').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); }); // pulsante replay in alto a destra: per ora solo segnaposto
@@ -3428,6 +3449,21 @@ function rallenta() {
   if (G.state !== 'goal' || G.auto || G.noRegia || !MODEL) return 1; const t = G.stateT, a = GOLSEQ.lento;
   return t >= a && t < a + GOLSEQ.durataLento * GOLSEQ.vel ? GOLSEQ.vel : 1;
 }
+// Collaudo (?collaudo nell'indirizzo): i controlli mentre si gioca e il rapporto da mandare su WhatsApp, vedi src/collaudo.js
+const VERSIONE_GIOCO = (/[?&]v=([^&]+)/.exec((document.querySelector('script[src*="app.js"]') || {}).src || '') || [])[1] || 'dev';
+/** La foto del campo per una segnalazione: si ridisegna il fotogramma e lo si legge subito, rimpicciolito (JPEG). */
+function fotoCampo() {
+  try {
+    if (RESA) RESA.disegna(); else renderer.render(scene, cam);
+    const w = Math.min(COLLAUDO.fotoLarga, canvas.width), h = Math.round(canvas.height * w / canvas.width), [c, x] = cv(w, h);
+    x.drawImage(canvas, 0, 0, w, h); return c.toDataURL('image/jpeg', COLLAUDO.fotoQualita);
+  } catch (e) { return null; }
+}
+const COLL = collaudoAcceso() ? creaCollaudo(COLLAUDO, { G, tutti: all, HL, HW, GH, GT, minuto: minute, foto: fotoCampo, qualita: () => `${sel.qual || 'automatica'}, livello ${QUAL.livello}`, versione: VERSIONE_GIOCO }) : null;
+if (COLL) {
+  window.addEventListener('error', (e) => COLL.errore(`${e.message || 'errore'}${e.filename ? ` (${e.filename.split('/').pop()}:${e.lineno})` : ''}`));
+  window.addEventListener('unhandledrejection', (e) => COLL.errore(`promessa: ${(e.reason && (e.reason.message || e.reason)) || '?'}`));
+}
 function loop(ts) {
   requestAnimationFrame(loop);
   if (misureCambiate()) resize();
@@ -3435,6 +3471,7 @@ function loop(ts) {
   PERF.inizio();
   const lento = rallenta(); // il leggero rallentatore dopo il gol
   if (!G.paused && !G.rivede) { if (G.state === 'menu') G.t += dt; else { const n = dt > .022 ? 2 : 1; for (let i = 0; i < n; i++) step(dt * lento / n); } } // durante un replay il gioco resta fermo
+  if (COLL) COLL.passo(vero);
   if (G.ball && G.state !== 'menu') { hud(); if (frame++ % 3 === 0) drawRadar(); }
   draw(G.paused ? 0 : dt * lento);
   PERF.fine();
@@ -3457,5 +3494,5 @@ async function boot() {
 }
 // quello che la home (src/casa/casa.js) prende da qui
 export { aiForm, $, rnd, clamp, hash, IMGX, img, G, renderer, cv, SCARPE_NEGOZIO, stemmi3d, makeSkinned, FIGURE, formaMaglia, pickKits, PALLONI, kitsFor, AU, tactics, club, chiudiPonte, startMatch, toMenu, CREST, loadImg, MODEL };
-window.__g = { prova, avviaPartita, hud, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, chiarezza, DIVISE, apriNuovo, spalti: () => SPALTI, STADI, alzaStadio, stadio: () => STADIO, fari: () => FARI, dintorni: () => DINTORNI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, INSERIMENTO, SMARCA, TIRO_IA, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, restart, kickoff, FERMI, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
+window.__g = { collaudo: () => COLL, prova, avviaPartita, hud, G, step, draw, cam, CFG: { HL, HW, GH, GT, BR, LINEE, CAMERA }, altezza: (p) => p.fig.metri || 0, valoreTiro, bestPassF: bestPass, bordo: () => BORDO, AU, creaAudio, toMenu, pause, panImp, pickKits, kitDist, cdist, chiarezza, DIVISE, apriNuovo, spalti: () => SPALTI, STADI, alzaStadio, stadio: () => STADIO, fari: () => FARI, dintorni: () => DINTORNI, camFov: () => cam.fov, atmo: () => ATMO, porte: () => PORTE, bandierine: () => BANDIERINE, PART, renderer, sun, scene, QUAL, PERF, resa: () => RESA, dettagliFigure, shootDiretto: (p, z, pow) => shoot(p, z, pow, .6), slide, switchCtrl, migliorDifensore, bestPass, puntoIncontro, startMatch, newMatch, club, GESTI, gesto, sbilancia, parata, DIFF, MATE, RUN, INSERIMENTO, SMARCA, TIRO_IA, DEF, FOUL, TIRE: MOTO.FATICA, CORPO: MOTO.CORPO, VOTE, AIR, vote, cross, corner, header, penalty, penSpot, freeKick, restart, kickoff, FERMI, foul, pass, gain, pressA, pressB, pressD, FORMS, MENT, SUB, sostituisci, aiSubs, setTactics, sel, tactics, showPre, CAR, carriera: () => K, CLUBS, drawHub, CLOUD, applicaMio, candidatiCapitano, attributi, salvaK, allAccesso, adotta, panSfide, panClubMio, panCastelli, panProfilo, img, model: () => MODEL };
 boot();
