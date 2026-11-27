@@ -268,6 +268,9 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   Tocco e punto del passaggio da fermo misurati sul nostro scheletro (`CARICO.passaFermo`: GameplayFootball diceva 0,35 s,
   il piede arriva a 0,42). Pallone di lato da 55 a 12 cm, piede sul pallone 1 fotogramma dopo la partenza (erano 9).
   Il computer batte dopo 0,55-0,65 s, 0,9 s sul calcio d'inizio e con un avversario vicino (prima 0,52-0,57).
+  Lezione: il computer all'inizio passava al compagno scelto quando l'attesa cominciava, quasi un secondo prima del
+  calcio, coi compagni non ancora al loro posto: su 96 partite (semi 7-102) un tiro in meno a partita, soprattutto da
+  fuori. Ora quel compagno serve solo a dove sistemarsi; al calcio sceglie di nuovo.
 
 ## Risposte di Alex del 24/11 e nuovo video (riprese-30s)
 - Tasti in difesa: A «Scivolata», B pressing e contrasto in piedi, C cambia giocatore. FATTO (vedi punto 13 qui sopra).

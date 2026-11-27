@@ -1060,11 +1060,12 @@ function setState(s) { G.state = s; G.stateT = 0; }
    limite di tempo; se è del computer, dopo FERMI.cpu secondi parte `batti` (il portiere sulla rimessa dal fondo decide da
    sé, coi suoi tempi). L'attesa finisce quando il pallone lascia chi batte. `rigore`: vale solo il tiro.
    `corto`: si batte di solito con un passaggio (calcio d'inizio, punizione indiretta): chi batte si sistema dietro il
-   pallone verso dove mira, vedi sistemaBattitore. Il computer sceglie subito il compagno, e gli passa quello. */
+   pallone verso dove mira, vedi sistemaBattitore. Il computer guarda subito il compagno migliore e al calcio sceglie di
+   nuovo: passare a quello scelto un secondo prima, coi compagni non ancora al loro posto, toglieva quasi un tiro a partita. */
 function aspetta(k, batti, rigore, corto) {
   gain(k); setState('play'); G.charge = -1; if (!G.rimessa) k.dir = Math.atan2(k.team.side, 0);
   G.attesa = { chi: k, t: FERMI.cpu, batti: userDrives(k) ? null : batti, rigore: !!rigore, fermi: false, corto: !!corto && k.i !== 0 };
-  if (G.attesa.corto && !userDrives(k)) { const m = bestPass(k); if (m) { G.attesa.m = m; G.attesa.mira = Math.atan2(m.x - k.x, m.z - k.z); } }
+  if (G.attesa.corto && !userDrives(k)) { const m = bestPass(k); if (m) G.attesa.mira = Math.atan2(m.x - k.x, m.z - k.z); }
 }
 /* Palla ferma battuta corta, come Dream League (Alex, 26/11): chi batte calcia da fermo, già sistemato. Mentre si aspetta
    gira attorno al pallone fino al posto da cui il piede destro, nel passaggio da fermo, lo colpisce verso dove mira: la
@@ -1074,7 +1075,8 @@ function aspetta(k, batti, rigore, corto) {
    mira. Ritorna false se non c'è niente da sistemare. */
 function sistemaBattitore(a, k, dt) {
   const b = G.ball, i = GESTI.passa_fermo; if (!i || !i.palla || !k.fig.skinned) return false;
-  if (userDrives(k)) { const [jx, jz] = inputWorld(); if (hyp(jx, jz) > FERMI.mira) a.mira = Math.atan2(jx, jz); }
+  // chi gioca: senza levetta il passaggio va dove guarda, e lì si sistema; con la levetta inclinata, verso la levetta
+  if (userDrives(k)) { const [jx, jz] = inputWorld(); if (hyp(jx, jz) > FERMI.mira) a.mira = Math.atan2(jx, jz); else if (a.mira === undefined) a.mira = k.dir; }
   if (a.mira === undefined) return false;
   const alt = k.fig.alt || 1, av = i.palla[2] * alt, lato = i.palla[0] * alt, ux = Math.sin(a.mira), uz = Math.cos(a.mira);
   // il posto: da lì il pallone è `av` metri davanti e `lato` di fianco (negativo: a destra)
@@ -1911,7 +1913,7 @@ function battiRimessa(p) {
 // calcio d'angolo: traversone in area, o passaggio se non c'è nessuno
 function battiAngolo(p) { const m = crossTarget(p) || bestPass(p); if (!m) return; const alto = canCross(p) && m.x * p.team.side > HL - 19; prepara(p, alto ? 'lancia' : 'passa', m.x, m.z, () => (alto ? cross : pass)(p, m)); }
 // calcio d'inizio, punizione lontana dalla porta, fuorigioco: passaggio al compagno migliore
-function battiPassaggio(p, m0) { const m = m0 || bestPass(p); if (m) prepara(p, 'passa', m.x, m.z, () => pass(p, m)); }
+function battiPassaggio(p) { const m = bestPass(p); if (m) prepara(p, 'passa', m.x, m.z, () => pass(p, m)); }
 function ownerThink(p, dt) {
   if (p.carica) return; // sta già calciando
   p.hold += dt;
@@ -2084,7 +2086,7 @@ function passo(dt) {
         else { setState('full'); banner(tr('partita.fine'), '', 1800); AU.fischio('fine'); }
       }
     }
-  } else if (G.state === 'kickoff') { if (G.stateT > FERMI.inizio) { const k = G.taker; aspetta(k, () => battiPassaggio(k, G.attesa && G.attesa.m), false, true); G.attesa.fermi = true; } }
+  } else if (G.state === 'kickoff') { if (G.stateT > FERMI.inizio) { const k = G.taker; aspetta(k, () => battiPassaggio(k), false, true); G.attesa.fermi = true; } }
   else if (G.state === 'goal') { if (G.stateT > (G.goalEnd || 4.2)) kickoff(G.next); } // G.goalEnd lo allunga la regia quando c'è la sequenza del gol
   else if (G.state === 'restart') {
     // si batte quando il battitore è sul pallone, gli avversari sono alla distanza giusta e chi ha un posto (barriera, area
@@ -2114,7 +2116,7 @@ function passo(dt) {
         if (fk && fk.pos) for (const [o, q] of fk.pos) sposta(o, q[0], q[1]);
         for (const o of k.team.opp.players) { if (fk && fk.wall && fk.wall.some((w) => w.p === o)) continue; const d = hyp(o.x - b.x, o.z - b.z); if (d < far) sposta(o, b.x + (o.x - b.x) / (d || 1) * far, b.z + (o.z - b.z) / (d || 1) * far); }
         // il portiere (rimessa dal fondo) decide da sé come rinviare, vedi gkTiene
-        aspetta(k, k.i === 0 ? null : G.rimessa ? () => battiRimessa(k) : fk && fk.direct ? () => battiPunizione(k) : fk && fk.corner ? () => battiAngolo(k) : () => battiPassaggio(k, G.attesa && G.attesa.m), false, k.i !== 0 && !G.rimessa && !(fk && (fk.direct || fk.corner)));
+        aspetta(k, k.i === 0 ? null : G.rimessa ? () => battiRimessa(k) : fk && fk.direct ? () => battiPunizione(k) : fk && fk.corner ? () => battiAngolo(k) : () => battiPassaggio(k), false, k.i !== 0 && !G.rimessa && !(fk && (fk.direct || fk.corner)));
       }
     }
   } else if (G.state === 'half') { if (G.stateT > 2.6) { G.half = 2; G.clock = 0; for (const p of all()) { p.fondo = Math.min(1, (p.fondo || 1) + .08); p.en = Math.min(p.fondo, p.en + MOTO.FATICA.intervallo); } for (const t of G.teams) t.side = -t.side; kickoff(G.teams[1]); } } // cambio di campo
