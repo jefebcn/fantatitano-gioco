@@ -221,6 +221,8 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
 - Grafica e flusso del 26/11: segno sopra il portiere col pallone in mano; pallone nuovo (icosaedro troncato, 1,3×);
   esultanze: i 3 compagni più vicini vanno dal marcatore, primo piano verso il pubblico (`GOLSEQ.lato`, `compagni`,
   `posti`), esultanze Mixamo facoltative in `GOLSEQ.esultanze` (file da scaricare: elenco in docs/dls-gameplay.md).
+  27/11: dentro vittoria, pugno, ginocchio, applauso, tifo (manca braccia larghe); `scripts/animazioni.mjs` ora prende
+  la presa più lunga di ogni FBX (in vittoria.fbx la prima, «Take 001», è vuota). 32 partite identiche a prima.
 - Strumenti: `scripts/prove/diagnosi.cjs`, `tiri.cjs`, `registra.cjs`, `rivedi.cjs`, `analisi-partita.py` (righe in
   `docs/RICETTE.md`).
 

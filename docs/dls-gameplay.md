@@ -306,6 +306,7 @@ Su mixamo.com, col personaggio «X Bot» e le stesse impostazioni delle clip del
   - «airplane» o «flying» (corsa o posa a braccia larghe) → `braccia larghe.fbx`;
   e per i compagni: «clapping» → `applauso.fbx`; «jumping» o «excited» (salta di gioia) → `tifo.fbx`.
   Nel gioco sono già previste (`GOLSEQ.esultanze`): appena ci sono i file, chi segna ne fa una diversa a ogni gol.
+  27/11: arrivate da Alex vittoria, pugno, ginocchio, applauso e tifo (in `public/anim.js`); manca `braccia larghe.fbx`.
   Per aggiungerle basta `X Bot.fbx` più i file nuovi: `node scripts/animazioni.mjs <cartella> aggiungi`.
 Vanno nella **stessa cartella degli FBX del Soccer Game Pack** (quella con `X Bot.fbx`), sul computer, non nel repository
 (gli FBX di Mixamo non si ridistribuiscono). Poi `node scripts/animazioni.mjs <quella cartella>` rigenera `public/anim.js`
