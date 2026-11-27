@@ -285,15 +285,6 @@ function versoControllo(p) {
   return hyp(jx, jz) > .3 ? { x: jx, z: jz } : userDrives(p) ? null : { x: s * (HL - 11) - p.x, z: -p.z * .5 }; // verso il dischetto: dentro al campo anche vicino alla linea di fondo
 }
 const giroVerso = (da, a) => Math.atan2(Math.sin(a - da), Math.cos(a - da)); // angolo da una direzione all'altra, positivo verso sinistra
-/** Tocco di conduzione che cambia direzione: il gesto del taglio parte dal fotogramma del contatto (il tocco è appena avvenuto). */
-function taglio(o, b) {
-  if (o.carica || !o.fig.skinned || (o.fx && !/^(tocco|stop|taglio|parte|inverti|frena)/.test(o.fx))) return;
-  const v = hyp(o.vx, o.vz), bv = hyp(b.vx, b.vz); if (v < 1 || bv < 1) return;
-  const a = giroVerso(Math.atan2(o.vx, o.vz), Math.atan2(b.vx, b.vz)), g = Math.abs(a) * 180 / Math.PI; if (g < 35) return;
-  const scatto = v / (o.fig.alt || 1) > 5.8 && g < 112;
-  const nome = (scatto ? `taglio_scatto_${g < 67 ? 45 : 90}` : `taglio_${g < 67 ? 45 : g < 112 ? 90 : g < 157 ? 135 : 180}`) + (a > 0 ? '_sx' : '_dx');
-  if (GESTI[nome]) { o.fx = null; gesto(o, nome, 0); }
-}
 /**
  * Movimenti senza palla (solo grafica, non cambiano la partita): chi parte da fermo verso una direzione girata fa la
  * partenza col giro, chi inverte la corsa la frenata con la svolta, chi smette di scattare la frenata. Il corpo gira
@@ -333,42 +324,71 @@ function gesto(p, nome, fra, adatta = false) {
   p.fxFermo = false; p.fx = nome; p.fxSp = sp; p.fxDa = da; p.fxT = da / sp; p.fxNew = true; return true;
 }
 /**
- * Conduzione: fra quanto il piede spinge la palla. Le stesse condizioni di FIS.conduci, portate avanti nel tempo: il tocco
- * arriva quando il passo è a 0,42 o 0,92 (un piede sta per scendere) con la palla a portata, oppure, tra un passo e
- * l'altro, quando la palla è ormai a meno di COND.forza davanti. Il piede è quello in volo in quel momento.
+ * Conduzione: il pallone si muove solo quando lo colpisce il piede (Alex, 27/11: «anche facendo un 360 la palla non deve
+ * seguirti in ogni modo»). Tra un tocco e l'altro rotola da solo; il gesto parte quando il pallone, con la sua corsa e
+ * quella del giocatore, arriverà al punto dove lo colpisce il piede della clip. Se chi conduce vuole girare più di
+ * COND.taglia gradi il tocco è un taglio, e il corpo gira con lui; se no un tocco in corsa, col piede che è in volo.
  */
 function prevediTocco(o, b) {
-  if (!o.fig.skinned || !libero(o) || b.y > .5) return;
-  const v = hyp(o.vx, o.vz), vr = v / (o.fig.alt || 1); if (vr < FIS.COND.fermo + .1) return;
-  const cad = MOTO.cadenza(vr); if (!(cad > 0)) return;
-  const C = FIS.COND, ux = o.vx / v, uz = o.vz / v, rx = b.x - o.x, rz = b.z - o.z;
-  if (Math.abs(rx * uz - rz * ux) > .9 || hyp(rx, rz) > 1.3) return;
-  const av0 = rx * ux + rz * uz, chiude = v - (b.vx * ux + b.vz * uz), avanti = (t) => av0 - chiude * t;
-  const ph = o.passo || 0, prossimo = ph < .42 ? .42 : ph < .92 ? .92 : 1.42, tPasso = (prossimo - ph) / cad;
-  const tForza = chiude > .1 ? Math.max(0, (av0 - C.forza) / chiude) : Infinity;
-  let fra = Math.min(avanti(tPasso) < C.vicino + C.ritmo ? tPasso : Infinity, tForza); fra = Math.max(fra, o.tocco || 0);
-  if (!(fra < .5)) return;
-  const sinistro = fra === tPasso ? Math.abs(prossimo % 1 - .42) < .01 : (ph + cad * fra) % 1 < .5; // da 0 a 0,5 il sinistro è in volo (0 = appoggio destro)
-  const nome = nomeTocco(vr, sinistro), i = GESTI[nome]; if (!i) return;
-  const anticipo = i.tocco / clamp(vr / i.v, .6, 1.5);
-  if (fra <= anticipo && fra > anticipo - .05 && gesto(o, nome, fra)) o.tocca = { quando: G.t + fra, nome, palla: i.palla };
+  if (!o.fig.skinned || !libero(o) || b.y > .5 || (o.tocco || 0) > 0) return;
+  const C = FIS.COND, v = hyp(o.vx, o.vz), alt = o.fig.alt || 1, vr = v / alt; if (vr < C.fermo) return;
+  const ux = o.vx / v, uz = o.vz / v, rx = b.x - o.x, rz = b.z - o.z;
+  // il pallone visto da chi corre: davanti e di lato (positivo alla sua sinistra), e come si muove rispetto a lui
+  const f0 = rx * ux + rz * uz, l0 = rx * uz - rz * ux, vf = b.vx * ux + b.vz * uz - v, vl = b.vx * uz - b.vz * ux;
+  if (Math.abs(l0) > 1 || f0 < -.2 || f0 > 2) return;
+  const w = { x: o.tx - o.x, z: o.tz - o.z }, a = hyp(w.x, w.z) > .3 ? giroVerso(Math.atan2(ux, uz), Math.atan2(w.x, w.z)) : 0, g = Math.abs(a) * 180 / Math.PI;
+  const scatto = vr > 5.8, cad = MOTO.cadenza(vr);
+  let nome = g < C.taglia ? (scatto ? 'tocco_scatto' : 'tocco') : (scatto && g < 112 ? `taglio_scatto_${g < 67 ? 45 : 90}` : `taglio_${g < 67 ? 45 : g < 112 ? 90 : g < 157 ? 135 : 180}`) + (a > 0 ? '_sx' : '_dx');
+  const i = GESTI[nome]; if (!i || !i.palla) return;
+  // fra quanto il pallone arriva al punto del piede: subito se ci è già sopra, mai se si allontana
+  const F = i.palla[2] * alt, t = f0 <= F ? 0 : vf < -.2 ? (f0 - F) / -vf : Infinity;
+  if (!(t < 1) || Math.abs(l0 + vl * t - i.palla[0] * alt) > C.largo) return;
+  const anticipo = i.tocco / ritmoGesto(i, vr); if (t > anticipo) return;
+  // nel tocco in corsa il piede è quello in volo quando arriva il pallone (da 0 a 0,5 del passo è in volo il sinistro)
+  if (g < C.taglia && cad > 0 && ((o.passo || 0) + cad * t) % 1 < .5) nome += '_sx';
+  const fra = Math.max(t, C.subito);
+  if (gesto(o, nome, fra)) o.tocca = { quando: G.t + fra, nome, palla: GESTI[nome].palla };
 }
-const nomeTocco = (vr, sinistro) => (vr > 5.8 ? 'tocco_scatto' : 'tocco') + (sinistro ? '_sx' : '');
-/** Il tocco serve adesso ma il gesto non è partito in tempo: parte ora, col piede in volo, e la spinta arriva col piede. */
-function avviaTocco(o) {
-  const vr = hyp(o.vx, o.vz) / (o.fig.alt || 1), nome = nomeTocco(vr, (o.passo || 0) % 1 < .5), i = GESTI[nome]; // da 0 a 0,5 il sinistro è in volo
-  if (!i || !i.palla) return false;
-  const fra = i.tocco / clamp(vr / i.v, .6, 1.5);
-  if (!gesto(o, nome, fra)) return false;
-  o.tocca = { quando: G.t + fra, nome, palla: i.palla }; return true;
+/**
+ * Il piede del tocco va sul pallone: nell'ultimo tratto prima del contatto della clip (COND.allunga secondi) la caviglia
+ * si allunga fino al pallone, al massimo di COND.allungaMax metri, e dopo il tocco torna piano nella posa. Il lato è
+ * quello del piede della clip più vicino al pallone quando comincia ad allungarsi.
+ */
+const _pPiede = new T.Vector3();
+function piedeAlPallone(p) {
+  const C = FIS.COND, b = G.ball, tc = p.tocca, dopo = p.toccato;
+  let x, y, z, w = 0;
+  if (tc && p.fx === tc.nome && b.owner === p) { w = clamp(1 - (tc.quando - G.t) / C.allunga, 0, 1); x = b.x; y = b.y; z = b.z; }
+  else if (dopo && G.t - dopo.t < C.allunga) { w = 1 - (G.t - dopo.t) / C.allunga; ({ x, y, z } = dopo); }
+  if (!(w > 0)) return;
+  const k = tc && p.fx === tc.nome ? tc : dopo;
+  if (!k.lato) { const bn = p.fig.bones, q = _pPiede; let dl = 9, dr = 9; if (bn.ball_l) dl = bn.ball_l.getWorldPosition(q).distanceTo(b); if (bn.ball_r) dr = bn.ball_r.getWorldPosition(q).distanceTo(b); k.lato = dl < dr ? 'l' : 'r'; }
+  bloccaPiedi.raggiungi(p.fig, k.lato, x, y, z, w, C.portata, C.allungaMax);
 }
-/** Mentre il piede arriva, il pallone va dove lo colpisce la clip (davanti e di lato, positivo alla sua sinistra) fra t secondi. */
-function guidaTocco(o, b, t) {
-  const v = hyp(o.vx, o.vz), ux = v > .5 ? o.vx / v : Math.sin(o.dir), uz = v > .5 ? o.vz / v : Math.cos(o.dir), alt = o.fig.alt || 1;
-  const av = o.tocca.palla[2] * alt, lato = o.tocca.palla[0] * alt; t = Math.max(t, 1 / 60);
-  const rx = (o.x + o.vx * t + ux * av + uz * lato - b.x) / t - o.vx, rz = (o.z + o.vz * t + uz * av - ux * lato - b.z) / t - o.vz;
-  const k = Math.min(1, FIS.COND.guida / (hyp(rx, rz) || 1));
-  b.vx = o.vx + rx * k; b.vz = o.vz + rz * k; b.vy = 0;
+/**
+ * Il tocco: il pallone va dove il giocatore arriverà fra COND.mira secondi (meno se gira, meno se ha un avversario
+ * addosso), appena davanti al piede del tocco dopo. Rotola dritto fino a lì: in curva è il giocatore a raggiungerlo.
+ * La direzione sbagliata di poco per la tecnica la decide FIS.conduci, qui si tiene la stessa. Col taglio il giocatore
+ * frena al passo del gesto (vedi corri), e il pallone va a quel passo.
+ */
+function mira(o, b, verso, nome) {
+  const C = FIS.COND, v = hyp(o.vx, o.vz), vl = verso ? hyp(verso.x, verso.z) : 0;
+  if (v < .5 && vl < .2) return;
+  const ux = vl > .2 ? verso.x / vl : o.vx / v, uz = vl > .2 ? verso.z / vl : o.vz / v, cg = v > .5 ? (o.vx * ux + o.vz * uz) / v : 1;
+  const T = C.mira * (o.pressato ? C.stretto : 1) * (1 - C.miraGiro * (1 - Math.max(0, cg))), sp0 = Math.max(o.vVoluta || 0, v), taglio = /^taglio/.test(nome || '') && GESTI[nome], stretto = taglio && Math.abs(taglio.giro) >= C.frena;
+  // col taglio stretto si frena: il pallone va al passo del gesto
+  const sp = stretto ? Math.min(sp0, taglio.v * (o.fig.alt || 1)) : sp0;
+  const e = hyp(b.vx, b.vz) > .3 ? giroVerso(Math.atan2(ux, uz), Math.atan2(b.vx, b.vz)) : 0, c = Math.cos(e), s = Math.sin(e);
+  // il taglio manda il pallone subito nella direzione nuova, al passo del gesto: il giocatore frena, si gira e lo segue
+  if (taglio) { b.vx = (ux * c + uz * s) * sp; b.vz = (-ux * s + uz * c) * sp; return; }
+  const av = ((GESTI.tocco && GESTI.tocco.palla) ? GESTI.tocco.palla[2] : .5) * (o.fig.alt || 1);
+  // dove sarà: la sua corsa portata avanti come la muove corri, verso la levetta, anche in curva
+  const q = { vx: o.vx, vz: o.vz }, h = 1 / 30; let px = o.x, pz = o.z;
+  for (let k = 0; k < T - 1e-9; k += h) { MOTO.spingi(q, ux * sp, uz * sp, h, sp, o.spinta || {}); px += q.vx * h; pz += q.vz * h; }
+  const qv = hyp(q.vx, q.vz), fx = qv > .5 ? q.vx / qv : ux, fz = qv > .5 ? q.vz / qv : uz, tx = px + fx * av, tz = pz + fz * av;
+  const dx = tx - b.x, dz = tz - b.z, d = hyp(dx, dz); if (d < .05) return;
+  const vv = FIS.rotolaIn(d, T), nx = dx / d, nz = dz / d;
+  b.vx = (nx * c + nz * s) * vv; b.vz = (-nx * s + nz * c) * vv;
 }
 /**
  * Passaggi, tiri e lanci col caricamento: parte il gesto e la palla parte quando il piede la colpisce (fra CARICO secondi,
@@ -2249,12 +2269,14 @@ function corri(p, dt) {
   if (G.state === 'restart' || G.attesa) sp = Math.min(sp, Math.max(FERMI.passo[p.atteso ? 2 : 0], hyp(p.tx - p.x, p.tz - p.z) * FERMI.passo[1]));
   // col pallone si va più piano: al passo della conduzione senza scatto, a quello dello scatto con palla scattando (Dream League)
   if (owner && p.i) sp = Math.min(sp, (p.sprint ? VELOCITA.scattoPalla : RITMO.conduzione) * fm.v);
+  // il taglio stretto col pallone frena: durante il gesto non si va più svelti del suo passo
+  if (owner && p.i && /^taglio/.test(p.fx || '') && GESTI[p.fx] && Math.abs(GESTI[p.fx].giro) >= FIS.COND.frena) sp = Math.min(sp, GESTI[p.fx].v * (p.fig.alt || 1));
   if (guida) sp = Math.min(sp, base * andatura(p.user)) + (p.sprint && p.user >= LEVETTA.scatto ? sp - base : 0); // la levetta decide l'andatura; lo scatto solo con la levetta al bordo
   p.vVoluta = sp; // a che velocità vuole andare: il tocco di palla in conduzione la mette dove arriverà
   let gx = p.tx, gz = p.tz, insegue = false;
   if (owner && p.i && G.state === 'play') { // conduzione: se la palla non è sulla strada verso dove vuole andare, prima ci va sopra
     const bx = b.x - p.x, bz = b.z - p.z, bd = hyp(bx, bz), wx0 = gx - p.x, wz0 = gz - p.z, wd = hyp(wx0, wz0);
-    if (bd > .6 && wd > .3 && (bx * wx0 + bz * wz0) / (bd * wd) < .88 && !(G.attesa && G.attesa.chi === p)) { gx = b.x + b.vx * .35 + wx0 / wd * .3; gz = b.z + b.vz * .35 + wz0 / wd * .3; insegue = true; sp = Math.max(sp * 1.12, base * (1.05 + (SCATTO_K - 1) * (.3 + .7 * p.en))); } // e allunga il passo per riprenderla, anche senza scatto
+    if (bd > .6 && wd > .3 && (bx * wx0 + bz * wz0) / (bd * wd) < FIS.COND.insegue && !(G.attesa && G.attesa.chi === p)) { gx = b.x + b.vx * .35 + wx0 / wd * .3; gz = b.z + b.vz * .35 + wz0 / wd * .3; insegue = true; sp = Math.max(sp * 1.12, base * (1.05 + (SCATTO_K - 1) * (.3 + .7 * p.en))); } // e allunga il passo per riprenderla, anche senza scatto
   }
   // velocità voluta: piena finché si è lontani, poi quella che permette di fermarsi sul punto (niente frenate brusche all'ultimo)
   const dx = gx - p.x, dz = gz - p.z, d = hyp(dx, dz); let wx = 0, wz = 0;
@@ -2262,6 +2284,7 @@ function corri(p, dt) {
   p.wx = wx; p.wz = wz; // per l'animazione (movimento): dove vuole andare
   const scatto = p.sprint && hyp(p.vx, p.vz) > VELOCITA.corsa, aiuto = guida ? 1.12 : 1; // chi guida l'utente risponde un filo prima
   const o = { acc: fm.acc * aiuto * (p.i === 0 ? 1.15 : 1) * (sb ? .7 : 1), frena: (.85 + .15 * fm.acc) * aiuto, lat: fm.lat * aiuto * (scatto ? MOTO.CORPO.latScatto : 1) * (sb ? .75 : 1) }; // sbilanciato da una spallata: per un attimo meno spunto e meno curva
+  p.spinta = o; // come si muove: serve a chi conduce per mettersi il pallone dove arriverà, vedi mira
   const vPrima = hyp(p.vx, p.vz), h = MOTO.CORPO.passoMax; p.restoC = (p.restoC || 0) + dt;
   while (p.restoC >= h - 1e-9) {
     p.restoC -= h;
@@ -2293,6 +2316,8 @@ function traLeMani(p) {
 /** Quanto è lontano il punto x, y, z dalla mano più vicina del portiere, se la sua posa è aggiornata; se no null. */
 function manoVicina(p, x, y, z) { return ossoVicino(p, 'hand_l', 'hand_r', x, y, z); }
 /** Quanto è lontano il punto x, y, z dal piede più vicino, se la posa è aggiornata; se no null. */
+/** Quanto è lontano il pallone dal piede più vicino, caviglia o dita, se la posa è aggiornata; se no null. */
+function piedeSulPallone(p, b) { const a = ossoVicino(p, 'foot_l', 'foot_r', b.x, b.y, b.z), c = ossoVicino(p, 'ball_l', 'ball_r', b.x, b.y, b.z); return a === null ? null : Math.min(a, c ?? a); }
 function piedeVicino(p, x, y, z) { return ossoVicino(p, 'foot_l', 'foot_r', x, y, z); }
 function ossoVicino(p, sx, dx, x, y, z) {
   const f = p.fig, L = f.bones && f.bones[sx], R = f.bones && f.bones[dx]; if (!L || !R || !(G.t - (f.posaT || -9) < .15)) return null;
@@ -2329,24 +2354,19 @@ function moveBall(dt) {
   if (o && alPiede(o) && G.state === 'play' && !(G.rimessa && G.rimessa.chi === o)) { // dribbling: tocchi in avanti, la palla è libera tra un tocco e l'altro
     { let dm = 9; for (const q of o.team.opp.players) dm = Math.min(dm, hyp(q.x - o.x, q.z - o.z)); o.pressato = dm < 1.8; } // con un avversario addosso i tocchi si accorciano
     const q = tecnica(o) * (o.sbil > 0 ? .4 : 1), verso = { x: o.tx - o.x, z: o.tz - o.z }, tc = o.tocca;
-    // il tocco lo dà il piede: col gesto del tocco partito, la spinta arriva quando il piede della clip è sul pallone, e
-    // intanto il pallone va dove il piede lo colpirà. Senza gesto (figure senza animazioni) tocca la fisica da sola, come prima
-    // sta per calciare un pallone ancora in aria: nessun tocco, il pallone scende da solo verso il piede
+    // senza gesto (figure senza animazioni) tocca la fisica da sola, come prima.
+    // Sta per calciare un pallone ancora in aria: nessun tocco, il pallone scende da solo verso il piede
     if (o.carica) { if (FIS.conduci(b, o, dt, q, Math.random, verso, 'aspetta') === 'perso') { b.owner = null; G.lastTouch = o; } FIS.passo(b, dt); return; }
-    const piede = tc && o.fx === tc.nome && b.y < .5; if (!piede) o.tocca = null;
-    if (piede && G.t < tc.quando - dt / 2) {
-      if (FIS.conduci(b, o, dt, q, Math.random, verso, 'aspetta') === 'perso') { b.owner = null; G.lastTouch = o; o.tocca = null; }
-      else guidaTocco(o, b, tc.quando - G.t);
-      FIS.passo(b, dt); return;
-    }
-    if (piede) o.tocca = null;
-    let r = FIS.conduci(b, o, dt, q, Math.random, verso, piede ? 'ora' : o.fig.skinned && GESTI.tocco ? 'chiedi' : null);
-    if (r === 'vuole') {
-      if (avviaTocco(o)) { guidaTocco(o, b, o.tocca.quando - G.t); FIS.passo(b, dt); return; }
-      r = FIS.conduci(b, o, 0, q, Math.random, verso, 'ora'); // il gesto non può partire (ne sta finendo un altro): tocca subito
-    }
+    // il tocco arriva col piede: nella finestra attorno al momento della clip, appena il piede vero è sul pallone. Se non
+    // ci arriva il tocco salta e il pallone continua per la sua strada. Fuori dal tocco il pallone rotola libero; da
+    // fermi lo si tiene sotto la suola
+    const C = FIS.COND, piede = tc && o.fx === tc.nome && b.y < .5; if (!piede) o.tocca = null;
+    const sopra = piede && G.t >= tc.quando - C.finestra && (piedeSulPallone(o, b) ?? 9) < C.piede;
+    if (piede && !sopra && G.t > tc.quando + C.finestra) o.tocca = null;
+    let r = FIS.conduci(b, o, dt, q, Math.random, verso, sopra ? 'ora' : o.fig.skinned && GESTI.tocco ? 'libera' : null);
+    if (sopra) { o.toccato = { t: G.t, x: b.x, y: b.y, z: b.z, lato: tc.lato }; o.tocca = null; if (r === 'tocco') mira(o, b, verso, tc.nome); }
     if (r === 'perso') { b.owner = null; G.lastTouch = o; }
-    else if (r === 'tocco') { G.tocchi = (G.tocchi || 0) + 1; taglio(o, b); // vicino alle linee il tocco si accorcia: la palla resta in campo (si esce solo correndoci sopra)
+    else if (r === 'tocco') { G.tocchi = (G.tocchi || 0) + 1; // vicino alle linee il tocco si accorcia: la palla resta in campo (si esce solo correndoci sopra)
       const k = .45, ez = b.z + b.vz * k, ex = b.x + b.vx * k, mz = HW - .8, mx = HL - .8;
       if (Math.abs(ez) > mz && Math.abs(o.z) < HW) b.vz = (sgn(ez) * mz - b.z) / k;
       if (Math.abs(ex) > mx && Math.abs(o.x) < HL && Math.abs(b.z) > GH + 2) b.vx = (sgn(ex) * mx - b.x) / k;
@@ -3022,7 +3042,7 @@ function scalda() {
 function disegna(dt) {
   const b = G.ball;
   if (b) {
-    if (!REGIA.figure()) for (const p of all()) { allinea(p, dt); pose(p, dt); inclina(p, dt); if (p.fig.skinned && !G.senzaPiedi) bloccaPiedi(p.fig, dt, !!p.fig.piediAttivi, /^(passa|calcia|lancia|tiro)/.test(p.fx || '')); } // durante il replay le figure le mette in posa la regia
+    if (!REGIA.figure()) for (const p of all()) { allinea(p, dt); pose(p, dt); inclina(p, dt); if (p.fig.skinned && !G.senzaPiedi) { bloccaPiedi(p.fig, dt, !!p.fig.piediAttivi, /^(passa|calcia|lancia|tiro)/.test(p.fx || '')); piedeAlPallone(p); } } // durante il replay le figure le mette in posa la regia
     else for (const p of all()) p.fig.root.rotation.x = p.fig.root.rotation.z = 0;
     // il pallone si disegna dove sarà tra un attimo (il tempo non ancora simulato), come i giocatori: restano insieme.
     // Appena uscito dal campo si disegna quello che va fuori (G.fantasma), non quello vero già sul punto di battuta

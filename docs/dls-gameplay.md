@@ -87,10 +87,11 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
   rimesse laterali a partita (obiettivo delle prove abbassato a 0,6).
 - Le animazioni di camminata, corsetta e corsa girano alla velocità vera del giocatore (la clip della corsa copre anche
   lo scatto), e si fondono in base alla velocità: il piede in appoggio non scivola.
-- **Pallone al piede** (`COND` in `src/config.js`, `conduci` in `src/fisica/pallone.js`): in conduzione la palla non è
-  incollata e non è libera. A ogni tocco, dato quando un piede sta per appoggiare, viene spinta avanti e resta tra 0,6 e
-  0,8 m dal portatore (un tocco ogni due o tre appoggi); nei cambi di direzione il tocco dopo la porta nella direzione
-  nuova. Non si allontana mai più di 1,5 m (`COND.guinzaglio`): la perde solo un contrasto o un calcio.
+- **Pallone al piede** (`COND` in `src/config.js`, `prevediTocco` e `mira` in `src/game.js`): in conduzione la palla
+  non è incollata: si muove solo quando la tocca il piede (Alex, 27/11, anche nel giro di 360°). A ogni tocco va dove
+  il giocatore sarà fra poco e resta tra 0,6 e 0,8 m dal portatore; nei cambi di direzione il tocco è un taglio, col
+  piede che la porta nella direzione nuova. Non si allontana mai più di 1,5 m (`COND.guinzaglio`): la perde solo un
+  contrasto o un calcio.
 - Giocatori e pallone avanzano a passi fissi di 1/120 di secondo e a schermo si disegnano con l'avanzo di tempo non
   ancora simulato: non si staccano e non vanno a scatti quando i fotogrammi calano.
 - Con `?debug` nell'indirizzo, nel riquadro in alto a sinistra c'è la velocità del giocatore comandato in m/s.

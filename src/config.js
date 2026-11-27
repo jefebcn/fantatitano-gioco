@@ -494,10 +494,21 @@ export const FIS = {
  *  stretto: con un avversario addosso (p.pressato) il tocco si accorcia: la palla resta più vicina al piede
  *  ritmo:   col passo (p.ritmo, vedi corpo.js) il tocco parte quando un piede sta per scendere, anche un po' prima (fino a
  *           vicino + ritmo); tra un passo e l'altro aspetta, a meno che la palla non sia già sotto i piedi (forza)
- *  guida:   quando parte il gesto del tocco il pallone va, nell'ultimo istante, dove lo colpisce il piede della clip: rispetto
- *           al giocatore non scivola mai più svelto di così, in m/s (richiesta di Alex del 25/11: il piede sul pallone)
+ *  Col gesto (Alex, 27/11: il pallone si muove solo quando lo tocca il piede, vedi prevediTocco e mira in game.js):
+ *  piede:    il tocco parte solo con la caviglia o le dita a meno di così dal centro del pallone (m)
+ *  finestra: quanto prima e dopo il momento del contatto della clip si aspetta il piede (s); poi il tocco salta
+ *  largo:    di quanto il pallone può arrivare di lato rispetto al punto del piede della clip (m)
+ *  taglia:   oltre questo giro (gradi) tra la corsa e dove si vuole andare il tocco è un taglio
+ *  subito:   un gesto parte almeno così prima del contatto (s), anche col pallone già sotto
+ *  mira:     dopo il tocco il pallone va dove il giocatore sarà fra questi secondi, davanti al piede
+ *  miraGiro: quanto si accorcia quel tempo girando (a 90 gradi o più: mira per 1 - miraGiro)
+ *  allunga:  negli ultimi secondi prima del contatto il piede si allunga fino al pallone, e dopo ci mette tanto a tornare
+ *  allungaMax, portata: di quanto al massimo (m), e fin dove: il punto del piede a tanto dal centro del pallone (m)
+ *  sotto:    da fermi la suola tiene il pallone solo se è già a meno di così dal suo punto (m)
+ *  frena:    dal taglio di tanti gradi in su si frena al passo del gesto
+ *  insegue:  chi conduce va prima sul pallone se è fuori dalla strada verso dove vuole andare (coseno dell'angolo, vedi corri)
  */
-export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.15, vicino: 0.5, passo: 1.12, passoScatto: 1.2, guinzaglio: 1.5, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6, guida: 5 };
+export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.15, vicino: 0.5, passo: 1.12, passoScatto: 1.2, guinzaglio: 1.5, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6, piede: 0.3, finestra: 0.12, largo: 0.45, taglia: 50, subito: 0.05, mira: 0.6, miraGiro: 0.5, allunga: 0.12, allungaMax: 0.3, portata: 0.13, sotto: 0.25, insegue: 0.88, frena: 90 };
 
 /* ---------------------------------------------------------------- fisica dei giocatori */
 export const CORPO = {
