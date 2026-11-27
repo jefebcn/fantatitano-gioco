@@ -440,7 +440,7 @@ function calciCaricati(dt) {
     // partire, restava bloccato quasi sempre: al colpo partiva la clip dall'inizio e il pallone volava via 3 fotogrammi
     // prima che arrivasse il piede
     if (c.nome && c.t <= c.anticipo && G.ball.owner === p && G.state === 'play') {
-      if (!libero(p) && /^(tocco|stop|taglio)/.test(p.fx || '')) p.fx = null;
+      if (!libero(p) && /^(tocco|stop|taglio)/.test(p.fx || '')) { p.fx = null; p.fxNew = false; }
       if (gesto(p, c.nome, Math.max(c.t, 0))) c.nome = null;
     }
     if (c.t <= 0) { p.carica = null; if (G.ball.owner === p && G.state === 'play') c.calcio(); }
@@ -2083,7 +2083,7 @@ function gkThink(p, dt) {
       if (G.t < p.reagisce && G.shooter) { p.tx = p.x; p.tz = p.z; return; } // sta ancora leggendo il tiro
       const zp = a.z; p.tx = p.x; p.tz = clamp(zp, -GH - .6, GH + .6); p.sprint = true; p.tiroY = a.y;
       // non si tuffa di nuovo mentre si rialza: la posa sdraiata mescolata al tuffo nuovo sollevava il corpo di mezzo metro
-      if (tt < .45 && Math.abs(zp - p.z) > 1 && p.st === 'run' && !/^rialza/.test(p.fx || '')) { p.st = 'dive'; p.stT = 0; p.diveS = sgn(zp - p.z); p.diveV = clamp(Math.abs(zp - p.z) / Math.max(tt, .22), 4, 10); p.fx = null; if (!parata(p, tt, zp - p.z, a.y)) azione(p, -p.diveS * Math.sin(p.dir) > 0 ? 'tuffoS' : 'tuffoD'); }
+      if (tt < .45 && Math.abs(zp - p.z) > 1 && p.st === 'run' && !/^rialza/.test(p.fx || '')) { p.st = 'dive'; p.stT = 0; p.diveS = sgn(zp - p.z); p.diveV = clamp(Math.abs(zp - p.z) / Math.max(tt, .22), 4, 10); p.fx = null; p.fxNew = false; if (!parata(p, tt, zp - p.z, a.y)) azione(p, -p.diveS * Math.sin(p.dir) > 0 ? 'tuffoS' : 'tuffoD'); }
       else if (Math.abs(zp - p.z) <= 1 && p.st === 'run' && !p.fx && tt < .2) parata(p, tt, zp - p.z, a.y); // al centro: la presa, a tempo col pallone
       return;
     }
@@ -2288,6 +2288,8 @@ function corri(p, dt) {
   let gx = p.tx, gz = p.tz, insegue = false;
   if (owner && alPiede(p) && G.state === 'play') { // conduzione: se la palla non è sulla strada verso dove vuole andare, prima ci va sopra
     const bx = b.x - p.x, bz = b.z - p.z, bd = hyp(bx, bz), wx0 = gx - p.x, wz0 = gz - p.z, wd = hyp(wx0, wz0);
+    // chi vuole restare fermo e ha il pallone oltre la suola ci va sopra, al passo: il pallone non torna da solo
+    if (wd <= .3 && bd > FIS.COND.suola + FIS.COND.sotto && !(G.attesa && G.attesa.chi === p)) { gx = b.x - bx / bd * FIS.COND.suola; gz = b.z - bz / bd * FIS.COND.suola; }
     if (bd > .6 && wd > .3 && (bx * wx0 + bz * wz0) / (bd * wd) < FIS.COND.insegue && !(G.attesa && G.attesa.chi === p)) { gx = b.x + b.vx * .35 + wx0 / wd * .3; gz = b.z + b.vz * .35 + wz0 / wd * .3; insegue = true; sp = Math.max(sp * 1.12, base * (1.05 + (SCATTO_K - 1) * (.3 + .7 * p.en))); } // e allunga il passo per riprenderla, anche senza scatto
   }
   // velocità voluta: piena finché si è lontani, poi quella che permette di fermarsi sul punto (niente frenate brusche all'ultimo)
@@ -2816,7 +2818,8 @@ function poseSkinned(p, dt) {
     const a = f.mixer.clipAction(MODEL.fx[G.dbgFx.name]); if (f.dbg && f.dbg !== a) f.dbg.stop(); a.play(); a.paused = true; a.time = G.dbgFx.t; a.setEffectiveWeight(1); f.dbg = a; f.mixer.update(0); f.body.position.y = 0; return;
   } else if (f.dbg) { f.dbg.stop(); f.dbg = null; }
   // l'azione registrata in corso (tiro, scivolata, tuffo…)
-  if (p.fxNew) { p.fxNew = false; startFx(f, p.fx, p.fxDa || 0, p.fxSp); }
+  // un gesto chiesto e poi tolto nello stesso passo non parte (prima: errore nella pagina e partita ferma)
+  if (p.fxNew) { p.fxNew = false; if (hasFx(p.fx)) startFx(f, p.fx, p.fxDa || 0, p.fxSp); }
   let on = false;
   if (p.fx && f.act && p.fxFermo) { f.act.timeScale = 0; on = true; } // posa tenuta (la rimessa col pallone sopra la testa)
   else if (p.fx && f.act) {

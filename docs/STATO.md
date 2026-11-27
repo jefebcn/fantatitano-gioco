@@ -39,9 +39,13 @@ circa 20 cm è il contatto giusto: è quello dei calci, che il pallone al piede 
   scartato: non dare il pallone a chi ha il piede lontano (32 partite: tiri da 7,7 a 6,6, passaggi da 44 a 40, palla
   vagante da 5,5 a 8,6 s, anche solo per chi riceve il passaggio). `ricezione.cjs`, 3 partite: piede oltre 30 cm alla
   presa da 36% a 26%, spinte senza piede nel secondo dopo da 1,8 a 1,3 a passaggio (1617 → 997 m/s), dei palloni presi
-  lontano 12 smorzati col piede e 19 ripresi col tocco. 32 partite, semi 7 e 39: nessuna anomalia, passaggi 43,9→44,6
-  e 44,3→43,9, palla vagante 5,5→5,2 e 6,1→5,3 s, tiri 7,66→6,84 e 7,53→7,75, gol 2,50→2,25 e 2,16→2,19, possessi
-  36,5→37,9 e 35,3→38,5, falli 2,8→3,7 e 3,4→3,5.
+  lontano 12 smorzati col piede e 19 ripresi col tocco. 32 partite, semi 7 e 39: nessuna anomalia, passaggi 43,9→43,8
+  e 44,3→43,9, palla vagante 5,5→5,8 e 6,1→5,3 s, tiri 7,66→6,72 e 7,53→7,75, gol 2,50→2,34 e 2,16→2,19, possessi
+  36,5→35,8 e 35,3→38,5, falli 2,8→3,7 e 3,4→3,5. Con lo stop che parte alla presa è venuto fuori un errore raro
+  (partita 23 del seme 7): un gesto chiesto e tolto nello stesso passo (calcio caricato, tuffo) lasciava `fxNew` acceso e
+  il disegno faceva partire un'animazione inesistente, con la partita ferma. Ora chi toglie `p.fx` spegne anche `fxNew`,
+  e `poseSkinned` fa partire solo gesti che esistono. Chi vuole restare fermo col pallone oltre la suola ci va sopra
+  (`corri`): serve al portiere sul retropassaggio lento (`retropassaggio.cjs`).
 - **Conduzione: FATTO il tocco col piede.** Prima la fisica spingeva il pallone quando decideva lei e il gesto provava a
   indovinare l'istante: piede a 41 cm in mediana, metà dei tocchi oltre 40 cm, 13 spinte senza nessun gesto e 9 nei
   cambi di direzione col piede a un metro. Ora la spinta parte quando il piede della clip arriva sul pallone
