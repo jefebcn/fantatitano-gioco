@@ -452,14 +452,24 @@ function calciCaricati(dt) {
  * tuffo scelto per altezza e distanza, al centro una presa a terra, al ginocchio, al busto o alta: la mano arriva sul
  * pallone in quel momento. Ritorna false se il gesto non c'è (resta il tuffo di prima).
  */
-const altezzaPresa = (y) => (y < PARATA.presa[0] ? 'terra' : y < PARATA.presa[1] ? 'ginocchio' : y < PARATA.presa[2] ? 'busto' : 'alta');
+// Fra le clip date, quella con le mani più vicine all'altezza del pallone (GESTI[nome].palla, per l'altezza del giocatore).
+// Prima il gesto si sceglieva con soglie fisse spostate di una categoria: a un metro partiva la parata al busto, con le mani
+// a 1,6 m, e il pallone saltava nei guanti da mezzo metro (amici di Alex, 27/11)
+function clipAllAltezza(p, nomi, y) {
+  let nome = null, meglio = 9;
+  for (const n of nomi) { const g = GESTI[n], d = g && g.palla ? Math.abs(g.palla[1] * (p.fig.alt || 1) - y) : 9; if (d < meglio) { meglio = d; nome = n; } }
+  return nome;
+}
+const PRESE = ['presa_terra', 'presa_ginocchio', 'presa_busto', 'presa_alta'];
 function parata(p, tt, dz, y) {
   if (Math.abs(dz) > 1) {
-    const sinistra = -sgn(dz) * Math.sin(p.dir) > 0, lontano = Math.abs(dz) > 1.7; // la sua sinistra, nel mondo: (cos dir, -sin dir)
-    const [h1, h2, h3] = PARATA.tuffo, tipo = y < h1 ? (lontano ? 'terra_lontano' : 'terra_vicino') : y < h2 ? (lontano ? 'mezza_lontano' : 'mezza_vicino') : y < h3 ? 'busto' : 'alto';
-    return gesto(p, `para_${tipo}${sinistra ? '' : '_dx'}`, tt, true);
+    const sinistra = -sgn(dz) * Math.sin(p.dir) > 0, lontano = Math.abs(dz) > 1.7, lato = sinistra ? '' : '_dx'; // la sua sinistra, nel mondo: (cos dir, -sin dir)
+    const tipi = lontano ? ['terra_lontano', 'mezza_lontano', 'busto', 'alto'] : ['terra_vicino', 'mezza_vicino', 'busto', 'alto'];
+    const nome = clipAllAltezza(p, tipi.map((t) => `para_${t}${lato}`), y);
+    return !!nome && gesto(p, nome, tt, true);
   }
-  return gesto(p, `presa_${altezzaPresa(y)}`, tt, true);
+  const nome = clipAllAltezza(p, PRESE, y);
+  return !!nome && gesto(p, nome, tt, true);
 }
 /**
  * Presa sui cross e sui lanci alti: il gesto parte in tempo perché le mani arrivino sul pallone, all'altezza a cui ci
@@ -468,20 +478,30 @@ function parata(p, tt, dz, y) {
  * gli passa a portata (PARATA.portata) e non è un tiro.
  */
 function prevediPresa(b) {
-  const k = G.lastKicker; if (!k || b.y <= PARATA.uscita || (G.tiroT || -1) >= (G.calcioT || 0) - 1e-6) return;
-  const p = k.team.opp.players.find((q) => q.i === 0); if (!p || !p.fig.skinned || !libero(p) || p.cool > 0 || p.st !== 'run' || /^presa_/.test(p.fx || '') || p.presaDi === G.calcioT) return;
+  const k = G.lastKicker; if (!k || (G.tiroT || -1) >= (G.calcioT || 0) - 1e-6) return;
+  const p = k.team.opp.players.find((q) => q.i === 0); if (!p || !p.fig.skinned || p.cool > 0 || p.st !== 'run') return;
+  // la presa già partita per questo pallone, prima che le mani lo tocchino: si può ancora cambiare clip (vedi sotto)
+  const g0 = /^presa_/.test(p.fx || '') ? GESTI[p.fx] : null, rifai = !!g0 && p.presaDi === G.calcioT && p.fxT * (p.fxSp || 1) < (g0.tocco || 0);
+  if (!rifai && (b.y <= PARATA.uscita || !libero(p) || p.presaDi === G.calcioT)) return;
   if (!(Math.abs(p.x) > HL - 17 && Math.abs(p.z) < 20.5)) return;
   const rx = b.x - p.x, rz = b.z - p.z, ux = b.vx - p.vx, uz = b.vz - p.vz, d = hyp(rx, rz), u2 = ux * ux + uz * uz; if (u2 < 1) return;
   const chiude = -(rx * ux + rz * uz) / (d || 1); if (chiude < 1) return;
   // dove il pallone gli passa più vicino: fuori portata non si prepara niente
   const tv = -(rx * ux + rz * uz) / u2; if (hyp(rx + ux * tv, rz + uz * tv) > PARATA.portata) return;
-  // all'altezza a cui il pallone arriverà, la clip giusta e il punto delle sue mani
-  // la clip con le mani più vicine all'altezza a cui arriva il pallone
-  let fra = Math.max(0, d - .5) / chiude, y = b.y + b.vy * fra - GRAV / 2 * fra * fra, nome = null, meglio = 9;
-  for (const n of ['presa_terra', 'presa_ginocchio', 'presa_busto', 'presa_alta']) { const g = GESTI[n]; if (g && g.palla && Math.abs(g.palla[1] * (p.fig.alt || 1) - y) < meglio) { meglio = Math.abs(g.palla[1] * (p.fig.alt || 1) - y); nome = n; } }
+  // l'altezza a cui il pallone arriverà alle mani, la clip con le mani lì, e di nuovo con la distanza delle mani di quella clip
+  const alt = p.fig.alt || 1, quota = (f) => b.y + b.vy * f - GRAV / 2 * f * f;
+  let fra = Math.max(0, d - .5) / chiude, y = quota(fra), nome = clipAllAltezza(p, PRESE, y);
+  for (let n = 0; n < 2 && nome; n++) { const g = GESTI[nome]; fra = Math.max(0, d - hyp(g.palla[0], g.palla[2]) * alt) / chiude; y = quota(fra); nome = clipAllAltezza(p, PRESE, y); }
   const i = GESTI[nome]; if (!i) return;
-  fra = Math.max(0, d - hyp(i.palla[0], i.palla[2]) * (p.fig.alt || 1)) / chiude; y = b.y + b.vy * fra - GRAV / 2 * fra * fra;
-  if (y > PARATA.portataAlta || y < PARATA.uscita * .5) return;
+  fra = Math.max(0, d - hyp(i.palla[0], i.palla[2]) * alt) / chiude;
+  if (y > PARATA.portataAlta) return;
+  // cambiare clip: il pallone è sceso o salito più del previsto (un rimbalzo, il portiere che si è spostato) e un'altra
+  // presa ha le mani più vicine di PARATA.cambia metri
+  if (rifai) {
+    if (nome === p.fx || Math.abs(g0.palla[1] * alt - y) - Math.abs(i.palla[1] * alt - y) < PARATA.cambia) return;
+    const prima = p.fx; p.fx = null; p.fxNew = false; if (!gesto(p, nome, fra, true)) { p.fx = prima; } return;
+  }
+  if (y < PARATA.uscita * .5) return;
   // il gesto rallenta fino a PARATA.rallenta per arrivare in tempo: parte quando il contatto è a portata di quel ritmo
   if (fra <= (i.tocco || 0) / PARATA.rallenta && gesto(p, nome, fra, true)) p.presaDi = G.calcioT;
 }
@@ -510,7 +530,7 @@ function prevediRaccolta(b) {
 }
 /** Presa senza parata preparata (cross, tiro addosso): la clip all'altezza del pallone, dal momento in cui le mani lo toccano. */
 function presaPortiere(p, y) {
-  const nome = `presa_${altezzaPresa(y)}`, i = GESTI[nome];
+  const nome = clipAllAltezza(p, PRESE, y), i = GESTI[nome];
   if (!i || !clipGF(p, nome, i.tocco || 0)) azione(p, 'presa');
 }
 const A_TERRA_GF = /^(para_|rialza|scivola|cade)/; // tuffi, scivolate e cadute finiscono a terra (e da lì ci si rialza): il corpo si alza quanto basta perché niente entri nell'erba
@@ -1061,7 +1081,7 @@ function nuovaPartita(home, away) {
   if (fuori) { G.teams[0].side = -1; G.teams[1].side = 1; } // in trasferta si comincia attaccando verso sinistra
   G.ball = { x: 0, y: BR, z: 0, vx: 0, vy: 0, vz: 0, c: 0, t: 0, resto: 0, owner: null };
   ballMesh.visible = ballShadow.visible = true;
-  G.clock = 0; G.half = 1; G.goals = []; G.cards = []; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penId = -1; G.attesa = null; G.lastPass = G.shooter = null; G.so = G.soRes = null; G.cambi = []; G.fkId = -1; $('#hud').classList.remove('rigori'); G.stats = { pali: [0, 0], recAlti: [0, 0], resp: [0, 0], uscite: [0, 0], shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0], fouls: [0, 0], offs: [0, 0], pens: [0, 0], yel: [0, 0], red: [0, 0], crosses: [0, 0], heads: [0, 0], headGoals: [0, 0], corners: [0, 0], adv: [0, 0], inj: [0, 0], subs: [0, 0], smorza: [0, 0] }; G.ctrl = null; G.charge = -1;
+  G.clock = 0; G.half = 1; G.goals = []; G.cards = []; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penId = -1; G.attesa = null; G.lastPass = G.shooter = null; G.so = G.soRes = null; G.cambi = []; G.fkId = -1; $('#hud').classList.remove('rigori'); G.stats = { pali: [0, 0], recAlti: [0, 0], resp: [0, 0], uscite: [0, 0], shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0], fouls: [0, 0], offs: [0, 0], pens: [0, 0], yel: [0, 0], red: [0, 0], crosses: [0, 0], heads: [0, 0], headGoals: [0, 0], corners: [0, 0], adv: [0, 0], inj: [0, 0], subs: [0, 0], smorza: [0, 0], lontane: [0, 0] }; G.ctrl = null; G.charge = -1;
   paintBoards(home, away, CREST);
   $('#sbH').src = img(home.id + '-mini'); $('#sbA').src = img(away.id + '-mini'); $('#sb').style.setProperty('--sq', G.teams[0].kit.shirt); // la barretta sul bordo destro del tabellone: il colore della nostra maglia
   $('#sbHn').textContent = home.short; $('#sbAn').textContent = away.short;
@@ -2525,10 +2545,17 @@ function contacts(dt) {
     }
     if (!best) return; const p = best, gk = p.i === 0;
     const tiro = (G.tiroT || -1) >= (G.calcioT || 0) - 1e-6; // l'ultimo pallone calciato era un tiro (non un cross o un lancio)
-    // con la presa preparata (prevediPresa) il pallone lo fermano le mani: si aspetta che ci arrivi, o che smetta di avvicinarsi
-    if (gk && !tiro && /^presa_/.test(p.fx || '') && G.state === 'play') {
+    // il pallone in aria (un cross, un lancio, un pallonetto lento, un rimbalzo) il portiere lo prende con le mani sopra
+    // (amici di Alex, 27/11): senza un gesto di presa ne parte uno all'altezza del pallone, e si decide al passo dopo,
+    // con le mani già alzate; poi si aspetta che le mani ci arrivino, o che il pallone smetta di avvicinarsi. Se gli
+    // passano a più di PARATA.manca metri il pallone prosegue. I tiri forti li decide la parata, più giù; il pallone che
+    // rotola la presa a terra
+    const aMano = gk && p.fig.skinned && G.state === 'play' && Math.abs(p.x) > HL - 17 && Math.abs(p.z) < 20.5 && !retropassaggio(p) && !(tiro && sp > 13) && !(b.y < PARATA.presa[0] && Math.abs(b.vy) < PARATA.sale);
+    if (aMano) {
+      if (!/^(presa_|para_)/.test(p.fx || '')) { presaPortiere(p, b.y); if (/^presa_/.test(p.fx || '')) return; }
       const mano = manoVicina(p, b.x, b.y, b.z), poi = mano === null ? null : manoVicina(p, b.x + b.vx * dt, b.y + b.vy * dt, b.z + b.vz * dt);
       if (mano !== null && mano > PARATA.mani && poi < mano) return;
+      if (mano !== null && mano > PARATA.manca) { G.stats.lontane[p.team.idx]++; return; }
     }
     if (gk && !tiro && b.y > PARATA.uscita && G.lastKicker && G.lastKicker.team !== p.team && G.state === 'play') { // cross o lancio alto: presa in uscita, o pugno se c'è un attaccante addosso
       const conteso = p.team.opp.players.some((o) => o.i && hyp(o.x - p.x, o.z - p.z) < 1.5);
@@ -2543,6 +2570,9 @@ function contacts(dt) {
       // nel gesto della parata il pallone si tocca con le mani: si aspetta che ci arrivi, o che smetta di avvicinarsi
       const mano = manoVicina(p, b.x, b.y, b.z), poi = mano === null ? null : manoVicina(p, b.x + b.vx * dt, b.y + b.vy * dt, b.z + b.vz * dt);
       const gestoParata = mano !== null && /^(para_|presa_)/.test(p.fx || '');
+      // fermo senza gesto (il tiro gli arriva addosso prima della parata): la presa all'altezza del pallone, e si decide
+      // al passo dopo con le mani alzate. Prima la presa riusciva con le mani anche a due metri dal pallone
+      if (!gestoParata && mano !== null && mano > PARATA.mani && p.st === 'run') { presaPortiere(p, b.y); if (/^presa_/.test(p.fx || '')) return; }
       if (gestoParata && mano > PARATA.mani && poi < mano) return;
       p.saveId = G.shotId;
       // la mano gli passa lontano: il pallone prosegue
