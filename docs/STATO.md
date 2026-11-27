@@ -37,6 +37,18 @@
   Restano i cross (mediana 0,31 m, 3 oltre) e i tiri alti (2, a 0,9 m): passo 2.
   32 partite, semi 7 e 39: nessuna anomalia, tiri 6,72→6,81 e 7,75→8,19, gol 2,34→1,97 e 2,19→2,50, angoli 0,38→0,25
   (sotto l'obiettivo di 0,3) e 0,47→0,50.
+- **Passo 2 FATTO: cross, rimbalzi e tiri alti.** Misura su 8 partite: prima 45 prese, oltre 35 cm 12 (27%), tiri
+  mediana 0,89 m (2 presi da fermo con le mani a 1,2 e 2 m), cross 4 su 12 oltre. Tre cause:
+  1. il gesto si sceglieva con soglie d'altezza spostate di una categoria (a 1 m la parata al busto, con le mani a 1,6 m;
+     a 1,3 m la presa alta, con le mani a 2 m). Ora si sceglie la clip con le mani più vicine all'altezza del pallone
+     (`clipAllAltezza`; tolti `PARATA.tuffo` e le soglie della presa);
+  2. sul cross la presa partita in anticipo non cambiava più, anche se il pallone scendeva o rimbalzava: ora, prima del
+     tocco, passa all'altra clip se ha le mani più vicine di `PARATA.cambia` (`prevediPresa`);
+  3. il pallone in aria e il tiro preso da fermo diventavano del portiere con le mani dove capitava: ora parte la presa
+     all'altezza del pallone, si decide al passo dopo con le mani alzate, e con le mani oltre `PARATA.manca` il pallone
+     prosegue (`G.stats.lontane` li conta: 0 in 8 partite).
+  Dopo, 8 partite: 40 prese, oltre 35 cm 5 (13%), mediana 0,25 m, cross mediana 0,27 m. 32 partite, semi 7 e 39: nessuna
+  anomalia, tiri 6,81→6,94 e 8,19→7,78, gol 1,97→2,13 e 2,50→2,41, angoli 0,25→0,50 e 0,38→0,28.
 
 ## Pallone al piede (richiesta di Alex del 25/11): conduzione, calci, contrasti
 Alex: «calibrare bene il pallone quando è attaccato al piede; guarda come si muove anche quando viene calciato o c'è un

@@ -3,16 +3,17 @@
 // sue mani dal pallone (la posa che il gioco vede quando decide, col pallone dove è arrivato), che pallone era (tiro,
 // cross o lancio, altro), quanto andava forte e se c'era già il gesto di presa o di parata. Dopo la presa il pallone
 // va tra le mani da solo: tanto più lontane erano, tanto più si vede la «calamita». Conta anche le respinte con la mano lontana.
-// Uso: npm run build, poi RADICE=public node scripts/prove/presa.cjs [partite, 3]   (MANI=0.35: la soglia, in metri)
+// Uso: npm run build, poi RADICE=public node scripts/prove/presa.cjs [partite, 3]   (MANI=0.35: la soglia, in metri;
+// ELENCA=tiro: tutti i casi di quel tipo, anche quelli con le mani vicine)
 const { chromium } = require('playwright'); const http = require('http'), fs = require('fs'), path = require('path');
-const root = process.env.RADICE || path.join(__dirname, '../../public'), N = +process.argv[2] || 3, SEME = +process.env.SEME || 7, MANI = +(process.env.MANI || .35);
+const root = process.env.RADICE || path.join(__dirname, '../../public'), N = +process.argv[2] || 3, SEME = +process.env.SEME || 7, MANI = +(process.env.MANI || .35), ELENCA = process.env.ELENCA ? new RegExp(process.env.ELENCA) : null;
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.webp': 'image/webp', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json' };
 const srv = http.createServer((q, r) => { const u = q.url.split('?')[0], f = path.join(root, u === '/' ? 'index.html' : decodeURIComponent(u)); fs.readFile(f, (e, d) => { if (e) { r.writeHead(404); r.end(); } else { r.writeHead(200, { 'content-type': mime[path.extname(f)] || 'application/octet-stream' }); r.end(d); } }); });
 srv.listen(0, async () => {
   const br = await chromium.launch(), pg = await br.newPage({ viewport: { width: 844, height: 390 } });
   await pg.goto(`http://localhost:${srv.address().port}/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
   await pg.waitForFunction(() => window.__g && !document.querySelector('#carica'), null, { timeout: 90000 });
-  const tutte = [], respinte = [];
+  const tutte = [], respinte = []; let lontane = 0;
   for (let k = 0; k < N; k++) {
     const r = await pg.evaluate(([seme]) => {
       window.requestAnimationFrame = () => 0; const g = window.__g, G = g.G; g.renderer.render = () => {};
@@ -33,20 +34,21 @@ srv.listen(0, async () => {
         if (o && o !== ownerPrima && o.i === 0 && o.raccoglie != null) raccolta = { tipo: G.attesa && G.attesa.chi === o ? 'rimessa dal fondo' : ownerPrima && ownerPrima.team !== o.team ? 'tolto a chi conduce' : tiro ? 'tiro' : y0 > .9 ? 'cross o lancio' : 'altro', t0: G.t };
         if (inMano && !inManoPrima && raccolta) { prese.push({ d: +dist(o).toFixed(2), tipo: raccolta.tipo + ' (raccolto)', v: +v0.toFixed(1), y: +y0.toFixed(2), gesto: fx0.get(o) || '-', t: +G.t.toFixed(1), dopo: +(G.t - raccolta.t0).toFixed(2) }); raccolta = null; }
         else if (inMano && !inManoPrima && o !== ownerPrima) {
-          prese.push({ d: +dist(o).toFixed(2), tipo: G.attesa && G.attesa.chi === o ? 'rimessa dal fondo' : ownerPrima && ownerPrima.team !== o.team ? 'tolto a chi conduce' : tiro ? 'tiro' : y0 > .9 ? 'cross o lancio' : 'altro', v: +v0.toFixed(1), y: +y0.toFixed(2), gesto: fx0.get(o) || '-', t: +G.t.toFixed(1) });
+          prese.push({ d: +dist(o).toFixed(2), tipo: G.attesa && G.attesa.chi === o ? 'rimessa dal fondo' : ownerPrima && ownerPrima.team !== o.team ? 'tolto a chi conduce' : tiro ? 'tiro' : y0 > .9 ? 'cross o lancio' : 'altro', v: +v0.toFixed(1), y: +y0.toFixed(2), gesto: fx0.get(o) || '-', t: +G.t.toFixed(1), st: o.st });
         }
         // respinta: la parata conta (s.sv) ma il pallone resta libero
         gk.forEach((p, i) => { if (p.s.sv > sv[i] && b.owner !== p) resp.push({ d: +dist(p).toFixed(2), v: +v0.toFixed(1), gesto: fx0.get(p) || '-', t: +G.t.toFixed(1) }); });
         ownerPrima = o; inManoPrima = inMano; if (!o) raccolta = null;
       }
-      return { prese, resp };
+      return { prese, resp, lontane: G.stats.lontane ? G.stats.lontane[0] + G.stats.lontane[1] : 0 };
     }, [SEME + k]);
-    tutte.push(...r.prese); respinte.push(...r.resp);
+    tutte.push(...r.prese); respinte.push(...r.resp); lontane += r.lontane;
   }
   const quanti = (a) => a.filter((x) => x.d > MANI).length, med = (a) => { const s = a.map((x) => x.d).sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0; };
   console.log(`prese in mano ${tutte.length} su ${N} partite: mani dal pallone mediana ${med(tutte)} m, oltre ${MANI} m ${quanti(tutte)} (${Math.round(quanti(tutte) / Math.max(1, tutte.length) * 100)}%)`);
   for (const tipo of [...new Set(tutte.map((x) => x.tipo))].sort()) { const a = tutte.filter((x) => x.tipo === tipo); if (a.length) console.log(`  ${tipo.padEnd(19)} ${String(a.length).padStart(3)} · mediana ${med(a)} m · oltre ${MANI} m ${quanti(a)} · col gesto già partito ${a.filter((x) => /^(presa_|para_)/.test(x.gesto)).length}`); }
+  console.log(`palloni lasciati passare con le mani lontane (PARATA.manca): ${lontane}`);
   console.log(`respinte ${respinte.length}: mani dal pallone mediana ${med(respinte)} m, oltre ${MANI} m ${quanti(respinte)}`);
-  for (const x of tutte.filter((q) => q.d > MANI).slice(0, 8)) console.log(`   presa ${x.t} s: ${x.tipo}, ${x.v} m/s alto ${x.y} m, mani a ${x.d} m, gesto ${x.gesto}${x.dopo !== undefined ? `, raccolto dopo ${x.dopo} s` : ''}`);
+  for (const x of (ELENCA ? tutte.filter((q) => ELENCA.test(q.tipo)) : tutte.filter((q) => q.d > MANI).slice(0, 8))) console.log(`   presa ${x.t} s: ${x.tipo}, ${x.v} m/s alto ${x.y} m, mani a ${x.d} m, gesto ${x.gesto}${x.st ? ' (' + x.st + ')' : ''}${x.dopo !== undefined ? `, raccolto dopo ${x.dopo} s` : ''}`);
   await br.close(); srv.close();
 });
