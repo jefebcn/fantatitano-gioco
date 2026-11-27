@@ -161,6 +161,9 @@ Regole e numeri: `docs/home-spec.md` §5. Qui cosa c'è da sapere per riprendere
   Muto e due cursori (Musica, Effetti), salvati sul telefono. Muta, a volume zero o col gioco in secondo piano la musica
   si ferma e non scarica niente. Non è nel precarico e non passa dal service worker: senza rete il gioco va, senza
   musica. Prova: `node scripts/prove/musica.cjs` (anche nel controllo automatico). Fonte in `docs/crediti.md`.
+  **Dal 27/11 i brani sono due** (richiesta di Alex): all'apertura parte «Desde la Calle», finita quella «Rise Up», poi
+  di nuovo la prima, e così via; il brano successivo si scarica quando finisce quello che suona. Cambia solo l'elenco
+  `AUDIO.musica.brani`: `src/audio.js` sapeva già passare da un brano all'altro.
 - **Apertura dei premi** (23/11, `src/casa/premio.js`, tempi e misure in `PREMIO` di `src/config.js`): con le
   illustrazioni di Alex (`assets/arrivo/premi/`). Busta blu per premio del giorno e sfide, argento per il percorso premi,
   oro per la fine della stagione. La busta entra dal basso con un rimbalzo, vibra mentre dietro cresce la luce dorata, il
