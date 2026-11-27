@@ -762,7 +762,8 @@ export const PREMIO = {
 //   livello: quanto suona la musica col cursore al massimo (1 = com'è il file).
 //   entra: in quanti secondi la musica torna quando si rientra nella home; esce: in quanti sfuma quando parte la partita.
 export const AUDIO = {
-  musica: { cartella: 'audio/', brani: ['musica-home-rise-up'], livello: 1, entra: 1.5, esce: 1.2 },
+  // Alex, 27/11: all'apertura parte «Desde la Calle»; finita quella «Rise Up», poi di nuovo la prima, e così via
+  musica: { cartella: 'audio/', brani: ['musica-home-desde-la-calle', 'musica-home-rise-up'], livello: 1, entra: 1.5, esce: 1.2 },
   // il coro del pubblico durante la partita (Alex, 26/11: «Alé Fantatitano», da Suno): sotto il gioco, `livello` rispetto
   // alla musica della home; si ripete da sé, sfuma in pausa e a fine partita
   partita: { cartella: 'audio/', brani: ['coro-partita-ale-fantatitano'], livello: .45, entra: 2, esce: 1.2 },

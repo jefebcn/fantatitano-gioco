@@ -36,10 +36,19 @@ Le fonti dei modelli e delle animazioni della partita sono nel README; quelle de
 
 ## Musica
 
-### «Rise Up (Fantatitano)», la musica della home
+### «Desde la Calle», la prima musica della home
+- Cosa: `public/audio/musica-home-desde-la-calle.ogg` e `.mp3` (gli originali in `assets/arrivo/audio/`), 2 minuti e
+  29. È il brano che parte quando si apre la home (Alex, 27 novembre 2026); finito, parte «Rise Up», poi di nuovo
+  questo, e così via (`AUDIO.musica` di `src/config.js`).
+- Da dove: generata con **Suno** (https://suno.com) dall'account di Alex, piano Pro come «Rise Up» (uso commerciale
+  consentito); nel file arrivato c'è la nota «made with suno». Mandata da Alex il 27 novembre 2026.
+- Preparazione nostra: dissolvenza in entrata di 0,4 secondi e in uscita di 3, volume alzato di 1,3 dB per pareggiare
+  quello di «Rise Up», salvata in OGG e in MP3 a 128 kbps.
+
+### «Rise Up (Fantatitano)», la seconda musica della home
 - Cosa: `public/audio/musica-home-rise-up.ogg` e `.mp3` (gli originali in `assets/arrivo/audio/`): pop-rock da stadio
-  cantato in inglese, 3 minuti e 31. Gira in tutte le schermate della home (`src/audio.js`, elenco dei brani in
-  `AUDIO.musica` di `src/config.js`).
+  cantato in inglese, 3 minuti e 31. Gira in tutte le schermate della home, dopo «Desde la Calle» (`src/audio.js`,
+  elenco dei brani in `AUDIO.musica` di `src/config.js`).
 - Da dove: generata con **Suno** (https://suno.com) dall'account di Alex, **piano Pro**: i brani generati con questo
   piano si possono usare a scopo commerciale (termini di Suno al momento della generazione). Scelta da Alex il 23
   novembre 2026.
