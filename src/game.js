@@ -485,6 +485,29 @@ function prevediPresa(b) {
   // il gesto rallenta fino a PARATA.rallenta per arrivare in tempo: parte quando il contatto è a portata di quel ritmo
   if (fra <= (i.tocco || 0) / PARATA.rallenta && gesto(p, nome, fra, true)) p.presaDi = G.calcioT;
 }
+/**
+ * Pallone basso per il portiere (rotola verso di lui, è fermo o lento in area, un tiro piano): la presa a terra o al
+ * ginocchio parte quando il pallone arriverà al punto delle mani della clip, così le mani ci sono quando il gioco
+ * decide la presa (amici di Alex, 27/11: prima il pallone saliva da solo da terra al petto, con le mani a 80 cm).
+ */
+function prevediRaccolta(b) {
+  for (const t of G.teams) {
+    const p = t.players[0]; if (!p || !p.fig.skinned || !libero(p) || p.cool > 0 || p.st !== 'run' || retropassaggio(p)) continue;
+    // solo il pallone che rotola, come in contacts: i cross che rimbalzano li prepara prevediPresa
+    if (!(Math.abs(p.x) > HL - 17 && Math.abs(p.z) < 20.5) || b.y > PARATA.presa[0] || Math.abs(b.vy) > PARATA.sale) continue;
+    const rx = b.x - p.x, rz = b.z - p.z, ux = b.vx - p.vx, uz = b.vz - p.vz, d = hyp(rx, rz), u2 = ux * ux + uz * uz;
+    // quanto in fretta si avvicinano (il pallone verso di lui, o lui verso il pallone fermo)
+    const chiude = -(rx * ux + rz * uz) / (d || 1); if (chiude < PARATA.chiude || u2 < 1e-4) continue;
+    const tv = -(rx * ux + rz * uz) / u2; if (hyp(rx + ux * tv, rz + uz * tv) > PARATA.portata) continue;
+    // l'altezza a cui il pallone arriverà alle mani: se rimbalza più su della presa al ginocchio ci pensa prevediPresa
+    const i0 = GESTI.presa_terra; if (!i0 || !i0.palla) continue;
+    const f0 = Math.max(0, d - hyp(i0.palla[0], i0.palla[2]) * (p.fig.alt || 1)) / chiude, y = b.y + b.vy * f0 - GRAV / 2 * f0 * f0;
+    if (y > PARATA.uscita) continue;
+    const nome = y > PARATA.presa[0] ? 'presa_ginocchio' : 'presa_terra', i = GESTI[nome]; if (!i || !i.palla) continue;
+    const fra = Math.max(0, d - hyp(i.palla[0], i.palla[2]) * (p.fig.alt || 1)) / chiude;
+    if (fra <= (i.tocco || 0) / PARATA.rallenta) gesto(p, nome, fra, true);
+  }
+}
 /** Presa senza parata preparata (cross, tiro addosso): la clip all'altezza del pallone, dal momento in cui le mani lo toccano. */
 function presaPortiere(p, y) {
   const nome = `presa_${altezzaPresa(y)}`, i = GESTI[nome];
@@ -1156,6 +1179,10 @@ function retropassaggio(p) {
 }
 function gain(p) {
   if (p.i === 0) { p.presaT = G.t; p.rinvio = null; p.hold = 0; p.attendi = 0; p.piedi = retropassaggio(p); }
+  // il portiere che prende in mano un pallone basso con le mani lontane (la rimessa dal fondo, un pallone tolto dai piedi)
+  // prima si abbassa a raccoglierlo, vedi raccogli
+  // (solo un pallone fermo o lento: un tiro preso resta una presa, se no il pallone continuerebbe la sua corsa, anche in porta)
+  if (p.i === 0) { const b0 = G.ball, m = !p.piedi && p.fig.skinned && b0.y < PARATA.uscita && hyp(b0.vx - p.vx, b0.vz - p.vz) < PARATA.lento ? manoVicina(p, b0.x, b0.y, b0.z) : null; p.raccoglie = m !== null && m > PARATA.mani ? G.t : null; }
   if (G.offs && G.state === 'play' && G.offs.includes(p)) return offside(p);
   G.offs = null; if (p !== G.taker) G.noOff = false;
   // pagella: passaggio riuscito, oppure pallone intercettato a un avversario
@@ -2001,7 +2028,22 @@ function scegliRinvio(p, tipo, dir) {
   let lm = null, ls = -1e9; for (const o of t.players) { if (o.i === 0) continue; const sc = o.x * s + Math.min(openness(o), 8) * 2 + (dir ? ((o.x - p.x) * dir[0] + (o.z - p.z) * dir[1]) / (hyp(o.x - p.x, o.z - p.z) || 1) * 20 : 0); if (sc > ls) { ls = sc; lm = o; } }
   return { tipo: 'piede', m: lm };
 }
+/**
+ * Il portiere si abbassa a raccogliere il pallone (Alex, 27/11: in Dream League la rimessa dal fondo la raccoglie con le
+ * mani): va dove le mani della presa a terra lo prendono, fa la presa, e il pallone è suo in mano quando le mani ci
+ * arrivano, o al più dopo PARATA.raccoltaMax secondi.
+ */
+function raccogli(p) {
+  const b = G.ball, i = GESTI.presa_terra, m = manoVicina(p, b.x, b.y, b.z);
+  const g = /^presa_/.test(p.fx || '') ? GESTI[p.fx] : null, dopo = !!g && p.fxT * (p.fxSp || 1) >= (g.tocco || 0) + PARATA.attesa;
+  if (m === null || m <= PARATA.mani || (dopo && m <= PARATA.raccogli) || G.t - p.raccoglie > PARATA.raccoltaMax) { p.raccoglie = null; p.presaT = G.t; return; }
+  const dx = b.x - p.x, dz = b.z - p.z, d = hyp(dx, dz) || 1, av = i && i.palla ? hyp(i.palla[0], i.palla[2]) * (p.fig.alt || 1) : 0;
+  p.tx = b.x - dx / d * av; p.tz = b.z - dz / d * av; p.sprint = false;
+  if (d < av + PARATA.raccoltaPosto) p.dir = Math.atan2(dx, dz);
+  if (!g && i && d < av + PARATA.raccoltaPosto) gesto(p, 'presa_terra', i.tocco || 0, true);
+}
 function gkTiene(p, dt) {
+  if (p.raccoglie != null) return raccogli(p);
   const t = p.team, s = t.side, gx = -s * HL;
   // sulla rimessa dal fondo il portiere di chi gioca aspetta il comando (Passa o Cross, vedi comandaPortiere)
   const comando = G.attesa && G.attesa.chi === p && t.human && !G.auto;
@@ -2102,7 +2144,11 @@ function gkThink(p, dt) {
   p.esce = false;
   if (!own && dB < 17 && Math.abs(b.z) < 19 && hyp(b.vx, b.vz) < 9) { // palla vagante in area: esce
     let od = 99; for (const o of t.opp.players) od = Math.min(od, hyp(o.x - b.x, o.z - b.z));
-    if (hyp(p.x - b.x, p.z - b.z) < od + 1) { p.tx = b.x; p.tz = b.z; p.sprint = true; return; }
+    if (hyp(p.x - b.x, p.z - b.z) < od + 1) {
+      // si ferma col pallone dove le mani della presa a terra lo raccolgono (prima correva sul centro del pallone)
+      const i = GESTI.presa_terra, dv = hyp(b.x - p.x, b.z - p.z) || 1, av = i && i.palla ? i.palla[2] * (p.fig.alt || 1) : 0;
+      p.tx = b.x - (b.x - p.x) / dv * av; p.tz = b.z - (b.z - p.z) / dv * av; p.sprint = true; return;
+    }
   }
   // Come Dream League: sulla linea (PORTIERE.linea), seguendo il pallone di lato. Quando l'attaccante col pallone entra in
   // area esce verso il palo vicino; se è da solo e ormai addosso, va sul pallone
@@ -2348,7 +2394,7 @@ function nellaMano(p) {
 }
 function moveBall(dt) {
   const b = G.ball; fantasma(dt);
-  if (G.state === 'play') { calciCaricati(dt); if (b.owner && alPiede(b.owner) && !G.rimessa && !b.owner.carica) prevediTocco(b.owner, b); else if (!b.owner) { prevediStop(b); prevediPresa(b); } } // i gesti con la palla, a tempo col tocco
+  if (G.state === 'play') { calciCaricati(dt); if (b.owner && alPiede(b.owner) && !G.rimessa && !b.owner.carica) prevediTocco(b.owner, b); else if (!b.owner) { prevediStop(b); prevediPresa(b); prevediRaccolta(b); } } // i gesti con la palla, a tempo col tocco
   else for (const p of all()) p.carica = null; // a gioco fermo nessun calcio resta in sospeso
   // chi ha la palla lo si legge dopo i calci caricati: se il calcio è appena partito non c'è più nessuno da far condurre
   // (prima il passatore dava un tocco di conduzione al pallone appena calciato e il passaggio finiva lento e di lato)
@@ -2399,6 +2445,13 @@ function moveBall(dt) {
     FIS.passo(b, dt); return;
   }
   if (o) {
+    // il portiere che sta raccogliendo il pallone: resta a terra (fermo sulla rimessa dal fondo, se no rotola) finché le mani
+    // non ci arrivano; se rotola troppo lontano lo perde
+    if (o.raccoglie != null && G.state === 'play') {
+      if (G.attesa && G.attesa.chi === o) { b.vx = b.vy = b.vz = 0; return; }
+      if (FIS.conduci(b, o, dt, 0, Math.random, null, 'aspetta') === 'perso') { b.owner = null; G.lastTouch = o; o.raccoglie = null; }
+      FIS.passo(b, dt); return;
+    }
     const mani = !alPiede(o) && o.fig.skinned && G.state === 'play', k = mani ? .42 : .8; // il portiere la tiene in mano
     // tra le mani vere (la posa del fotogramma prima), così segue presa e tuffo. Nel lancio con le mani un braccio va
     // indietro e l'altro avanti: il punto di mezzo restava sospeso davanti al petto, quindi lì il pallone segue la mano che lancia
@@ -2523,6 +2576,20 @@ function contacts(dt) {
       }
       const nx = (b.x - p.x) / (bd || 1), nz = (b.z - p.z) / (bd || 1), dot = b.vx * nx + b.vz * nz;
       b.vx = (b.vx - 2 * dot * nx) * .35 + rnd(-1, 1); b.vz = (b.vz - 2 * dot * nz) * .35 + rnd(-1, 1); b.vy = rnd(1, 4); p.cool = .4; G.lastTouch = p; AU.calcio(10, 'tocco'); return;
+    }
+    // il portiere prende in mano un pallone basso solo con le mani sopra (amici di Alex, 27/11): finché si avvicinano
+    // aspetta; quando il pallone non si avvicina più parte la presa, se non c'è già, e si aspetta che le mani ci arrivino.
+    // Finito il momento della presa, con le mani ancora oltre PARATA.raccogli il pallone resta libero e lo si riprova
+    // (solo il pallone che rotola: quello che rimbalza può risalire, ed è un cross, vedi più su)
+    if (gk && !retropassaggio(p) && p.fig.skinned && b.y < PARATA.presa[0] && Math.abs(b.vy) < PARATA.sale && G.state === 'play' && Math.abs(p.x) > HL - 17 && Math.abs(p.z) < 20.5) {
+      const mano = manoVicina(p, b.x, b.y, b.z);
+      if (mano !== null && mano > PARATA.mani) {
+        const poi = manoVicina(p, b.x + (b.vx - p.vx) * dt, b.y + b.vy * dt, b.z + (b.vz - p.vz) * dt);
+        if (poi < mano - 1e-4) return;
+        const g = /^presa_/.test(p.fx || '') ? GESTI[p.fx] : null;
+        if (!g) { const nome = b.y > PARATA.presa[0] ? 'presa_ginocchio' : 'presa_terra'; if (GESTI[nome]) gesto(p, nome, FIS.COND.subito, true); return; }
+        if (p.fxT * (p.fxSp || 1) < (g.tocco || 0) + PARATA.attesa || mano > PARATA.raccogli) return;
+      }
     }
     // il pallone basso lo prende il piede (Alex, 27/11: niente pallone che cambia strada a un metro dal piede): finché
     // arriva si aspetta il piede. Se passa di lato o si ferma lo si prende lo stesso, ma parte lo stop e il pallone cambia
