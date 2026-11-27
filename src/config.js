@@ -425,7 +425,10 @@ export const PARATA = { tuffo: [.3, .8, 1.25], presa: [.25, .6, 1.2], uscita: .9
 // `gira` = [metri, metri]: quando il suo posto è più lontano del primo numero e il pallone è a più del secondo dalla sua
 // porta, si gira e ci va correndo in avanti; vicino, o col pallone vicino, si sposta guardando il pallone. Prima tornava
 // sempre all'indietro, anche per cinque metri a 4,6 m/s dopo il calcio d'inizio.
-export const PORTIERE = { linea: .9, area: 16.5, palo: [2.4, 1.5], reazione: [.18, .3], presa: .6, davanti: .3, angolo: .4, gira: [4, 30] };
+// `piedi`: retropassaggio al portiere del computer (Alex, 27/11: lo stoppa coi piedi). Lo tiene tra `tiene` secondi, poi
+// passa; con un avversario entro `pressato` metri, o senza nessuno libero, lo calcia lungo subito, al massimo `lungo` metri.
+// Va incontro al retropassaggio che viene verso la sua porta da meno di `zona` metri
+export const PORTIERE = { linea: .9, area: 16.5, palo: [2.4, 1.5], reazione: [.18, .3], presa: .6, davanti: .3, angolo: .4, gira: [4, 30], piedi: { tiene: [.5, .9], pressato: 4, lungo: 55, zona: 30 } };
 // Il portiere col pallone in mano. attesa: secondi prima di rimetterlo in gioco; braccio e piede: quanto prima parte
 // l'animazione del lancio e del rinvio. corto: fin dove lancia con le mani, in metri. limite: quanto può avanzare dalla linea.
 // Il lancio con le mani: `mano` è la velocità media in m/s. Oltre `vicino` metri la palla tocca terra a `rimbalzo` della

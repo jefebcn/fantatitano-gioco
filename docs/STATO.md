@@ -271,6 +271,13 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   Lezione: il computer all'inizio passava al compagno scelto quando l'attesa cominciava, quasi un secondo prima del
   calcio, coi compagni non ancora al loro posto: su 96 partite (semi 7-102) un tiro in meno a partita, soprattutto da
   fuori. Ora quel compagno serve solo a dove sistemarsi; al calcio sceglie di nuovo.
+- Retropassaggio (Alex, 27/11: in Dream League il portiere lo stoppa coi piedi e lo comandi tu): quando il pallone arriva
+  al portiere da un calcio di un compagno (non di testa, non da una rimessa, non deviato) il portiere gli va incontro, lo
+  stoppa al piede e non lo prende con le mani (`retropassaggio`, `alPiede`, `p.piedi` in `src/game.js`). Quello di chi
+  gioca passa al comando: si muove con la levetta, passa, lancia, e gli avversari possono rubarglielo; quando il pallone non
+  è più suo il comando torna al compagno più vicino. Quello del computer lo passa dopo 0,5-0,9 s, o lo rinvia lungo da
+  terra se è pressato (`gkPiedi`, `PORTIERE.piedi`). Il computer non passa mai indietro al portiere (`bestPass` lo
+  esclude): cambia solo per i palloni dei compagni che gli arrivano. Prova: `scripts/prove/retropassaggio.cjs`.
 
 ## Risposte di Alex del 24/11 e nuovo video (riprese-30s)
 - Tasti in difesa: A «Scivolata», B pressing e contrasto in piedi, C cambia giocatore. FATTO (vedi punto 13 qui sopra).

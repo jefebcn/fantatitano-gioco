@@ -39,6 +39,8 @@ jobs:
         run: node scripts/prove/riprese.cjs
       - name: Palla che arriva a chi gioca (levetta tenuta, cambio automatico a palla libera)
         run: node scripts/prove/vagante.cjs
+      - name: Retropassaggio (il portiere lo stoppa al piede e lo comanda chi gioca)
+        run: node scripts/prove/retropassaggio.cjs
       - name: Gli avversari vanno sul portatore di chi gioca (vicino alla metà campo, entro 8 secondi)
         run: node scripts/prove/pressing.cjs
       - name: Dopo un passaggio il comando resta al compagno che riceve

@@ -496,8 +496,8 @@ function sbilancia(o, d) {
 function prevediStop(b) {
   const sp = hyp(b.vx, b.vz); if (b.owner || b.y > .6 || sp > 19 || G.state !== 'play') return;
   let p = G.intended;
-  if (!p) { let bd = 4; for (const q of all()) { const d = hyp(q.x - b.x, q.z - b.z); if (q.i && d < bd) { bd = d; p = q; } } }
-  if (!p || !p.i || !libero(p) || !p.fig.skinned || p.cool > 0 || p.st !== 'run') return;
+  if (!p) { let bd = 4; for (const q of all()) { const d = hyp(q.x - b.x, q.z - b.z); if ((q.i || retropassaggio(q)) && d < bd) { bd = d; p = q; } } }
+  if (!p || (!p.i && !retropassaggio(p)) || !libero(p) || !p.fig.skinned || p.cool > 0 || p.st !== 'run') return;
   const rx = b.x - p.x, rz = b.z - p.z, d = hyp(rx, rz); if (d > 6) return;
   const chiude = -(rx * (b.vx - p.vx) + rz * (b.vz - p.vz)) / d; if (chiude < .8) return;
   const vr = hyp(p.vx, p.vz) / (p.fig.alt || 1);
@@ -1022,6 +1022,8 @@ function nuovaPartita(home, away) {
 const all = () => G.teams[0].players.concat(G.teams[1].players);
 const diffOf = (p) => (p.team.human ? MATE : G.diff);
 const userDrives = (p) => p === G.ctrl && p.team.human && !G.auto;
+// il pallone al piede: tutti tranne il portiere, che ce l'ha solo dopo un retropassaggio (vedi retropassaggio)
+const alPiede = (p) => p.i !== 0 || !!p.piedi;
 // vista di controllo dell'IA: ?ia nell'indirizzo o tasto O (src/debug-ia.js). Legge soltanto, non cambia il gioco
 const DBG_IA = creaDebugIA({ cam, G, homeOf, HW, attiva: /[?&]ia\b/.test(location.search) });
 
@@ -1101,7 +1103,7 @@ function attesaPasso(dt) {
   // non ha trovato a chi darla: si gioca
   if (G.ball.owner === k && !k.carica) { G.attesa = null; G.fk = null; }
 }
-function setCtrl(p) { if (p && p.team.human && p.i !== 0) { G.ctrl = p; G.idle = 0; } }
+function setCtrl(p) { if (p && p.team.human && alPiede(p)) { G.ctrl = p; G.idle = 0; } }
 function nearestTo(team, x, z, skip) { let best = null, bd = 1e9; for (const p of team.players) { if (p.i === 0 || p === skip) continue; const d = hyp(p.x - x, p.z - z); if (d < bd) { bd = d; best = p; } } return best; }
 
 const minute = () => Math.min(90, Math.floor(((G.half - 1) + G.clock / HALF_SECS) * 45) + 1);
@@ -1112,8 +1114,17 @@ function offsideLine(t, bx = G.ball.x) {
 }
 function offside(p) { G.stats.offs[p.team.idx]++; G.offs = null; freeKick(p.team.opp, p.x, p.z, 'fuorigioco'); }
 const qf = (p) => clamp(1.2 - (p.q - 20) / 45, .75, 1.25); // chi vale di più sbaglia di meno
+/**
+ * Retropassaggio (Alex, 27/11: in Dream League il portiere non lo prende con le mani, lo stoppa e lo comandi tu): il
+ * pallone arriva al portiere da un calcio di un compagno, che è anche l'ultimo ad averlo toccato. Non vale per i colpi di
+ * testa, le rimesse con le mani e i palloni deviati da altri.
+ */
+function retropassaggio(p) {
+  const k = G.lastKicker;
+  return p.i === 0 && G.state === 'play' && !G.ball.owner && !!k && k !== p && k.team === p.team && G.lastTouch === k && G.piedeT === G.calcioT;
+}
 function gain(p) {
-  if (p.i === 0) { p.presaT = G.t; p.rinvio = null; p.hold = 0; }
+  if (p.i === 0) { p.presaT = G.t; p.rinvio = null; p.hold = 0; p.attendi = 0; p.piedi = retropassaggio(p); }
   if (G.offs && G.state === 'play' && G.offs.includes(p)) return offside(p);
   G.offs = null; if (p !== G.taker) G.noOff = false;
   // pagella: passaggio riuscito, oppure pallone intercettato a un avversario
@@ -1122,16 +1133,16 @@ function gain(p) {
   // chi recupera palla nella metà avversaria (misura del pressing)
   const b = G.ball, prev = G.poss; if (prev && prev !== p.team && G.state === 'play') { prev.persaT = G.t; if (p.x * p.team.side > 0) G.stats.recAlti[p.team.idx]++; } b.owner = p; G.lastTouch = p; G.intended = null; G.poss = p.team; p.shield = .45; p.hold = 0;
   { let pr = 9; for (const o of p.team.opp.players) pr = Math.min(pr, hyp(o.x - p.x, o.z - p.z)); p.thinkT = diffOf(p).think / .4 * (pr < 2.5 ? TENUTA.primoAddosso : rnd(...TENUTA.primo) * (pr < 5 ? .5 : 1)); p.conduci = null; } // con l'avversario addosso si decide subito (TENUTA)
-  if (p.i && G.state === 'play') { // stop (anche di petto): la palla si smorza davanti al piede, verso la levetta (o verso la porta per chi gioca da solo)
+  if (alPiede(p) && G.state === 'play') { // stop (anche di petto): la palla si smorza davanti al piede, verso la levetta (o verso la porta per chi gioca da solo)
     FIS.controlla(b, p, tecnica(p), Math.random, versoControllo(p));
   }
-  if (p.team.human) { if (p.i !== 0) setCtrl(p); } else if (prev !== p.team || !G.ctrl) { const m = migliorDifensore(G.teams[0]); setCtrl(m ? m.p : nearestTo(G.teams[0], b.x, b.z)); }
+  if (p.team.human) { if (alPiede(p)) setCtrl(p); } else if (prev !== p.team || !G.ctrl) { const m = migliorDifensore(G.teams[0]); setCtrl(m ? m.p : nearestTo(G.teams[0], b.x, b.z)); }
 }
 // Da dove parte il calcio: il pallone è dove l'ha lasciato l'ultimo tocco (non incollato al piede). Se per qualche motivo è
 // troppo lontano (rimesse, palla appena data), lo si mette davanti al piede.
 function piede(p) {
   const b = G.ball, d = hyp(b.x - p.x, b.z - p.z);
-  if (d <= 1.6 && b.y < 1.2 && !(p.i === 0 && b.owner === p)) return { x: b.x, y: BR, z: b.z };
+  if (d <= 1.6 && b.y < 1.2 && !(!alPiede(p) && b.owner === p)) return { x: b.x, y: BR, z: b.z };
   return { x: p.x + Math.sin(p.dir) * .8, y: BR, z: p.z + Math.cos(p.dir) * .8 };
 }
 /* Rimessa laterale con le mani (clip di GameplayFootball): chi la batte si mette dietro la linea, prende il pallone sopra la
@@ -1163,7 +1174,7 @@ function palloneInMano() {
 }
 function kick(p, vx, vy, vz, anim = 'passaggio', c = 0, tp = 0) {
   const b = G.ball, o = piede(p); b.owner = null; b.x = o.x; b.z = o.z; b.y = BR;
-  b.vx = vx; b.vy = vy; b.vz = vz; b.c = c; b.t = tp; b.resto = 0; G.calcioT = G.t; p.cool = .45;
+  b.vx = vx; b.vy = vy; b.vz = vz; b.c = c; b.t = tp; b.resto = 0; G.calcioT = G.piedeT = G.t; p.cool = .45;
   if (BR + vy * vy / (2 * GRAV) > SEGNI.alto) G.altoT = G.calcioT; // pallone alto: la X gialla dove scende (non sui tiri, vedi shoot)
   // tiro forte: si alza un po' d'erba
   if (hyp(vx, vz) > 23) { const v = hyp(vx, vz); PART.emetti('erba', o.x, .05, o.z, 6, 3, vx / v * .6, vz / v * .6); PART.emetti('polvere', o.x, .1, o.z, 3, 1.5, 0, 0); } p.st = 'kick'; p.stT = 0; G.lastTouch = G.lastKicker = p; AU.calcio(hyp(vx, vz), anim);
@@ -1460,7 +1471,7 @@ function scivolate() {
   for (const d of all()) {
     if (d.st !== 'slide' || G.state !== 'play') continue;
     const own = b.owner;
-    if (!d.slPalla && !(own && (own.team === d.team || own.i === 0)) && URTO.toccaPalla(d, b)) {
+    if (!d.slPalla && !(own && (own.team === d.team || !alPiede(own))) && URTO.toccaPalla(d, b)) {
       d.slPalla = G.t; const v = URTO.deviazione(d, b);
       b.owner = null; b.vx = v.vx; b.vz = v.vz; b.vy = v.vy; b.c = b.t = 0; b.resto = 0; G.lastTouch = d; G.lastPass = null; G.offs = null; G.intended = null; d.cool = .25; AU.calcio(9, 'tocco');
       if (own) { own.cool = .5; d.s.tk++; }
@@ -1990,9 +2001,31 @@ function rilasciaPortiere(p, r) {
   G.calcioT = G.t; p.cool = .5; G.lastTouch = G.lastKicker = p; G.intended = m; G.lastPass = p; p.s.pa++; G.poss = p.team;
   if (p.team.human) setCtrl(m);
 }
+/**
+ * Il portiere del computer col pallone al piede dopo un retropassaggio: lo stoppa, poi lo passa al compagno migliore dopo
+ * PORTIERE.piedi.tiene secondi; con un avversario entro PORTIERE.piedi.pressato metri, o se nessuno è libero, lo calcia
+ * lungo verso il compagno più avanti (scegliRinvio).
+ */
+function gkPiedi(p, dt) {
+  p.tx = p.x; p.tz = p.z; p.sprint = false; p.hold += dt; if (p.carica) return;
+  const [t0, t1] = PORTIERE.piedi.tiene; if (!p.attendi) p.attendi = rnd(t0, t1);
+  let pr = 9; for (const o of p.team.opp.players) pr = Math.min(pr, hyp(o.x - p.x, o.z - p.z));
+  if (p.hold < p.attendi && pr > PORTIERE.piedi.pressato) return;
+  p.attendi = 0;
+  const m = pr > PORTIERE.piedi.pressato ? bestPass(p) : null;
+  if (m) return prepara(p, 'passa', m.x, m.z, () => pass(p, m));
+  const lungo = scegliRinvio(p, 'piede').m; if (!lungo) return;
+  // rinvio lungo da terra, alto come quello dalle mani (rilasciaPortiere), al massimo PORTIERE.piedi.lungo metri
+  const s = p.team.side, ax = clamp(lungo.x + lungo.vx * 1.2 + s * 4, -HL + 3, HL - 3), az = clamp(lungo.z, -HW + 3, HW - 3), da = hyp(ax - p.x, az - p.z) || 1;
+  const k = Math.min(1, PORTIERE.piedi.lungo / da), tx = p.x + (ax - p.x) * k, tz = p.z + (az - p.z) * k;
+  prepara(p, 'calcia', tx, tz, () => {
+    if (G.ball.owner !== p) return; const o = piede(p), d = hyp(tx - o.x, tz - o.z), v = FIS.mira(o, { x: tx, y: PARATA.rinvio, z: tz }, clamp(d / 21, 1.3, 2.8), 0, .1);
+    kick(p, v.vx, clamp(v.vy, 0, 16), v.vz, 'tiro'); G.intended = lungo; G.lastPass = p; p.s.pa++; if (p.team.human) setCtrl(lungo);
+  }, true);
+}
 /** Il portiere dell'utente con la palla in mano: Passa lancia con le mani verso la levetta, Cross calcia lungo. */
 function comandaPortiere(tipo) {
-  const b = G.ball, p = b.owner; if (!p || p.i !== 0 || !p.team.human || G.state !== 'play') return false;
+  const b = G.ball, p = b.owner; if (!p || p.i !== 0 || p.piedi || !p.team.human || G.state !== 'play') return false;
   const [jx, jz] = inputWorld(), l = hyp(jx, jz), dir = l > .3 ? [jx / l, jz / l] : null, sc = scegliRinvio(p, tipo, dir);
   p.rinvio = { ...sc, quando: p.hold + (sc.tipo === 'mano' ? RINVIO.braccio : RINVIO.piede), anim: false }; return true;
 }
@@ -2003,7 +2036,11 @@ function gkGira(p) {
 }
 function gkThink(p, dt) {
   const b = G.ball, t = p.team, s = t.side, gx = -s * HL, own = b.owner;
-  if (own === p) return gkTiene(p, dt);
+  if (own === p) return p.piedi ? gkPiedi(p, dt) : gkTiene(p, dt);
+  // retropassaggio: non è un tiro da parare, il portiere va incontro al pallone e lo stoppa al piede. Solo se il pallone
+  // viene verso la sua porta, a meno di PORTIERE.piedi.zona metri, e non va a un compagno: prima usciva su ogni passaggio
+  // della sua squadra
+  if (!own && retropassaggio(p) && !airborne() && !G.intended && b.vx * -s > 0 && hyp(b.x - gx, b.z) < PORTIERE.piedi.zona) { [p.tx, p.tz] = intercept(p); p.sprint = hyp(b.vx, b.vz) > 2; p.esce = false; return; }
   const toward = b.vx * -s, abilita = p.team.human ? MATE.save : G.diff.save;
   // TIRO: prima un attimo di reazione (più corto per i più bravi), poi si sposta sul punto in cui il pallone passerà sulla
   // sua linea (calcolato con aria ed effetto, quindi segue la curva) e, se non ci arriva coi passi, si tuffa
@@ -2129,6 +2166,8 @@ function passo(dt) {
   if ((G.state === 'half' || G.state === 'full') && (Math.abs(b.z) > HW + 1.5 || Math.abs(b.x) > HL + 2.5)) { b.vx *= .8; b.vz *= .8; }
 
   if (G.attesa) attesaPasso(dt);
+  // il portiere comandato dopo un retropassaggio: quando il pallone non è più suo il comando torna al compagno più vicino
+  if (G.ctrl && !alPiede(G.ctrl) || (G.ctrl && G.ctrl.i === 0 && G.ball.owner !== G.ctrl && !G.ctrl.carica)) setCtrl(nearestTo(G.ctrl.team, G.ball.x, G.ball.z));
   roles(); runs(dt); G.land = airborne() ? landing() : null; G.path = G.ball && !G.ball.owner ? FIS.percorso(G.ball, 2.4, .1) : null;
   const ps = all();
   for (const p of ps) {
@@ -2271,14 +2310,14 @@ function nellaMano(p) {
 }
 function moveBall(dt) {
   const b = G.ball; fantasma(dt);
-  if (G.state === 'play') { calciCaricati(dt); if (b.owner && b.owner.i && !G.rimessa && !b.owner.carica) prevediTocco(b.owner, b); else if (!b.owner) { prevediStop(b); prevediPresa(b); } } // i gesti con la palla, a tempo col tocco
+  if (G.state === 'play') { calciCaricati(dt); if (b.owner && alPiede(b.owner) && !G.rimessa && !b.owner.carica) prevediTocco(b.owner, b); else if (!b.owner) { prevediStop(b); prevediPresa(b); } } // i gesti con la palla, a tempo col tocco
   else for (const p of all()) p.carica = null; // a gioco fermo nessun calcio resta in sospeso
   // chi ha la palla lo si legge dopo i calci caricati: se il calcio è appena partito non c'è più nessuno da far condurre
   // (prima il passatore dava un tocco di conduzione al pallone appena calciato e il passaggio finiva lento e di lato)
   const o = b.owner;
   // palla ferma pronta: il pallone resta sul punto finché non parte il gesto di chi batte
   if (G.attesa && o === G.attesa.chi && o.i !== 0 && !G.rimessa && !o.carica) { b.vx = b.vy = b.vz = 0; return; }
-  if (o && o.i !== 0 && G.state === 'play' && o.carica && o.carica.guida && b.y < .5) {
+  if (o && alPiede(o) && G.state === 'play' && o.carica && o.carica.guida && b.y < .5) {
     // sta per calciare: niente tocchi di conduzione, il pallone arriva davanti al piede che calcia proprio al momento del colpo.
     // Il punto lo dice la clip rispetto al corpo: col corpo che si gira verso il calcio vale la sua direzione, non la corsa
     const v = hyp(o.vx, o.vz), corpo = o.carica.verso !== undefined || v <= .5, ux = corpo ? Math.sin(o.dir) : o.vx / v, uz = corpo ? Math.cos(o.dir) : o.vz / v, t = Math.max(o.carica.t, dt);
@@ -2287,7 +2326,7 @@ function moveBall(dt) {
     const k = Math.min(1, CARICO.chiude * 2 / (hyp(rx, rz) || 1)); // rispetto al giocatore non va mai più svelto del doppio di `chiude`
     b.vx = o.vx + rx * k; b.vz = o.vz + rz * k; b.vy = 0; FIS.passo(b, dt); return;
   }
-  if (o && o.i !== 0 && G.state === 'play' && !(G.rimessa && G.rimessa.chi === o)) { // dribbling: tocchi in avanti, la palla è libera tra un tocco e l'altro
+  if (o && alPiede(o) && G.state === 'play' && !(G.rimessa && G.rimessa.chi === o)) { // dribbling: tocchi in avanti, la palla è libera tra un tocco e l'altro
     { let dm = 9; for (const q of o.team.opp.players) dm = Math.min(dm, hyp(q.x - o.x, q.z - o.z)); o.pressato = dm < 1.8; } // con un avversario addosso i tocchi si accorciano
     const q = tecnica(o) * (o.sbil > 0 ? .4 : 1), verso = { x: o.tx - o.x, z: o.tz - o.z }, tc = o.tocca;
     // il tocco lo dà il piede: col gesto del tocco partito, la spinta arriva quando il piede della clip è sul pallone, e
@@ -2315,7 +2354,7 @@ function moveBall(dt) {
     FIS.passo(b, dt); return;
   }
   if (o) {
-    const mani = o.i === 0 && o.fig.skinned && G.state === 'play', k = mani ? .42 : .8; // il portiere la tiene in mano
+    const mani = !alPiede(o) && o.fig.skinned && G.state === 'play', k = mani ? .42 : .8; // il portiere la tiene in mano
     // tra le mani vere (la posa del fotogramma prima), così segue presa e tuffo. Nel lancio con le mani un braccio va
     // indietro e l'altro avanti: il punto di mezzo restava sospeso davanti al petto, quindi lì il pallone segue la mano che lancia
     const lancio = mani && o.fx === 'rinvio' ? nellaMano(o) : null, w = lancio ? clamp(o.fig.fxW * 2 - .4, 0, 1) : 0, m2 = mani ? traLeMani(o) : null;
@@ -2378,7 +2417,7 @@ function contacts(dt) {
       if (G.lastKicker && p.team === G.lastKicker.team && p !== G.intended && G.t - (G.calcioT || -9) < .2) continue;
       const d = hyp(p.x - b.x, p.z - b.z), gk = p.i === 0, inBox = Math.abs(p.x) > HL - 17 && Math.abs(p.z) < 20.5;
       if (sp > 8 && !gk && p !== G.intended && (p.x - b.x) * b.vx + (p.z - b.z) * b.vz < -.3 * sp) continue; // un pallone veloce che si allontana non lo tocca chi gli sta dietro o di fianco
-      const reach = gk && inBox ? (p.st === 'dive' ? 2.0 : 1.3) : (p.st === 'slide' ? 1.3 : 1.05), top = gk && inBox ? 2.7 : 1.55;
+      const mani = gk && inBox && !retropassaggio(p), reach = mani ? (p.st === 'dive' ? 2.0 : 1.3) : (p.st === 'slide' ? 1.3 : 1.05), top = mani ? 2.7 : 1.55;
       if (d < reach && b.y < top && d < bd) { bd = d; best = p; }
     }
     if (!G.so && !(best && best.i === 0) && b.y < AIR.top && sp < AIR.fast && (b.y >= AIR.low || (b.vy < -5 && b.y > AIR.scende))) { // pallone alto o che scende forte: chi ci arriva colpisce di testa
@@ -2442,7 +2481,7 @@ function contacts(dt) {
     }
     // con lo stop il pallone lo ferma il piede: si aspetta che ci arrivi, o che smetta di avvicinarsi, vedi PASSAGGIO.piede.
     // Anche il destinatario del passaggio aspetta: intanto parte lo stop, che prima arrivava sempre troppo tardi
-    if (!gk && (/^stop/.test(p.fx || '') || (p === G.intended && libero(p))) && b.y < .6) {
+    if ((!gk || retropassaggio(p)) && (/^stop/.test(p.fx || '') || (p === G.intended && libero(p))) && b.y < .6) {
       const pv = piedeVicino(p, b.x, b.y, b.z), poi = pv === null ? null : piedeVicino(p, b.x + b.vx * dt, b.y + b.vy * dt, b.z + b.vz * dt);
       if (pv !== null && pv > PASSAGGIO.piede && poi < pv) return;
     }
@@ -2451,7 +2490,7 @@ function contacts(dt) {
   // contrasti (non su chi batte la rimessa col pallone in mano)
   if (own.shield > 0 || (G.rimessa && G.rimessa.chi === own)) return;
   const fx = Math.sin(own.dir), fz = Math.cos(own.dir), lontana = hyp(b.x - own.x, b.z - own.z);
-  if (own.i !== 0 && lontana > .95 && b.y < 1) for (const d of own.team.opp.players) { // tra un tocco e l'altro: chi arriva prima sul pallone
+  if (alPiede(own) && lontana > .95 && b.y < 1) for (const d of own.team.opp.players) { // tra un tocco e l'altro: chi arriva prima sul pallone
     if (d.stun > 0 || d.st === 'down' || d.cool > 0 || d.st === 'slide') continue;
     const db = hyp(d.x - b.x, d.z - b.z); if (db > .9 || db > lontana - .15) continue;
     const forza = userDrives(d) ? 1.3 : (d.team.human ? MATE.steal : G.diff.steal) / 1.25, rapporto = clamp(URTO.forza(d) / URTO.forza(own), .4, 1.6); // chi è più forte copre la palla col corpo
@@ -2469,7 +2508,7 @@ function contacts(dt) {
   for (const d of own.team.opp.players) {
     if (d.stun > 0 || d.st === 'down' || d.cool > 0) continue;
     const dist = hyp(d.x - b.x, d.z - b.z), dBody = hyp(d.x - own.x, d.z - own.z);
-    if (own.i === 0) continue;
+    if (!alPiede(own)) continue;
     if (d.st === 'slide') continue; // la scivolata la decide scivolate()
     if (dist < CONTRASTO.prova || dBody < .95) {
       let r = (userDrives(d) ? 2.6 : (d.team.human ? MATE.steal : G.diff.steal) * (d.i === 0 ? 1.6 : 1)) * clamp(URTO.forza(d) / URTO.forza(own), .6, 1.7); // chi è più forte e fresco vince più contrasti
@@ -2504,7 +2543,7 @@ function fantasma(dt) {
 }
 function bounds() {
   // il portiere col pallone in mano e chi batte la rimessa laterale da dietro la riga non lo portano fuori
-  const b = G.ball; if (b.owner && (b.owner.i === 0 || (G.rimessa && G.rimessa.chi === b.owner))) return;
+  const b = G.ball; if (b.owner && (!alPiede(b.owner) || (G.rimessa && G.rimessa.chi === b.owner))) return;
   if (Math.abs(b.x) > HL) {
     const e = sgn(b.x), az = Math.abs(b.z);
     if (az < GH + .28 && b.y < GT + .3 && (az > GH - .05 || b.y > GT - .05) && Math.abs(b.x) < HL + .8 && !b.owner) { // palo o traversa
@@ -2768,7 +2807,7 @@ function poseSkinned(p, dt) {
   else { tg.run = clamp((v - 2.6) / 2.6, 0, 1); tg.walk = clamp(v / 2.2, 0, 1) * (1 - tg.run); tg.idle = 1 - tg.run - tg.walk; }
   // col pallone in mano il portiere sta dritto (niente posa di attesa) e le braccia lo tengono al petto: il peso alto fa
   // prevalere le braccia sulla corsa (three.js fa la media pesata delle azioni sullo stesso osso)
-  const inMano = f.A.braccia && p.i === 0 && G.ball.owner === p && (G.state === 'play' || G.state === 'restart');
+  const inMano = f.A.braccia && !alPiede(p) && G.ball.owner === p && (G.state === 'play' || G.state === 'restart');
   if (inMano && !p.fx) tg.braccia = MANO.peso;
   else if (f.A.gkIdle && G.state === 'play') { tg.gkIdle = tg.idle; tg.idle = 0; }
   // Chi guarda la palla mentre si sposta (il portiere, il difensore che temporeggia) non corre in avanti: di lato fa i passi
@@ -2816,7 +2855,7 @@ function pose(p, dt) {
   else if (p.st === 'dive' || (p.st === 'down' && p.i === 0)) { const k = p.st === 'dive' ? Math.min(1, p.stT / .22) : 1; const side = Math.sin(p.dir) * 0 + p.diveS * (Math.sin(p.dir) > 0 ? 1 : -1); rz = side * 1.35 * k; by = p.st === 'dive' ? Math.sin(Math.min(1, p.stT / .5) * Math.PI) * .55 + .2 : .22; aL = aR = -2.9; eL = eR = 0; lL = lR = 0; kL = kR = .2; lean = 0; }
   else if (G.state === 'goal' && G.scorer && p.team === G.scorer.team && p.i !== 0) { aL = aR = -2.7 + Math.sin(G.t * 9 + p.i) * .25; eL = eR = -.2; by += Math.abs(Math.sin(G.t * 7 + p.i)) * .22; }
   else if (p.i === 0 && a < .3) { azL = -.5; azR = .5; eL = eR = -.5; kL = kR = .35; lL = lR = -.25; }
-  else if (G.ball.owner === p && p.i === 0) { aL = aR = -1.2; eL = eR = -1.2; }
+  else if (G.ball.owner === p && !alPiede(p)) { aL = aR = -1.2; eL = eR = -1.2; }
   f.legL.rotation.x = lL; f.legR.rotation.x = lR; f.kneeL.rotation.x = kL; f.kneeR.rotation.x = kR;
   f.armL.rotation.x = aL; f.armR.rotation.x = aR; f.armL.rotation.z = azL; f.armR.rotation.z = azR; f.elL.rotation.x = eL; f.elR.rotation.x = eR;
   f.body.rotation.x = rx + lean; f.body.rotation.z = rz; f.body.position.y = by;

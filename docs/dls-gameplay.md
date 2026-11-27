@@ -81,6 +81,7 @@ Questo file sostituisce le note precedenti sulla modalità «come DLS» dove son
   finché non si è girati non si accelera (`CORPO.gira`, `giraScatto`, `perde`).
 - **Cambio del giocatore in difesa** (Alex, 26/11): in DLS, con la palla agli avversari, si cambia solo col tasto. Qui è
   così: il cambio automatico vale solo a palla libera (`CAMBIO`), in difesa si cambia con «Cambia giocatore».
+- **Retropassaggio** (Alex, 27/11): in DLS il portiere non prende con le mani il passaggio coi piedi di un compagno: lo stoppa e lo comandi tu (con la levetta e i tasti di sempre; gli avversari lo possono pressare). Qui è così, vedi `retropassaggio` in `src/game.js`.
 - **Pallone che sta per uscire di lato** (Alex, 26/11): in DLS i giocatori del computer lo rincorrono sempre, anche quando
   la rimessa toccherebbe alla loro squadra. Qui fanno lo stesso: con le curve svelte ci arrivano quasi sempre, circa 0,9
   rimesse laterali a partita (obiettivo delle prove abbassato a 0,6).
