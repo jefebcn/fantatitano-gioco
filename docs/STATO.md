@@ -23,6 +23,21 @@
 - Su 8 partite intere col collaudo acceso nessun problema finto. Il rapporto resta sul telefono finché non si manda
   (le foto solo finché la pagina è aperta). Nessun dato personale: telefono, browser, schermo, fotogrammi.
 
+## Portiere: la presa con le mani (amici di Alex col collaudo, 27/11: «problemi col portiere, soprattutto la presa»)
+- Misura `scripts/prove/presa.cjs` (a ogni pallone che va in mano al portiere, quanto erano lontane le mani). Prima, 4
+  partite: 19 prese, mani dal pallone mediana 0,84 m, oltre 35 cm 17 (89%); il pallone volava da solo tra le mani.
+- **Passo 1 FATTO: rimessa dal fondo e palloni che rotolano.** Alex: in Dream League la rimessa dal fondo il portiere la
+  raccoglie con le mani. Ora chi prende in mano un pallone basso con le mani lontane prima lo raccoglie (`raccogli` in
+  `src/game.js`): va dove le mani della presa a terra lo prendono, si abbassa, e il pallone è in mano quando le mani ci
+  arrivano (al più dopo `PARATA.raccoltaMax`). Sul pallone che rotola verso di lui la presa a terra parte in tempo
+  (`prevediRaccolta`), sul pallone vagante in area corre fin dove le mani lo raccolgono, e il pallone diventa suo solo
+  con le mani a meno di `PARATA.raccogli` (contacts). Si raccoglie solo un pallone lento (`PARATA.lento`): un tiro preso
+  in raccolta continuava la corsa dentro la porta e usciva dalla rete (l'ha trovato il collaudo, `collaudo.cjs`). Dopo,
+  4 partite: 22 prese, mediana 0,27 m, oltre 35 cm 7 (32%); rimesse dal fondo 10 su 10 con le mani a 25 cm (prima 88).
+  Restano i cross (mediana 0,31 m, 3 oltre) e i tiri alti (2, a 0,9 m): passo 2.
+  32 partite, semi 7 e 39: nessuna anomalia, tiri 6,72→6,81 e 7,75→8,19, gol 2,34→1,97 e 2,19→2,50, angoli 0,38→0,25
+  (sotto l'obiettivo di 0,3) e 0,47→0,50.
+
 ## Pallone al piede (richiesta di Alex del 25/11): conduzione, calci, contrasti
 Alex: «calibrare bene il pallone quando è attaccato al piede; guarda come si muove anche quando viene calciato o c'è un
 intervento». Misurato su una partita registrata (seme 7, 200 s) con `scripts/prove/registra.cjs` e un'analisi apposta

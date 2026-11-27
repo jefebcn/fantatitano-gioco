@@ -415,7 +415,12 @@ export const AREA_IA = { da: 30, corsa: 1.5, quanti: [3, 4], angolo: [4, 5], vic
 // manca: se nel gesto della parata la mano più vicina gli passa a più di tanti metri, il pallone non lo tocca.
 // portata e portataAlta: sui cross la presa si prepara se il pallone passa entro tanti metri dal portiere e arriva sotto
 // quell'altezza; rallenta: il ritmo più lento a cui la clip della presa si adatta per arrivare in tempo
-export const PARATA = { tuffo: [.3, .8, 1.25], presa: [.25, .6, 1.2], uscita: .9, lancio: 1.9, rinvio: 1.1, mani: .35, manca: .7, portata: 1.3, portataAlta: 2.7, rallenta: .6 };
+// Pallone basso preso in mano (prevediRaccolta, contacts): la presa parte se il pallone e il portiere si avvicinano almeno
+// a `chiude` m/s; dopo il momento della presa si aspettano ancora `attesa` secondi di clip; poi, con le mani oltre
+// `raccogli` metri, il pallone resta libero. Vale per il pallone che rotola: sotto la presa a terra, che non sale né scende a più di `sale` m/s. Raccogliere un pallone già suo (la rimessa dal fondo, vedi raccogli): si
+// abbassa quando è a meno di `raccoltaPosto` metri dal punto giusto, e al più dopo `raccoltaMax` secondi il pallone è in mano.
+// Si raccoglie solo un pallone più lento di `lento` m/s rispetto al portiere
+export const PARATA = { tuffo: [.3, .8, 1.25], presa: [.25, .6, 1.2], uscita: .9, lancio: 1.9, rinvio: 1.1, mani: .35, manca: .7, portata: 1.3, portataAlta: 2.7, rallenta: .6, chiude: .5, attesa: .1, raccogli: .6, raccoltaPosto: .25, raccoltaMax: 2.5, sale: 2, lento: 4 };
 // Come Dream League: sta sulla linea (`linea` metri davanti) e segue il pallone di lato. Quando l'attaccante col pallone entra
 // in area (`area` metri dalla linea di fondo) esce verso il palo vicino: `palo` = [metri davanti alla linea, metri dentro dal
 // palo]. Reagisce al tiro dopo `reazione` secondi (il più bravo il primo numero, il meno bravo il secondo), poi si tuffa.
