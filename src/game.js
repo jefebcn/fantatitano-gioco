@@ -350,18 +350,20 @@ function prevediTocco(o, b) {
   if (gesto(o, nome, fra)) o.tocca = { quando: G.t + fra, nome, palla: GESTI[nome].palla };
 }
 /**
- * Il piede del tocco va sul pallone: nell'ultimo tratto prima del contatto della clip (COND.allunga secondi) la caviglia
- * si allunga fino al pallone, al massimo di COND.allungaMax metri, e dopo il tocco torna piano nella posa. Il lato è
+ * Il piede del tocco (o dello stop) va sul pallone: nell'ultimo tratto prima del contatto della clip (COND.allunga
+ * secondi) la caviglia si allunga fino al pallone, al massimo di COND.allungaMax metri, e dopo il tocco torna piano nella posa. Il lato è
  * quello del piede della clip più vicino al pallone quando comincia ad allungarsi.
  */
 const _pPiede = new T.Vector3();
 function piedeAlPallone(p) {
-  const C = FIS.COND, b = G.ball, tc = p.tocca, dopo = p.toccato;
+  const C = FIS.COND, b = G.ball, dopo = p.toccato;
+  // il tocco di chi conduce, o lo stop di chi riceve un pallone libero
+  const tc = p.tocca && p.fx === p.tocca.nome && b.owner === p ? p.tocca : p.ferma && p.fx === p.ferma.nome && (!b.owner || b.owner === p && p.smorza != null) && b.y < .6 ? p.ferma : null;
   let x, y, z, w = 0;
-  if (tc && p.fx === tc.nome && b.owner === p) { w = clamp(1 - (tc.quando - G.t) / C.allunga, 0, 1); x = b.x; y = b.y; z = b.z; }
+  if (tc) { w = clamp(1 - (tc.quando - G.t) / C.allunga, 0, 1); x = b.x; y = b.y; z = b.z; }
   else if (dopo && G.t - dopo.t < C.allunga) { w = 1 - (G.t - dopo.t) / C.allunga; ({ x, y, z } = dopo); }
   if (!(w > 0)) return;
-  const k = tc && p.fx === tc.nome ? tc : dopo;
+  const k = tc || dopo;
   if (!k.lato) { const bn = p.fig.bones, q = _pPiede; let dl = 9, dr = 9; if (bn.ball_l) dl = bn.ball_l.getWorldPosition(q).distanceTo(b); if (bn.ball_r) dr = bn.ball_r.getWorldPosition(q).distanceTo(b); k.lato = dl < dr ? 'l' : 'r'; }
   bloccaPiedi.raggiungi(p.fig, k.lato, x, y, z, w, C.portata, C.allungaMax);
 }
@@ -438,7 +440,7 @@ function calciCaricati(dt) {
     // partire, restava bloccato quasi sempre: al colpo partiva la clip dall'inizio e il pallone volava via 3 fotogrammi
     // prima che arrivasse il piede
     if (c.nome && c.t <= c.anticipo && G.ball.owner === p && G.state === 'play') {
-      if (!libero(p) && /^(tocco|stop|taglio)/.test(p.fx || '')) p.fx = null;
+      if (!libero(p) && /^(tocco|stop|taglio)/.test(p.fx || '')) { p.fx = null; p.fxNew = false; }
       if (gesto(p, c.nome, Math.max(c.t, 0))) c.nome = null;
     }
     if (c.t <= 0) { p.carica = null; if (G.ball.owner === p && G.state === 'play') c.calcio(); }
@@ -531,7 +533,15 @@ function prevediStop(b) {
   // il piede della clip arriva sul pallone quando il pallone è a questa distanza dal corpo, dove lo colpisce la clip
   const tocca = i.palla ? hyp(i.palla[0], i.palla[2]) * (p.fig.alt || 1) : 1.05; if (d < tocca) return;
   const fra = (d - tocca) / chiude, anticipo = i.tocco / ritmoGesto(i, vr);
-  if (fra <= anticipo && fra > anticipo - .06) gesto(p, nome, fra);
+  if (fra <= anticipo && fra > anticipo - .06 && gesto(p, nome, fra)) p.ferma = { quando: G.t + fra, nome };
+}
+/** Il pallone è a portata ma lo stop non è partito in tempo: parte adesso, dalla parte del pallone, e il piede si allunga. */
+function avviaStop(p, b) {
+  const lento = hyp(p.vx, p.vz) / (p.fig.alt || 1) <= 1.6, sx = (b.x - p.x) * Math.cos(p.dir) - (b.z - p.z) * Math.sin(p.dir) > 0;
+  const nome = (lento ? 'stop_fermo' : 'stop') + (sx ? '_sx' : ''), i = GESTI[nome]; if (!i || !i.tocco) return false;
+  const fra = Math.max(FIS.COND.subito, i.tocco / ritmoGesto(i, hyp(p.vx, p.vz) / (p.fig.alt || 1)));
+  if (!gesto(p, nome, fra)) return false;
+  p.ferma = { quando: G.t + fra, nome }; return true;
 }
 const b64 = (t) => Uint8Array.from(atob(t), (c) => c.charCodeAt(0)).buffer;
 const pixel = (im) => { const [c, x] = cv(im.naturalWidth || im.width, im.naturalHeight || im.height); x.drawImage(im, 0, 0); return x.getImageData(0, 0, c.width, c.height); };
@@ -1027,7 +1037,7 @@ function nuovaPartita(home, away) {
   if (fuori) { G.teams[0].side = -1; G.teams[1].side = 1; } // in trasferta si comincia attaccando verso sinistra
   G.ball = { x: 0, y: BR, z: 0, vx: 0, vy: 0, vz: 0, c: 0, t: 0, resto: 0, owner: null };
   ballMesh.visible = ballShadow.visible = true;
-  G.clock = 0; G.half = 1; G.goals = []; G.cards = []; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penId = -1; G.attesa = null; G.lastPass = G.shooter = null; G.so = G.soRes = null; G.cambi = []; G.fkId = -1; $('#hud').classList.remove('rigori'); G.stats = { pali: [0, 0], recAlti: [0, 0], resp: [0, 0], uscite: [0, 0], shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0], fouls: [0, 0], offs: [0, 0], pens: [0, 0], yel: [0, 0], red: [0, 0], crosses: [0, 0], heads: [0, 0], headGoals: [0, 0], corners: [0, 0], adv: [0, 0], inj: [0, 0], subs: [0, 0] }; G.ctrl = null; G.charge = -1;
+  G.clock = 0; G.half = 1; G.goals = []; G.cards = []; G.fk = null; G.offs = null; G.noOff = G.pen = false; G.penId = -1; G.attesa = null; G.lastPass = G.shooter = null; G.so = G.soRes = null; G.cambi = []; G.fkId = -1; $('#hud').classList.remove('rigori'); G.stats = { pali: [0, 0], recAlti: [0, 0], resp: [0, 0], uscite: [0, 0], shots: [0, 0], poss: [0, 0], runs: [0, 0], slides: [0, 0], fouls: [0, 0], offs: [0, 0], pens: [0, 0], yel: [0, 0], red: [0, 0], crosses: [0, 0], heads: [0, 0], headGoals: [0, 0], corners: [0, 0], adv: [0, 0], inj: [0, 0], subs: [0, 0], smorza: [0, 0] }; G.ctrl = null; G.charge = -1;
   paintBoards(home, away, CREST);
   $('#sbH').src = img(home.id + '-mini'); $('#sbA').src = img(away.id + '-mini'); $('#sb').style.setProperty('--sq', G.teams[0].kit.shirt); // la barretta sul bordo destro del tabellone: il colore della nostra maglia
   $('#sbHn').textContent = home.short; $('#sbAn').textContent = away.short;
@@ -1153,7 +1163,9 @@ function gain(p) {
   // chi recupera palla nella metà avversaria (misura del pressing)
   const b = G.ball, prev = G.poss; if (prev && prev !== p.team && G.state === 'play') { prev.persaT = G.t; if (p.x * p.team.side > 0) G.stats.recAlti[p.team.idx]++; } b.owner = p; G.lastTouch = p; G.intended = null; G.poss = p.team; p.shield = .45; p.hold = 0;
   { let pr = 9; for (const o of p.team.opp.players) pr = Math.min(pr, hyp(o.x - p.x, o.z - p.z)); p.thinkT = diffOf(p).think / .4 * (pr < 2.5 ? TENUTA.primoAddosso : rnd(...TENUTA.primo) * (pr < 5 ? .5 : 1)); p.conduci = null; } // con l'avversario addosso si decide subito (TENUTA)
-  if (alPiede(p) && G.state === 'play') { // stop (anche di petto): la palla si smorza davanti al piede, verso la levetta (o verso la porta per chi gioca da solo)
+  // lo stop che aspetta il piede (smorza) vale solo per la presa decisa adesso in contacts
+  if (p.smorza !== G.t) p.smorza = null;
+  if (alPiede(p) && G.state === 'play' && p.smorza == null) { // stop (anche di petto): la palla si smorza davanti al piede, verso la levetta (o verso la porta per chi gioca da solo)
     FIS.controlla(b, p, tecnica(p), Math.random, versoControllo(p));
   }
   if (p.team.human) { if (alPiede(p)) setCtrl(p); } else if (prev !== p.team || !G.ctrl) { const m = migliorDifensore(G.teams[0]); setCtrl(m ? m.p : nearestTo(G.teams[0], b.x, b.z)); }
@@ -2071,7 +2083,7 @@ function gkThink(p, dt) {
       if (G.t < p.reagisce && G.shooter) { p.tx = p.x; p.tz = p.z; return; } // sta ancora leggendo il tiro
       const zp = a.z; p.tx = p.x; p.tz = clamp(zp, -GH - .6, GH + .6); p.sprint = true; p.tiroY = a.y;
       // non si tuffa di nuovo mentre si rialza: la posa sdraiata mescolata al tuffo nuovo sollevava il corpo di mezzo metro
-      if (tt < .45 && Math.abs(zp - p.z) > 1 && p.st === 'run' && !/^rialza/.test(p.fx || '')) { p.st = 'dive'; p.stT = 0; p.diveS = sgn(zp - p.z); p.diveV = clamp(Math.abs(zp - p.z) / Math.max(tt, .22), 4, 10); p.fx = null; if (!parata(p, tt, zp - p.z, a.y)) azione(p, -p.diveS * Math.sin(p.dir) > 0 ? 'tuffoS' : 'tuffoD'); }
+      if (tt < .45 && Math.abs(zp - p.z) > 1 && p.st === 'run' && !/^rialza/.test(p.fx || '')) { p.st = 'dive'; p.stT = 0; p.diveS = sgn(zp - p.z); p.diveV = clamp(Math.abs(zp - p.z) / Math.max(tt, .22), 4, 10); p.fx = null; p.fxNew = false; if (!parata(p, tt, zp - p.z, a.y)) azione(p, -p.diveS * Math.sin(p.dir) > 0 ? 'tuffoS' : 'tuffoD'); }
       else if (Math.abs(zp - p.z) <= 1 && p.st === 'run' && !p.fx && tt < .2) parata(p, tt, zp - p.z, a.y); // al centro: la presa, a tempo col pallone
       return;
     }
@@ -2274,8 +2286,10 @@ function corri(p, dt) {
   if (guida) sp = Math.min(sp, base * andatura(p.user)) + (p.sprint && p.user >= LEVETTA.scatto ? sp - base : 0); // la levetta decide l'andatura; lo scatto solo con la levetta al bordo
   p.vVoluta = sp; // a che velocità vuole andare: il tocco di palla in conduzione la mette dove arriverà
   let gx = p.tx, gz = p.tz, insegue = false;
-  if (owner && p.i && G.state === 'play') { // conduzione: se la palla non è sulla strada verso dove vuole andare, prima ci va sopra
+  if (owner && alPiede(p) && G.state === 'play') { // conduzione: se la palla non è sulla strada verso dove vuole andare, prima ci va sopra
     const bx = b.x - p.x, bz = b.z - p.z, bd = hyp(bx, bz), wx0 = gx - p.x, wz0 = gz - p.z, wd = hyp(wx0, wz0);
+    // chi vuole restare fermo e ha il pallone oltre la suola ci va sopra, al passo: il pallone non torna da solo
+    if (wd <= .3 && bd > FIS.COND.suola + FIS.COND.sotto && !(G.attesa && G.attesa.chi === p)) { gx = b.x - bx / bd * FIS.COND.suola; gz = b.z - bz / bd * FIS.COND.suola; }
     if (bd > .6 && wd > .3 && (bx * wx0 + bz * wz0) / (bd * wd) < FIS.COND.insegue && !(G.attesa && G.attesa.chi === p)) { gx = b.x + b.vx * .35 + wx0 / wd * .3; gz = b.z + b.vz * .35 + wz0 / wd * .3; insegue = true; sp = Math.max(sp * 1.12, base * (1.05 + (SCATTO_K - 1) * (.3 + .7 * p.en))); } // e allunga il passo per riprenderla, anche senza scatto
   }
   // velocità voluta: piena finché si è lontani, poi quella che permette di fermarsi sul punto (niente frenate brusche all'ultimo)
@@ -2315,10 +2329,8 @@ function traLeMani(p) {
 }
 /** Quanto è lontano il punto x, y, z dalla mano più vicina del portiere, se la sua posa è aggiornata; se no null. */
 function manoVicina(p, x, y, z) { return ossoVicino(p, 'hand_l', 'hand_r', x, y, z); }
-/** Quanto è lontano il punto x, y, z dal piede più vicino, se la posa è aggiornata; se no null. */
 /** Quanto è lontano il pallone dal piede più vicino, caviglia o dita, se la posa è aggiornata; se no null. */
 function piedeSulPallone(p, b) { const a = ossoVicino(p, 'foot_l', 'foot_r', b.x, b.y, b.z), c = ossoVicino(p, 'ball_l', 'ball_r', b.x, b.y, b.z); return a === null ? null : Math.min(a, c ?? a); }
-function piedeVicino(p, x, y, z) { return ossoVicino(p, 'foot_l', 'foot_r', x, y, z); }
 function ossoVicino(p, sx, dx, x, y, z) {
   const f = p.fig, L = f.bones && f.bones[sx], R = f.bones && f.bones[dx]; if (!L || !R || !(G.t - (f.posaT || -9) < .15)) return null;
   L.getWorldPosition(_mL); R.getWorldPosition(_mR);
@@ -2357,6 +2369,18 @@ function moveBall(dt) {
     // senza gesto (figure senza animazioni) tocca la fisica da sola, come prima.
     // Sta per calciare un pallone ancora in aria: nessun tocco, il pallone scende da solo verso il piede
     if (o.carica) { if (FIS.conduci(b, o, dt, q, Math.random, verso, 'aspetta') === 'perso') { b.owner = null; G.lastTouch = o; } FIS.passo(b, dt); return; }
+    // stop di un pallone preso a qualche passo dal piede: rotola finché il piede allungato non ci arriva, e lì si smorza.
+    // Se dopo COND.smorza secondi non ci è arrivato, niente stop: il pallone resta libero davanti e lo riprende il tocco
+    // di conduzione (prima cambiava strada da solo a un metro dal piede)
+    // (uno rimasto da un pallone perso e poi ridato, a una ripresa, non conta più)
+    if (o.smorza != null && G.t - o.smorza > 2 * FIS.COND.smorza) o.smorza = null;
+    if (o.smorza != null) {
+      const pv = piedeSulPallone(o, b) ?? 0, presto = G.t - o.smorza < FIS.COND.smorza;
+      if (pv > FIS.COND.piede && presto && b.y < .6) { if (FIS.conduci(b, o, dt, q, Math.random, verso, 'aspetta') === 'perso') { b.owner = null; G.lastTouch = o; o.smorza = null; } FIS.passo(b, dt); return; }
+      if (o.ferma && o.fx === o.ferma.nome) o.toccato = { t: G.t, x: b.x, y: b.y, z: b.z, lato: o.ferma.lato };
+      const col = presto || pv <= FIS.COND.piede; o.ferma = o.smorza = null; G.stats.smorza[col ? 0 : 1]++;
+      if (col) FIS.controlla(b, o, q, Math.random, versoControllo(o));
+    }
     // il tocco arriva col piede: nella finestra attorno al momento della clip, appena il piede vero è sul pallone. Se non
     // ci arriva il tocco salta e il pallone continua per la sua strada. Fuori dal tocco il pallone rotola libero; da
     // fermi lo si tiene sotto la suola
@@ -2499,12 +2523,22 @@ function contacts(dt) {
       const nx = (b.x - p.x) / (bd || 1), nz = (b.z - p.z) / (bd || 1), dot = b.vx * nx + b.vz * nz;
       b.vx = (b.vx - 2 * dot * nx) * .35 + rnd(-1, 1); b.vz = (b.vz - 2 * dot * nz) * .35 + rnd(-1, 1); b.vy = rnd(1, 4); p.cool = .4; G.lastTouch = p; AU.calcio(10, 'tocco'); return;
     }
-    // con lo stop il pallone lo ferma il piede: si aspetta che ci arrivi, o che smetta di avvicinarsi, vedi PASSAGGIO.piede.
-    // Anche il destinatario del passaggio aspetta: intanto parte lo stop, che prima arrivava sempre troppo tardi
-    if ((!gk || retropassaggio(p)) && (/^stop/.test(p.fx || '') || (p === G.intended && libero(p))) && b.y < .6) {
-      const pv = piedeVicino(p, b.x, b.y, b.z), poi = pv === null ? null : piedeVicino(p, b.x + b.vx * dt, b.y + b.vy * dt, b.z + b.vz * dt);
-      if (pv !== null && pv > PASSAGGIO.piede && poi < pv) return;
+    // il pallone basso lo prende il piede (Alex, 27/11: niente pallone che cambia strada a un metro dal piede): finché
+    // arriva si aspetta il piede. Se passa di lato o si ferma lo si prende lo stesso, ma parte lo stop e il pallone cambia
+    // strada solo quando il piede, allungato, ci arriva (vedi smorza in moveBall)
+    let smorza = false;
+    if ((/^stop/.test(p.fx || '') || (p === G.intended && libero(p))) && (!gk || retropassaggio(p)) && p.fig.skinned && b.y < .6) {
+      const pv = piedeSulPallone(p, b);
+      if (pv !== null && pv > FIS.COND.piede) {
+        // si avvicinano se il pallone va verso il piede o il giocatore va verso il pallone
+        const poi = piedeSulPallone(p, { x: b.x + (b.vx - p.vx) * dt, y: b.y + b.vy * dt, z: b.z + (b.vz - p.vz) * dt });
+        if (poi < pv - 1e-4) return;
+        if (!(p.ferma && p.fx === p.ferma.nome)) avviaStop(p, b);
+        smorza = true;
+      }
     }
+    if (!smorza) { if (p.ferma && p.fx === p.ferma.nome) p.toccato = { t: G.t, x: b.x, y: b.y, z: b.z, lato: p.ferma.lato }; p.ferma = null; }
+    p.smorza = smorza ? G.t : null;
     return gain(p);
   }
   // contrasti (non su chi batte la rimessa col pallone in mano)
@@ -2784,7 +2818,8 @@ function poseSkinned(p, dt) {
     const a = f.mixer.clipAction(MODEL.fx[G.dbgFx.name]); if (f.dbg && f.dbg !== a) f.dbg.stop(); a.play(); a.paused = true; a.time = G.dbgFx.t; a.setEffectiveWeight(1); f.dbg = a; f.mixer.update(0); f.body.position.y = 0; return;
   } else if (f.dbg) { f.dbg.stop(); f.dbg = null; }
   // l'azione registrata in corso (tiro, scivolata, tuffo…)
-  if (p.fxNew) { p.fxNew = false; startFx(f, p.fx, p.fxDa || 0, p.fxSp); }
+  // un gesto chiesto e poi tolto nello stesso passo non parte (prima: errore nella pagina e partita ferma)
+  if (p.fxNew) { p.fxNew = false; if (hasFx(p.fx)) startFx(f, p.fx, p.fxDa || 0, p.fxSp); }
   let on = false;
   if (p.fx && f.act && p.fxFermo) { f.act.timeScale = 0; on = true; } // posa tenuta (la rimessa col pallone sopra la testa)
   else if (p.fx && f.act) {
