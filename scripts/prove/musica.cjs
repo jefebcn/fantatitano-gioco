@@ -1,13 +1,15 @@
 /* Prova della musica della home (src/audio.js) in un browser vero: non parte prima del primo tocco, usa l'OGG, entra in
-   dissolvenza, continua tra le schermate, muto e volumi delle Impostazioni si sentono e restano salvati, a fine brano
-   riparte da capo (anche se il lettore non lo ripetesse da sé, e anche se il telefono lo ferma), sfuma quando parte la
-   partita e riprende da dov'era tornando alla home, si ferma col gioco in secondo piano, e dove l'OGG non si legge usa
+   dissolvenza, parte dal primo brano dell'elenco, continua tra le schermate, muto e volumi delle Impostazioni si sentono
+   e restano salvati, finito un brano parte l'altro e finito l'ultimo si torna al primo (anche se il telefono ferma il
+   lettore), sfuma quando parte la partita e riprende da dov'era tornando alla home, si ferma col gioco in secondo piano, e dove l'OGG non si legge usa
    l'MP3.
    Uso: npm run build && node scripts/prove/musica.cjs */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..', '..', 'public');
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.webp': 'image/webp', '.png': 'image/png', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.css': 'text/css', '.ogg': 'audio/ogg', '.mp3': 'audio/mpeg' };
+// i brani della home, nell'ordine in cui suonano (AUDIO.musica.brani in src/config.js), e quanto dura il primo
+const PRIMO = 'musica-home-desde-la-calle', SECONDO = 'musica-home-rise-up', DURA_PRIMO = 149.6;
 const chieste = [];
 // come un sito vero: risponde anche a pezzi, che è come i lettori chiedono la musica
 const srv = http.createServer((q, r) => {
@@ -53,9 +55,9 @@ srv.listen(0, async () => {
   console.log('2. Primo tocco vero sullo schermo');
   await pg.mouse.click(420, 60); await tra(2500); s = await stato(pg);
   vero('contesto audio acceso e musica che suona', s.ctx === 'running' && s.suona && s.l && !s.l.fermo && s.l.t > 1, s);
-  vero('usa il file OGG', s.l.file === 'musica-home-rise-up.ogg' && chieste.every((u) => u.endsWith('.ogg')), [...new Set(chieste)]);
+  vero('parte dal primo brano, e usa il file OGG', s.l.file === PRIMO + '.ogg' && chieste.every((u) => u.endsWith('.ogg')), [...new Set(chieste)]);
   vero('è entrata in dissolvenza fino al volume pieno', s.sfuma > .9, { sfuma: s.sfuma });
-  vero('dura 3 minuti e 31', Math.abs(s.l.dura - 211.2) < .5, s.l.dura);
+  vero('dura 2 minuti e 29', Math.abs(s.l.dura - DURA_PRIMO) < .5, s.l.dura);
 
   console.log('3. Dentro la home (carriera nuova, Squadra, Impostazioni)');
   await tocca('#carr'); await tocca('#nvDado'); await tocca('#nvAvanti'); await tra(600); await tocca('.cap', 5); await tocca('#nvAvanti'); await tra(1200);
@@ -78,15 +80,14 @@ srv.listen(0, async () => {
   vero('scelte salvate sul dispositivo', salvato === '{"on":true,"musica":0.4,"effetti":0.9}', salvato);
   await tocca('#bCasa');
 
-  console.log('5. Fine del brano: deve ripartire');
+  console.log('5. Fine del brano: deve partire l\'altro, e dopo l\'ultimo di nuovo il primo');
   const vaiA = (dallaFine) => pg.evaluate((d) => { const el = window.__g.AU.lettore; el.currentTime = el.duration - d; }, dallaFine);
   await vaiA(2.5); await tra(1000); s = await stato(pg);
-  vero('a un secondo e mezzo dalla fine sta ancora suonando', !s.l.fermo && s.l.t > 208 && s.l.ripete, s.l);
+  vero('a un secondo e mezzo dalla fine il primo brano sta ancora suonando', !s.l.fermo && s.l.file === PRIMO + '.ogg' && s.l.t > DURA_PRIMO - 3 && !s.l.ripete, s.l);
   await tra(3500); s = await stato(pg);
-  vero('arrivato in fondo riparte da capo, senza fermarsi', s.suona && !s.l.fermo && !s.l.finito && s.l.t > .3 && s.l.t < 5 && s.sfuma > .9, s.l);
-  // il caso sfortunato: un lettore che non ripete il brano da sé e si ferma in fondo
-  await pg.evaluate(() => { window.__g.AU.lettore.loop = false; }); await vaiA(1.2); await tra(4200); s = await stato(pg);
-  vero('anche se il lettore non lo ripetesse da sé, riparte da capo', s.suona && !s.l.fermo && !s.l.finito && s.l.t > .3 && s.l.t < 6, s.l);
+  vero('finito il primo parte il secondo dall\'inizio, senza fermarsi', s.suona && !s.l.fermo && !s.l.finito && s.l.file === SECONDO + '.ogg' && s.l.t > .3 && s.l.t < 5 && s.sfuma > .9, s.l);
+  await vaiA(1.2); await tra(4200); s = await stato(pg);
+  vero('finito il secondo si torna al primo, dall\'inizio', s.suona && !s.l.fermo && !s.l.finito && s.l.file === PRIMO + '.ogg' && s.l.t > .3 && s.l.t < 6, s.l);
   await pg.evaluate(() => window.__g.AU.lettore.pause()); await tra(2300); s = await stato(pg);
   vero('se il telefono ferma il lettore, in un paio di secondi il guardiano lo rimette in moto', s.suona && !s.l.fermo, s.l);
   console.log('6. Parte la partita, poi si torna alla home');
@@ -117,7 +118,7 @@ srv.listen(0, async () => {
   chieste.length = 0;
   pg = await apri(br, () => { const vera = HTMLMediaElement.prototype.canPlayType; HTMLMediaElement.prototype.canPlayType = function (t) { return /ogg/.test(t) ? '' : vera.call(this, t); }; });
   await pg.mouse.click(420, 60); await tra(2500); s = await stato(pg);
-  vero('usa l\'MP3 di riserva', s.l && s.l.file === 'musica-home-rise-up.mp3' && chieste.length > 0 && chieste.every((u) => u.endsWith('.mp3')), { file: s.l && s.l.file, chieste: [...new Set(chieste)] });
+  vero('usa l\'MP3 di riserva', s.l && s.l.file === PRIMO + '.mp3' && chieste.length > 0 && chieste.every((u) => u.endsWith('.mp3')), { file: s.l && s.l.file, chieste: [...new Set(chieste)] });
   vero('e, se il browser sa leggerlo, suona', s.suona && !s.l.fermo && s.l.t > 1, s.l);
 
   console.log(guai.length ? `\n${guai.length} COSE NON VANNO:\n - ${guai.join('\n - ')}` : '\nTutto a posto');
