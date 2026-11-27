@@ -93,7 +93,8 @@ for (const [nome, [da_dove, da, a, opz]] of Object.entries(CLIP)) {
   if (aggiungi && opz !== 'facoltativa') continue;
   if (opz === 'facoltativa' && !existsSync(`${dir}/${da_dove}.fbx`)) { console.log(`manca ${da_dove}.fbx: salto ${nome}`); continue; }
   const s = da_dove.startsWith('base:') ? sorgenti.base : sorgenti.fbx;
-  const clip = s === sorgenti.base ? base.animations.find((c) => c.name === da_dove.slice(5)) : fbx.parse(ab(`${dir}/${da_dove}.fbx`), '').animations[0];
+  // un FBX può avere più prese: a volte la prima è vuota («Take 001», 0 s) e il movimento è nella seconda, si tiene la più lunga
+  const clip = s === sorgenti.base ? base.animations.find((c) => c.name === da_dove.slice(5)) : fbx.parse(ab(`${dir}/${da_dove}.fbx`), '').animations.reduce((a, c) => (c.duration > a.duration ? c : a));
   if (!clip) throw new Error(`clip non trovata: ${da_dove}`);
   // la corsa a braccia aperte gira su un numero intero di passi (circa due secondi), così l'ultimo fotogramma torna al primo
   const giri = opz === 'aereo' ? Math.max(1, Math.round(2 / clip.duration)) : 0;
