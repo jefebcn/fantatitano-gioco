@@ -13,7 +13,7 @@
 export const PIEDI = { su: 0.023, entra: 0.05, esce: 0.12, max: 0.19, risale: 0.0004, veloce: 4, via: 0.03 };
 
 export function creaPiedi(T) {
-  const H = new T.Vector3(), K = new T.Vector3(), A = new T.Vector3(), A2 = new T.Vector3(), M = new T.Vector3(), B = new T.Vector3(); // B: il bersaglio
+  const H = new T.Vector3(), K = new T.Vector3(), A = new T.Vector3(), A2 = new T.Vector3(), M = new T.Vector3(), B = new T.Vector3(), R = new T.Vector3(), P = new T.Vector3(); // B: il bersaglio dei piedi piantati, R di quello che va sul pallone, P il pallone
   const v1 = new T.Vector3(), v2 = new T.Vector3(), asse = new T.Vector3(), q = new T.Quaternion(), qp = new T.Quaternion(), dq = new T.Quaternion(), qPiede = new T.Quaternion();
   const LATI = [['l', 'thigh_l', 'calf_l', 'foot_l'], ['r', 'thigh_r', 'calf_r', 'foot_r']];
 
@@ -46,7 +46,22 @@ export function creaPiedi(T) {
    * quando il giocatore è stato appena spostato di colpo: i blocchi si sciolgono. calcio: vero mentre fa il gesto di un
    * passaggio, un tiro o un lancio (il piede che calcia non va tenuto fermo).
    */
-  return function blocca(f, dt, attivo, calcio = false) {
+  /**
+   * Il piede va sul pallone: la caviglia del lato `s` ('l' o 'r') si sposta perché il punto del piede più vicino al centro
+   * del pallone (x, y, z) arrivi a `portata` metri, con peso w da 0 a 1; mai più di `max` metri dalla posa della clip.
+   */
+  function raggiungi(f, s, x, y, z, w, portata, max) {
+    const b = f.bones, np = s === 'l' ? 'foot_l' : 'foot_r', nd = s === 'l' ? 'ball_l' : 'ball_r'; if (!b || !b[np] || !(w > 0)) return;
+    f.root.updateMatrixWorld(true); P.set(x, y, z); b[np].getWorldPosition(R); M.copy(R);
+    if (b[nd]) { b[nd].getWorldPosition(K); if (K.distanceToSquared(P) < R.distanceToSquared(P)) M.copy(K); }
+    v1.subVectors(P, M); const d = v1.length(); if (d <= portata) return;
+    v1.multiplyScalar((d - portata) / d * w); if (v1.length() > max) v1.setLength(max);
+    const [, na, ng] = s === 'l' ? LATI[0] : LATI[1];
+    dueOssa(b[na], b[ng], b[np], R.add(v1));
+  }
+  blocca.raggiungi = raggiungi;
+  return blocca;
+  function blocca(f, dt, attivo, calcio = false) {
     const b = f.bones; if (!b || !b.thigh_l || !b.calf_l || !b.foot_l || !b.thigh_r || !b.calf_r || !b.foot_r) return;
     const st = f.piedi || (f.piedi = { l: { w: 0, on: false, x: 0, z: 0, ax: null, az: 0 }, r: { w: 0, on: false, x: 0, z: 0, ax: null, az: 0 }, h0: 9 });
     f.root.updateMatrixWorld(true);
@@ -64,5 +79,5 @@ export function creaPiedi(T) {
       const tx = M.x + (k.x - M.x) * k.w, tz = M.z + (k.z - M.z) * k.w;
       dueOssa(b[na], b[ng], b[np], B.set(tx, M.y, tz));
     }
-  };
+  }
 }

@@ -136,6 +136,14 @@ export function rotolaFino(v0, d) {
   for (let t = 0; t < 8; t += h) { passoBreve(q, h); if (q.x >= d) return { v: q.vx, t }; if (q.vx <= 0.01) return { v: 0, t, corto: q.x }; }
   return { v: q.vx, t: 8 };
 }
+/** La velocità con cui far partire un pallone che rotola perché faccia d metri in t secondi (ricerca per bisezione). */
+export function rotolaIn(d, t, vMax = 20) {
+  if (!(d > 0) || !(t > 0)) return 0;
+  const q = { x: 0, y: FIS.r, z: 0, vx: 0, vy: 0, vz: 0, c: 0, t: 0 }, h = 1 / 120, dove = (v0) => { q.x = 0; q.y = FIS.r; q.vx = v0; q.vy = 0; q.c = q.t = 0; for (let s = 0; s < t - 1e-9; s += h) passoBreve(q, h); return q.x; };
+  let lo = 0, hi = vMax; if (dove(hi) < d) return hi;
+  for (let k = 0; k < 18; k++) { const m = (lo + hi) / 2; if (dove(m) < d) lo = m; else hi = m; }
+  return hi;
+}
 /** La velocità con cui far partire un rasoterra perché arrivi a distanza d alla velocità vArrivo (ricerca per bisezione). */
 export function rasoterra(d, vArrivo, vMax = 32) {
   let lo = vArrivo, hi = vMax;
@@ -169,7 +177,8 @@ export function controlla(b, p, q = 0.5, caso = Math.random, verso = null) {
  */
 // Il modo. Senza: come sempre. Con 'aspetta' il piede sta arrivando e non c'è tocco, solo guinzaglio e perdita della palla.
 // Con 'chiedi', quando il tocco servirebbe, risponde 'vuole' senza toccare: così il gioco fa partire prima il gesto.
-// Con 'ora' il piede è arrivato e il tocco parte subito
+// Con 'ora' il piede è arrivato e il tocco parte subito. Con 'libera' il pallone rotola da solo: solo guinzaglio,
+// perdita della palla e, da fermi, la suola
 export function conduci(b, p, dt, q = 0.5, caso = Math.random, verso = null, modo = null) {
   let rx = b.x - p.x, rz = b.z - p.z, d = hyp(rx, rz);
   if (d > COND.perde) return 'perso';
@@ -180,11 +189,14 @@ export function conduci(b, p, dt, q = 0.5, caso = Math.random, verso = null, mod
   if (modo === 'aspetta') return null;
   const v = hyp(p.vx, p.vz), fx = Math.sin(p.dir), fz = Math.cos(p.dir);
   if (b.y > 0.9) return null; // palla alta: prima deve scendere
+  // col gesto la suola tiene solo il pallone che ha già sotto, a COND.sotto dal suo punto: gli altri restano dove sono
+  if (v < COND.fermo && modo === 'libera' && hyp(p.x + fx * COND.suola - b.x, p.z + fz * COND.suola - b.z) > COND.sotto) return null;
   if (v < COND.fermo) { // da fermo: la tiene sotto la suola, davanti a sé
     const tx = p.x + fx * COND.suola, tz = p.z + fz * COND.suola, k = 1 - Math.exp(-14 * dt);
     b.vx += ((tx - b.x) * 9 + p.vx - b.vx) * k; b.vz += ((tz - b.z) * 9 + p.vz - b.vz) * k;
     return null;
   }
+  if (modo === 'libera') return null;
   const vl = verso ? hyp(verso.x, verso.z) : 0, ux = vl > 0.2 ? verso.x / vl : p.vx / v, uz = vl > 0.2 ? verso.z / vl : p.vz / v;
   const avanti = rx * ux + rz * uz, cx = p.vx / v, cz = p.vz / v, lato = Math.abs(rx * cz - rz * cx); // di lato rispetto a dove sta correndo davvero (in curva è diverso da dove vuole andare)
   const bv = hyp(b.vx, b.vz), storta = bv > 0.5 ? (b.vx * ux + b.vz * uz) / bv < Math.cos(COND.girata) : true;

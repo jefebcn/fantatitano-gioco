@@ -41,6 +41,8 @@ jobs:
         run: node scripts/prove/vagante.cjs
       - name: Retropassaggio (il portiere lo stoppa al piede e lo comanda chi gioca)
         run: node scripts/prove/retropassaggio.cjs
+      - name: In conduzione il pallone si muove solo col piede (sei modi di condurre)
+        run: node scripts/prove/calamita.cjs
       - name: Gli avversari vanno sul portatore di chi gioca (vicino alla metà campo, entro 8 secondi)
         run: node scripts/prove/pressing.cjs
       - name: Dopo un passaggio il comando resta al compagno che riceve

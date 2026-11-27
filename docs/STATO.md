@@ -15,6 +15,22 @@ Alex: «calibrare bene il pallone quando è attaccato al piede; guarda come si m
 intervento». Misurato su una partita registrata (seme 7, 200 s) con `scripts/prove/registra.cjs` e un'analisi apposta
 (piede più vicino al pallone nell'istante in cui il pallone accelera in avanti; il «piede» è la caviglia, quindi
 circa 20 cm è il contatto giusto: è quello dei calci, che il pallone al piede lo portano già).
+- **Conduzione: il pallone si muove solo col piede (Alex, 27/11: «anche se fai un 360 la palla non deve seguirti in
+  ogni modo, si deve vedere che il calciatore appoggia il piede sulla palla»).** Misurato con
+  `scripts/prove/calamita.cjs` (chi gioca conduce in sei modi; si conta la spinta del pallone col piede a più di 30 cm):
+  prima fino al 99% della spinta arrivava senza piede (giro veloce), 93% nel giro lento, 89% nello zig-zag, perché
+  mentre il piede «arrivava» `guidaTocco` dava al pallone la velocità del giocatore. Ora `guidaTocco`, `avviaTocco` e
+  la molla «riprende» non ci sono più: tra un tocco e l'altro il pallone rotola da solo; `prevediTocco` fa partire il
+  gesto (tocco in corsa, o taglio oltre `COND.taglia` gradi) quando il pallone arriverà al punto del piede della clip;
+  la spinta c'è solo se il piede vero è a meno di `COND.piede` dal pallone, e nell'ultimo decimo la caviglia si allunga
+  fino al pallone (`piedeAlPallone`, `raggiungi` in `src/grafica/piedi.js`); `mira` manda il pallone dove il giocatore
+  sarà, seguendo la sua curva; nei tagli da 90° in su si frena al passo del gesto (`COND.frena`). Dopo: 0-13% senza
+  piede in tutti e sei i modi. Nei giri la corsa segue la levetta un po' meno di prima (giro lento da 2° a 37° di
+  scarto medio, inversione da 13° a 18°): il pallone va raggiunto. Gioco, 32 partite su due serie di semi (7 e 39):
+  nessuna anomalia, tiri e gol nel rumore (7,41→7,66 e 7,97→7,53; 2,25→2,50 e 2,22→2,16), ma il pallone libero si ruba
+  di più: possessi da 30,7 a 36,5 e da 31,6 a 35,3, falli da 1,7 a 2,8 e da 2,3 a 3,4. Dopo un passaggio ricevuto le
+  spinte senza piede nel secondo dopo da 11,2 a 2,0 (`scripts/prove/ricezione.cjs`). Resta da fare: lo stop
+  (`gain` prende il pallone entro 1,05 m dal corpo, col piede oltre 30 cm in 4 ricezioni su 10).
 - **Conduzione: FATTO il tocco col piede.** Prima la fisica spingeva il pallone quando decideva lei e il gesto provava a
   indovinare l'istante: piede a 41 cm in mediana, metà dei tocchi oltre 40 cm, 13 spinte senza nessun gesto e 9 nei
   cambi di direzione col piede a un metro. Ora la spinta parte quando il piede della clip arriva sul pallone
