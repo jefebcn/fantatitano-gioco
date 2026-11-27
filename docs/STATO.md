@@ -261,7 +261,16 @@ Fuori: pubblicità, acquisti in-app, online P2P (gioco non pubblico).
   passa il collo del piede nella clip (`CARICO.tiro`). Dita del piede dal pallone nel tiro: da 22 a 9 cm; nessun passaggio
   usa più la clip di riserva. 32 partite: gol 1,97 -> 2,00, tiri 7,75 uguali, 0 anomalie. Prova: `scripts/prove/contatto.cjs`.
   Resta il passaggio corto da palla ferma: chi batte sta dietro il pallone verso la porta avversaria e si gira verso il
-  compagno, il pallone gli resta 55 cm di lato e il piede lo manca di 25 cm. Da chiedere ad Alex come fa Dream League.
+  compagno, il pallone gli resta 55 cm di lato e il piede lo manca di 25 cm. Alex (26/11): in Dream League calcia da
+  fermo, già sistemato. FATTO: sul calcio d'inizio, sulla punizione indiretta e sul fuorigioco chi batte gira attorno al
+  pallone, coi passi laterali, fino al posto del passaggio da fermo verso dove mira (la levetta per chi gioca, il compagno
+  scelto per il computer: `sistemaBattitore`, `FERMI.giro`, `vicino`, `scivola`, `posto`, `sistema`); calcia col destro.
+  Tocco e punto del passaggio da fermo misurati sul nostro scheletro (`CARICO.passaFermo`: GameplayFootball diceva 0,35 s,
+  il piede arriva a 0,42). Pallone di lato da 55 a 12 cm, piede sul pallone 1 fotogramma dopo la partenza (erano 9).
+  Il computer batte dopo 0,55-0,65 s, 0,9 s sul calcio d'inizio e con un avversario vicino (prima 0,52-0,57).
+  Lezione: il computer all'inizio passava al compagno scelto quando l'attesa cominciava, quasi un secondo prima del
+  calcio, coi compagni non ancora al loro posto: su 96 partite (semi 7-102) un tiro in meno a partita, soprattutto da
+  fuori. Ora quel compagno serve solo a dove sistemarsi; al calcio sceglie di nuovo.
 
 ## Risposte di Alex del 24/11 e nuovo video (riprese-30s)
 - Tasti in difesa: A «Scivolata», B pressing e contrasto in piedi, C cambia giocatore. FATTO (vedi punto 13 qui sopra).
