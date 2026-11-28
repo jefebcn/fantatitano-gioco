@@ -27,6 +27,21 @@
   - I «calci ogni 0,85 s» di DLS contano anche i tocchi di conduzione: da noi `G.calcioT` no (2,6 s), non confrontabili.
 - Ordine dei ritocchi, uno per PR, misurati con `misure.cjs` e diagnosi: 1. velocità e accelerazioni dei giocatori;
   2. reazione del portiere; 3. frenata del pallone lento; 4. durata della partita; 5. telecamera (alta 14, più lontana).
+- **Passo 1, velocità (FATTO):** scatto 8,8 m/s (8,2 col pallone), conduzione 6, corsa 6; spinta piena fino alla
+  velocità massima solo in rettilineo (`CORPO.accMin`, in curva `accMinCurva`); chi va verso il suo posto senza fretta
+  corricchia a 3,5 m/s (`CORSETTA`) ma tiene il passo del posto che si sposta; chi ha il pallone alle spalle frena a
+  3 m/s e torna a prenderlo (`COND.dietro`). Misure (2 partite) prima → dopo, tra parentesi DLS: p50 4,4 → 4,2 (3,3),
+  p90 5,1 → 6,1 (6,8), p99 6,6 → 8,5 (9,0); tra 4 e 6 m/s 54% → 42% (24%); da fermo a 6 m/s 1,57 → 1,07 s (0,65), da 6
+  a fermo 1,43 → 1,48 (0,62); conduzione 4,5 → 5,7 (6,0), punte 5,5 → 7,4 (8,3). Diagnosi 32 partite, semi 7 e 39:
+  tiri 6,9 → 6,8 e 7,8 → 7,0, gol 2,1 → 2,2 e 2,4 → 2,3, passaggi 44 → 48 (fuori obiettivo, oltre 45), contrasti ora
+  dentro, energia a fine partita 59 → 73; 0 anomalie. Restano lente le frenate: da rivedere insieme ai passaggi.
+
+## Ricostruire i personaggi (Alex, 28/11: «PER DOPO COME TASK», da fare più avanti, non ancora cominciato)
+- La guida di Alex è in `docs/guida-personaggi.md`: corpo base 1,80 m (Blender + MPFB), varianti per ruolo, divisa con
+  maschera RGBA, numeri disegnati, 8 carnagioni, rig Mixamo senza dita, LOD, glb compresso, ombre a macchia su iPhone.
+- Prima di cominciare: confrontarla col corpo di oggi (`FORME_CORPO`, statura, `public/anim.js`); le animazioni Mixamo
+  le scarica Alex dal suo account (mai le sue credenziali); qualsiasi programma da installare sul suo PC va detto prima
+  e aspetta il suo OK. Volti solo inventati, niente loghi, sponsor, stemmi o maglie reali, nome e logo mai sulle divise.
 
 ## Schermata di pausa (Alex, 28/11: «migliorare graficamente la schermata quando si stoppa il gioco, i pulsanti e il resto»)
 - **FATTO.** In alto il risultato con stemmi e minuto (o «Rigori»); a sinistra i pulsanti grandi con l'icona (Riprendi in

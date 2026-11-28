@@ -49,7 +49,7 @@ export function spingi(p, wx, wz, h, vMax, o = {}) {
     avanti = Math.max(0, cosA);
   }
   // lungo la direzione di corsa: accelerare (sempre meno vicino alla velocità massima) o frenare
-  const potenza = acc * Math.max(C.accMin, 1 - v / Math.max(vMax * 1.05, 1)) * avanti;
+  const potenza = acc * Math.max(avanti > 0.995 ? C.accMin : C.accMinCurva, 1 - v / Math.max(vMax * 1.05, 1)) * avanti;
   let dv = clamp(w - v, -frena * h, potenza * h);
   if (v + dv < 0) dv = -v;
   p.vx = ux * (v + dv); p.vz = uz * (v + dv);

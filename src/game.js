@@ -26,7 +26,7 @@ import { creaPiedi } from './grafica/piedi.js';
 import { disegnaPallone } from './grafica/pallone.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { PRATO, NOTTURNA, STADI, PRESENTA, CONTRASTO, DIVISE, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI, COLLAUDO } from './config.js';
+import { PRATO, NOTTURNA, STADI, PRESENTA, CONTRASTO, DIVISE, VELOCITA, CORSETTA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI, COLLAUDO } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -2351,6 +2351,11 @@ function corri(p, dt) {
   // il taglio stretto col pallone frena: durante il gesto non si va più svelti del suo passo
   if (owner && p.i && /^taglio/.test(p.fx || '') && GESTI[p.fx] && Math.abs(GESTI[p.fx].giro) >= FIS.COND.frena) sp = Math.min(sp, GESTI[p.fx].v * (p.fig.alt || 1));
   if (guida) sp = Math.min(sp, base * andatura(p.user)) + (p.sprint && p.user >= LEVETTA.scatto ? sp - base : 0); // la levetta decide l'andatura; lo scatto solo con la levetta al bordo
+  // senza fretta di corsetta: il computer corre davvero solo se il suo posto è lontano (CORSETTA). Ma non più piano del
+  // posto stesso quando si muove (chi accompagna o marca un avversario in corsa): quanto corre il posto, smussato
+  const tv = p.postoX === undefined || dt <= 0 ? 0 : Math.min(30, hyp(p.tx - p.postoX, p.tz - p.postoZ) / dt); p.postoX = p.tx; p.postoZ = p.tz;
+  p.postoV = (p.postoV || 0) + (tv - (p.postoV || 0)) * Math.min(1, dt * CORSETTA.segue);
+  if (!guida && !owner && !p.sprint && p.i && G.state === 'play') { const C = CORSETTA, k = clamp((hyp(p.tx - p.x, p.tz - p.z) - C.vicino) / (C.lontano - C.vicino), 0, 1); sp = Math.min(sp, Math.max(C.corsetta + (sp - C.corsetta) * k, p.postoV * C.margine)); }
   p.vVoluta = sp; // a che velocità vuole andare: il tocco di palla in conduzione la mette dove arriverà
   let gx = p.tx, gz = p.tz, insegue = false;
   if (owner && alPiede(p) && G.state === 'play') { // conduzione: se la palla non è sulla strada verso dove vuole andare, prima ci va sopra
@@ -2358,6 +2363,9 @@ function corri(p, dt) {
     // chi vuole restare fermo e ha il pallone oltre la suola ci va sopra, al passo: il pallone non torna da solo
     if (wd <= .3 && bd > FIS.COND.suola + FIS.COND.sotto && !(G.attesa && G.attesa.chi === p)) { gx = b.x - bx / bd * FIS.COND.suola; gz = b.z - bz / bd * FIS.COND.suola; }
     if (bd > .6 && wd > .3 && (bx * wx0 + bz * wz0) / (bd * wd) < FIS.COND.insegue && !(G.attesa && G.attesa.chi === p)) { gx = b.x + b.vx * .35 + wx0 / wd * .3; gz = b.z + b.vz * .35 + wz0 / wd * .3; insegue = true; sp = Math.max(sp * 1.12, base * (1.05 + (SCATTO_K - 1) * (.3 + .7 * p.en))); } // e allunga il passo per riprenderla, anche senza scatto
+    // il pallone gli è rimasto dietro (dopo un taglio in scatto è più lento di lui): frena e torna a prenderlo, invece di
+    // scappargli via e trascinarselo col guinzaglio (calamita.cjs, zig-zag a 8 m/s)
+    const vv = hyp(p.vx, p.vz); if (vv > 1 && (bx * p.vx + bz * p.vz) / vv < -FIS.COND.dietro) sp = Math.min(sp, FIS.COND.dietroV);
   }
   // velocità voluta: piena finché si è lontani, poi quella che permette di fermarsi sul punto (niente frenate brusche all'ultimo)
   const dx = gx - p.x, dz = gz - p.z, d = hyp(dx, dz); let wx = 0, wz = 0;
