@@ -10,6 +10,24 @@
   e ora i movimenti senza palla (partenze col perno, inversioni, frenata dallo scatto: `movimento`/`MOVI`).
 - Piedi piantati (src/grafica/piedi.js, IK a due ossa), si spegne a qualità ≥2.
 
+## Misure di Dream League (Alex, 28/11: partita intera registrata e misurata, `docs/dls-misure.md`)
+- `scripts/prove/misure.cjs` prende le stesse misure sul nostro gioco. Prima misura (2 partite, semi 7-8), tra
+  parentesi DLS:
+  - velocità p50 4,4 (3,3) · p90 5,1 (6,8) · p99 6,6 (9,0) m/s; tra 4 e 6 m/s il 54% del tempo (24%), sopra 7 lo 0,2% (8%):
+    **corrono sempre alla stessa andatura, non scattano mai e camminano poco**;
+  - da fermo a 6 m/s 1,57 s (0,65), da 6 a fermo 1,43 s (0,62): **accelerano e frenano a metà di DLS**;
+  - conduzione 4,5 (6,0), punte 5,5 (8,3) m/s;
+  - passaggi rasoterra: partenze e tempi d'arrivo come DLS (5-10 m 0,77 s, 12-15 m 1,32 s, 22-29 m 1,45 s);
+  - tiri: partenza mediana 31 m/s (24-30), poco più forti;
+  - pallone che rotola: frena 2,8 m/s² sotto 8 m/s (4-6), 4,1 tra 8 e 14, 6,9 sopra;
+  - portiere: primo gesto 0,45 s dopo il tiro (0,1-0,3), tuffo 0,42 (0,4);
+  - telecamera: alta 12,5 m (14), a 39 m dal pallone (45), 21,8° (20°), fov verticale 29° (27°), campo visibile 46 m (46):
+    **inquadra già lo stesso campo**;
+  - durata 5,0 minuti veri (6, intervallo compreso); statura 1,80 m (1,80-1,85).
+  - I «calci ogni 0,85 s» di DLS contano anche i tocchi di conduzione: da noi `G.calcioT` no (2,6 s), non confrontabili.
+- Ordine dei ritocchi, uno per PR, misurati con `misure.cjs` e diagnosi: 1. velocità e accelerazioni dei giocatori;
+  2. reazione del portiere; 3. frenata del pallone lento; 4. durata della partita; 5. telecamera (alta 14, più lontana).
+
 ## Schermata di pausa (Alex, 28/11: «migliorare graficamente la schermata quando si stoppa il gioco, i pulsanti e il resto»)
 - **FATTO.** In alto il risultato con stemmi e minuto (o «Rigori»); a sinistra i pulsanti grandi con l'icona (Riprendi in
   oro, Sostituzioni, Esci, e col collaudo i due pulsanti piccoli sotto); a destra un pannello con due schede: Tattica
