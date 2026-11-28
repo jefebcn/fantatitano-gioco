@@ -26,11 +26,11 @@ export const LINEE = { area: [16.5, 40.32], piccola: [5.5, 18.32], dischetto: 11
 // Ritmo come Dream League: il cronometro corre `gioco` volte il tempo vero quando si gioca (90 minuti in 4 minuti veri) e
 // `fermo` volte durante le palle ferme, dopo i gol e al calcio d'inizio. Conduzione: velocità di corsa col pallone (senza
 // scatto) in m/s, stima dai video da tarare
-export const RITMO = { gioco: 22.5, fermo: 3.5, conduzione: 4.5 };
+export const RITMO = { gioco: 22.5, fermo: 3.5, conduzione: 6 };
 // Velocità dei giocatori in m/s (valori di partenza di Alex del 21/11, da Dream League): `corsa` e `scatto` senza palla,
 // `scattoPalla` col pallone tra i piedi (la conduzione senza scatto è RITMO.conduzione). `qualita`: quanti m/s separano
 // il più scarso dal più forte. `squadra`: m/s per ogni stella di forza della squadra. `portiere`: la corsa del portiere.
-export const VELOCITA = { corsa: 6, scatto: 8.8, scattoPalla: 6, qualita: .5, squadra: .05, portiere: 4.6 };
+export const VELOCITA = { corsa: 6, scatto: 8.8, scattoPalla: 8.2, qualita: .5, squadra: .05, portiere: 4.6 };
 // Senza fretta (comandato dal computer, senza palla, senza scatto) si va di corsetta a `corsetta` m/s finché il proprio
 // posto è entro `vicino` metri, e si arriva alla corsa piena da `lontano` metri. Misure di DLS (docs/dls-misure.md): metà
 // del tempo sotto 3,3 m/s, tra 4 e 6 m/s solo un quarto; da noi correvano sempre, tra 4 e 6 m/s quasi metà del tempo
@@ -518,9 +518,10 @@ export const FIS = {
  *  smorza:   lo stop di un pallone preso lontano dal piede lo smorza quando il piede ci arriva, o al più dopo tanti secondi
  *  sotto:    da fermi la suola tiene il pallone solo se è già a meno di così dal suo punto (m)
  *  frena:    dal taglio di tanti gradi in su si frena al passo del gesto
+ *  dietro, dietroV: col pallone rimasto più di `dietro` metri alle spalle (rispetto alla corsa) si frena a `dietroV` m/s
  *  insegue:  chi conduce va prima sul pallone se è fuori dalla strada verso dove vuole andare (coseno dell'angolo, vedi corri)
  */
-export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.15, vicino: 0.5, passo: 1.12, passoScatto: 1.2, guinzaglio: 1.5, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6, piede: 0.3, finestra: 0.12, largo: 0.45, taglia: 50, subito: 0.05, mira: 0.6, miraGiro: 0.5, allunga: 0.12, allungaMax: 0.3, portata: 0.13, smorza: 0.25, sotto: 0.25, insegue: 0.88, frena: 90 };
+export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.15, vicino: 0.5, passo: 1.12, passoScatto: 1.2, guinzaglio: 1.5, perde: 3.2, fermo: 1.4, errore: 0.14, pausa: 0.2, suola: 0.55, girata: 0.6, piede: 0.3, finestra: 0.12, largo: 0.45, taglia: 50, subito: 0.05, mira: 0.6, miraGiro: 0.5, allunga: 0.12, allungaMax: 0.3, portata: 0.13, smorza: 0.25, sotto: 0.25, insegue: 0.88, frena: 90, dietro: 0.1, dietroV: 3 };
 
 /* ---------------------------------------------------------------- fisica dei giocatori */
 export const CORPO = {

@@ -2363,6 +2363,9 @@ function corri(p, dt) {
     // chi vuole restare fermo e ha il pallone oltre la suola ci va sopra, al passo: il pallone non torna da solo
     if (wd <= .3 && bd > FIS.COND.suola + FIS.COND.sotto && !(G.attesa && G.attesa.chi === p)) { gx = b.x - bx / bd * FIS.COND.suola; gz = b.z - bz / bd * FIS.COND.suola; }
     if (bd > .6 && wd > .3 && (bx * wx0 + bz * wz0) / (bd * wd) < FIS.COND.insegue && !(G.attesa && G.attesa.chi === p)) { gx = b.x + b.vx * .35 + wx0 / wd * .3; gz = b.z + b.vz * .35 + wz0 / wd * .3; insegue = true; sp = Math.max(sp * 1.12, base * (1.05 + (SCATTO_K - 1) * (.3 + .7 * p.en))); } // e allunga il passo per riprenderla, anche senza scatto
+    // il pallone gli è rimasto dietro (dopo un taglio in scatto è più lento di lui): frena e torna a prenderlo, invece di
+    // scappargli via e trascinarselo col guinzaglio (calamita.cjs, zig-zag a 8 m/s)
+    const vv = hyp(p.vx, p.vz); if (vv > 1 && (bx * p.vx + bz * p.vz) / vv < -FIS.COND.dietro) sp = Math.min(sp, FIS.COND.dietroV);
   }
   // velocità voluta: piena finché si è lontani, poi quella che permette di fermarsi sul punto (niente frenate brusche all'ultimo)
   const dx = gx - p.x, dz = gz - p.z, d = hyp(dx, dz); let wx = 0, wz = 0;
