@@ -26,7 +26,7 @@ import { creaPiedi } from './grafica/piedi.js';
 import { disegnaPallone } from './grafica/pallone.js';
 // i testi che si leggono stanno in src/testi.js: qui `tr` e non `t`, che in questo file è il nome di tante variabili
 import { t as tr } from './testi.js';
-import { PRATO, NOTTURNA, STADI, PRESENTA, CONTRASTO, DIVISE, VELOCITA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI, COLLAUDO } from './config.js';
+import { PRATO, NOTTURNA, STADI, PRESENTA, CONTRASTO, DIVISE, VELOCITA, CORSETTA, HL, HW, GH, GT, BR, GRAV, LINEE, CAMERA, CAMERA_ALTO, ANGOLO_CAM, LED, LOD, TIRO_IA, ATTACCO, PALLA_VISTA, SMARCA, INSERIMENTO, ALTEZZA, FORME_CORPO, PARATA, HALF_SECS, DIFF, MATE, RUN, DEF, FOUL, VOTE, CALCI, AIR, FORMS, PRESSING, MENT, DOWN, MOVI, CARICO, SUB, RIMESSA, PASSA, CARICA, DIST, TENUTA, RINVIO, MANO, RISERVA, ANDATURA, RITMO, RIVEDI, PASSAGGIO, CAMBIO, AREA_IA, PORTIERE, FERMI, GOLSEQ, LEVETTA, PRESSIONE, SEGNI, COLLAUDO } from './config.js';
 // la home, i menu e le schermate fuori dalla partita stanno in src/casa/: da lì arrivano la carriera (K), le scelte
 // fatte prima della partita (sel) e le funzioni che aprono le schermate
 import { show, sel, save, esc, ovr, RUOLO, showPre, K, mon, forzaClub, applicaMio, attributi, candidatiCapitano, apriNuovo, drawHub, panCastelli, panSfide, panClubMio, panProfilo, panImp, casa, salvaK, aggiornaCloud, adotta, allAccesso, buildMenu, caricaCarriera } from './casa/casa.js';
@@ -2351,6 +2351,8 @@ function corri(p, dt) {
   // il taglio stretto col pallone frena: durante il gesto non si va più svelti del suo passo
   if (owner && p.i && /^taglio/.test(p.fx || '') && GESTI[p.fx] && Math.abs(GESTI[p.fx].giro) >= FIS.COND.frena) sp = Math.min(sp, GESTI[p.fx].v * (p.fig.alt || 1));
   if (guida) sp = Math.min(sp, base * andatura(p.user)) + (p.sprint && p.user >= LEVETTA.scatto ? sp - base : 0); // la levetta decide l'andatura; lo scatto solo con la levetta al bordo
+  // senza fretta di corsetta: il computer corre davvero solo se il suo posto è lontano (CORSETTA)
+  if (!guida && !owner && !p.sprint && p.i && G.state === 'play') { const C = CORSETTA, k = clamp((hyp(p.tx - p.x, p.tz - p.z) - C.vicino) / (C.lontano - C.vicino), 0, 1); sp = Math.min(sp, C.corsetta + (sp - C.corsetta) * k); }
   p.vVoluta = sp; // a che velocità vuole andare: il tocco di palla in conduzione la mette dove arriverà
   let gx = p.tx, gz = p.tz, insegue = false;
   if (owner && alPiede(p) && G.state === 'play') { // conduzione: se la palla non è sulla strada verso dove vuole andare, prima ci va sopra

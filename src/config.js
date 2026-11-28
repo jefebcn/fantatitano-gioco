@@ -26,11 +26,15 @@ export const LINEE = { area: [16.5, 40.32], piccola: [5.5, 18.32], dischetto: 11
 // Ritmo come Dream League: il cronometro corre `gioco` volte il tempo vero quando si gioca (90 minuti in 4 minuti veri) e
 // `fermo` volte durante le palle ferme, dopo i gol e al calcio d'inizio. Conduzione: velocità di corsa col pallone (senza
 // scatto) in m/s, stima dai video da tarare
-export const RITMO = { gioco: 22.5, fermo: 3.5, conduzione: 4.5 };
+export const RITMO = { gioco: 22.5, fermo: 3.5, conduzione: 6 };
 // Velocità dei giocatori in m/s (valori di partenza di Alex del 21/11, da Dream League): `corsa` e `scatto` senza palla,
 // `scattoPalla` col pallone tra i piedi (la conduzione senza scatto è RITMO.conduzione). `qualita`: quanti m/s separano
 // il più scarso dal più forte. `squadra`: m/s per ogni stella di forza della squadra. `portiere`: la corsa del portiere.
-export const VELOCITA = { corsa: 5, scatto: 7, scattoPalla: 6, qualita: .5, squadra: .05, portiere: 4.6 };
+export const VELOCITA = { corsa: 6, scatto: 8.8, scattoPalla: 8.2, qualita: .5, squadra: .05, portiere: 4.6 };
+// Senza fretta (comandato dal computer, senza palla, senza scatto) si va di corsetta a `corsetta` m/s finché il proprio
+// posto è entro `vicino` metri, e si arriva alla corsa piena da `lontano` metri. Misure di DLS (docs/dls-misure.md): metà
+// del tempo sotto 3,3 m/s, tra 4 e 6 m/s solo un quarto; da noi correvano sempre, tra 4 e 6 m/s quasi metà del tempo
+export const CORSETTA = { corsetta: 3.5, vicino: 4, lontano: 14 };
 export const HALF_SECS = 45 * 60 / RITMO.gioco;
 export const DIFF = {
   facile:    { spd: .88, steal: .7,  save: .48, err: 1.7, think: .6, wait: 1.2, slide: 1.5 },
@@ -519,7 +523,7 @@ export const COND = { riprendi: 1.8, stretto: 0.9, forza: 0.3, ritmo: 0.15, vici
 /* ---------------------------------------------------------------- fisica dei giocatori */
 export const CORPO = {
   acc: 16, // accelerazione da fermo (m/s²): da fermo allo scatto in circa un secondo
-  accMin: 0.22, // quanta accelerazione resta vicino alla velocità massima (frazione di acc)
+  accMin: 0.5, // quanta accelerazione resta vicino alla velocità massima (frazione di acc)
   frena: 20, // frenata massima (m/s²)
   gira: 9, // quanto in fretta la corsa cambia direzione andando piano (rad/s): mezzo giro in un terzo di secondo
   giraScatto: 5, // e in pieno scatto: la curva si allarga
