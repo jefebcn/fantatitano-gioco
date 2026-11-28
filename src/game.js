@@ -3570,7 +3570,7 @@ function fotoCampo() {
     x.drawImage(canvas, 0, 0, w, h); return c.toDataURL('image/jpeg', COLLAUDO.fotoQualita);
   } catch (e) { return null; }
 }
-const COLL = collaudoAcceso() ? creaCollaudo(COLLAUDO, { G, tutti: all, HL, HW, GH, GT, minuto: minute, foto: fotoCampo, qualita: () => `${sel.qual || 'automatica'}, livello ${QUAL.livello}`, versione: VERSIONE_GIOCO }) : null;
+const COLL = collaudoAcceso(COLLAUDO.perTutti) ? creaCollaudo(COLLAUDO, { G, tutti: all, HL, HW, GH, GT, minuto: minute, foto: fotoCampo, qualita: () => `${sel.qual || 'automatica'}, livello ${QUAL.livello}`, versione: VERSIONE_GIOCO }) : null;
 if (COLL) {
   window.addEventListener('error', (e) => COLL.errore(`${e.message || 'errore'}${e.filename ? ` (${e.filename.split('/').pop()}:${e.lineno})` : ''}`));
   window.addEventListener('unhandledrejection', (e) => COLL.errore(`promessa: ${(e.reason && (e.reason.message || e.reason)) || '?'}`));

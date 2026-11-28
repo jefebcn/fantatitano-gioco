@@ -18,8 +18,10 @@
   `pausa.*` in `src/testi.js`. Entra senza scorrere in un telefono girato (667×375, 844×390) e su monitor.
 
 ## Collaudo con un amico (Alex, 27/11: «un link per un mio amico che lo testa, e ci vengono scritte le problematiche»)
-- **FATTO.** Link: https://fantatitano-gioco.vercel.app/?collaudo (resta acceso anche dall'icona sul telefono; si spegne
-  aprendo una volta `?collaudo=0`). Codice in `src/collaudo.js`, valori in `COLLAUDO` (`src/config.js`), prova
+- **FATTO.** Link: https://fantatitano-gioco.vercel.app/?collaudo, ma finché il gioco è privato è acceso per tutti
+  (`COLLAUDO.perTutti`, 28/11: Alex entrava dall'icona sul telefono e i pulsanti non c'erano, perché su iPhone l'icona ha
+  una memoria sua e non vede cosa ricorda Safari). Si spegne aprendo una volta `?collaudo=0`. **Prima del lancio
+  pubblico: `perTutti: false`.** Codice in `src/collaudo.js`, valori in `COLLAUDO` (`src/config.js`), prova
   `scripts/prove/collaudo.cjs` (in CI). Le segnalazioni arrivano su WhatsApp (scelta di Alex): niente server.
 - Il gioco controlla da solo, durante la partita, le stesse cose di `diagnosi.cjs` (pallone impossibile, sotto terra,
   lontanissimo, fermo senza nessuno; giocatori teletrasportati, a terra, gesto bloccato, corpo sollevato) più il pallone
