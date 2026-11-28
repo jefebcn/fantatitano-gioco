@@ -1,7 +1,8 @@
 /* Collaudo: una versione del gioco da far provare a un amico (Alex, 27/11).
 
-   Si accende aprendo il gioco con ?collaudo nell'indirizzo e resta acceso (anche dall'icona sulla schermata del telefono)
-   finché non si apre una volta con ?collaudo=0. Chi gioca non vede niente di diverso, tranne due pulsanti nella pausa
+   Si accende aprendo il gioco con ?collaudo nell'indirizzo e resta acceso finché non si apre una volta con ?collaudo=0.
+   Finché il gioco è privato è acceso per tutti anche senza (COLLAUDO.perTutti): su iPhone l'icona sulla schermata del
+   telefono ha una memoria sua, e non sapeva che in Safari il collaudo era stato acceso. Chi gioca non vede niente di diverso, tranne due pulsanti nella pausa
    («Segnala un problema», «Manda il rapporto») e uno a fine partita.
 
    Mentre si gioca il gioco cerca da solo le stesse cose che cercano le prove (scripts/prove/diagnosi.cjs): pallone con
@@ -18,13 +19,14 @@
 
 const CHIAVE = 'ft-collaudo';
 
-/** Il collaudo è acceso? Legge ?collaudo / ?collaudo=0 e se lo ricorda. */
-export function collaudoAcceso() {
+/** Il collaudo è acceso? Legge ?collaudo / ?collaudo=0 e se lo ricorda; se non c'è niente decide perTutti. */
+export function collaudoAcceso(perTutti = false) {
   const m = /[?&]collaudo(=([^&]*))?/.exec(location.search);
   try {
     if (m) localStorage.setItem(CHIAVE + '-on', m[2] === '0' ? '0' : '1');
-    return localStorage.getItem(CHIAVE + '-on') === '1';
-  } catch (e) { return !!m && m[2] !== '0'; }
+    const v = localStorage.getItem(CHIAVE + '-on');
+    return v === null ? perTutti : v === '1';
+  } catch (e) { return m ? m[2] !== '0' : perTutti; }
 }
 
 /** Che telefono e che browser, in breve (niente di personale). */

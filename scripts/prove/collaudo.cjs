@@ -1,4 +1,5 @@
-// Il collaudo (src/collaudo.js, ?collaudo nell'indirizzo) funziona? Senza ?collaudo i pulsanti non si vedono. Con
+// Il collaudo (src/collaudo.js, ?collaudo nell'indirizzo) funziona? Con ?collaudo=0 i pulsanti non si vedono, senza
+// niente decide COLLAUDO.perTutti (acceso finché il gioco è privato). Con
 // ?collaudo: una partita intera computer contro computer non deve dare problemi finti; un giocatore spostato di colpo
 // deve finire nel rapporto; la segnalazione dal menu di pausa (argomento, testo, foto) deve finire nel rapporto;
 // scrivendo «p» nella segnalazione la partita non riparte; «Manda il rapporto» passa testo e foto a Condividi.
@@ -15,8 +16,11 @@ srv.listen(0, async () => {
     await pg.goto(base + q, { waitUntil: 'domcontentloaded', timeout: 90000 });
     await pg.waitForFunction(() => window.__g && !document.querySelector('#carica'), null, { timeout: 90000 }); return [pg, errori];
   };
-  // senza ?collaudo: niente pulsanti, niente controlli
-  { const [pg] = await apri(''); const r = await pg.evaluate(() => ({ coll: !!window.__g.collaudo(), visibili: [...document.querySelectorAll('.coll')].filter((e) => !e.classList.contains('nas')).length })); esito(!r.coll && !r.visibili, `senza ?collaudo: spento, pulsanti visibili ${r.visibili}`); await pg.close(); }
+  // con ?collaudo=0: niente pulsanti, niente controlli
+  { const [pg] = await apri('?collaudo=0'); const r = await pg.evaluate(() => ({ coll: !!window.__g.collaudo(), visibili: [...document.querySelectorAll('.coll')].filter((e) => !e.classList.contains('nas')).length })); esito(!r.coll && !r.visibili, `con ?collaudo=0: spento, pulsanti visibili ${r.visibili}`); await pg.close(); }
+  // senza niente nell'indirizzo (l'icona sul telefono): come dice COLLAUDO.perTutti
+  { const perTutti = /perTutti:\s*true/.test(fs.readFileSync(path.join(__dirname, '../../src/config.js'), 'utf8'));
+    const [pg] = await apri(''); const r = await pg.evaluate(() => ({ coll: !!window.__g.collaudo(), visibili: [...document.querySelectorAll('#stop .coll')].filter((e) => !e.classList.contains('nas')).length })); esito(r.coll === perTutti && !!r.visibili === perTutti, `senza ?collaudo: ${r.coll ? 'acceso' : 'spento'} come dice perTutti (${perTutti})`); await pg.close(); }
   const [pg, errori] = await apri('?collaudo');
   // una partita intera: i controlli girano a ogni fotogramma come nel gioco, e non devono trovare niente
   const r = await pg.evaluate(() => {

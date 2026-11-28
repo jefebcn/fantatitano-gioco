@@ -889,7 +889,11 @@ export const METEO = {
 //  partite:  quante partite tiene il rapporto; foto: quante foto; lunghezza: lettere al massimo di una segnalazione
 //  fotoLarga, fotoQualita: la foto del campo, larga tanti pixel, con la qualità JPEG da 0 a 1
 //  avviso:   per quanti secondi resta la scritta in basso
+//  perTutti: acceso anche senza ?collaudo nell'indirizzo, finché il gioco è privato (Alex, 28/11: entrando dall'icona
+//            sul telefono i pulsanti non c'erano: su iPhone l'icona non vede cosa ricorda Safari). Quando il gioco
+//            diventa pubblico si spegne qui, e chi apre una volta il gioco con «collaudo=0» lo spegne comunque
 export const COLLAUDO = {
+  perTutti: true,
   scatto: 0.1, pausa: 1, lento: 40, lentoPer: 3, teletrasporto: 36, aTerra: 3, gesto: 2.5, ferma: 2, ripresa: 8,
   lontano: 12, sotto: -0.05, sollevato: 0.5, rete: 2.2, esempi: 3, vicini: 3, scia: 3, sciaOgni: 0.5, partite: 6, foto: 6, lunghezza: 500,
   fotoLarga: 720, fotoQualita: 0.7, avviso: 2.8,
