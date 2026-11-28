@@ -10,6 +10,13 @@
   e ora i movimenti senza palla (partenze col perno, inversioni, frenata dallo scatto: `movimento`/`MOVI`).
 - Piedi piantati (src/grafica/piedi.js, IK a due ossa), si spegne a qualità ≥2.
 
+## Schermata di pausa (Alex, 28/11: «migliorare graficamente la schermata quando si stoppa il gioco, i pulsanti e il resto»)
+- **FATTO.** In alto il risultato con stemmi e minuto (o «Rigori»); a sinistra i pulsanti grandi con l'icona (Riprendi in
+  oro, Sostituzioni, Esci, e col collaudo i due pulsanti piccoli sotto); a destra un pannello con due schede: Tattica
+  (moduli 5 per riga, mentalità) e Comandi (le istruzioni a righe, prima erano un muro di testo). Il campo resta dietro,
+  sfocato. HTML e stile in `src/pagina.html` (sezione «pausa»), `riempiPausa` e `schedaPausa` in `src/game.js`, testi
+  `pausa.*` in `src/testi.js`. Entra senza scorrere in un telefono girato (667×375, 844×390) e su monitor.
+
 ## Collaudo con un amico (Alex, 27/11: «un link per un mio amico che lo testa, e ci vengono scritte le problematiche»)
 - **FATTO.** Link: https://fantatitano-gioco.vercel.app/?collaudo (resta acceso anche dall'icona sul telefono; si spegne
   aprendo una volta `?collaudo=0`). Codice in `src/collaudo.js`, valori in `COLLAUDO` (`src/config.js`), prova

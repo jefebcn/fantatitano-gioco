@@ -99,6 +99,12 @@ export const TESTI = {
     'pausa.sostituzioni': 'Sostituzioni',
     'pausa.riprendi': 'Riprendi',
     'pausa.esci': 'Esci dalla partita',
+    'pausa.tattica': 'Tattica',
+    'pausa.comandi': 'Comandi',
+    'pausa.modulo': 'Modulo',
+    'pausa.mentalita': 'Mentalità',
+    'pausa.tempo': (tempo, ora) => `${tempo}° tempo · ${ora}`,
+    'pausa.rigori': 'Rigori',
     // collaudo (?collaudo nell'indirizzo, src/collaudo.js): solo per chi prova il gioco
     'collaudo.segnala': 'Segnala un problema',
     'collaudo.manda': 'Manda il rapporto',

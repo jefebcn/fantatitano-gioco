@@ -3344,6 +3344,7 @@ function comandiPartita() {
   $('#icoMaglia').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); pause(true); if (G.paused && !$('#apriCambi').classList.contains('nas')) $('#apriCambi').onclick(); });
   $('#apriCambi').onclick = () => { cOut = null; cIn = -1; drawCambi(); show('#cambi'); }; $('#cambiOk').onclick = () => show('#stop'); $('#cambiL').addEventListener('click', tapCambi);
   $('#pausa').onclick = () => pause(true); $('#riprendi').onclick = () => pause(false);
+  $('.pzSchede').onclick = (e) => { const b = e.target.closest('button'); if (b) schedaPausa(b.dataset.s); };
   $('#esci').onclick = () => { G.paused = false; const fine = chiudiPonte(false); toMenu(); if (fine) fine(); };
   $('#audio').onclick = () => { AU.init(); AU.toggle(); }; $('#audio').style.opacity = AU.on ? 1 : .4;
 }
@@ -3431,7 +3432,20 @@ function tapCambi(e) {
   const esce = cOut, p = sostituisci(t, esce, cIn), ruoli = (esce.i === 0) !== (t.bench[cIn].role === 'P'); cOut = null; cIn = -1;
   drawCambi(p ? tr('cambi.fatto', p.name, esce.name) : tr(ruoli ? 'cambi.portiere' : 'cambi.no')); hud();
 }
-function pause(v) { if (G.state === 'menu' || G.state === 'full') return; G.paused = v; show(v ? '#stop' : null); AU.pausa(v); AU.coro(!v); $('#apriCambi').classList.toggle('nas', !G.teams[0] || !!G.so); } // sempre: lì si vede anche l'energia
+/** La pausa: risultato, stemmi e minuto in alto; i comandi come righe (titolo a sinistra, prima dei due punti). */
+function riempiPausa() {
+  const [h, a] = G.teams; if (!h || !a) return;
+  $('#pzH').src = img(h.club.id); $('#pzA').src = img(a.club.id); $('#pzHn').textContent = h.club.short; $('#pzAn').textContent = a.club.short;
+  $('#pzS').textContent = `${h.score} - ${a.score}`; $('#pzT').textContent = G.so ? tr('pausa.rigori') : tr('pausa.tempo', G.half, $('#sbT').textContent);
+  // una riga senza «titolo: », o tra parentesi, continua quella sopra (per esempio «tieni premuto»)
+  $('#pzComandi').innerHTML = String(tr('pausa.istruzioni')).split('<br>').map((r) => { const i = r.indexOf(': '); return i > 0 && i < 24 && r[0] !== '(' ? `<p><b>${r.slice(0, i)}</b><span>${r.slice(i + 2)}</span></p>` : `<p class="segue"><b></b><span>${r}</span></p>`; }).join('');
+}
+/** Le schede del pannello in pausa: Tattica o Comandi. */
+function schedaPausa(nome) {
+  for (const b of document.querySelectorAll('.pzSchede button')) b.classList.toggle('on', b.dataset.s === nome);
+  $('#pzTattica').classList.toggle('nas', nome !== 'tattica'); $('#pzComandi').classList.toggle('nas', nome !== 'comandi');
+}
+function pause(v) { if (G.state === 'menu' || G.state === 'full') return; G.paused = v; if (v) riempiPausa(); show(v ? '#stop' : null); AU.pausa(v); AU.coro(!v); $('#apriCambi').classList.toggle('nas', !G.teams[0] || !!G.so); } // sempre: lì si vede anche l'energia
 function toMenu() { G.state = 'menu'; finePresenta(); clearMatch(); G.ball = null; G.ctrl = null; ballMesh.visible = ballShadow.visible = ring.visible = arrow.visible = freccia.visible = false; $('#hud').classList.add('nas'); casa(); AU.amb(0); AU.pausa(false); AU.coro(false); AU.musica(true); }
 function vote(p) {
   const t = p.team, s = p.s, V = VOTE, conc = t.opp.score;
