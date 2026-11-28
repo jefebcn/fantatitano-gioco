@@ -2351,8 +2351,11 @@ function corri(p, dt) {
   // il taglio stretto col pallone frena: durante il gesto non si va più svelti del suo passo
   if (owner && p.i && /^taglio/.test(p.fx || '') && GESTI[p.fx] && Math.abs(GESTI[p.fx].giro) >= FIS.COND.frena) sp = Math.min(sp, GESTI[p.fx].v * (p.fig.alt || 1));
   if (guida) sp = Math.min(sp, base * andatura(p.user)) + (p.sprint && p.user >= LEVETTA.scatto ? sp - base : 0); // la levetta decide l'andatura; lo scatto solo con la levetta al bordo
-  // senza fretta di corsetta: il computer corre davvero solo se il suo posto è lontano (CORSETTA)
-  if (!guida && !owner && !p.sprint && p.i && G.state === 'play') { const C = CORSETTA, k = clamp((hyp(p.tx - p.x, p.tz - p.z) - C.vicino) / (C.lontano - C.vicino), 0, 1); sp = Math.min(sp, C.corsetta + (sp - C.corsetta) * k); }
+  // senza fretta di corsetta: il computer corre davvero solo se il suo posto è lontano (CORSETTA). Ma non più piano del
+  // posto stesso quando si muove (chi accompagna o marca un avversario in corsa): quanto corre il posto, smussato
+  const tv = p.postoX === undefined || dt <= 0 ? 0 : Math.min(30, hyp(p.tx - p.postoX, p.tz - p.postoZ) / dt); p.postoX = p.tx; p.postoZ = p.tz;
+  p.postoV = (p.postoV || 0) + (tv - (p.postoV || 0)) * Math.min(1, dt * CORSETTA.segue);
+  if (!guida && !owner && !p.sprint && p.i && G.state === 'play') { const C = CORSETTA, k = clamp((hyp(p.tx - p.x, p.tz - p.z) - C.vicino) / (C.lontano - C.vicino), 0, 1); sp = Math.min(sp, Math.max(C.corsetta + (sp - C.corsetta) * k, p.postoV * C.margine)); }
   p.vVoluta = sp; // a che velocità vuole andare: il tocco di palla in conduzione la mette dove arriverà
   let gx = p.tx, gz = p.tz, insegue = false;
   if (owner && alPiede(p) && G.state === 'play') { // conduzione: se la palla non è sulla strada verso dove vuole andare, prima ci va sopra

@@ -98,13 +98,13 @@ function muovi(p, wx, wz, T, dt = 1 / 60, vMax = 7, o = {}) { // come in partita
   for (let t = 0; t < T - 1e-9; t += dt) { p.resto = (p.resto || 0) + Math.min(dt, T - t); while (p.resto >= H - 1e-9) { p.resto -= H; spingi(p, wx, wz, H, vMax, o); p.x += p.vx * H; p.z += p.vz * H; } }
   return p;
 }
-const tempoFino = (p, cond, wx, wz, max = 5, o) => { let t = 0; while (t < max && !cond(p)) { spingi(p, wx, wz, H, 7, o); p.x += p.vx * H; p.z += p.vz * H; t += H; } return t; };
+const tempoFino = (p, cond, wx, wz, max = 5, o, vMax = 7) => { let t = 0; while (t < max && !cond(p)) { spingi(p, wx, wz, H, vMax, o); p.x += p.vx * H; p.z += p.vz * H; t += H; } return t; };
 {
-  // obiettivi di Alex (21/11): circa un secondo da fermo allo scatto (7 m/s), frenata rapida
-  const a = tempoFino(gioc(), (p) => p.vx >= 6.65, 7, 0); // da fermo al 95% di 7 m/s
+  // misure di Dream League (docs/dls-misure.md): da fermo a 6 m/s in circa 0,65 s scattando (8,8 m/s); frenata rapida
+  const a = tempoFino(gioc(), (p) => p.vx >= 6, 8.8, 0, 5, {}, 8.8);
   const f = gioc({ vx: 7 }), tf = tempoFino(f, (p) => p.vx <= 0.01, 0, 0);
-  assert.ok(a > .8 && a < 1.25, `partenza ${a}`); assert.ok(tf > .25 && tf < .5 && f.x < 1.6, `frenata ${tf} ${f.x}`);
-  out.push(`corpo: da fermo a 6,65 m/s in ${a.toFixed(2)} s; frena da 7 in ${tf.toFixed(2)} s (${f.x.toFixed(1)} m)`);
+  assert.ok(a > .45 && a < .85, `partenza ${a}`); assert.ok(tf > .25 && tf < .5 && f.x < 1.6, `frenata ${tf} ${f.x}`);
+  out.push(`corpo: da fermo a 6 m/s scattando in ${a.toFixed(2)} s; frena da 7 in ${tf.toFixed(2)} s (${f.x.toFixed(1)} m)`);
 }
 { // cambi di direzione: si perde velocità in proporzione all'angolo, poca (Alex, 26/11: in Dream League chi inverte la corsa
   // perde poco, e chi curva altrettanto poco): sull'inversione resta circa l'80%

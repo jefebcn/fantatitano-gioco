@@ -1,7 +1,7 @@
 // Retropassaggio (Alex, 27/11: in Dream League il portiere lo stoppa coi piedi e lo comandi tu). Un difensore passa
 // rasoterra al proprio portiere, piano e forte: il portiere lo deve stoppare al piede (non in mano); quello di chi gioca
 // passa al comando e col tasto passa il pallone, poi il comando torna a un compagno; con la levetta si muove col pallone;
-// un avversario addosso glielo può rubare; quello del computer lo rigioca da solo entro 2 s.
+// un avversario addosso glielo può rubare (o gli fa fallo: il contrasto c'è, l'esito è a caso); quello del computer lo rigioca da solo entro 2 s.
 // Uso: npm run build, poi RADICE=public node scripts/prove/retropassaggio.cjs
 const { chromium } = require('playwright'); const http = require('http'), fs = require('fs'), path = require('path');
 const root = process.env.RADICE || path.join(__dirname, '../../public');
@@ -28,10 +28,12 @@ srv.listen(0, async () => {
       b.owner = null; b.vx = dx / d * forza; b.vz = dz / d * forza; b.vy = 0; G.calcioT = G.piedeT = G.t; G.lastKicker = G.lastTouch = dif; G.intended = null;
       const r = { nome, prova, umano: t.human }; let t0 = null;
       for (let i = 0; i < 600; i++) {
-        // l'avversario resta lontano finché il portiere non ha il pallone
-        if (t0 === null) { opp.x = s * 10; opp.z = -6; opp.vx = opp.vz = 0; }
+        // gli avversari restano lontani finché il portiere non ha il pallone (con lo scatto a 8,8 m/s uno ci arrivava e
+        // faceva fallo prima della ricezione)
+        if (t0 === null) { for (const q of t.opp.players) if (q.i) { q.x = s * 10; q.z = q === opp ? -6 : (q.i - 5) * 3; q.vx = q.vz = 0; } }
         g.step(1 / 60); g.draw(1 / 60);
-        if (G.state !== 'play') { r.fermo = G.state; break; }
+        // fermo dopo che il portiere l'ha ricevuto: l'avversario addosso ha fatto fallo (anche questo è un contrasto)
+        if (G.state !== 'play') { if (t0 !== null && G.fk) { r.via = G.t - t0; r.chi = 'fallo'; } else r.fermo = G.state; break; }
         if (t0 === null && b.owner) {
           if (b.owner !== gk) { r.altro = b.owner.name; break; }
           t0 = G.t; r.piedi = !!gk.piedi; r.comando = G.ctrl === gk; r.da = [gk.x, gk.z];
@@ -58,7 +60,7 @@ srv.listen(0, async () => {
       if (r.umano && !r.comando) no.push('il comando non passa al portiere');
       if (r.prova === 'passa' && !(r.chi === 'calciato' && r.comandoDopo)) no.push(`col tasto non lo passa (${r.chi}, comando ${r.comandoDopo})`);
       if (r.prova === 'muovi' && !(r.mosso > 3 && r.tiene)) no.push(`non si muove col pallone (${r.mosso && r.mosso.toFixed(1)} m)`);
-      if (r.prova === 'ruba' && r.umano && r.chi !== 'avversario') no.push(`l'avversario non lo ruba (${r.chi || 'nessuno'})`);
+      if (r.prova === 'ruba' && r.umano && r.chi !== 'avversario' && r.chi !== 'fallo') no.push(`l'avversario non lo ruba (${r.chi || 'nessuno'})`);
       if (r.prova === 'ruba' && !r.umano && !(r.via < 1)) no.push('pressato non lo rinvia subito');
       if (r.prova === 'da solo' && !(r.via < 2 && r.chi === 'calciato')) no.push(`non lo rigioca da solo (${r.via})`);
     }
